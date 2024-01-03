@@ -13,3 +13,9 @@
 // Fake Particles for KS regularization
 #define BlackholeBiniary -2
 #define Binary -1
+
+#define SUCCESS 1
+#define FAIL   -1
+
+#define eta 0.02 // by YS Jo subject to modifty
+

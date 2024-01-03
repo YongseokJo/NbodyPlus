@@ -1,0 +1,32 @@
+# Compiler
+CXX = icc
+#CXX = g++
+
+# Compiler flags
+CXXFLAGS = -std=c++11 -Wall -Wextra -Wuninitialized -I./
+
+# Source files
+SRCS = main.cpp ReadWrite.cpp ParticleRoutines.cpp CreateParticleChain.cpp InitializeParticles.cpp# Add your source files here
+
+# Object files
+OBJS = $(SRCS:.cpp=.o)
+
+# Executable name
+EXEC = nbodyplus
+
+# Main target
+all: $(EXEC)
+
+# Link object files into the executable
+$(EXEC): $(OBJS)
+	$(CXX) $(CXXFLAGS) $(OBJS) -o $(EXEC) -v
+
+# Compile source files into object files
+%.o: %.cpp
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+# Clean the project directory
+clean:
+	rm -f $(OBJS) $(EXEC)
+
+
