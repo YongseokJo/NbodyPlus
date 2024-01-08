@@ -3,15 +3,18 @@
 #include <iostream>
 #include <cmath>
 
+double getNewTimeStep(double *F, double dF[3][4]);
+double getBlockTimeStep(double dt);
 
 // remeber that ACList would be a vector list
 
-void Particle::calculateIrrForce(double next_time) {
+void Particle::calculateIrrForce() {
 
     // temporary variables for calculation
 
-    double dt;
+    double dt,dtr;
     double dtsq,dt6,dt2,dtsq12,dt13;
+    double irr_next_time;
 
     double dx[3];
     double dv[3];
@@ -21,21 +24,37 @@ void Particle::calculateIrrForce(double next_time) {
     double dr2i,dr3i,drdv,drdp;
 
     double df,fid,sum,at3,bt2;
+    double ttmp;
 
     // predict poistion and velocity of ith particle
-    dt = next_time - CurrentTimeIrr;
-    predictPosAndVel(next_time);
+
+    dt = TimeStepIrr; // interval of time step
+    irr_next_time = CurrentTimeIrr + TimeStepIrr; // the time to be advanced to
+
+
+    // only predict when regular block doesn't come
+    // b/c full prediction would be performed at regular block
+
+
+    predictPosAndVel(irr_next_time);
+
 
     // initialize irregular force terms for ith particle
     for (int dim=0; dim<Dim; dim++){
-        FIrr[dim] = 0.0;
+        firr[dim] = 0.0;
+        firrdot[dim] = 0.0;
     }
 
     // add the contribution of jth particle to irregular force
     for (Particle* element:ACList) {
 
         rij2 = 0;
-        element->predictPosAndVel(next_time);
+
+        // only predict when regular block doesn't come
+        // b/c full prediction would be performed at regular block
+        
+        element->predictPosAndVel(irr_next_time);
+
         
         for (int dim=0; dim<Dim; dim++) {
 
@@ -72,35 +91,45 @@ void Particle::calculateIrrForce(double next_time) {
         at3 = 2.0*df + dt*sum;
         bt2 = -3.0*df - dt*(sum + fid);
 
-				//to SY why do you need it? you don't use it.
-        //xn[dim]    = PredPosition[dim] + (0.6*at3 + bt2)*dtsq12;
-        //xndot[dim] = PredVelocity[dim] + (0.75*at3 + bt2)*dt13; 
-
         FIrr[dim] = firr[dim];
         FIrrDot[dim] = firrdot[dim];
 
         fdum[dim] = FIrr[dim] + FReg[dim];
 
+        // save the newly calculated values to variables in particle class
+
+        Position[dim] = PredPosition[dim] + (0.6*at3 + bt2)*dtsq12;
+        Velocity[dim] = PredVelocity[dim] + (0.75*at3 + bt2)*dt13;
+
+        dFIrr[dim][0] = FIrr[dim];
+        dFIrr[dim][1] = FIrrDot[dim];
         dFIrr[dim][2] = (3.0*at3 + bt2)*dt2;
         dFIrr[dim][3] = at3*dt6;
-    }
 
+
+        // calculate the new time step
+
+        ttmp = getNewTimeStep(fdum, dFIrr);
+        TimeStepIrr = getBlockTimeStep(ttmp);
+
+        // save the current and next time steps
+
+        CurrentTimeIrr = irr_next_time;
+
+        // if regular force is not updated, update the total force
+        // with the regular force that the particle holds now
+        
+        if (CurrentTimeIrr < (CurrentTimeReg + TimeStepReg)){
+
+            dtr = CurrentTimeIrr - CurrentTimeReg;
+
+            for (int dim=0; dim<Dim; dim++){
+                Force[dim] = 0.5*(FRegDot[dim]*dtr + FReg[dim] + FIrr[dim]);
+                ForceDot[dim] = (FRegDot[dim]+FIrrDot[dim]) / 6.0 ;
+            }
+        }
+
+    }
 }
 
 
-void Particle::predictPosAndVel(double next_time){
-
-    // temporary variables for calculation
-
-    double dt,dt1,dt2;
-
-    dt = next_time - CurrentTimeIrr;
-    dt1 = 1.5*dt;
-    dt2 = 2.0*dt;
-
-    for (int dim=0; dim<Dim; dim++) {
-        PredPosition[dim] = ((ForceDot[dim]*dt + Force[dim])*dt + Velocity[dim])*dt + Position[dim];
-        PredVelocity[dim] = (ForceDot[dim]*dt1 + Force[dim])*dt2 + Velocity[dim];
-    }
-
-}

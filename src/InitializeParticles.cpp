@@ -1,6 +1,6 @@
 #include <vector>
 #include <iostream>
-#include "Particle.h"
+#include "Particle/Particle.h"
 #include <cmath>
 
 
@@ -19,14 +19,16 @@ void initializeParticle(std::vector<Particle*> &particle) {
 
     calculateForce1(particle);
     calculateForce2(particle);
+	  std::cout << "Timestep initializing\n" << std::endl;
+		for (Particle* elem:particle)
+			elem->initializeTimeStep();
+
   	std::cout << "Initialization finished." << std::endl;
-
-
 }
 
 void findNeighbor(std::vector<Particle*> &particle) {
 
-    double rs0 = 0.4 ; // I need to change this to 4 parsecs
+    double rs0 = 0.1 ; // I need to change this to 4 parsecs
     double rij;
 
 
@@ -66,10 +68,15 @@ void findNeighbor(std::vector<Particle*> &particle) {
         }
         particle[i2]->NumberOfAC = ACnum;
     }
+		/***
 		if (debug) {
-			std::cout << particle[0]->NumberOfAC << std::endl;
-			for (Particle* element : particle[0]->ACList)
+			std::cout << particle[2]->NumberOfAC << std::endl;
+			for (Particle* element : particle[2]->ACList)
 				std::cout << element->getPID() << " ";
+		}
+		***/
+		for (int i=0; i<NNB; i++) {
+			std::cout << particle[i]->NumberOfAC << ' ';
 		}
 		std::cout << "\n";
   	std::cout << "finding neightbors finished." << std::endl;
@@ -87,7 +94,7 @@ void calculateForce1(std::vector<Particle*> &particle) {
     int jAC;
 
     // softening length, hard coded
-    double EPS2 = 4.0; //need to adjust this parameter before running
+    double EPS2 = 0.0001; //need to adjust this parameter before running
 
 
   	std::cout << "entering calculateForce1" << std::endl;

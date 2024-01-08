@@ -19,3 +19,16 @@ void Particle::setParticleInfo(double *data, int PID) {
 	this->Mass         = data[6];
 	this->ParticleType = Star;
 }
+
+
+
+void Particle::normalizeParticle() {
+	// pc to computing unit, km/s to computing unit
+	Mass /= mass_unit;
+	for (int dim=0; dim<Dim; dim++) {
+		Position[dim] *= 1000; // kpc to pc
+		Position[dim] /= position_unit;
+		Velocity[dim] *= 1e5*yr/pc; // km/s to pc/yr
+		Velocity[dim] /= velocity_unit;
+	}
+}

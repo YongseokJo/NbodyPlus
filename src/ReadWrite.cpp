@@ -59,7 +59,11 @@ int readData(std::vector<Particle*> &particle) {
 
 
 
-
+	// Normalize particles
+	std::cout << "Particle normalizing." << std::endl;
+	for (Particle* element:particle) {
+		element->normalizeParticle();
+	}
 	/***
 	for (int col = 0; col < NUM_COLUMNS; ++col) {
 		std::cout << "Column " << col + 1 << " values: ";

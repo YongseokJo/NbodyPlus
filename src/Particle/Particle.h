@@ -1,6 +1,6 @@
 #include <iostream>
-#include "defs.h"
-#include "global.h"
+#include "../defs.h"
+#include "../global.h"
 
 
 class Particle
@@ -20,6 +20,7 @@ class Particle
 		double Mass;
 		double Velocity[Dim];
 		double Position[Dim];
+		double PredTime;
 		double PredTimeIrr;
 		double PredTimeReg;
 		double CurrentTimeIrr;
@@ -87,7 +88,9 @@ class Particle
 		void setParticleInfo(double *data, int PID);
 		void initializeTimeStep();
 		int getPID() {return PID;};
-		void calculateIrrForce(double next_time);
+		void calculateIrrForce();
+		void calculateRegForce();
 		void predictPosAndVel(double next_time);
+		void normalizeParticle();
 };
 

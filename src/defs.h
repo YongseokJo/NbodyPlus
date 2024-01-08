@@ -19,3 +19,14 @@
 
 #define eta 0.02 // by YS Jo subject to modifty
 
+
+// Physical units in cgs
+#define pc 3.08567758149137e18
+#define yr 3.1536e7
+#define Msun 1.98847e33
+
+// Code unit in pc, yr, Msun
+#define time_unit 1e10
+#define position_unit 4.
+#define velocity_unit 4e-10
+#define mass_unit 256e-20

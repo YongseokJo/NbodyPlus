@@ -3,10 +3,10 @@ CXX = icc
 #CXX = g++
 
 # Compiler flags
-CXXFLAGS = -std=c++11 -Wall -Wextra -Wuninitialized -I./
+CXXFLAGS = -std=c++11 -Wall -Wextra -Wuninitialized -I./Particle -I./
 
 # Source files
-SRCS = main.cpp ReadWrite.cpp ParticleRoutines.cpp CreateParticleChain.cpp InitializeParticles.cpp# Add your source files here
+SRCS = main.cpp ReadWrite.cpp Particle/ParticleRoutines.cpp CreateParticleChain.cpp InitializeParticles.cpp TimeStepRoutines.cpp Particle/CalculateIrrForce.cpp# Add your source files here
 
 # Object files
 OBJS = $(SRCS:.cpp=.o)

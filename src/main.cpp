@@ -20,8 +20,22 @@ int main() {
 	if (readData(particle) == FAIL) 
 		fprintf(stderr, "Read Data Failed!\n");
 
+	/***
+	for (Particle* elem: particle) {
+		std::cout << elem->Position[0] <<" ";
+	}
+		std::cout << std::endl;
+		***/
 	initializeParticle(particle);
-	//createParticleChain(particle);
+
+	/***
+	for (Particle* elem: particle) {
+		std::cout << elem->TimeStepIrr <<" ";
+	}
+	std::cout << std::endl;
+	***/
+
+	createParticleChain(particle);
 
 
 	// Particle should be deleted at some point
