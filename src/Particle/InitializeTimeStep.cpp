@@ -16,16 +16,19 @@ void Particle::initializeTimeStep() {
 		FTmp[i] = FIrr[i] + FReg[i];
 	}
 
-	dtIrr = getNewTimeStep(FTmp, dFIrr);
-	dtReg = getNewTimeStep(FTmp, dFReg);
+
+	this->calculateTimeStepReg(FTmp,dFReg);
+	this->calculateTimeStepIrr(FTmp,dFIrr);
+	//dtIrr = getNewTimeStep(FTmp, dFIrr);
+	//dtReg = getNewTimeStep(FTmp, dFReg);
+	//TimeStepIrr = getBlockTimeStep(dtIrr);
+	//TimeStepReg = getBlockTimeStep(dtReg);
 
 	// if chain, half the time step but not implemented as of now
 
 	CurrentTimeIrr = global_time;
 	CurrentTimeReg = global_time;
 
-	TimeStepIrr = getBlockTimeStep(dtIrr);
-	TimeStepReg = getBlockTimeStep(dtReg);
 
 
 	if (global_time <= 0) {

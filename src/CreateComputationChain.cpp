@@ -2,13 +2,13 @@
 #include "global.h"
 #include <iostream>
 #include <vector>
-#define debug
+#define no_debug
 
 void merge(int* index, double *timesteps, int left, int mid, int right);
 void mergeSort(int *index, double *timesteps, int left, int right);
 
 
-int createParticleChain(std::vector<Particle*> &particle) {
+int createComputationChain(std::vector<Particle*> &particle) {
 	// This stores the first particle of each level in the particle chain
 
 	int *index;
@@ -49,16 +49,10 @@ int createParticleChain(std::vector<Particle*> &particle) {
 	}
 
 
-#ifdef debug
+
 	std::cout << "Index" << '\n';
 	for (int i=0; i<NNB; i++) {
 		std::cout << index[i] << ' ';
-	}
-	std::cout << '\n';
-
-	std::cout << "Timesteps" << '\n';
-	for (int i=0; i<NNB; i++) {
-		std::cout << timesteps[i] << ' ';
 	}
 	std::cout << '\n';
 
@@ -67,7 +61,25 @@ int createParticleChain(std::vector<Particle*> &particle) {
 		    std::cout << element << " ";
 	}
 	std::cout << '\n';
+
+#ifdef debug
+	std::cout << "Timesteps" << '\n';
+	for (int i=0; i<NNB; i++) {
+		std::cout << timesteps[i] << ' ';
+	}
+	std::cout << '\n';
+
 #endif
+
+
+	/*
+	for (Particle* elem: particle) {
+		for (int i=0; i<NNB-1; i++) {
+			if (elem->getPID() == index[i])
+				elem->NextParticle = particle[index[i+1]];
+		}
+	}
+	*/
 
 	delete [] index;
 	//delete [] timesteps;

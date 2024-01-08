@@ -8,6 +8,7 @@ using namespace std;
 
 //Global Variables
 int NNB; double global_time; bool debug;
+double dt_min=1e-20;
 std::vector<int> LevelList;
 
 int main() {
@@ -28,15 +29,14 @@ int main() {
 		***/
 	initializeParticle(particle);
 
-	/***
+
+	createComputationChain(particle);
+
 	for (Particle* elem: particle) {
 		std::cout << elem->TimeStepIrr <<" ";
 	}
 	std::cout << std::endl;
-	***/
-
-	createParticleChain(particle);
-
+	Evolve(particle);
 
 	// Particle should be deleted at some point
 

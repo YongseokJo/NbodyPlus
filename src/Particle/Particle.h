@@ -37,7 +37,7 @@ class Particle
 		double FRegDot[Dim];
 		double dFIrr[Dim][HERMITE_ORDER];
 		double dFReg[Dim][HERMITE_ORDER];
-		int NextParticle;
+		Particle* NextParticle;
 		std::vector<Particle*> ACList;     // list of AC neighbor 
 		int NumberOfAC; // number of neighbors
 		double RadiusOfAC;
@@ -50,8 +50,8 @@ class Particle
 			RadiusOfAC = 0.;
 			NextParticle = 0;
 			ParticleType = -9999;
-			CurrentTimeIrr = 0;
-			CurrentTimeReg = 0;
+			CurrentTimeIrr = 0.; // consistent with actual current time
+			CurrentTimeReg = 0.;
 			PredTimeIrr = 0;
 			PredTimeReg = 0;
 			TimeStepIrr = 0;
@@ -89,8 +89,11 @@ class Particle
 		void initializeTimeStep();
 		int getPID() {return PID;};
 		void calculateIrrForce();
-		void calculateRegForce();
+		void calculateRegForce(std::vector<Particle*> &particle);
 		void predictPosAndVel(double next_time);
 		void normalizeParticle();
+		void calculateTimeStepIrr(double *f, double df[3][4]);
+		void calculateTimeStepReg(double *f, double df[3][4]);
+		bool checkNeighborForEvolution();
 };
 

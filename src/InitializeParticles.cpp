@@ -19,7 +19,7 @@ void initializeParticle(std::vector<Particle*> &particle) {
 
     calculateForce1(particle);
     calculateForce2(particle);
-	  std::cout << "Timestep initializing\n" << std::endl;
+	  std::cout << "Timestep initializing..." << std::endl;
 		for (Particle* elem:particle)
 			elem->initializeTimeStep();
 
@@ -74,10 +74,10 @@ void findNeighbor(std::vector<Particle*> &particle) {
 			for (Particle* element : particle[2]->ACList)
 				std::cout << element->getPID() << " ";
 		}
-		***/
 		for (int i=0; i<NNB; i++) {
 			std::cout << particle[i]->NumberOfAC << ' ';
 		}
+		***/
 		std::cout << "\n";
   	std::cout << "finding neightbors finished." << std::endl;
 }
