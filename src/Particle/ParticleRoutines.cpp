@@ -24,6 +24,7 @@ void Particle::setParticleInfo(double *data, int PID) {
 
 void Particle::normalizeParticle() {
 	// pc to computing unit, km/s to computing unit
+	Mass *= 1e10;
 	Mass /= mass_unit;
 	for (int dim=0; dim<Dim; dim++) {
 		Position[dim] *= 1000; // kpc to pc

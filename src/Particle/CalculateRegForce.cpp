@@ -277,7 +277,7 @@ void Particle::calculateRegForce(std::vector<Particle*> &particle) {
 
 	CurrentTimeReg += TimeStepReg;
 
-
+	this->isRegular = 0;
 }
 
 

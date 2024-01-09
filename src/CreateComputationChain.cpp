@@ -50,6 +50,7 @@ int createComputationChain(std::vector<Particle*> &particle) {
 
 
 
+#ifdef debug
 	std::cout << "Index" << '\n';
 	for (int i=0; i<NNB; i++) {
 		std::cout << index[i] << ' ';
@@ -62,7 +63,6 @@ int createComputationChain(std::vector<Particle*> &particle) {
 	}
 	std::cout << '\n';
 
-#ifdef debug
 	std::cout << "Timesteps" << '\n';
 	for (int i=0; i<NNB; i++) {
 		std::cout << timesteps[i] << ' ';

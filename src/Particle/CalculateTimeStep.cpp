@@ -10,8 +10,8 @@ void Particle::calculateTimeStepIrr(double *f, double df[3][4]) {
 	TimeStepIrr = getBlockTimeStep(getNewTimeStep(f, df));
 	if (CurrentTimeIrr+TimeStepIrr > CurrentTimeReg+TimeStepReg) {
 		TimeStepIrr *= 0.5;
-		fprintf(stdout, "CTS, time irr =%e\n", TimeStepIrr);
-		std::cout << std::flush;
+		//fprintf(stdout, "CTS, time irr =%e\n", TimeStepIrr);
+		//std::cout << std::flush;
 	}
 }
 

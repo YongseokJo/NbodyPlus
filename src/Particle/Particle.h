@@ -41,32 +41,36 @@ class Particle
 		std::vector<Particle*> ACList;     // list of AC neighbor 
 		int NumberOfAC; // number of neighbors
 		double RadiusOfAC;
+		int isEvolve;
+		int isRegular;
 
 		// Constructor
 		Particle(void) {
 			//std::cout << "Constructor called" << std::endl;
-			Mass = 0;
-			NumberOfAC = 0; // number of neighbors
-			RadiusOfAC = 0.;
-			NextParticle = 0;
-			ParticleType = -9999;
+			Mass           = 0;
+			NumberOfAC     = 0; // number of neighbors
+			RadiusOfAC     = 0.;
+			NextParticle   = 0;
+			ParticleType   = -9999;
 			CurrentTimeIrr = 0.; // consistent with actual current time
 			CurrentTimeReg = 0.;
-			PredTimeIrr = 0;
-			PredTimeReg = 0;
-			TimeStepIrr = 0;
-			TimeStepReg = 0;
+			PredTimeIrr    = 0;
+			PredTimeReg    = 0;
+			TimeStepIrr    = 0;
+			TimeStepReg    = 0;
+			isEvolve       = 0;
+			isRegular      = 0;
 			for (int i=0; i<Dim; i++) {
-				Velocity[i] = 0;
-				Position[i] = 0;
+				Velocity[i]     = 0;
+				Position[i]     = 0;
 				PredPosition[i] = 0;
 				PredVelocity[i] = 0;
-				Force[i] = 0;
-				ForceDot[i] = 0;
-				FIrr[i] = 0;
-				FReg[i] = 0;
-			  FIrrDot[i]=0;
-		    FRegDot[i]=0;
+				Force[i]        = 0;
+				ForceDot[i]     = 0;
+				FIrr[i]         = 0;
+				FReg[i]         = 0;
+			  FIrrDot[i]      = 0;
+		    FRegDot[i]      = 0;
 				for (int j=0; j<HERMITE_ORDER; j++) {
 					dFIrr[i][j] = 0;
 					dFReg[i][j] = 0;
@@ -95,5 +99,8 @@ class Particle
 		void calculateTimeStepIrr(double *f, double df[3][4]);
 		void calculateTimeStepReg(double *f, double df[3][4]);
 		bool checkNeighborForEvolution();
+		void updateEvolveParticle(std::vector<Particle*> &particle, double MinRegTime);
 };
+
+
 

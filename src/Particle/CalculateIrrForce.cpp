@@ -45,6 +45,7 @@ void Particle::calculateIrrForce() {
 	for (Particle* element:ACList) {
 
 		rij2 = 0;
+		drdv = 0;
 
 		// only predict when regular block doesn't come
 		// b/c full prediction would be performed at regular block
@@ -70,7 +71,15 @@ void Particle::calculateIrrForce() {
 			firrdot[dim] += (dv[dim] - dx[dim]*drdp)*dr3i;
 		}
 	}
-
+	fprintf(stdout, "PID=%d\n", this->getPID());
+	fprintf(stdout, "%lf, %lf, %lf, %lf, %lf, %lf\n",
+			FIrr[0], FIrr[1], FIrr[2], FIrrDot[0], FIrrDot[1], FIrrDot[2]);
+	fprintf(stdout, "%lf, %lf, %lf, %lf, %lf, %lf\n",
+			firr[0], firr[1], firr[2], firrdot[0], firrdot[1], firrdot[2]);
+	fprintf(stdout, "%lf, %lf, %lf, %lf, %lf, %lf\n\n",
+			PredPosition[0], PredPosition[1], PredPosition[2], PredVelocity[0], PredVelocity[1], PredVelocity[2]);
+	fprintf(stdout, "%lf, %lf, %lf, %lf, %lf, %lf\n\n",
+			Position[0], Position[1], Position[2], Velocity[0], Velocity[1], Velocity[2]);
 	// correct the force using the 4th order hermite method
 
 	dtsq = dt*dt;

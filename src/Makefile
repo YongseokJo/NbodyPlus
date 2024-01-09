@@ -6,7 +6,7 @@ CXX = icc
 CXXFLAGS = -std=c++11 -Wall -Wextra -Wuninitialized -I./Particle -I./
 
 # Source files
-SRCS = main.cpp ReadWrite.cpp Particle/ParticleRoutines.cpp CreateComputationChain.cpp InitializeParticles.cpp TimeStepRoutines.cpp Particle/CalculateIrrForce.cpp Particle/CalculateRegForce.cpp Particle/PredictPosAndVel.cpp Particle/CalculateTimeStep.cpp Particle/InitializeTimeStep.cpp Evolve.cpp Particle/CheckNeighborForEvolution.cpp
+SRCS = main.cpp ReadWrite.cpp Particle/ParticleRoutines.cpp CreateComputationChain.cpp InitializeParticles.cpp TimeStepRoutines.cpp Particle/CalculateIrrForce.cpp Particle/CalculateRegForce.cpp Particle/PredictPosAndVel.cpp Particle/CalculateTimeStep.cpp Particle/InitializeTimeStep.cpp Evolve.cpp Particle/CheckNeighborForEvolution.cpp Particle/UpdateEvolveParticle.cpp
 
 # Object files
 OBJS = $(SRCS:.cpp=.o)

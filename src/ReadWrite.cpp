@@ -2,7 +2,7 @@
 #include <fstream>
 #include <vector>
 #include <sstream>
-#include "Particle.h"
+#include "Particle/Particle.h"
 #include "global.h"
 
 
