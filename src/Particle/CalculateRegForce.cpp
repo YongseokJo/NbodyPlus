@@ -75,7 +75,10 @@ void Particle::calculateRegForce(std::vector<Particle*> &particle) {
 
 	std::cout <<  "Looping single particles for force...\n" << std::flush;
 	while (j<NNB) {
-
+		if (particle[j] != this){
+			j++;
+			continue;
+		}
 		rij2 = 0.0;
 		drdv = 0.0;
 
@@ -86,10 +89,6 @@ void Particle::calculateRegForce(std::vector<Particle*> &particle) {
 
 			rij2 += dx[dim]*dx[dim];
 			drdv += dx[dim]*dv[dim];
-		}
-
-		if (rij2 == 0.0){
-			continue;
 		}
 
 		rij2 += EPS2;  // add softening length

@@ -18,10 +18,25 @@ void Evolve(std::vector<Particle*> &particle) {
 	std::cout << LevelList[0]	<< std::endl;
 	ptcl = particle[LevelList[0]];
 	UpdateMinRegTime(particle, &MinRegTime);
-	UpdateEvolveParticle(particle, EvolveParticle, MinRegTime);
 
 	// This part can be parallelized.
 	while (true) {
+		UpdateEvolveParticle(particle, EvolveParticle, MinRegTime);
+
+		//Even this can be parallelized.
+		if (EvolveParticle.size() == 0) {
+			std::cout <<  "Regular force calculating...\n" << std::flush;
+			for (Particle* ptcl:particle) {
+				if (ptcl->isRegular) {//&& 
+						//ptcl->CurrentTimeIrr==ptcl->CurrentTimeReg+ptcl->TimeStepReg) {
+					fprintf(stderr, "Particle ID=%d, Time=%e\n",ptcl->getPID(), ptcl->CurrentTimeIrr);
+					std::cerr << std::flush;
+					ptcl->calculateRegForce(particle); // this only does acceleration computation.
+				}
+			}
+			UpdateMinRegTime(particle, &MinRegTime);
+			UpdateEvolveParticle(particle, EvolveParticle, MinRegTime);
+		}
 		// check if the particle is subject to calculation this level.
 		EvolveParticleCopy.clear();
 		EvolveParticleCopy.assign(EvolveParticle.begin(), EvolveParticle.end());
@@ -40,15 +55,10 @@ void Evolve(std::vector<Particle*> &particle) {
 			//}
 
 			fprintf(stderr, "Particle ID=%d\n",ptcl->getPID());
-			fprintf(stderr, "Current Time = %e, time step = %e\n",
-					ptcl->CurrentTimeIrr, ptcl->TimeStepIrr);
+			fprintf(stderr, "CurrentTimeIrr = %e, TimeStepIrr = %e, CurrentTimeReg=%e, TimeStepReg=%e\n",
+					ptcl->CurrentTimeIrr, ptcl->TimeStepIrr, ptcl->CurrentTimeReg, ptcl->TimeStepReg);
 
-			if ((ptcl->isRegular) && 
-					ptcl->CurrentTimeIrr==ptcl->CurrentTimeReg+ptcl->TimeStepReg) {
-				std::cout <<  "Regular force calculating...\n" << std::flush;
-				ptcl->calculateRegForce(particle); // this only does acceleration computation.
-				UpdateMinRegTime(particle, &MinRegTime);
-			}
+
 			std::cout << "Irregular force calculating...\n" << std::flush;
 			ptcl->calculateIrrForce(); // this includes particle and time advances.
 			//ptcl = ptcl->NextParticle;
@@ -58,8 +68,8 @@ void Evolve(std::vector<Particle*> &particle) {
 			for (Particle* elem: EvolveParticle) 
 					std::cerr << elem->getPID() << ' ';
 			std::cerr << '\n';
+			std::cerr << ptcl->CurrentTimeIrr << '\n';
 			std::cerr << ptcl->TimeStepIrr << '\n';
-			std::cerr << ptcl->CurrentTimeIrr+ptcl->TimeStepIrr << '\n';
 			std::cerr << '\n' << std::flush;
 		}
 		//SortComputationChain(particle);

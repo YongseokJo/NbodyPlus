@@ -17,12 +17,12 @@ void Particle::initializeTimeStep() {
 	}
 
 
-	this->calculateTimeStepReg(FTmp,dFReg);
-	this->calculateTimeStepIrr(FTmp,dFIrr);
-	//dtIrr = getNewTimeStep(FTmp, dFIrr);
-	//dtReg = getNewTimeStep(FTmp, dFReg);
-	//TimeStepIrr = getBlockTimeStep(dtIrr);
-	//TimeStepReg = getBlockTimeStep(dtReg);
+	//this->calculateTimeStepReg(FTmp,dFReg);
+	//this->calculateTimeStepIrr(FTmp,dFIrr);
+	dtIrr = getNewTimeStep(FTmp, dFIrr);
+	dtReg = getNewTimeStep(FTmp, dFReg);
+	TimeStepIrr = getBlockTimeStep(dtIrr);
+	TimeStepReg = getBlockTimeStep(dtReg);
 
 	// if chain, half the time step but not implemented as of now
 
@@ -60,12 +60,6 @@ void Particle::initializeTimeStep() {
 
 	PredTimeIrr = CurrentTimeIrr + TimeStepIrr;
 
-	for (int dim=0; dim<Dim; dim++) {
-		PredPosition[dim] =  Position[dim];
-		Force[dim] = 0.5*Force[dim];
-		ForceDot[dim] = ForceDot[dim]/6;
-
-	}
 }
 
 

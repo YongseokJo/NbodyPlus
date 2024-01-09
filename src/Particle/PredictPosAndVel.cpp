@@ -26,7 +26,6 @@ void Particle::predictPosAndVel(double next_time){
 
 	// updated the predicted time
 	PredTime = next_time;
-
 }
 
 

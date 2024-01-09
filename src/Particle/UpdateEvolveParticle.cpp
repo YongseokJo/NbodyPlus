@@ -6,6 +6,7 @@ void Particle::updateEvolveParticle(std::vector<Particle*> &list, double MinRegT
 				&& (this->checkNeighborForEvolution())) {
 			return;
 		} else {
+			this->isEvolve = 0;
 			int i=0;
 			for (Particle* ptcl:list) {
 				if (ptcl == this)

@@ -47,6 +47,9 @@ int main() {
 
 	}
 	std::cout << std::endl;
+
+
+
 	Evolve(particle);
 
 	// Particle should be deleted at some point

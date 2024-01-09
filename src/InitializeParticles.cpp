@@ -24,6 +24,7 @@ void initializeParticle(std::vector<Particle*> &particle) {
 		elem->initializeTimeStep();
 
 		for (int dim=0; dim<Dim; dim++) {
+			elem->PredPosition[dim] =  elem->Position[dim];
 			elem->Force[dim]    *= 0.5;
 			elem->ForceDot[dim] /= 6;
 		}
