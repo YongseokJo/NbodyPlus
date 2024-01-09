@@ -1,4 +1,5 @@
 #include "Particle.h"
+#include "../defs.h"
 #include <vector>
 #include <iostream>
 #include <cmath>
@@ -47,7 +48,6 @@ void Particle::calculateRegForce(std::vector<Particle*> &particle) {
 
 	int maxNeighborNum = 250;
 	double rs2 = 0.1;  // scale radius...? need to check
-	double esp2 = 0.1;  // softening length
 
 
 	// temporary variables for calculation in regcor_gpu.f
@@ -92,7 +92,7 @@ void Particle::calculateRegForce(std::vector<Particle*> &particle) {
 			continue;
 		}
 
-		rij2 += esp2;  // add softening length
+		rij2 += EPS2;  // add softening length
 		dr2i = 1.0/rij2;
 		dr3i = particle[j]->Mass*dr2i*sqrt(dr2i);
 		drdp = 3.0*drdv*dr2i;
@@ -176,7 +176,7 @@ void Particle::calculateRegForce(std::vector<Particle*> &particle) {
 				drdv += dx[dim]*dv[dim];
 			}
 
-			rij2 += esp2;  // add softening length
+			rij2 += EPS2;  // add softening length
 			dr2i = 1.0/rij2;
 			dr3i = particle[j]->Mass*dr2i*sqrt(dr2i);
 			drdp = 3.0*drdv*dr2i;
@@ -215,7 +215,7 @@ void Particle::calculateRegForce(std::vector<Particle*> &particle) {
 				drdv += dx[dim]*dv[dim];
 			}
 
-			rij2 += esp2;  // add softening length
+			rij2 += EPS2;  // add softening length
 			dr2i = 1.0/rij2;
 			dr3i = particle[j]->Mass*dr2i*sqrt(dr2i);
 			drdp = 3.0*drdv*dr2i;
@@ -276,7 +276,7 @@ void Particle::calculateRegForce(std::vector<Particle*> &particle) {
 	// update the regular time step
 
 	CurrentTimeReg += TimeStepReg;
-
+	this->calculateTimeStepReg(FReg,dFReg);
 	this->isRegular = 0;
 }
 

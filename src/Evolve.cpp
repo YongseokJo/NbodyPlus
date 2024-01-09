@@ -51,13 +51,14 @@ void Evolve(std::vector<Particle*> &particle) {
 			}
 			std::cout << "Irregular force calculating...\n" << std::flush;
 			ptcl->calculateIrrForce(); // this includes particle and time advances.
-																 //ptcl = ptcl->NextParticle;
+			//ptcl = ptcl->NextParticle;
 			std::cout << "Updating EvolveParticle...\n" << std::flush;
 			ptcl->updateEvolveParticle(EvolveParticle, MinRegTime);
 
 			for (Particle* elem: EvolveParticle) 
 					std::cerr << elem->getPID() << ' ';
 			std::cerr << '\n';
+			std::cerr << ptcl->TimeStepIrr << '\n';
 			std::cerr << ptcl->CurrentTimeIrr+ptcl->TimeStepIrr << '\n';
 			std::cerr << '\n' << std::flush;
 		}

@@ -18,7 +18,7 @@
 #define FAIL   -1
 
 #define eta 0.02 // by YS Jo subject to modifty
-
+#define EPS2 0.001
 
 
 // Physical constants

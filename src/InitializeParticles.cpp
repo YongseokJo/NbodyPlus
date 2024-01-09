@@ -99,8 +99,6 @@ void calculateForce1(std::vector<Particle*> &particle) {
 
 	int jAC;
 
-	// softening length, hard coded
-	double EPS2 = 0.0001; //need to adjust this parameter before running
 
 
 	std::cout << "entering calculateForce1" << std::endl;
@@ -176,9 +174,6 @@ void calculateForce2(std::vector<Particle*> &particle) {
 	double DT,DT1,DTR,DT1R;
 
 	int jAC;
-
-	// softening length, hard coded
-	double EPS2 = 4.0; //need to adjust this parameter before running
 
 
 	std::cout << "entering calculateForce2" << std::endl;
