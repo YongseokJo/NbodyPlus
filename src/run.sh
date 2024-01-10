@@ -6,4 +6,4 @@ module add intel-oneapi-mpi
 
 make clean
 make
-./nbodyplus -f binary.dat >stdout 2>stderr
+./nbodyplus.exe -f binary.dat >stdout 2>stderr

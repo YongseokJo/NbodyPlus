@@ -12,7 +12,7 @@ SRCS = main.cpp ReadWrite.cpp Particle/ParticleRoutines.cpp CreateComputationCha
 OBJS = $(SRCS:.cpp=.o)
 
 # Executable name
-EXEC = nbodyplus
+EXEC = nbodyplus.exe
 
 # Main target
 all: $(EXEC)
