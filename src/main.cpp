@@ -11,16 +11,19 @@ int NNB; double global_time; bool debug;
 double dt_min=1e-20;
 std::vector<int> LevelList;
 
-int main() {
+int main(int argc, char *argv[]) {
 	cout << "This Nbody+." << endl;
 	std::vector<Particle*> particle{};
 	//particle = new std::vector<Particle*>();
 	global_time = 0.;
 	debug = true;
 
+	Parser(argc, argv);
+
 	if (readData(particle) == FAIL) 
 		fprintf(stderr, "Read Data Failed!\n");
 
+	cout << "Particle Loaded." << endl;
 	/***
 	for (Particle* elem: particle) {
 		std::cout << elem->Position[0] <<" ";

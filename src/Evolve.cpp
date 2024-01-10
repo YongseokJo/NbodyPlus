@@ -1,13 +1,18 @@
 #include "Particle/Particle.h"
+#include <cmath>
 
 
 void SortComputationChain(std::vector<Particle*> &particle);
 void UpdateMinRegTime(std::vector<Particle*> &particle, double* MinRegTime);
 void UpdateEvolveParticle(std::vector<Particle*> &particle, std::vector<Particle*> &list, double MinRegTime);
+int writeParticle(std::vector<Particle*> &particle, double MinRegTime, int outputNum);
+
+
 
 void Evolve(std::vector<Particle*> &particle) {
 
 	std::cout << "Evolve starting ..." << std::endl;
+	int outNum=0;
 	Particle* ptcl;
 	double MinRegTime, EvolvedTime; // time where computing is actaully happening
 	std::vector<Particle*> EvolveParticle{};
@@ -21,7 +26,8 @@ void Evolve(std::vector<Particle*> &particle) {
 
 	// This part can be parallelized.
 	while (true) {
-		UpdateEvolveParticle(particle, EvolveParticle, MinRegTime);
+		if (EvolveParticle.size() == 0)
+			UpdateEvolveParticle(particle, EvolveParticle, MinRegTime);
 
 		//Even this can be parallelized.
 		if (EvolveParticle.size() == 0) {
@@ -29,11 +35,12 @@ void Evolve(std::vector<Particle*> &particle) {
 			for (Particle* ptcl:particle) {
 				if (ptcl->isRegular) {//&& 
 						//ptcl->CurrentTimeIrr==ptcl->CurrentTimeReg+ptcl->TimeStepReg) {
-					fprintf(stderr, "Particle ID=%d, Time=%e\n",ptcl->getPID(), ptcl->CurrentTimeIrr);
+					fprintf(stderr, "Particle ID=%d, Time=%.4e, dtIrr=%.4e, dtReg=%.4e\n",ptcl->getPID(), ptcl->CurrentTimeIrr, ptcl->TimeStepIrr, ptcl->TimeStepReg);
 					std::cerr << std::flush;
 					ptcl->calculateRegForce(particle); // this only does acceleration computation.
 				}
 			}
+			writeParticle(particle, MinRegTime, ++outNum);
 			UpdateMinRegTime(particle, &MinRegTime);
 			UpdateEvolveParticle(particle, EvolveParticle, MinRegTime);
 		}
@@ -73,54 +80,54 @@ void Evolve(std::vector<Particle*> &particle) {
 			std::cerr << '\n' << std::flush;
 		}
 		//SortComputationChain(particle);
-		}
+	}
+}
+
+void UpdateMinRegTime(std::vector<Particle*> &particle, double* MinRegTime) {
+
+	int isRegular=0;
+	double time_tmp, time=1e10;
+
+	for (Particle* ptcl: particle) {
+		isRegular += ptcl->isRegular;
 	}
 
-	void UpdateMinRegTime(std::vector<Particle*> &particle, double* MinRegTime) {
-
-		int isRegular=0;
-		double time_tmp, time=1e10;
-
-		for (Particle* ptcl: particle) {
-			isRegular += ptcl->isRegular;
-		}
-
-		// Find minium regular Time
-		if (isRegular == 0) {
-			for (Particle* ptcl: particle) {
-				time_tmp = ptcl->CurrentTimeReg + ptcl->TimeStepReg;
-				if (time > time_tmp)
-					time = time_tmp;
-			}
-		}
-		else
-			return;
-
-		// Set isRegular to 1
-		std::cerr << "Regular: ";
+	// Find minium regular Time
+	if (isRegular == 0) {
 		for (Particle* ptcl: particle) {
 			time_tmp = ptcl->CurrentTimeReg + ptcl->TimeStepReg;
-			if (time == time_tmp) {
-				std::cerr << ptcl->getPID() << ' ';
-				ptcl->isRegular = 1;
-			}
-
+			if (time > time_tmp)
+				time = time_tmp;
 		}
-		std::cerr << '\n' << std::flush;
-		*MinRegTime = time;
 	}
+	else
+		return;
 
-	void UpdateEvolveParticle(std::vector<Particle*> &particle, std::vector<Particle*> &list, double MinRegTime) {
-		std::cerr << "EvolveParticle: ";
-		for (Particle* ptcl: particle) {
-			if ((MinRegTime >= ptcl->CurrentTimeIrr+ptcl->TimeStepIrr)
-					&& (ptcl->checkNeighborForEvolution())) {
-				ptcl->isEvolve = 1;
-				list.push_back(ptcl);
-				std::cerr << ptcl->getPID() << ' ';
-			}
+	// Set isRegular to 1
+	std::cerr << "Regular: ";
+	for (Particle* ptcl: particle) {
+		time_tmp = ptcl->CurrentTimeReg + ptcl->TimeStepReg;
+		if (time == time_tmp) {
+			std::cerr << ptcl->getPID() << ' ';
+			ptcl->isRegular = 1;
 		}
-		std::cerr << list.size();
-		std::cerr << '\n' << std::flush;
 	}
+	std::cerr << '\n' << std::flush;
+	*MinRegTime = time;
+}
+
+void UpdateEvolveParticle(std::vector<Particle*> &particle, std::vector<Particle*> &list, double MinRegTime) {
+	list.clear();
+	for (Particle* ptcl: particle) {
+		if (MinRegTime >= (ptcl->CurrentTimeIrr+ptcl->TimeStepIrr - mytolerance)
+				&& (ptcl->checkNeighborForEvolution())) {
+			ptcl->isEvolve = 1;
+			list.push_back(ptcl);
+			std::cerr << ptcl->getPID() << ' ';
+		}
+	}
+	std::cerr << "EvolveParticle: ";
+	std::cerr << list.size();
+	std::cerr << '\n' << std::flush;
+}
 

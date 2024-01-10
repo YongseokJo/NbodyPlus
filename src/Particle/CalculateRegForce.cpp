@@ -55,7 +55,7 @@ void Particle::calculateRegForce(std::vector<Particle*> &particle) {
 	double fij;
 	double rdot;
 
-
+	predictAll(particle);
 
 	// codes from regint.f in NBODY6++GPU
 	// initialize regular force terms for ith particle
@@ -102,9 +102,7 @@ void Particle::calculateRegForce(std::vector<Particle*> &particle) {
 				freg[dim] += dx[dim]*dr3i;
 				fregdot[dim] += (dv[dim] - dx[dim]*drdp)*dr3i;
 			}
-
-		} else {
-
+		} else if (NNB > 100) {
 			newACnum += 1;
 			newACList.push_back(j) ;
 
@@ -112,8 +110,6 @@ void Particle::calculateRegForce(std::vector<Particle*> &particle) {
 				firr[dim] += dx[dim]*dr3i;
 				fregdot[dim] += (dv[dim] - dx[dim]*drdp)*dr3i;
 			}
-
-
 		}
 
 		pot += dr3i*rij2;
@@ -123,7 +119,8 @@ void Particle::calculateRegForce(std::vector<Particle*> &particle) {
 		// which is too big neighbor radius and distant particles with large steps
 		// I would include routines for zero neighbors later on...
 
-		if ( (newACnum>maxNeighborNum || newACnum == 0) && j>=NNB) {
+		//if ( (newACnum>maxNeighborNum || newACnum == 0) && j>=NNB) {
+		if ( (newACnum > maxNeighborNum) && j>=NNB) {
 
 			for (int dim=0; dim<Dim; dim++){
 				firr[dim] = 0.0;
@@ -138,10 +135,7 @@ void Particle::calculateRegForce(std::vector<Particle*> &particle) {
 
 			if (newACnum>maxNeighborNum){
 				RadiusOfAC *= 0.949;
-			} else{
-				RadiusOfAC *= 1.26;
-			}
-
+			} 
 		}
 	}
 
@@ -229,39 +223,72 @@ void Particle::calculateRegForce(std::vector<Particle*> &particle) {
 
 	// calculated the final corrected forces
 
-	dtsq = dtr*dtr;
-	dt6 = 6.0/(dtr*dtsq); // to SY is it dtsq? it was dts1.
-	dt2 = 2.0/dtsq;
-	dtsq12 = dtsq/12.0;
-	dt13 = dtr/3.0;
+	if (NumberOfAC != 0) {
+		dtsq = dtr*dtr;
+		dt6 = 6.0/(dtr*dtsq); // to SY is it dtsq? it was dts1.
+		dt2 = 2.0/dtsq;
+		dtsq12 = dtsq/12.0;
+		dt13 = dtr/3.0;
 
-	for (int dim=0; dim<Dim; dim++) {
+		for (int dim=0; dim<Dim; dim++) {
 
-		dfr = FReg[dim] - freg[dim] - dfirr[dim];
-		fdr0 = fregdot[dim] + dfirrdot[dim];
-		frd = FRegDot[dim];
-		sum = frd + fdr0;
-		at3 = 2.0*dfr + dtr*sum;
-		bt2 = -3.0*dfr - dtr*(sum+frd);
+			dfr = FReg[dim] - freg[dim] - dfirr[dim];
+			fdr0 = fregdot[dim] + dfirrdot[dim];
+			frd = FRegDot[dim];
+			sum = frd + fdr0;
+			at3 = 2.0*dfr + dtr*sum;
+			bt2 = -3.0*dfr - dtr*(sum+frd);
 
-		Position[dim] = Position[dim] + (0.6*at3 + bt2)*dtsq12;
-		Velocity[dim] = Velocity[dim] + (0.75*at3 + bt2)*dt13;
+			Position[dim] = Position[dim] + (0.6*at3 + bt2)*dtsq12;
+			Velocity[dim] = Velocity[dim] + (0.75*at3 + bt2)*dt13;
 
-		FIrr[dim] += dfirr[dim];
-		FReg[dim] = freg[dim];
-		FIrrDot[dim] += dfirrdot[dim];
-		FRegDot[dim] += fregdot[dim];
+			FIrr[dim] += dfirr[dim];
+			FReg[dim] = freg[dim];
+			FIrrDot[dim] += dfirrdot[dim];
+			FRegDot[dim] += fregdot[dim];
 
-		dFIrr[dim][0] = FIrr[dim];
-		dFReg[dim][0] = FRegDot[dim];
-		dFReg[dim][1] = FRegDot[dim];
-		dFReg[dim][2] = (3.0*at3 + bt2)*dt2;
-		dFReg[dim][3] = at3*dt6;
+			dFIrr[dim][0] = FIrr[dim];
+			dFReg[dim][0] = FReg[dim]; 
+			dFReg[dim][1] = FRegDot[dim];
+			dFReg[dim][2] = (3.0*at3 + bt2)*dt2;
+			dFReg[dim][3] = at3*dt6;
 
-		Force[dim] = 0.5*(FIrr[dim] + FReg[dim]);
-		ForceDot[dim] = (FIrrDot[dim] + FRegDot[dim]);
+			Force[dim] = 0.5*(FIrr[dim] + FReg[dim]);
+			ForceDot[dim] = (FIrrDot[dim] + FRegDot[dim]);
 
+		}
 	}
+	else {
+		dtsq   = TimeStepReg*TimeStepReg;
+		dt6    = 6.0/(TimeStepReg*dtsq); // to SY is it dtsq? it was dts1.
+		dt2    = 2.0/dtsq;
+		dtsq12 = dtsq/12.0;
+		dt13   = TimeStepReg/3.0;
+
+		for (int dim=0; dim<Dim; dim++) {
+			dfr  = FReg[dim] - freg[dim];
+			fdr0 = fregdot[dim];
+			frd  = FRegDot[dim];
+			sum  = frd + fdr0;
+			at3  = 2.0*dfr + dtr*sum;
+			bt2  = -3.0*dfr - dtr*(sum+frd);
+
+			Position[dim] = PredPosition[dim] + (0.6*at3 + bt2)*dtsq12;
+			Velocity[dim] = PredVelocity[dim] + (0.75*at3 + bt2)*dt13;
+
+			FReg[dim] = freg[dim];
+			FRegDot[dim] += fregdot[dim];
+
+			dFReg[dim][0] = FReg[dim];
+			dFReg[dim][1] = FRegDot[dim];
+			dFReg[dim][2] = (3.0*at3 + bt2)*dt2;
+			dFReg[dim][3] = at3*dt6;
+
+			Force[dim] = 0.5*FReg[dim];
+			ForceDot[dim] = FRegDot[dim];
+		}
+	}
+
 
 	// update the new neighbor list
 

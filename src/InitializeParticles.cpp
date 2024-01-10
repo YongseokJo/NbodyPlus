@@ -35,6 +35,7 @@ void initializeParticle(std::vector<Particle*> &particle) {
 
 void findNeighbor(std::vector<Particle*> &particle) {
 
+	if (NNB<=100) return;
 	double rs0 = 0.1 ; // I need to change this to 4 parsecs
 	double rij;
 
@@ -68,10 +69,10 @@ void findNeighbor(std::vector<Particle*> &particle) {
 				particle[i2]->ACList.push_back(particle[j1]);
 			}
 			j1++;
-			if ( ACnum == 0 && j1 >= NNB ){
-				j1 = 0;
-				particle[i2]->RadiusOfAC *= 1.59;
-			}
+			//if ( ACnum == 0 && j1 >= NNB ){
+				//j1 = 0;
+				//particle[i2]->RadiusOfAC *= 1.59;
+			//}
 		}
 		particle[i2]->NumberOfAC = ACnum;
 	}
@@ -128,7 +129,7 @@ void calculateForce1(std::vector<Particle*> &particle) {
 				}
 			}
 
-			if (particle[j] != particle[i]->ACList[jAC]) {
+			if ((particle[i]->NumberOfAC == 0) || (particle[j] != particle[i]->ACList[jAC])) {
 
 				for (int k3=0; k3<3 ; k3++){
 					particle[i]->FReg[k3] += F1[k3];
@@ -193,7 +194,7 @@ void calculateForce2(std::vector<Particle*> &particle) {
 
 				Rij2 = A[0]*A[0] + A[1]*A[1] + A[2]*A[2];
 
-				if ((Rij2>(3*particle[i]->RadiusOfAC)) && (particle[j] != particle[i]->ACList[jAC]))
+				if ((Rij2>(3*particle[i]->RadiusOfAC)) && ((particle[i]->NumberOfAC !=0) && (particle[j] != particle[i]->ACList[jAC])))
 					continue;
 
 				if (global_time <= 0.0){
@@ -244,7 +245,7 @@ void calculateForce2(std::vector<Particle*> &particle) {
 					F3DOT[dim] = (A[dim+9] - A21*F1DOTK - A22*A[dim])*A14 - A19*F2DOT[dim];
 				}
 
-				if (particle[j] != particle[i]->ACList[jAC]){
+				if ((particle[i]->NumberOfAC == 0) || (particle[j] != particle[i]->ACList[jAC])){
 
 					for (int dim=0; dim<3 ; dim++){
 						particle[i]->dFReg[dim][2] += F2DOT[dim];

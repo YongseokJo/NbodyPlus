@@ -7,6 +7,10 @@
 
 void Particle::calculateIrrForce() {
 
+	if (this->NumberOfAC == 0) {
+		CurrentTimeIrr += TimeStepIrr;
+		return;
+	}
 	// temporary variables for calculation
 
 	double dt,dtr;

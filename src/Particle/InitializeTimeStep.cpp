@@ -31,6 +31,7 @@ void Particle::initializeTimeStep() {
 
 
 
+
 	if (global_time <= 0) {
 
 		int i = 0;
@@ -58,6 +59,11 @@ void Particle::initializeTimeStep() {
 	while (TimeStepReg < TimeStepIrr) 
 		TimeStepIrr = 0.5*TimeStepReg;
 
+
+	if (NumberOfAC == 0) {
+	  TimeStepIrr = TimeStepReg;
+		CurrentTimeIrr = CurrentTimeReg;
+	}
 	PredTimeIrr = CurrentTimeIrr + TimeStepIrr;
 
 }

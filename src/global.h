@@ -5,4 +5,5 @@ extern int NNB;
 extern double global_time;
 extern double dt_min;
 extern bool debug;
+extern char* fname;
 //extern double MinTimeStep;
