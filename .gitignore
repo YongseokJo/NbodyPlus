@@ -1,0 +1,14 @@
+# Ignore compiled files
+*.o
+*.txt
+*.out
+
+# Ignore log files
+*.log
+
+# Ignore build directories
+build/
+
+# Ignore configuration files with secrets
+config.secret
+
