@@ -36,7 +36,7 @@ void Particle::calculateIrrForce() {
 	// b/c full prediction would be performed at regular block
 
 
-	predictPosAndVel(irr_next_time);
+	predictParticleSecondOrder(irr_next_time);
 
 
 	// initialize irregular force terms for ith particle

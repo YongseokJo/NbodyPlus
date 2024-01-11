@@ -39,6 +39,7 @@ int main(int argc, char *argv[]) {
 		std::cout << elem->TimeStepIrr <<" ";
 	}
 
+	/*
 	for (Particle* elem: particle) {
 		fprintf(stdout, "PID=%d, TReg=%e, TIrr=%e\n", elem->getPID(),elem->TimeStepReg, elem->TimeStepIrr);
 		fprintf(stdout, "%e, %e, %e, %e, %e, %e\n",
@@ -50,6 +51,7 @@ int main(int argc, char *argv[]) {
 
 	}
 	std::cout << std::endl;
+	*/
 
 
 

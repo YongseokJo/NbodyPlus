@@ -1,3 +1,12 @@
+/*
+ *  Purporse: Particle Class
+ *
+ *  Date    : 2024.01.02  by Yongseok Jo
+ *
+ */
+
+
+
 #include <iostream>
 #include "../defs.h"
 #include "../global.h"
@@ -12,9 +21,6 @@ class Particle
 		// Variables for KS Regularization (117p in GNS by Aarseth, will be added)	
 		//
 		//
-		//
-		//
-
 
 	public:
 		double Mass;
@@ -29,14 +35,9 @@ class Particle
 		double TimeStepReg;
 		double PredPosition[Dim];
 		double PredVelocity[Dim];
-		double Force[Dim];
-		double ForceDot[Dim];
-		double FIrr[Dim];
-		double FReg[Dim];
-		double FIrrDot[Dim];
-		double FRegDot[Dim];
-		double dFIrr[Dim][HERMITE_ORDER];
-		double dFReg[Dim][HERMITE_ORDER];
+		double a_tot[Dim][HERMITE_ORDER];
+		double a_reg[Dim][HERMITE_ORDER];
+		double a_irr[Dim][HERMITE_ORDER];
 		Particle* NextParticle;
 		std::vector<Particle*> ACList;     // list of AC neighbor 
 		int NumberOfAC; // number of neighbors
@@ -65,15 +66,9 @@ class Particle
 				Position[i]     = 0;
 				PredPosition[i] = 0;
 				PredVelocity[i] = 0;
-				Force[i]        = 0;
-				ForceDot[i]     = 0;
-				FIrr[i]         = 0;
-				FReg[i]         = 0;
-			  FIrrDot[i]      = 0;
-		    FRegDot[i]      = 0;
 				for (int j=0; j<HERMITE_ORDER; j++) {
-					dFIrr[i][j] = 0;
-					dFReg[i][j] = 0;
+					a_reg[i][j] = 0;
+					a_irr[i][j] = 0;
 				}
 			}
 		}
@@ -93,13 +88,15 @@ class Particle
 		void initializeTimeStep();
 		int getPID() {return PID;};
 		void calculateIrrForce();
-		void calculateRegForce(std::vector<Particle*> &particle);
-		void predictPosAndVel(double next_time);
+		void calculateRegForce(std::vector<Particle*> &particle, double MinRegTime);
+		void predictParticleSecondOrder(double next_time);
+		void correctParticleFourthOrder(double next_time);
 		void normalizeParticle();
-		void calculateTimeStepIrr(double *f, double df[3][4]);
-		void calculateTimeStepReg(double *f, double df[3][4]);
+		void calculateTimeStepIrr(double df[3][4]);
+		void calculateTimeStepReg(double df[3][4]);
 		bool checkNeighborForEvolution();
 		void updateEvolveParticle(std::vector<Particle*> &particle, double MinRegTime);
+		void updateParticle();
 };
 
 
