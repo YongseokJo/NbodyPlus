@@ -145,13 +145,13 @@ void calculateAcceleration(std::vector<Particle*> &particle) {
 				v2x2_r4 = vx_r2*vx_r2;
 				v2_r2__ax_r2__v2x2_r4 = (v2+x[0]*a[0]+x[1]*a[1]+x[2]*a[2])/r2+v2x2_r4;
 				A = (9*(v[0]*a[0]+v[1]*a[1]+v[2]*a[2]) + 3*(x[0]*adot[0]+x[1]*adot[1]+x[2]*adot[2]))/r2\
-						+3*v2x2_r4*(v2_r2__ax_r2__v2x2_r4 - 4*v2x2_r4);
+						+3*vx_r2*(3*v2_r2__ax_r2__v2x2_r4 - 4*v2x2_r4);
 
 				for (int dim=0; dim<Dim; dim++) {
-					B     = v[dim] - 3*x[dim]*v2x2_r4;
-					a2dot = (v[dim] - 18*B*v2x2_r4              - 27*v2_r2__ax_r2__v2x2_r4*x[dim])*m_r3;
-					a3dot = (a[dim] - 9*B*v2_r2__ax_r2__v2x2_r4 - A*x[dim]                       )*m_r3\
-									 - 162*v2_r2__ax_r2__v2x2_r4*a2dot;
+					B     = v[dim] - 3*x[dim]*vx_r2;
+					a2dot = (v[dim] - 6*B*vx_r2                 - 3*v2_r2__ax_r2__v2x2_r4*x[dim])*m_r3;
+					a3dot = (a[dim] - 9*B*v2_r2__ax_r2__v2x2_r4 - A*x[dim]                      )*m_r3\
+									 - 9*vx_r2*a2dot;
 					if ((ptcl1->NumberOfAC==0)||(ptcl2 != ptcl1->ACList[j])) {
 						ptcl1->a_reg[dim][2] += a2dot;
 						ptcl1->a_reg[dim][3] += a3dot;

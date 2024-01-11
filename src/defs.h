@@ -22,7 +22,7 @@
 #define mytolerance 5.4210109e-20
 
 // Physics related parameters
-#define eta 1e10 // by YS Jo subject to modifty
+#define eta 1 // by YS Jo subject to modifty
 #define EPS2 0.001
 #define InitialRadiusOfAC 0.01 // 0.04 pc
 
