@@ -6,4 +6,5 @@ extern double global_time;
 extern double dt_min;
 extern bool debug;
 extern char* fname;
+extern bool restart;
 //extern double MinTimeStep;

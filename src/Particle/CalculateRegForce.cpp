@@ -5,27 +5,36 @@
 #include <cmath>
 
 
+/*
+ *  Purporse: Particle Class
+ *
+ *  Date    : 2024.01.02  by Yongseok Jo
+ *
+ */
+
 void direct_sum(double *x, double *v, double r2, double vx,
-	 	double *r, double mass, double a[3], double adot[3]) {
+		double mass, double a[3], double adot[3]) {
 
 	double m_r3;
 
-	for (int i=0; i<2; i++) {
-		r2 = 0.0;
-		vx = 0.0;
+	r2 += EPS2;  // add softening length
+	m_r3 = mass/r2/sqrt(r2);
 
-		r2 += EPS2;  // add softening length
-		m_r3 = mass/r2/r[i];
-
-		for (int dim=0; dim<Dim; dim++){
-			a[dim]    += m_r3*x[dim];
-			adot[dim] += m_r3*(v[dim] - 3*x[dim]*vx/r2);
-		}
+	for (int dim=0; dim<Dim; dim++){
+		a[dim]    += m_r3*x[dim];
+		adot[dim] += m_r3*(v[dim] - 3*x[dim]*vx/r2);
 	}
 }
 
-	// codes from regint.f in NBODY6++GPU
-	// initialize regular force terms for ith particle
+
+
+/*
+ *  Purporse: Calculate regular forces
+ *
+ *  Date    : 2024.01.09  by Seoyoung Kim
+ *  Modified: 2024.01.10  by Yongseok Jo
+ *
+ */
 void Particle::calculateRegForce(std::vector<Particle*> &particle, double MinRegTime) {
 
 
@@ -36,29 +45,38 @@ void Particle::calculateRegForce(std::vector<Particle*> &particle, double MinReg
 	double dt, r[2], r2, vx;
 	double a0_reg[2][Dim], a0dot_reg[2][Dim], x[Dim], v[Dim];
 	double a0_irr[2][Dim], a0dot_irr[2][Dim];
+	double treg[2];
 
+
+	treg[0] = CurrentTimeReg; // current time of particle
+	treg[1] = CurrentTimeReg + TimeStepReg; // the time to be advanced to
 	dt = TimeStepReg;
 	ACList.clear();
 	NumberOfAC = 0;
 
 	// scan over all single particles to find the regular force components
 	std::cout <<  "Looping single particles for force...\n" << std::flush;
-	for (Particle* ptcl: particle) {
-		if (ptcl != this)
-			continue;
 
-		for (int i=0; i<2; i++) {
+	for (int i=0; i<2; i++) {
+		for (Particle* ptcl: particle) {
+			if (ptcl != this)
+				continue;
+
+			r2 = 0;
+			vx = 0;
+
+			if (i == 0) {
+				ptcl->predictParticleSecondOrder(treg[0]);
+				this->predictParticleSecondOrder(treg[0]);
+			} 
+			else {
+				ptcl->predictParticleSecondOrder(treg[1]);
+				this->predictParticleSecondOrder(treg[1], a0_irr[0], a0dot_irr);
+			}
 			for (int dim=0; dim<Dim; dim++) {
 				// When particles are not at the current time, extrapolate up to 2nd order
-				if (ptcl->CurrentTimeIrr != MinRegTime) {
-					ptcl->predictParticleSecondOrder(MinRegTime);
-					x[dim] = ptcl->PredPosition[dim] - this->PredPosition[dim];
-					v[dim] = ptcl->PredVelocity[dim] - this->PredVelocity[dim];
-				} 
-				else {
-					x[dim] = ptcl->Position[dim] - this->Position[dim];
-					v[dim] = ptcl->Velocity[dim] - this->Velocity[dim];
-				}
+				x[dim] = ptcl->PredPosition[dim] - this->PredPosition[dim];
+				v[dim] = ptcl->PredVelocity[dim] - this->PredVelocity[dim];
 
 				r2 += x[dim]*x[dim];
 				vx += v[dim]*x[dim];
@@ -69,11 +87,11 @@ void Particle::calculateRegForce(std::vector<Particle*> &particle, double MinReg
 				NumberOfAC++;
 				this->ACList.push_back(ptcl);
 				// irregular acceleration
-				direct_sum(x ,v, r2, vx, r, ptcl->Mass, a0_irr[i], a0dot_irr[i]);
+				direct_sum(x ,v, r2, vx, ptcl->Mass, a0_irr[i], a0dot_irr[i]);
 			}
 			else {
 				// regular acceleration
-				direct_sum(x ,v, r2, vx, r, ptcl->Mass, a0_reg[i], a0dot_reg[i]);
+				direct_sum(x ,v, r2, vx, ptcl->Mass, a0_reg[i], a0dot_reg[i]);
 			}
 		}
 	}
@@ -127,7 +145,7 @@ void Particle::calculateRegForce(std::vector<Particle*> &particle, double MinReg
 	this->calculateTimeStepReg(a_reg);
 	this->isRegular = 0;
 	if (NumberOfAC == 0) 
-		updateParticle();
+		updateParticle(next_time, a_irr);
 }
 
 
