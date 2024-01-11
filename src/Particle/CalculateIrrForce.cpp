@@ -50,10 +50,10 @@ void Particle::calculateIrrForce() {
 	// scan over the neighbor lists to find the irregular acceleration components
 	std::cout <<  "Looping single particles to calculate irregular acceleration...\n" << std::flush;
 
-	for (Particle* ptcl: ACList) {
+	for (int i=0; i<2; i++) {
+		for (Particle* ptcl: ACList) {
 
-		// reset temporary variables at the start of a new calculation
-		for (int i=0; i<2; i++) {
+			// reset temporary variables at the start of a new calculation
 			r2 = 0.0;
 			vx = 0.0;
 
@@ -70,8 +70,13 @@ void Particle::calculateIrrForce() {
 			}
 			// add the contribution of jth particle to acceleration of current and predicted times
 			direct_sum(x ,v, r2, vx, ptcl->Mass, a0_irr[i], a0dot_irr[i]);
-		}
-	} // end of scanning over neighbor lists
+			if (i == 0) 
+				for (int dim=0; dim<Dim; dim++) {
+					a_tot[dim][0] = a_reg[0][dim] + a0_irr[0][dim];
+					a_tot[dim][1] = a_reg[1][dim] + a0_irr[1][dim];
+				}
+		} // endfor ptcl
+	} //endfor i, 0 for current time and 1 for provisional
 
 
 	// correct the force using the 4th order hermite method
@@ -92,9 +97,9 @@ void Particle::calculateIrrForce() {
 		a2 =  12*da_dt2 + 6*adot_dt;
 		a3 = (-6*da_dt2 - 2*adot_dt)/dt;
 
-		a_irr[dim][0] = a0_irr[0][dim]; 
-		a_irr[dim][1] = a0dot_irr[0][dim]; 
-		a_irr[dim][2] = a2; 
+		a_irr[dim][0] = a0_irr[0][dim];
+		a_irr[dim][1] = a0dot_irr[0][dim];
+		a_irr[dim][2] = a2;
 		a_irr[dim][3] = a3;
 
 		a_tot[dim][0] = a_reg[dim][0] + a_irr[dim][0];
@@ -105,8 +110,8 @@ void Particle::calculateIrrForce() {
 
 	// update the current irregular time and irregular time steps
 	CurrentTimeIrr = tirr[1];
-	this->calculateTimeStepIrr(a_tot); // calculate irregular time step based on total force
-	this->updateParticle();
+	this->updateParticle(CurrentTimeIrr, a_irr);
+	this->calculateTimeStepIrr(a_tot, a_irr); // calculate irregular time step based on total force
 }
 
 

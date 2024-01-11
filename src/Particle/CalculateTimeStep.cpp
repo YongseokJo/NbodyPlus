@@ -3,13 +3,13 @@
 #include <iostream>
 
 
-double getNewTimeStep(double dF[3][4]);
+double getNewTimeStep(double f[3][4], double df[3][4]);
 double getBlockTimeStep(double dt);
 
 // Update TimeStepIrr
-void Particle::calculateTimeStepIrr(double f[3][4]) {
+void Particle::calculateTimeStepIrr(double f[3][4],double df[3][4]) {
 	double TimeStepIrrTmp;
-	TimeStepIrrTmp = getBlockTimeStep(getNewTimeStep(f));
+	TimeStepIrrTmp = getBlockTimeStep(getNewTimeStep(f, df));
 	while (CurrentTimeIrr+TimeStepIrrTmp > CurrentTimeReg+TimeStepReg) {
 		TimeStepIrrTmp *= 0.5;
 		//fprintf(stdout, "CTS, time irr =%e\n", TimeStepIrr);
@@ -32,11 +32,11 @@ void Particle::calculateTimeStepIrr(double f[3][4]) {
 }
 
 // Update TimeStepReg
-void Particle::calculateTimeStepReg(double df[3][4]) {
+void Particle::calculateTimeStepReg(double f[3][4], double df[3][4]) {
 	fprintf(stdout, "Number of AC=%d\n", NumberOfAC);
 	//std::cout << NumberOfAC << std::flush;
 	double TimeStepRegTmp;
-	TimeStepRegTmp = getBlockTimeStep(getNewTimeStep(f));
+	TimeStepRegTmp = getBlockTimeStep(getNewTimeStep(f, df));
 	if (TimeStepIrr > TimeStepReg)
 		;
 

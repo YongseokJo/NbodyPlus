@@ -37,7 +37,7 @@ void Evolve(std::vector<Particle*> &particle) {
 						//ptcl->CurrentTimeIrr==ptcl->CurrentTimeReg+ptcl->TimeStepReg) {
 					fprintf(stderr, "Particle ID=%d, Time=%.4e, dtIrr=%.4e, dtReg=%.4e\n",ptcl->getPID(), ptcl->CurrentTimeIrr, ptcl->TimeStepIrr, ptcl->TimeStepReg);
 					std::cerr << std::flush;
-					ptcl->calculateRegForce(particle); // this only does acceleration computation.
+					ptcl->calculateRegForce(particle, MinRegTime); // this only does acceleration computation.
 				}
 			}
 			writeParticle(particle, MinRegTime, ++outNum);

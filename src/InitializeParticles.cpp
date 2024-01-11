@@ -8,7 +8,7 @@
 
 
 void findNeighbor(std::vector<Particle*> &particle);
-void calculateAcceleartion(std::vector<Particle*> &particle);
+void calculateAcceleration(std::vector<Particle*> &particle);
 void direct_sum(double *x, double *v, double r2, double vx,
 		double mass, double a[3], double adot[3]);
 
@@ -25,7 +25,7 @@ void initializeParticle(std::vector<Particle*> &particle) {
 	std::cout << "Initialization starts." << std::endl;
 	findNeighbor(particle);
 
-	calculateAcceleartion(particle);
+	calculateAcceleration(particle);
 	std::cout << "Timestep initializing..." << std::endl;
 	for (Particle* elem:particle) {
 		elem->initializeTimeStep();
@@ -83,7 +83,7 @@ void findNeighbor(std::vector<Particle*> &particle) {
 }
 
 
-void calculateAcceleartion(std::vector<Particle*> &particle) {
+void calculateAcceleration(std::vector<Particle*> &particle) {
 
 	int j=0;
 	double x[Dim], v[Dim], a[Dim], adot[Dim];

@@ -46,7 +46,7 @@ void Particle::calculateRegForce(std::vector<Particle*> &particle, double MinReg
 	double a0_reg[2][Dim], a0dot_reg[2][Dim], x[Dim], v[Dim];
 	double a0_irr[2][Dim], a0dot_irr[2][Dim];
 	double treg[2];
-
+	double a2, a3, da_dt2, adot_dt, dt2, dt3, dt4;
 
 	treg[0] = CurrentTimeReg; // current time of particle
 	treg[1] = CurrentTimeReg + TimeStepReg; // the time to be advanced to
@@ -65,14 +65,9 @@ void Particle::calculateRegForce(std::vector<Particle*> &particle, double MinReg
 			r2 = 0;
 			vx = 0;
 
-			if (i == 0) {
-				ptcl->predictParticleSecondOrder(treg[0]);
-				this->predictParticleSecondOrder(treg[0]);
-			} 
-			else {
-				ptcl->predictParticleSecondOrder(treg[1]);
-				this->predictParticleSecondOrder(treg[1], a0_irr[0], a0dot_irr);
-			}
+
+			ptcl->predictParticleSecondOrder(treg[i]);
+			this->predictParticleSecondOrder(treg[i]);
 			for (int dim=0; dim<Dim; dim++) {
 				// When particles are not at the current time, extrapolate up to 2nd order
 				x[dim] = ptcl->PredPosition[dim] - this->PredPosition[dim];
@@ -93,11 +88,15 @@ void Particle::calculateRegForce(std::vector<Particle*> &particle, double MinReg
 				// regular acceleration
 				direct_sum(x ,v, r2, vx, ptcl->Mass, a0_reg[i], a0dot_reg[i]);
 			}
-		}
-	}
+			if (i == 0) 
+				for (int dim=0; dim<Dim; dim++) {
+					a_tot[dim][0] = a0_reg[0][dim] + a0_irr[0][dim];
+					a_tot[dim][1] = a0_reg[1][dim] + a0_irr[1][dim];
+				}
+		} // endfor ptcl
+	}// endfor i, 0 for current time, 1 for provisional
 
 
-	double a2, a3, da_dt2, adot_dt, dt2, dt3, dt4;
 
 	dt2 = dt*dt;
 	dt3 = dt2*dt;
@@ -139,13 +138,12 @@ void Particle::calculateRegForce(std::vector<Particle*> &particle, double MinReg
 	}
 
 
-
 	// update the regular time step
 	CurrentTimeReg += TimeStepReg;
-	this->calculateTimeStepReg(a_reg);
-	this->isRegular = 0;
 	if (NumberOfAC == 0) 
-		updateParticle(next_time, a_irr);
+		updateParticle(CurrentTimeReg, a_tot);
+	this->calculateTimeStepReg(a_reg, a_reg);
+	this->isRegular = 0;
 }
 
 

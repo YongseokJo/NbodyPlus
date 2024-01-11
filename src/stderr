@@ -1,1 +1,28 @@
-./run.sh: line 9: ./nbodyplus.exe: No such file or directory
+Regular: 0 1 
+0 1 EvolveParticle: 2
+Loop starting... size=2
+PID=0, MinRegTime= 5.960464e-08, EvloveTime = 5.960464e-08
+Particle ID=0
+CurrentTimeIrr = 0.000000e+00, TimeStepIrr = 5.960464e-08, CurrentTimeReg=0.000000e+00, TimeStepReg=5.960464e-08
+UpdateEVolve, PID=0
+RegTime=5.960464e-08, CurrentTime=5.960464e-08, TimeStep=5.960464e-08
+-5.96046e-08
+
+1 
+5.96046e-08
+5.96046e-08
+
+PID=1, MinRegTime= 5.960464e-08, EvloveTime = 5.960464e-08
+Particle ID=1
+CurrentTimeIrr = 0.000000e+00, TimeStepIrr = 5.960464e-08, CurrentTimeReg=0.000000e+00, TimeStepReg=5.960464e-08
+UpdateEVolve, PID=1
+RegTime=5.960464e-08, CurrentTime=5.960464e-08, TimeStep=5.960464e-08
+-5.96046e-08
+
+
+5.96046e-08
+5.96046e-08
+
+EvolveParticle: 0
+Particle ID=0, Time=5.9605e-08, dtIrr=5.9605e-08, dtReg=5.9605e-08
+The block time step is smaller than the smallest time step of the system. Program terminated.
