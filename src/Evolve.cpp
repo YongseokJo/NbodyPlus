@@ -24,6 +24,7 @@ void Evolve(std::vector<Particle*> &particle) {
 	ptcl = particle[LevelList[0]];
 	UpdateMinRegTime(particle, &MinRegTime);
 
+	//int j=0; 
 	// This part can be parallelized.
 	while (true) {
 		if (EvolveParticle.size() == 0)
@@ -34,19 +35,29 @@ void Evolve(std::vector<Particle*> &particle) {
 			std::cout <<  "Regular force calculating...\n" << std::flush;
 			for (Particle* ptcl:particle) {
 				if (ptcl->isRegular) {//&& 
-						//ptcl->CurrentTimeIrr==ptcl->CurrentTimeReg+ptcl->TimeStepReg) {
+															//ptcl->CurrentTimeIrr==ptcl->CurrentTimeReg+ptcl->TimeStepReg) {
 					fprintf(stderr, "Particle ID=%d, Time=%.4e, dtIrr=%.4e, dtReg=%.4e\n",ptcl->getPID(), ptcl->CurrentTimeIrr, ptcl->TimeStepIrr, ptcl->TimeStepReg);
 					std::cerr << std::flush;
 					ptcl->calculateRegForce(particle, MinRegTime); // this only does acceleration computation.
 				}
 			}
-			writeParticle(particle, MinRegTime, ++outNum);
-			UpdateMinRegTime(particle, &MinRegTime);
-			UpdateEvolveParticle(particle, EvolveParticle, MinRegTime);
-		}
+				writeParticle(particle, MinRegTime, ++outNum);
+				UpdateMinRegTime(particle, &MinRegTime);
+				UpdateEvolveParticle(particle, EvolveParticle, MinRegTime);
+			}
+			if (MinRegTime >= 1) 
+				exit(EXIT_FAILURE);
+
+			/*
+			if (++j==4) {
+				exit(EXIT_FAILURE);
+			}
+			*/
+
 		// check if the particle is subject to calculation this level.
 		EvolveParticleCopy.clear();
 		EvolveParticleCopy.assign(EvolveParticle.begin(), EvolveParticle.end());
+
 		fprintf(stderr, "Loop starting... size=%lu\n", EvolveParticleCopy.size());
 		for (Particle* ptcl: EvolveParticleCopy) {
 			EvolvedTime = ptcl->CurrentTimeIrr+ptcl->TimeStepIrr;

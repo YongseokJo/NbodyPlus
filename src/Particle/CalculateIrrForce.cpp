@@ -5,7 +5,7 @@
 
 
 void direct_sum(double *x, double *v, double r2, double vx,
-	 	        double mass, double a[3], double adot[3]);
+	 	        double mass, double (&a)[2][3], double (&adot)[2][3], int p);
 
 
 /*
@@ -40,25 +40,25 @@ void Particle::calculateIrrForce() {
 
 
 	// initialize irregular force terms for ith particle just in case
-	for (int i=0; i<2; i++) {
+	for (int p=0; p<2; p++) {
 		for (int dim=0; dim<Dim; dim++){
-			a0_irr[i][dim]    = 0.0;
-			a0dot_irr[i][dim] = 0.0;
+			a0_irr[p][dim]    = 0.0;
+			a0dot_irr[p][dim] = 0.0;
 		}
 	}
 
 	// scan over the neighbor lists to find the irregular acceleration components
 	std::cout <<  "Looping single particles to calculate irregular acceleration...\n" << std::flush;
 
-	for (int i=0; i<2; i++) {
+	for (int p=0; p<2; p++) {
 		for (Particle* ptcl: ACList) {
 
 			// reset temporary variables at the start of a new calculation
 			r2 = 0.0;
 			vx = 0.0;
 
-			ptcl->predictParticleSecondOrder(tirr[i]);
-			this->predictParticleSecondOrder(tirr[i]);
+			ptcl->predictParticleSecondOrder(tirr[p]);
+			this->predictParticleSecondOrder(tirr[p]);
 			for (int dim=0; dim<Dim; dim++) {
 				// calculate position and velocity differences for current time
 				x[dim] = ptcl->PredPosition[dim] - this->PredPosition[dim];
@@ -69,11 +69,11 @@ void Particle::calculateIrrForce() {
 				vx += v[dim]*x[dim];
 			}
 			// add the contribution of jth particle to acceleration of current and predicted times
-			direct_sum(x ,v, r2, vx, ptcl->Mass, a0_irr[i], a0dot_irr[i]);
-			if (i == 0) 
+			direct_sum(x ,v, r2, vx, ptcl->Mass, a0_irr, a0dot_irr, p);
+			if (p == 0) 
 				for (int dim=0; dim<Dim; dim++) {
 					a_tot[dim][0] = a_reg[0][dim] + a0_irr[0][dim];
-					a_tot[dim][1] = a_reg[1][dim] + a0_irr[1][dim];
+					a_tot[dim][1] = a_reg[1][dim] + a0dot_irr[0][dim];
 				}
 		} // endfor ptcl
 	} //endfor i, 0 for current time and 1 for provisional
@@ -109,8 +109,8 @@ void Particle::calculateIrrForce() {
 	}
 
 	// update the current irregular time and irregular time steps
-	CurrentTimeIrr = tirr[1];
-	this->updateParticle(CurrentTimeIrr, a_irr);
+	this->updateParticle(CurrentTimeIrr+TimeStepIrr, a_irr);
+	CurrentTimeIrr += TimeStepIrr;
 	this->calculateTimeStepIrr(a_tot, a_irr); // calculate irregular time step based on total force
 }
 

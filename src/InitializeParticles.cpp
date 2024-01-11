@@ -92,12 +92,21 @@ void calculateAcceleration(std::vector<Particle*> &particle) {
 	double r2 = 0;
 	double vx = 0;
 
-	std::cout << "Entering calculateForce1 ..." << std::endl;
+	for (int dim=0; dim<Dim; dim++) {
+		x[dim]    = 0.;
+		v[dim]    = 0.;
+		a[dim]    = 0.;
+		adot[dim] = 0.;
+	}
+
+	std::cout << "Entering calculateAcceleration  ..." << std::endl;
+
 	for (Particle *ptcl1:particle) {
 		j=0;
 		for (Particle *ptcl2:particle) {
 			r2 = 0;
 			vx = 0;
+			v2 = 0;
 			if (ptcl1 != ptcl2) {
 				for (int dim=0; dim<Dim; dim++) {
 					x[dim] = ptcl2->Position[dim] - ptcl1->Position[dim];
@@ -107,17 +116,23 @@ void calculateAcceleration(std::vector<Particle*> &particle) {
 					v2    += v[dim]*v[dim];
 				}
 
-				// Calculate 0th and 1st derivatives of acceleration
-				if ((ptcl1->NumberOfAC==0)||(ptcl2 != ptcl1->ACList[j])) {
-					direct_sum(x ,v, r2, vx, ptcl2->Mass, ptcl1->a_reg[0], ptcl1->a_reg[1]);
+				r2  += EPS2;
+				m_r3 = ptcl2->Mass/r2/sqrt(r2); 
+
+				for (int dim=0; dim<Dim; dim++) {
+					// Calculate 0th and 1st derivatives of acceleration
+					if ((ptcl1->NumberOfAC==0)||(ptcl2 != ptcl1->ACList[j])) {
+						ptcl1->a_reg[dim][0] += m_r3*x[dim];
+						ptcl1->a_reg[dim][1] += m_r3*(v[dim] - 3*x[dim]*vx/r2);
+					}
+					else {
+						ptcl1->a_irr[dim][0] += m_r3*x[dim];
+						ptcl1->a_irr[dim][1] += m_r3*(v[dim] - 3*x[dim]*vx/r2);
+					}
 				}
-				else {
-					direct_sum(x ,v, r2, vx, ptcl2->Mass, ptcl1->a_irr[0], ptcl1->a_irr[1]);
-					j++;
-				}
+
 
 				// Calculate 2nd and 3rd derivatives of acceleration
-
 				if (restart) {
 					;
 					/*
@@ -126,18 +141,16 @@ void calculateAcceleration(std::vector<Particle*> &particle) {
 						 }*/
 				}
 
-				r2 += EPS2;
-				m_r3   = ptcl2->Mass/r2/sqrt(r2);
-				vx_r2  = vx/r2;
+				vx_r2   = vx/r2;
 				v2x2_r4 = vx_r2*vx_r2;
 				v2_r2__ax_r2__v2x2_r4 = (v2+x[0]*a[0]+x[1]*a[1]+x[2]*a[2])/r2+v2x2_r4;
 				A = (9*(v[0]*a[0]+v[1]*a[1]+v[2]*a[2]) + 3*(x[0]*adot[0]+x[1]*adot[1]+x[2]*adot[2]))/r2\
 						+3*v2x2_r4*(v2_r2__ax_r2__v2x2_r4 - 4*v2x2_r4);
 
 				for (int dim=0; dim<Dim; dim++) {
-					B = v[dim] - 3*x[dim]*v2x2_r4;
-					a2dot  = (v[dim] - 18*B*v2x2_r4              - 27*v2_r2__ax_r2__v2x2_r4*x[dim])*m_r3;
-					a3dot  = (a[dim] - 9*B*v2_r2__ax_r2__v2x2_r4 - A*x[dim]                       )*m_r3\
+					B     = v[dim] - 3*x[dim]*v2x2_r4;
+					a2dot = (v[dim] - 18*B*v2x2_r4              - 27*v2_r2__ax_r2__v2x2_r4*x[dim])*m_r3;
+					a3dot = (a[dim] - 9*B*v2_r2__ax_r2__v2x2_r4 - A*x[dim]                       )*m_r3\
 									 - 162*v2_r2__ax_r2__v2x2_r4*a2dot;
 					if ((ptcl1->NumberOfAC==0)||(ptcl2 != ptcl1->ACList[j])) {
 						ptcl1->a_reg[dim][2] += a2dot;
@@ -146,14 +159,19 @@ void calculateAcceleration(std::vector<Particle*> &particle) {
 					else {
 						ptcl1->a_irr[dim][2] += a2dot;
 						ptcl1->a_irr[dim][3] += a3dot;
+						j++;
 					}
-				}
+				} // endfor dim
 			} // endif ptcl1 == ptcl2
 		} // endfor ptcl2
+		std::cout << "\ntotal acceleartion\n" << std::flush;
 		for (int dim=0; dim<Dim; dim++)	 {
-			for (int order=0; order<HERMITE_ORDER; order++)
+			for (int order=0; order<HERMITE_ORDER; order++) {
 				ptcl1->a_tot[dim][order] = ptcl1->a_reg[dim][order] + ptcl1->a_irr[dim][order];
-		}
+				std::cout << ptcl1->a_tot[dim][order]*position_unit/time_unit/time_unit << " ";
+			}
+			std::cout << "\n" << std::endl;
+		} // endfor dim
 	} // endfor ptcl1
 }
 

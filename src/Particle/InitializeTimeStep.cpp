@@ -9,9 +9,6 @@ double getBlockTimeStep(double dt);
 void Particle::initializeTimeStep() {
 
 	double *FTmp, dtIrr, dtReg;
-	int iter;
-
-
 
 	dtIrr = getNewTimeStep(a_tot, a_irr);
 	dtReg = getNewTimeStep(a_reg, a_reg);
@@ -57,8 +54,6 @@ void Particle::initializeTimeStep() {
 	  TimeStepIrr = TimeStepReg;
 		CurrentTimeIrr = CurrentTimeReg;
 	}
-	PredTimeIrr = CurrentTimeIrr + TimeStepIrr;
-
 }
 
 
