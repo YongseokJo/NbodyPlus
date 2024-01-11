@@ -121,8 +121,8 @@ void Particle::calculateRegForce(std::vector<Particle*> &particle, double MinReg
 		da_dt2  = (   a0_reg[0][dim] - a0_reg[1][dim]   ) / dt2;
 		adot_dt = (a0dot_reg[0][dim] + a0dot_reg[1][dim]) / dt;
 
-		a2 =  -6*da_dt2  - 2*adot_dt - 2*a0dot_reg[0][dim]/dt;
-		a3 = (-12*da_dt2 + 6*adot_dt)/dt;
+		a2 =  -6*da_dt2 - 2*adot_dt - 2*a0dot_reg[0][dim]/dt;
+		a3 = (12*da_dt2 + 6*adot_dt)/dt;
 		//Position[dim] += a2*dt4/24 + a3*dt4*dt/120;
 		//Velocity[dim] += a2*dt3/6  + a3*dt4/24;
 
@@ -137,7 +137,7 @@ void Particle::calculateRegForce(std::vector<Particle*> &particle, double MinReg
 		adot_dt = (a0dot_irr[0][dim] + a0dot_irr[1][dim]) / dt;
 
 		a2 =  -6*da_dt2  - 2*adot_dt - 2*a0dot_irr[0][dim]/dt;
-		a3 = (-12*da_dt2 + 6*adot_dt)/dt;
+		a3 = (12*da_dt2 + 6*adot_dt)/dt;
 		//Position[dim] += a2*dt4/24 + a3*dt4*dt/120;
 		//Velocity[dim] += a2*dt3/6  + a3*dt4/24;
 

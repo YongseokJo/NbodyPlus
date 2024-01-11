@@ -92,8 +92,8 @@ void Particle::calculateIrrForce() {
 		da_dt2  = (   a0_irr[0][dim] - a0_irr[1][dim]   ) / dt2;
 		adot_dt = (a0dot_irr[0][dim] + a0dot_irr[1][dim]) / dt;
 
-		a2 =  -6*da_dt2  - 2*adot_dt - 2*a0dot_irr[0][dim]/dt;
-		a3 = (-12*da_dt2 + 6*adot_dt)/dt;
+		a2 =  -6*da_dt2 - 2*adot_dt - 2*a0dot_irr[0][dim]/dt;
+		a3 = (12*da_dt2 + 6*adot_dt)/dt;
 
 		a_irr[dim][0] = a0_irr[0][dim];
 		a_irr[dim][1] = a0dot_irr[0][dim];

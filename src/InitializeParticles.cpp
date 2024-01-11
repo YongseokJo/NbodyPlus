@@ -122,12 +122,12 @@ void calculateAcceleration(std::vector<Particle*> &particle) {
 				for (int dim=0; dim<Dim; dim++) {
 					// Calculate 0th and 1st derivatives of acceleration
 					if ((ptcl1->NumberOfAC==0)||(ptcl2 != ptcl1->ACList[j])) {
-						ptcl1->a_reg[dim][0] += m_r3*x[dim];
-						ptcl1->a_reg[dim][1] += m_r3*(v[dim] - 3*x[dim]*vx/r2);
+						ptcl1->a_reg[dim][0] = m_r3*x[dim];
+						ptcl1->a_reg[dim][1] = m_r3*(v[dim] - 3*x[dim]*vx/r2);
 					}
 					else {
-						ptcl1->a_irr[dim][0] += m_r3*x[dim];
-						ptcl1->a_irr[dim][1] += m_r3*(v[dim] - 3*x[dim]*vx/r2);
+						ptcl1->a_irr[dim][0] = m_r3*x[dim];
+						ptcl1->a_irr[dim][1] = m_r3*(v[dim] - 3*x[dim]*vx/r2);
 					}
 				}
 
@@ -153,12 +153,12 @@ void calculateAcceleration(std::vector<Particle*> &particle) {
 					a3dot = (a[dim] - 9*B*v2_r2__ax_r2__v2x2_r4 - A*x[dim]                      )*m_r3\
 									 - 9*vx_r2*a2dot;
 					if ((ptcl1->NumberOfAC==0)||(ptcl2 != ptcl1->ACList[j])) {
-						ptcl1->a_reg[dim][2] += a2dot;
-						ptcl1->a_reg[dim][3] += a3dot;
+						ptcl1->a_reg[dim][2] = a2dot;
+						ptcl1->a_reg[dim][3] = a3dot;
 					}
 					else {
-						ptcl1->a_irr[dim][2] += a2dot;
-						ptcl1->a_irr[dim][3] += a3dot;
+						ptcl1->a_irr[dim][2] = a2dot;
+						ptcl1->a_irr[dim][3] = a3dot;
 						j++;
 					}
 				} // endfor dim
