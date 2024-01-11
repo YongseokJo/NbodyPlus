@@ -37,8 +37,6 @@ void Particle::calculateIrrForce() {
 	tirr[0] = CurrentTimeIrr; // current time of particle
 	tirr[1] = CurrentTimeIrr + TimeStepIrr; // the time to be advanced to
 
-
-
 	// initialize irregular force terms for ith particle just in case
 	for (int p=0; p<2; p++) {
 		for (int dim=0; dim<Dim; dim++){
@@ -72,8 +70,8 @@ void Particle::calculateIrrForce() {
 			direct_sum(x ,v, r2, vx, ptcl->Mass, a0_irr, a0dot_irr, p);
 			if (p == 0) 
 				for (int dim=0; dim<Dim; dim++) {
-					a_tot[dim][0] = a_reg[0][dim] + a0_irr[0][dim];
-					a_tot[dim][1] = a_reg[1][dim] + a0dot_irr[0][dim];
+					a_tot[dim][0] = a_reg[dim][0] + a0_irr[0][dim];
+					a_tot[dim][1] = a_reg[dim][0] + a0dot_irr[0][dim];
 				}
 		} // endfor ptcl
 	} //endfor i, 0 for current time and 1 for provisional
@@ -94,8 +92,8 @@ void Particle::calculateIrrForce() {
 		da_dt2  = (   a0_irr[0][dim] - a0_irr[1][dim]   ) / dt2;
 		adot_dt = (a0dot_irr[0][dim] + a0dot_irr[1][dim]) / dt;
 
-		a2 =  12*da_dt2 + 6*adot_dt;
-		a3 = (-6*da_dt2 - 2*adot_dt)/dt;
+		a2 =  -6*da_dt2  - 2*adot_dt - 2*a0dot_irr[0][dim]/dt;
+		a3 = (-12*da_dt2 + 6*adot_dt)/dt;
 
 		a_irr[dim][0] = a0_irr[0][dim];
 		a_irr[dim][1] = a0dot_irr[0][dim];
@@ -107,6 +105,15 @@ void Particle::calculateIrrForce() {
 		a_tot[dim][2] = a_reg[dim][2] + a_irr[dim][2];
 		a_tot[dim][3] = a_reg[dim][3] + a_irr[dim][3];
 	}
+
+	std::cout << "\ntotal acceleartion\n" << std::flush;
+	for (int dim=0; dim<Dim; dim++)	 {
+		for (int order=0; order<HERMITE_ORDER; order++) {
+			a_tot[dim][order] = a_reg[dim][order] + a_irr[dim][order];
+			std::cout << a_tot[dim][order]*position_unit/time_unit/time_unit << " ";
+		}
+		std::cout << "\n" << std::endl;
+	} // endfor dim
 
 	// update the current irregular time and irregular time steps
 	this->updateParticle(CurrentTimeIrr+TimeStepIrr, a_irr);

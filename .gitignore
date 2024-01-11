@@ -9,6 +9,8 @@
 # Ignore build directories
 build/
 src/output
+src/stderr
+src/stdout
 
 # Ignore configuration files with secrets
 config.secret
