@@ -1,3 +1,4 @@
+#include "global.h"
 #include "defs.h"
 #include <cmath>
 #include <algorithm>
@@ -8,7 +9,7 @@ double getNewTimeStep(double f[3][4], double df[3][4]) {
 
 	double F2, Fdot2, F2dot2, F3dot2, TimeStep;
 
-	F2     =   f[0][0]*f[0][0] + f[1][0]*f[1][0]   + f[2][0]*f[2][0];
+	F2     =   f[0][0]*f[0][0] +  f[1][0]*f[1][0]  + f[2][0]*f[2][0];
 	Fdot2  = df[0][1]*df[0][1] + df[1][1]*df[1][1] + df[2][1]*df[2][1];
 	F2dot2 = df[0][2]*df[0][2] + df[1][2]*df[1][2] + df[2][2]*df[2][2];
 	F3dot2 = df[0][3]*df[0][3] + df[1][3]*df[1][3] + df[2][3]*df[2][3];
@@ -20,17 +21,9 @@ double getNewTimeStep(double f[3][4], double df[3][4]) {
 	return TimeStep;
 }
 
-double getBlockTimeStep(double dt) {
-	double block_dt;
-
-	block_dt = pow(2, floor(log(dt) / log(2.0)));
-
-	if (block_dt < pow(2,-64)) {
-		std::cerr << "The block time step is smaller than the smallest time step of the system. Program terminated.\n";
-		exit(EXIT_FAILURE); 
-	}
-
-	return block_dt;
+double getBlockTimeStep(double dt, int &TimeLevel, double &TimeStep) {
+	TimeLevel = static_cast<int>(floor(log(dt/EnzoTimeStep)/log(2.0)));
+	TimeStep  = pow(2, TimeLevel);
 }
 
 

@@ -9,20 +9,20 @@
 
 #include <iostream>
 #include "../defs.h"
-#include "../global.h"
+//#include "../global.h"
 
 
 class Particle
 {
 	private:
-		int PID;
-		int ParticleType;
 
 		// Variables for KS Regularization (117p in GNS by Aarseth, will be added)	
 		//
 		//
 
 	public:
+		int PID;
+		int ParticleType;
 		double Mass;
 		double Velocity[Dim];
 		double Position[Dim];
@@ -33,12 +33,15 @@ class Particle
 		double CurrentTimeReg;
 		double TimeStepIrr;
 		double TimeStepReg;
+		int TimeLevelIrr;
+		int TimeLevelReg;
 		double PredPosition[Dim];
 		double PredVelocity[Dim];
 		double a_tot[Dim][HERMITE_ORDER];
 		double a_reg[Dim][HERMITE_ORDER];
 		double a_irr[Dim][HERMITE_ORDER];
-		Particle* NextParticle;
+		double BackgroundAcceleration[Dim];
+		Particle* NextParticleInEnzo;
 		std::vector<Particle*> ACList;     // list of AC neighbor 
 		int NumberOfAC; // number of neighbors
 		double RadiusOfAC;
@@ -51,7 +54,6 @@ class Particle
 			Mass           = 0;
 			NumberOfAC     = 0; // number of neighbors
 			RadiusOfAC     = InitialRadiusOfAC;
-			NextParticle   = 0;
 			ParticleType   = -9999;
 			CurrentTimeIrr = 0.; // consistent with actual current time
 			CurrentTimeReg = 0.;
@@ -59,6 +61,8 @@ class Particle
 			PredTimeReg    = 0;
 			TimeStepIrr    = 0;
 			TimeStepReg    = 0;
+			TimeLevelIrr   = 9999;
+			TimeLevelReg   = 9999;
 			isEvolve       = 0;
 			isRegular      = 0;
 			for (int i=0; i<Dim; i++) {
@@ -66,11 +70,13 @@ class Particle
 				Position[i]     = 0;
 				PredPosition[i] = 0;
 				PredVelocity[i] = 0;
+				BackgroundAcceleration[i] = 0;
 				for (int j=0; j<HERMITE_ORDER; j++) {
 					a_reg[i][j] = 0;
 					a_irr[i][j] = 0;
 				}
 			}
+			NextParticleInEnzo = nullptr;
 		}
 
 		void updateParticle(double mass, double *vel, double pos[], int particletype) {
@@ -85,6 +91,12 @@ class Particle
 		}
 		double getDistanceTo(Particle *particle);
 		void setParticleInfo(double *data, int PID);
+		void setParticleInfo(double *data, int PID, Particle* NextParticleInEnzo);
+		void setParticleInfo(int *PID, double *Mass, double *Position[Dim], double *Velocity[Dim],
+			 	double *BackgroundAcceleration[Dim], Particle* NextParticleInEnzo, int i);
+		void setParticleInfo(int *PID, double *Mass, double *Position[Dim], double *Velocity[Dim],
+			 	double *BackgroundAcceleration[Dim],  int ParticleType, Particle* NextParticleInEnzo, int i);
+		void setParticleInfo(int *PID, double *BackgroundAcceleration[Dim], Particle* NextParticleInEnzo, int i);
 		void initializeTimeStep();
 		int getPID() {return PID;};
 		void calculateIrrForce();

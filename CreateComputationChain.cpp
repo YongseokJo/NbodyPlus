@@ -1,4 +1,3 @@
-#include "Particle/Particle.h"
 #include "global.h"
 #include <iostream>
 #include <vector>
@@ -83,7 +82,7 @@ int createComputationChain(std::vector<Particle*> &particle) {
 
 	delete [] index;
 	//delete [] timesteps;
-	return SUCCESS;
+	return DONE;
 }
 
 void merge(int* index, double *timesteps, int left, int mid, int right) {

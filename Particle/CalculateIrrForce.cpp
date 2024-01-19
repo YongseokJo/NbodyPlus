@@ -1,4 +1,4 @@
-#include "Particle.h"
+#include "../global.h"
 #include <vector>
 #include <iostream>
 #include <cmath>
@@ -18,6 +18,7 @@ void direct_sum(double *x, double *v, double r2, double vx,
  *
  */
 
+
 void Particle::calculateIrrForce() {
 
 	if (this->NumberOfAC == 0) {
@@ -33,9 +34,9 @@ void Particle::calculateIrrForce() {
 	double a0_irr[2][Dim], a0dot_irr[2][Dim]; // 0 for current and 1 for predicted accelerations
 
 
-	dt      = TimeStepIrr; // interval of time step
-	tirr[0] = CurrentTimeIrr; // current time of particle
-	tirr[1] = CurrentTimeIrr + TimeStepIrr; // the time to be advanced to
+	dt      = TimeStepIrr*EnzoTimeStep; // interval of time step
+	tirr[0] = CurrentTimeIrr*EnzoTimeStep; // current time of particle
+	tirr[1] = (CurrentTimeIrr + TimeStepIrr)*EnzoTimeStep; // the time to be advanced to
 
 	// initialize irregular force terms for ith particle just in case
 	for (int p=0; p<2; p++) {
@@ -116,6 +117,7 @@ void Particle::calculateIrrForce() {
 	} // endfor dim
 
 	// update the current irregular time and irregular time steps
+	//this->updateParticle((CurrentTimeIrr+TimeStepIrr)*EnzoTimeStep, a_irr);
 	this->updateParticle(CurrentTimeIrr+TimeStepIrr, a_irr);
 	CurrentTimeIrr += TimeStepIrr;
 	this->calculateTimeStepIrr(a_tot, a_irr); // calculate irregular time step based on total force

@@ -1,43 +1,55 @@
 #include <iostream>
 //#include "defs.h"
 #include "global.h"
-#include "main.h"
+#include "nbody.h"
 
 
 using namespace std;
 
 //Global Variables
-int NNB; double global_time; bool debug;
-double dt_min=1e-20;
+int NNB; double global_time; //bool debug;
 std::vector<int> LevelList;
+//MPI_Comm  comm, inter_comm, nbody_comm;
+double EnzoTimeStep;
+const double dt_min = 9.3132257e-10;
+const int dt_level_min = -30;
 
 int main(int argc, char *argv[]) {
-	cout << "This Nbody+." << endl;
+	cout << "Staring Nbody+ ..." << endl;
 	std::vector<Particle*> particle{};
-	//particle = new std::vector<Particle*>();
+
+	//comm        = com;
+	//inter_comm  = inter_com;
+	//nbody_comm  = nbody_com;
+
 	global_time = 0.;
-	debug = true;
+	//debug = true;
 
+	//InitialCommunication(particle);
 	Parser(argc, argv);
+	
+	EnzoTimeStep = inputTime;
 
-	if (readData(particle) == FAIL) 
+	if (readData(particle) == FAIL)
 		fprintf(stderr, "Read Data Failed!\n");
 
-	cout << "Particle Loaded." << endl;
 	/***
-	for (Particle* elem: particle) {
+		for (Particle* elem: particle) {
 		std::cout << elem->Position[0] <<" ";
-	}
+		}
 		std::cout << std::endl;
-		***/
-	initializeParticle(particle);
+	 ***/
+
+	InitializeParticle(particle);
 
 
-	createComputationChain(particle);
+	//createComputationChain(particle);
 
+	/*
 	for (Particle* elem: particle) {
 		std::cout << elem->TimeStepIrr <<" ";
 	}
+	*/
 
 	/*
 	for (Particle* elem: particle) {

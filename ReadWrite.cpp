@@ -4,9 +4,7 @@
 #include <sstream>
 #include <sys/stat.h>
 #include <iomanip>
-#include "Particle/Particle.h"
 #include "global.h"
-
 
 int getLineNumber();
 const int NUM_COLUMNS = 7; // Define the number of columns
@@ -91,7 +89,7 @@ int readData(std::vector<Particle*> &particle) {
 
 
 
-	return SUCCESS;
+	return DONE;
 }
 
 
@@ -116,8 +114,9 @@ int getLineNumber() {
 			return lineCount;
 }
 
+
 int WriteData() {
-	return SUCCESS;
+	return DONE;
 }
 
 
