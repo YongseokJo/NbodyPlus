@@ -19,6 +19,7 @@ extern Particle* FirstComputation;
 //extern bool debug;
 extern char* fname;
 extern double inputTime;
+extern double endTime;
 extern bool restart;
 
 

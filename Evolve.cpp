@@ -30,23 +30,27 @@ void Evolve(std::vector<Particle*> &particle) {
 
 	//CreateComputationChain(particle);
 
-	while (true)
-	{
-		while (global_time < 1)
-		{
-			// It's time to compute regular force.
-			RegularAccelerationRoutine(particle); // do not update particles unless NNB=0
-			IrregularAccelerationRoutine(particle);
-			global_time = NextRegTime;
+	while (true) {
 
-			// create output at appropriate time intervals
+		// It's time to compute regular force.
+		RegularAccelerationRoutine(particle); // do not update particles unless NNB=0
+		IrregularAccelerationRoutine(particle);
+		global_time = NextRegTime;
+
+		// create output at appropriate time intervals
 			
-			if (outputTime > global_time) {
+		if (outputTime < global_time) {
 			writeParticle(particle, global_time, ++outNum);
-			outputTime += outputTimeStep;
-			}
-
+			outputTime += EnzoTimeStep;
 		}
+
+		// end if the global time exceeds the end time
+		
+		if (global_time > endTime) {
+			std::cout << EnzoTimeStep << std::endl;
+			exit(EXIT_FAILURE);
+		}
+
 
 	//Communication:
 	//	do

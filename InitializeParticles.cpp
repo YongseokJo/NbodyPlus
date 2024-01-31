@@ -49,36 +49,6 @@ void InitializeParticle(std::vector<Particle*> &particle) {
 
 
 /*
- *  Purporse: Initialize of new particles
- *
- *  Date    : 2024.01.16  by Seoyoung Kim
- *
- */
-void InitializeParticle(Particle* newParticle, std::vector<Particle*> &particle) {
-
-	std::cout << "Initialization of " << newNNB << " New Particles starts." << std::endl;
-
-	// loop over particles to initialize acceleration
-	for (int i=0; i<newNNB; i++) {
-		FindNeighbor(&newParticle[i], particle);
-		CalculateInitialAcceleration(&newParticle[i], particle);
-
-		for (int dim=0; dim<Dim; dim++) {
-			newParticle[i].PredPosition[dim] =  newParticle[i].Position[dim];
-			newParticle[i].PredVelocity[dim] =  newParticle[i].Velocity[dim];
-		}
-	}
-
-	std::cout << "Timestep initializing..." << std::endl;
-	InitializeTimeStep(newParticle, newNNB);
-	std::cout << "Timestep finished." << std::endl;
-
-	std::cout << "Initialization of New Particles finished." << std::endl;
-}
-
-
-
-/*
  *  Purporse: find neighbors
  *
  *  Date    : 2024.01.02  by Seoyoung Kim
