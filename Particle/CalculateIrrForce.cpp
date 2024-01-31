@@ -1,12 +1,21 @@
-#include "../global.h"
 #include <vector>
 #include <iostream>
 #include <cmath>
+#include "../global.h"
 
 
 void direct_sum(double *x, double *v, double r2, double vx,
-	 	        double mass, double (&a)[2][3], double (&adot)[2][3], int p);
+	 	        double mass, double (&a)[2][3], double (&adot)[2][3], int p) {
+	double m_r3;
 
+	r2 += EPS2;  // add softening length
+	m_r3 = mass/r2/sqrt(r2);
+
+	for (int dim=0; dim<Dim; dim++){
+		a[p][dim]    += m_r3*x[dim];
+		adot[p][dim] += m_r3*(v[dim] - 3*x[dim]*vx/r2);
+	}
+}
 
 /*
  *  Purporse: Calculate the and update the irregular acceleration of particles
@@ -22,7 +31,8 @@ void direct_sum(double *x, double *v, double r2, double vx,
 void Particle::calculateIrrForce() {
 
 	if (this->NumberOfAC == 0) {
-		CurrentTimeIrr += TimeStepIrr;
+		//CurrentTimeIrr += TimeStepIrr;
+		std::cout << "Error: No neighbor in Irregular force!!" << std::endl;
 		return;
 	}
 
@@ -35,8 +45,8 @@ void Particle::calculateIrrForce() {
 
 
 	dt      = TimeStepIrr*EnzoTimeStep; // interval of time step
-	tirr[0] = CurrentTimeIrr*EnzoTimeStep; // current time of particle
-	tirr[1] = (CurrentTimeIrr + TimeStepIrr)*EnzoTimeStep; // the time to be advanced to
+	tirr[0] = CurrentTimeIrr; // current time of particle
+	tirr[1] = CurrentTimeIrr + TimeStepIrr; // the time to be advanced to
 
 	// initialize irregular force terms for ith particle just in case
 	for (int p=0; p<2; p++) {
@@ -47,7 +57,7 @@ void Particle::calculateIrrForce() {
 	}
 
 	// scan over the neighbor lists to find the irregular acceleration components
-	std::cout <<  "Looping single particles to calculate irregular acceleration...\n" << std::flush;
+	//std::cout <<  "Looping single particles to calculate irregular acceleration...\n" << std::flush;
 
 	for (int p=0; p<2; p++) {
 		for (Particle* ptcl: ACList) {
@@ -69,11 +79,12 @@ void Particle::calculateIrrForce() {
 			}
 			// add the contribution of jth particle to acceleration of current and predicted times
 			direct_sum(x ,v, r2, vx, ptcl->Mass, a0_irr, a0dot_irr, p);
-			if (p == 0) 
+			if (p == 0) {
 				for (int dim=0; dim<Dim; dim++) {
 					a_tot[dim][0] = a_reg[dim][0] + a0_irr[0][dim];
-					a_tot[dim][1] = a_reg[dim][0] + a0dot_irr[0][dim];
+					a_tot[dim][1] = a_reg[dim][1] + a0dot_irr[0][dim];
 				}
+			}
 		} // endfor ptcl
 	} //endfor i, 0 for current time and 1 for provisional
 
@@ -107,6 +118,7 @@ void Particle::calculateIrrForce() {
 		a_tot[dim][3] = a_reg[dim][3] + a_irr[dim][3];
 	}
 
+	/*
 	std::cout << "\ntotal acceleartion\n" << std::flush;
 	for (int dim=0; dim<Dim; dim++)	 {
 		for (int order=0; order<HERMITE_ORDER; order++) {
@@ -115,10 +127,11 @@ void Particle::calculateIrrForce() {
 		}
 		std::cout << "\n" << std::endl;
 	} // endfor dim
+	*/
 
 	// update the current irregular time and irregular time steps
 	//this->updateParticle((CurrentTimeIrr+TimeStepIrr)*EnzoTimeStep, a_irr);
-	this->updateParticle(CurrentTimeIrr+TimeStepIrr, a_irr);
+	this->updateParticle(CurrentTimeIrr+TimeStepIrr, a_tot);
 	CurrentTimeIrr += TimeStepIrr;
 	this->calculateTimeStepIrr(a_tot, a_irr); // calculate irregular time step based on total force
 }

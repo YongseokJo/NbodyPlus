@@ -35,6 +35,16 @@ int Parser(int argc, char *argv[]) {
                 return -2; // Error: Missing argument
 			}
 
+		} else if (arg == "-dt" || arg == "--time") {
+            // Check if the next argument exists
+            if (i + 1 < argc) {
+                inputTime = std::atof(argv[i + 1]);
+                std::cout << "Double value: " << outputTimeStep << std::endl;
+                i++; // Skip the next argument as it's already processed
+            } else {
+                std::cerr << "Error: Missing argument for -d/--double option" << std::endl;
+                return -2; // Error: Missing argument
+			}
 		} else {
 			// Handle unrecognized arguments
 			std::cerr << "Error: Unrecognized argument: " << arg << std::endl;

@@ -6,7 +6,7 @@
  */
 
 
-
+#include <vector>
 #include <iostream>
 #include "../defs.h"
 //#include "../global.h"
@@ -42,11 +42,12 @@ class Particle
 		double a_irr[Dim][HERMITE_ORDER];
 		double BackgroundAcceleration[Dim];
 		Particle* NextParticleInEnzo;
+		Particle* NextParticleForComputation;
 		std::vector<Particle*> ACList;     // list of AC neighbor 
 		int NumberOfAC; // number of neighbors
 		double RadiusOfAC;
 		int isEvolve;
-		int isRegular;
+		bool isRegular;
 
 		// Constructor
 		Particle(void) {
@@ -64,7 +65,7 @@ class Particle
 			TimeLevelIrr   = 9999;
 			TimeLevelReg   = 9999;
 			isEvolve       = 0;
-			isRegular      = 0;
+			isRegular      = false;
 			for (int i=0; i<Dim; i++) {
 				Velocity[i]     = 0;
 				Position[i]     = 0;
@@ -77,6 +78,7 @@ class Particle
 				}
 			}
 			NextParticleInEnzo = nullptr;
+			NextParticleForComputation = nullptr;
 		}
 
 		void updateParticle(double mass, double *vel, double pos[], int particletype) {
@@ -97,17 +99,19 @@ class Particle
 		void setParticleInfo(int *PID, double *Mass, double *Position[Dim], double *Velocity[Dim],
 			 	double *BackgroundAcceleration[Dim],  int ParticleType, Particle* NextParticleInEnzo, int i);
 		void setParticleInfo(int *PID, double *BackgroundAcceleration[Dim], Particle* NextParticleInEnzo, int i);
+		void setParticleInfo(double *BackgroundAcceleration[Dim], Particle* NextParticleInEnzo, int i);
 		void initializeTimeStep();
 		int getPID() {return PID;};
 		void calculateIrrForce();
-		void calculateRegForce(std::vector<Particle*> &particle, double MinRegTime);
+		void calculateRegAccelerationSecondOrder(std::vector<Particle*> &particle);
+		void calculateRegAccelerationFourthOrder(std::vector<Particle*> &particle);
 		void predictParticleSecondOrder(double next_time);
 		void correctParticleFourthOrder(double next_time, double a[3][4]);
 		void normalizeParticle();
 		void calculateTimeStepIrr(double f[3][4], double df[3][4]);
 		void calculateTimeStepReg(double f[3][4], double df[3][4]);
 		bool checkNeighborForEvolution();
-		void updateEvolveParticle(std::vector<Particle*> &particle, double MinRegTime);
+		void updateEvolveParticle(std::vector<Particle*> &particle);
 		void updateParticle(double next_time, double a[3][4]);
 };
 

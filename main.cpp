@@ -13,6 +13,9 @@ std::vector<int> LevelList;
 double EnzoTimeStep;
 const double dt_min = 9.3132257e-10;
 const int dt_level_min = -30;
+double outputTimeStep     = 0.;
+
+
 
 int main(int argc, char *argv[]) {
 	cout << "Staring Nbody+ ..." << endl;
