@@ -205,17 +205,15 @@ void Particle::isKSCandidate(double next_time) {
     Particle* minPtcl;
 
     // t
-    int numberOfCloseParticle;
-    std::vector<Particle*> closeParticleList;
+    int numberOfPairCandidate;
 
 
 
     // initialize variables and count numbers just in case
 
-    r2 = 0.;
+    r2 = 0.0;
     rmin = 1e8;
-    numberOfCloseParticle = 0;
-    closeParticleList.clear();
+    numberOfPairCandidate = 0;
 
 
     // predict the particle position to obtain more information
@@ -253,25 +251,26 @@ void Particle::isKSCandidate(double next_time) {
 
         // find out the close particles
 
-        if (r2<KSdistance) {
+        if (r2<KSDistance) {
 
-            numberOfCloseParticle += 1;
-            closeParticleList.push_back(ptcl);
+            numberOfPairCandidate += 1;
 
             if (r2<rmin) {
                 rmin = r2;
                 minPtcl = ptcl;
             }
         }
+    }
 
-        // save the KS pair information
 
-        if (numberOfCloseParticle>0) {
-            isKS = true;
-            KSPairParticle = minPtcl;
-        }
+    // save the KS pair information
 
-    }    
+    if (numberOfPairCandidate>0) {
+        isBinary = true;
+        BinaryPairParticle = minPtcl;
+    }
+
+        
 }
 
 
@@ -305,7 +304,8 @@ void NewKSInitialization(Particle* ptclI, std::vector<Particle*> &particle, doub
     // basic variables for calculation
 
     Particle *ptclJ;
-    Binary *ptclBin;
+    Particle *ptclBin;
+    Binary *ptclBinInfo;
     std::vector<Particle*> KSNeighborList;
 
 
@@ -313,7 +313,7 @@ void NewKSInitialization(Particle* ptclI, std::vector<Particle*> &particle, doub
 
     // define the pair particle for particle I
 
-    ptclJ = ptclI->KSPairParticle;
+    ptclJ = ptclI->BinaryPairParticle;
 
     ptclI->predictParticleSecondOrder(current_time);
     ptclJ->predictParticleSecondOrder(current_time);
@@ -324,7 +324,8 @@ void NewKSInitialization(Particle* ptclI, std::vector<Particle*> &particle, doub
 
     // define the new center of mass particle
 
-    ptclBin = new Binary;
+    ptclBin = new Particle;
+    ptclBinInfo =  new Binary;
 
     // calculate the values of the center of mass particle
     // and save it to the new center of mass particle
@@ -336,13 +337,24 @@ void NewKSInitialization(Particle* ptclI, std::vector<Particle*> &particle, doub
         ptclBin->Velocity[dim] = (ptclI->PredVelocity[dim]*ptclI->Mass + ptclJ->PredVelocity[dim]*ptclJ->Mass)/ptclBin->Mass;
         ptclBin->PredPosition[dim] = ptclBin->Position[dim];
         ptclBin->PredVelocity[dim] = ptclBin->Velocity[dim];
+
+        ptclBinInfo->Position[dim] = (ptclI->PredPosition[dim]*ptclI->Mass + ptclJ->PredPosition[dim]*ptclJ->Mass)/ptclBin->Mass;
+        ptclBinInfo->Velocity[dim] = (ptclI->PredVelocity[dim]*ptclI->Mass + ptclJ->PredVelocity[dim]*ptclJ->Mass)/ptclBin->Mass;
+        ptclBinInfo->PredPosition[dim] = ptclBin->Position[dim];
+        ptclBinInfo->PredVelocity[dim] = ptclBin->Velocity[dim];
+
     }
 
-    ptclBin->CurrentTime = current_time;
+    ptclBin->CurrentTimeReg = ptclI->CurrentTimeReg;
+    ptclBin->CurrentTimeIrr = ptclI->CurrentTimeIrr;
     ptclBin->PredTime = current_time;
 
     ptclBin->BinaryParticleI = ptclI;
-    ptclBin->BinaryParticleI = ptclJ;
+    ptclBin->BinaryParticleJ = ptclJ;
+    ptclBin->BinaryInfo = ptclBinInfo;
+
+    ptclBin->isBinary = true;
+    ptclI->isBinary = false;
 
 
     // copy the neighbor list for c.m particle
@@ -374,12 +386,12 @@ void NewKSInitialization(Particle* ptclI, std::vector<Particle*> &particle, doub
 
     // calculate the 0th, 1st, 2nd, 3rd derivative of accleration accurately for the binary pair particle and the cm particle
 
-    CalculateKSAcceleration(ptclI,ptclJ,ptclBin,particle,current_time);
+    CalculateKSAcceleration(ptclI,ptclJ,ptclBinInfo,particle,current_time);
 
 
     // calculate the initial values of relevant variables
 
-    ptclBin->InitializeBinary(current_time);
+    ptclBinInfo->InitializeBinary(ptclI, ptclJ, current_time);
 
 }
 

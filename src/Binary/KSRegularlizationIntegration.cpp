@@ -13,32 +13,26 @@ void direct_sum(double *x, double *v, double r2, double vx,
 
 // refer to ksint.f
 
-void Binary::KSIntegration(){
+void Binary::KSIntegration(Particle* ptclCM){
 
     double next_time;
+
 
     next_time = CurrentTime + TimeStep;
 
     // first predict the future position of the binary particle. 
 
-    predictBinary(next_time);
+    predictBinary(ptclCM, next_time);
 
     // if there are zero neighbors for binary particles, calculate by unperturbed equations
 
-    if (NumberOfAC = 0) {
-        IntegrateUnperturbedBinary(next_time);  // refer to unpert.f
-
-    // if not, perform routines for binary system with perturbing force
-
-    } else {
-        IntegratePerturbedBinary(next_time);
-    }
+    IntegrateBinary(ptclCM, next_time);
 
 }
 
 
 
-void Binary::predictBinary(Particle* BinaryParticleI, Particle* BinaryParticleJ, double next_time) {
+void Binary::predictBinary(Particle* ptclCM, double next_time) {
 
     double dt, dt2, dt3;
     double dtau, dtau2, dtau3, dtau4;
@@ -49,6 +43,12 @@ void Binary::predictBinary(Particle* BinaryParticleI, Particle* BinaryParticleJ,
     double ratioM;
 
     double L[3][4];
+
+    Particle* ptclI;
+    Particle* ptclJ;
+
+    ptclI = ptclCM->BinaryParticleI;
+    ptclJ = ptclCM->BinaryParticleJ;
 
 
     // time interval for prediction
@@ -106,12 +106,12 @@ void Binary::predictBinary(Particle* BinaryParticleI, Particle* BinaryParticleJ,
     R[0]   = u_pred[0]*u_pred[0] - u_pred[1]*u_pred[1] - u_pred[2]*u_pred[2] + u_pred[3]*u_pred[3];
     R[1]   = 2*(u_pred[0]*u_pred[1] - u_pred[2]*u_pred[3]);
     R[2]   = 2*(u_pred[0]*u_pred[2] + u_pred[1]*u_pred[3]);
-    ratioM = BinaryParticleJ->Mass/Mass;
+    ratioM = ptclJ->Mass/Mass;
 
 
     for (int dim=0; dim<Dim; dim++) {
-        BinaryParticleI->PredPosition[dim] = PredPosition[dim] + ratioM*R[dim];
-        BinaryParticleJ->PredPosition[dim] = BinaryParticleI->PredPosition[dim] - R[dim];
+        ptclI->PredPosition[dim] = PredPosition[dim] + ratioM*R[dim];
+        ptclJ->PredPosition[dim] = ptclI->PredPosition[dim] - R[dim];
     }
 
 
@@ -134,8 +134,8 @@ void Binary::predictBinary(Particle* BinaryParticleI, Particle* BinaryParticleJ,
 
 
     for (int dim=0; dim<Dim; dim++) {
-        BinaryParticleI->PredVelocity[dim] = PredVelocity[dim] + ratioM*Rdot[dim];
-        BinaryParticleJ->PredVelocity[dim] = BinaryParticleI->PredVelocity[dim] - Rdot[dim];
+        ptclI->PredVelocity[dim] = PredVelocity[dim] + ratioM*Rdot[dim];
+        ptclJ->PredVelocity[dim] = ptclI->PredVelocity[dim] - Rdot[dim];
     }
 
 }
@@ -143,17 +143,16 @@ void Binary::predictBinary(Particle* BinaryParticleI, Particle* BinaryParticleJ,
 
 
 
-void Binary::IntegrateUnperturbedBinary(Particle* BinaryParticleI, Particle* BinaryParticleJ, double next_time) {
-    return;
-}
 
 
 
 
-
-void Binary::IntegratePerturbedBinary(Particle* BinaryParticleI, Particle* BinaryParticleJ, double next_time) {
+void Binary::IntegrateBinary(Particle* ptclCM, double next_time) {
 
     // variables for position, velocity prediction
+
+    double dt, dt2, dt3;
+    double rinv, rinv2, rinv3, rinv4, rinv5;
 
     double R[Dim], Rdot[Dim];
     double Rinv;
@@ -185,9 +184,12 @@ void Binary::IntegratePerturbedBinary(Particle* BinaryParticleI, Particle* Binar
     double z;
 
 
+    Particle* ptclI;
+    Particle* ptclJ;
 
+    ptclI = ptclCM->BinaryParticleI;
+    ptclJ = ptclCM->BinaryParticleJ;
 
-    // calculate multiples of time beforehand
 
     dtau = dTau;
     dtau2 = dtau*dtau;
@@ -201,57 +203,6 @@ void Binary::IntegratePerturbedBinary(Particle* BinaryParticleI, Particle* Binar
 
     // first predict the positions of neighbors
 
-    for (Particle* ptcl: ACList) {
-        ptcl->predictParticleSecondOrder(next_time);
-    }
-
-    // predict the positions of binary pair particles to highest order possible
-    // using stumpff coefficients
-
-
-    for (int dimu=0; dimu<4; dimu++) {
-        u_pred[dimu]    = u[dimu] + udot[dimu]*dtau + u2dot[dimu]*dtau2/2 + u3dot[dimu]*dtau3/6 \
-                  + cn[4]*u4dot[dimu]*dtau4/24 + cn[5]*u5dot[dimu]*dtau5/120;
-        udot_pred[dimu] = udot[dimu] + u2dot[dimu]*dtau + u3dot[dimu]*dtau2/2 \
-                  + cn[4]*u4dot[dimu]*dtau3/6+ cn[5]*u5dot[dimu]*dtau4/24;
-    }
-
-
-    R[0]   = u_pred[0]*u_pred[0] - u_pred[1]*u_pred[1] - u_pred[2]*u_pred[2] + u_pred[3]*u_pred[3];
-    R[1]   = 2*(u_pred[0]*u_pred[1] - u_pred[2]*u_pred[3]);
-    R[2]   = 2*(u_pred[0]*u_pred[2] + u_pred[1]*u_pred[3]);
-    ratioM = BinaryParticleJ->Mass/Mass;
-
-
-    for (int dim=0; dim<Dim; dim++) {
-        BinaryParticleI->PredPosition[dim] = PredPosition[dim] + ratioM*R[dim];
-        BinaryParticleJ->PredPosition[dim] = BinaryParticleI->PredPosition[dim] - R[dim];
-    }
-
-    generate_Matrix(u_pred,L);
-
-    r_pred = (u_pred[0]*u_pred[0] + u_pred[1]*u_pred[1] + u_pred[2]*u_pred[2] + u_pred[3]*u_pred[3]) ;
-
-
-    for (int dim=0; dim<Dim; dim++) {
-
-        Rdot[dim] = 0.0;
-
-        for (int dimu=0; dimu<4; dimu++) {
-            Rdot[dim] += 2*L[dim][dimu]*udot_pred[dim]/r_pred;
-        }
-    }
-
-    for (int dim=0; dim<Dim; dim++) {
-        BinaryParticleI->PredVelocity[dim] = PredVelocity[dim] + ratioM*Rdot[dim];
-        BinaryParticleJ->PredVelocity[dim] = BinaryParticleI->PredVelocity[dim] - Rdot[dim];
-    }
-
-
-
-
-    // refer to kspert.f
-
     // initialize the perturbing acceleration and jerk
 
     for (int dim=0; dim<Dim; dim++) {
@@ -260,38 +211,89 @@ void Binary::IntegratePerturbedBinary(Particle* BinaryParticleI, Particle* Binar
     }
 
 
-    // calculate perturbation from single particles
+    if (ptclCM->NumberOfAC >1) {
 
-    for (Particle* ptcl: ACList) {
+        for (Particle* ptcl: ptclCM->ACList) {
+            ptcl->predictParticleSecondOrder(next_time);
+        }
 
-        dr2i = 0;
-        dr2j = 0;
+        // predict the positions of binary pair particles to highest order possible
+        // using stumpff coefficients
 
-        dxdvi = 0;
-        dxdvj = 0;
+
+        for (int dimu=0; dimu<4; dimu++) {
+            u_pred[dimu]    = u[dimu] + udot[dimu]*dtau + u2dot[dimu]*dtau2/2 + u3dot[dimu]*dtau3/6 \
+                    + cn[4]*u4dot[dimu]*dtau4/24 + cn[5]*u5dot[dimu]*dtau5/120;
+            udot_pred[dimu] = udot[dimu] + u2dot[dimu]*dtau + u3dot[dimu]*dtau2/2 \
+                    + cn[4]*u4dot[dimu]*dtau3/6+ cn[5]*u5dot[dimu]*dtau4/24;
+        }
+
+
+        R[0]   = u_pred[0]*u_pred[0] - u_pred[1]*u_pred[1] - u_pred[2]*u_pred[2] + u_pred[3]*u_pred[3];
+        R[1]   = 2*(u_pred[0]*u_pred[1] - u_pred[2]*u_pred[3]);
+        R[2]   = 2*(u_pred[0]*u_pred[2] + u_pred[1]*u_pred[3]);
+        ratioM = ptclJ->Mass/Mass;
+
+
+        for (int dim=0; dim<Dim; dim++) {
+            ptclI->PredPosition[dim] = PredPosition[dim] + ratioM*R[dim];
+            ptclJ->PredPosition[dim] = ptclI->PredPosition[dim] - R[dim];
+        }
+
+        generate_Matrix(u_pred,L);
+
+        r_pred = (u_pred[0]*u_pred[0] + u_pred[1]*u_pred[1] + u_pred[2]*u_pred[2] + u_pred[3]*u_pred[3]) ;
+
 
         for (int dim=0; dim<Dim; dim++) {
 
-            dxi[dim] = ptcl->PredPosition[dim] - BinaryParticleI->PredPosition[dim];
-            dvi[dim] = ptcl->PredVelocity[dim] - BinaryParticleJ->PredVelocity[dim];
-            dr2i += dxi[dim]*dxi[dim];
-            dxdvi += dxi[dim]*dvi[dim];
+            Rdot[dim] = 0.0;
 
-            dxj[dim] = ptcl->PredPosition[dim] - BinaryParticleI->PredPosition[dim];
-            dvj[dim] = ptcl->PredVelocity[dim] - BinaryParticleJ->PredVelocity[dim];
-            dr2j += dxj[dim]*dxj[dim];
-            dxdvj += dxj[dim]*dvj[dim];
+            for (int dimu=0; dimu<4; dimu++) {
+                Rdot[dim] += 2*L[dim][dimu]*udot_pred[dim]/r_pred;
+            }
+        }
+
+        for (int dim=0; dim<Dim; dim++) {
+            ptclI->PredVelocity[dim] = PredVelocity[dim] + ratioM*Rdot[dim];
+            ptclJ->PredVelocity[dim] = ptclI->PredVelocity[dim] - Rdot[dim];
+        }
+
+
+        // calculate perturbation from single particles
+
+        for (Particle* ptcl: ACList) {
+
+            dr2i = 0;
+            dr2j = 0;
+
+            dxdvi = 0;
+            dxdvj = 0;
+
+            for (int dim=0; dim<Dim; dim++) {
+
+                dxi[dim] = ptcl->PredPosition[dim] - ptclI->PredPosition[dim];
+                dvi[dim] = ptcl->PredVelocity[dim] - ptclJ->PredVelocity[dim];
+                dr2i += dxi[dim]*dxi[dim];
+                dxdvi += dxi[dim]*dvi[dim];
+
+                dxj[dim] = ptcl->PredPosition[dim] - ptclI->PredPosition[dim];
+                dvj[dim] = ptcl->PredVelocity[dim] - ptclJ->PredVelocity[dim];
+                dr2j += dxj[dim]*dxj[dim];
+                dxdvj += dxj[dim]*dvj[dim];
+
+            }
+
+            direct_sum(dxi ,dvi, dr2i, dxdvi, ptcl->Mass, P, Pdot);
+            direct_sum(dxj ,dvj, dr2j, dxdvj, -ptcl->Mass, P, Pdot);
 
         }
 
-        direct_sum(dxi ,dvi, dr2i, dxdvi, ptcl->Mass, P, Pdot);
-        direct_sum(dxj ,dvj, dr2j, dxdvj, -ptcl->Mass, P, Pdot);
+        
+        for (int dim=0; dim<Dim; dim++) {
+            Pdot[dim] *= r_pred;
+        }
 
-    }
-
-    
-    for (int dim=0; dim<Dim; dim++) {
-        Pdot[dim] *= r_pred;
     }
 
     // calculating perturbation from particle systems
@@ -431,13 +433,12 @@ void Binary::IntegratePerturbedBinary(Particle* BinaryParticleI, Particle* Binar
     z = -0.5*h*dtau;
     getStumpffCoefficients(z);
 
-    TimeStep = tdot*dtau + t2dot*dtau2/2 + t3dot*dtau3/6 + t4dot*dtau4/24 \
-             + t5dot*cn_4z[5]*dtau5/120 + t6dot*cn_4z[6]*dtau6/720;
-
+    // TimeStep = tdot*dtau + t2dot*dtau2/2 + t3dot*dtau3/6 + t4dot*dtau4/24 \
+    //          + t5dot*cn_4z[5]*dtau5/120 + t6dot*cn_4z[6]*dtau6/720;
 
     // generate new list of perturbers
 
-
+    CurrentTime = next_time;
+    CurrentTau += dtau;
     
-
 }

@@ -8,6 +8,8 @@
 #include <vector>
 #include <iostream>
 #include "../defs.h"
+#include "../Binary/Binary.h"
+
 //#include "../global.h"
 
 class Particle
@@ -44,12 +46,17 @@ class Particle
 		double BackgroundAcceleration[Dim];
 		Particle* NextParticleInEnzo;
 		Particle* NextParticleForComputation;
+		Particle* BinaryPairParticle;
+		Particle* BinaryParticleI;
+		Particle* BinaryParticleJ;
+		Binary* BinaryInfo;
 		std::vector<Particle*> ACList;     // list of AC neighbor 
 		int NumberOfAC; // number of neighbors
 		double RadiusOfAC;
 		int isEvolve;
 		bool isRegular;
 		bool isStarEvolution;
+		bool isBinary;
 
 		// Constructor
 		Particle(void) {
@@ -83,6 +90,12 @@ class Particle
 			}
 			NextParticleInEnzo = nullptr;
 			NextParticleForComputation = nullptr;
+			BinaryPairParticle = nullptr;
+			BinaryParticleI = nullptr;
+			BinaryParticleJ = nullptr;
+			BinaryInfo = nullptr;
+
+			isBinary = false;
 		}
 
 		void updateParticle(double mass, double *vel, double pos[], int particletype) {
@@ -122,6 +135,8 @@ class Particle
 		void updateEvolveParticle(std::vector<Particle*> &particle);
 		void updateParticle(double next_time, double a[3][4]);
 		double evolveStarMass(double t1, double t2);
+
+		void Particle::isKSCandidate(double next_time);
 };
 
 

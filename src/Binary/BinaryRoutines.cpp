@@ -4,7 +4,7 @@
 #include <cmath>
 #include <algorithm>
 
-
+void getBlockTimeStep(double dt, int& TimeLevel, double &TimeStep);
 void direct_sum(double *x, double *v, double r2, double vx,
 		        double mass, double (&a)[3], double (&adot)[3]);
 
@@ -75,7 +75,7 @@ void Binary::getStumpffCoefficients(double z){
 
 
 
-void Binary::InitializeBinary(double current_time) {
+void Binary::InitializeBinary(Particle* BinaryParticleI, Particle* BinaryParticleJ, double current_time) {
 
     
     double x[Dim],xdot[Dim];
@@ -90,6 +90,9 @@ void Binary::InitializeBinary(double current_time) {
     double P[Dim], Pdot[Dim]; // perturbed acceleration in cartesian coordinates
     double Ptot; // total perturbed force
 
+    int TimeLevelTmp;
+    double TimeStepTmp;
+
 
     // variables related with time step and stumpff coefficients
 
@@ -97,6 +100,9 @@ void Binary::InitializeBinary(double current_time) {
     double dtau2, dtau3, dtau4, dtau5, dtau6;
     double dt_ks; // ks time in physical units
     double z;
+
+    double dt, dt2, dt3;
+    double rinv, rinv2, rinv3, rinv4, rinv5;
 
     
     
@@ -307,5 +313,33 @@ void Binary::InitializeBinary(double current_time) {
 
     TimeStep = tdot*dtau + t2dot*dtau2/2 + t3dot*dtau3/6 + t4dot*dtau4/24 \
              + t5dot*cn_4z[5]*dtau5/120 + t6dot*cn_4z[6]*dtau6/720;
+
+    // also, convert the time step into block steps. 
+
+    getBlockTimeStep(TimeStep, TimeLevelTmp, TimeStepTmp);
+
+    TimeStep = TimeStepTmp;
+    TimeLevel = TimeLevelTmp;
+
+    
+    // time interval for prediction
+
+    dt = TimeStep;
+    dt2 = dt*dt;
+    dt3 = dt2*dt;
+
+    // inverse of r
+
+    rinv = 1/r;
+    rinv2 = rinv/r;
+    rinv3 = rinv2/r;
+    rinv4 = rinv3/r;
+    rinv5 = rinv4/r;
+
+
+    // calculate multiples of time beforehand
+
+    dTau =  dt*rinv - t2dot*dt2*rinv3/2 + t2dot*t2dot*dt3*rinv5/2 - t3dot*dt3*rinv4/6;
+    
 
 }

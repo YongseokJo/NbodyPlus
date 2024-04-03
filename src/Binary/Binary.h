@@ -194,13 +194,11 @@ class Binary
             }
 		}
 
-        void Binary::InitializeBinary(double next_time);
+        void Binary::InitializeBinary(Particle* BinaryParticleI, Particle* BinaryParticleJ, double current_time);
         void Binary::getStumpffCoefficients(double z);
 
-        void Binary::KSIntegration(Particle* BinaryParticleI, Particle* BinaryParticleJ);
-        void Binary::predictBinary(Particle* BinaryParticleI, Particle* BinaryParticleJ, double next_time);
-        void Binary::IntegrateUnperturbedBinary(Particle* BinaryParticleI, Particle* BinaryParticleJ, double next_time);
-        void Binary::IntegratePerturbedBinary(Particle* BinaryParticleI, Particle* BinaryParticleJ, double next_time);
-
+        void Binary::KSIntegration(Particle* ptclCM);
+        void Binary::predictBinary(Particle* ptclCM, double next_time);
+        void Binary::IntegrateBinary(Particle* ptclCM, double next_time);
 
 };
