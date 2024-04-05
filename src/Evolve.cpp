@@ -8,6 +8,7 @@ int writeParticle(std::vector<Particle*> &particle, double MinRegTime, int outpu
 // int ReceiveFromEzno(std::vector<Particle*> &particle);
 // int SendToEzno(std::vector<Particle*> &particle);
 bool CreateComputationChain(std::vector<Particle*> &particle);
+void KSAccelerationRoutine(std::vector<Particle*> &particle);
 bool RegularAccelerationRoutine(std::vector<Particle*> &particle);
 bool IrregularAccelerationRoutine(std::vector<Particle*> &particle);
 
@@ -33,6 +34,7 @@ void Evolve(std::vector<Particle*> &particle) {
 	while (true) {
 
 		// It's time to compute regular force.
+		KSAccelerationRoutine(particle);
 		RegularAccelerationRoutine(particle); // do not update particles unless NNB=0
 		IrregularAccelerationRoutine(particle);
 		global_time = NextRegTime;

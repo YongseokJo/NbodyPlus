@@ -4,6 +4,7 @@
 void UpdateNextRegTime(std::vector<Particle*> &particle);
 void CalculateRegAccelerationOnGPU(std::vector<int> IndexList, std::vector<Particle*> &particle);
 
+
 bool RegularAccelerationRoutine(std::vector<Particle*> &particle)
 {
 	std::cout << "Calculating regular force ..." << std::endl;
@@ -87,7 +88,7 @@ void UpdateNextRegTime(std::vector<Particle*> &particle) {
 	int i = 0;
 	for (Particle* ptcl: particle) {
 		time_tmp = ptcl->CurrentTimeReg + ptcl->TimeStepReg;
-		if (NextRegTime == time_tmp) {
+		if ((NextRegTime == time_tmp)) {
 			std::cerr << ptcl->getPID() << ' ';
 			ptcl->isRegular = true;
 			RegIndexList.push_back(i);

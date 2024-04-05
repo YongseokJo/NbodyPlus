@@ -187,6 +187,7 @@ void Binary::IntegrateBinary(Particle* ptclCM, double next_time) {
     Particle* ptclI;
     Particle* ptclJ;
 
+
     ptclI = ptclCM->BinaryParticleI;
     ptclJ = ptclCM->BinaryParticleJ;
 

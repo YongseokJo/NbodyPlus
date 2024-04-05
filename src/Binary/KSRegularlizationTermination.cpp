@@ -76,10 +76,11 @@ void KSTermination(Particle* ptclCM, std::vector<Particle*> &particle){
         ptclCMIndex += 1;
 
         if (ptcl == ptclCM) {
-            particle.erase(particle.begin() + ptclCMIndex);
             break;
         }
     }
+
+    particle.erase(particle.begin() + ptclCMIndex);
 
 
     // add the original particles
@@ -89,5 +90,23 @@ void KSTermination(Particle* ptclCM, std::vector<Particle*> &particle){
 
     InitializeParticle(ptclI, particle);
     InitializeParticle(ptclI, particle);
+
+
+    // we also need to revert the neighbor list of Particles
+    // assuming that all the neighbors are bidirectional
+    // may need to update later if the radius for neighbor differs depending on the particle
+
+    // first for particle I
+
+    for (Particle* ptcl: ptclCM->ACList) {
+
+        auto it = std::find(ptcl->ACList.begin(), ptcl->ACList.end(), ptclCM);
+        
+        if (it != ptclJ->ACList.end()) {
+            ptcl->ACList.erase(it);
+            ptcl->ACList.push_back(ptclI);
+            ptcl->ACList.push_back(ptclJ);
+        }
+    }
 
 }

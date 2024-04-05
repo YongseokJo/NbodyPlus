@@ -30,6 +30,8 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 			fprintf(stdout, "CurrentTimeIrr = %e, TimeStepIrr = %e, CurrentTimeReg=%e, TimeStepReg=%e\n",
 					ParticleForComputation->CurrentTimeIrr, ParticleForComputation->TimeStepIrr, ParticleForComputation->CurrentTimeReg, ParticleForComputation->TimeStepReg);
 
+			// we neeed to calculate the KS acc first
+
 
 			ParticleForComputation->calculateIrrForce(); // this includes particle position and time evolution.
 			//ParticleForComputation = ParticleForComputation->NextParticleForComputation;
