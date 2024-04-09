@@ -34,7 +34,7 @@ void Evolve(std::vector<Particle*> &particle) {
 	while (true) {
 
 		// It's time to compute regular force.
-		KSAccelerationRoutine(particle);
+		//KSAccelerationRoutine(particle);
 		RegularAccelerationRoutine(particle); // do not update particles unless NNB=0
 		IrregularAccelerationRoutine(particle);
 		global_time = NextRegTime;

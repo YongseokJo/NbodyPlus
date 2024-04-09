@@ -6,7 +6,8 @@
 
 void getBlockTimeStep(double dt, int& TimeLevel, double &TimeStep);
 void direct_sum(double *x, double *v, double r2, double vx,
-		        double mass, double (&a)[3], double (&adot)[3]);
+                double mass, double mdot, double (&a)[3], double (&adot)[3]);
+
 
 void generate_Matrix(double a[3], double (&A)[3][4]) {
  
@@ -103,6 +104,8 @@ void Binary::InitializeBinary(Particle* ptclCM, double current_time) {
 
     double dt, dt2, dt3;
     double rinv, rinv2, rinv3, rinv4, rinv5;
+
+    double mdot = 0.0;
 
     Particle* ptclI;
     Particle* ptclJ;
@@ -202,8 +205,8 @@ void Binary::InitializeBinary(Particle* ptclCM, double current_time) {
 
         }
 
-        direct_sum(dxi ,dvi, dr2i, dxdvi, ptcl->Mass, P, Pdot);
-        direct_sum(dxj ,dvj, dr2j, dxdvj, -ptcl->Mass, P, Pdot);
+        direct_sum(dxi ,dvi, dr2i, dxdvi, ptcl->Mass, mdot, P, Pdot);
+        direct_sum(dxj ,dvj, dr2j, dxdvj, -ptcl->Mass, mdot, P, Pdot);
 
     }
 

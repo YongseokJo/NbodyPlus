@@ -82,10 +82,10 @@ void CalculateRegAccelerationOnGPU(std::vector<int> IndexList, std::vector<Parti
 	//PotSend         = new double[ListSize];
 
 	for (int p=0; p<2; p++) {
-		AccRegReceive[p]    = new double[ListSize][Dim]{0};
-		AccRegDotReceive[p] = new double[ListSize][Dim]{0};
-		AccIrr[p]           = new double[ListSize][Dim]{0};
-		AccIrrDot[p]        = new double[ListSize][Dim]{0};
+		AccRegReceive[p]    = new double[ListSize][Dim];//{0};
+		AccRegDotReceive[p] = new double[ListSize][Dim];//{0};
+		AccIrr[p]           = new double[ListSize][Dim];//{0};
+		AccIrrDot[p]        = new double[ListSize][Dim];//{0};
 
 		NumNeighborReceive[p] = new int[ListSize];
 		ACListReceive[p]      = new int*[ListSize];

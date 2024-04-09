@@ -8,7 +8,7 @@
 
 void generate_Matrix(double a[3], double (&A)[3][4]);
 void direct_sum(double *x, double *v, double r2, double vx,
-		        double mass, double (&a)[3], double (&adot)[3]);
+                double mass, double mdot, double (&a)[3], double (&adot)[3]);
 
 
 // refer to ksint.f
@@ -182,6 +182,7 @@ void Binary::IntegrateBinary(Particle* ptclCM, double next_time) {
 
     double z;
 
+    double mdot = 0.0;
 
     Particle* ptclI;
     Particle* ptclJ;
@@ -284,8 +285,8 @@ void Binary::IntegrateBinary(Particle* ptclCM, double next_time) {
 
             }
 
-            direct_sum(dxi ,dvi, dr2i, dxdvi, ptcl->Mass, P, Pdot);
-            direct_sum(dxj ,dvj, dr2j, dxdvj, -ptcl->Mass, P, Pdot);
+            direct_sum(dxi ,dvi, dr2i, dxdvi, ptcl->Mass, mdot, P, Pdot);
+            direct_sum(dxj ,dvj, dr2j, dxdvj, -ptcl->Mass, mdot, P, Pdot);
 
         }
 
