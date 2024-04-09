@@ -89,7 +89,7 @@ void KSTermination(Particle* ptclCM, std::vector<Particle*> &particle){
     particle.push_back(ptclJ);
 
     InitializeParticle(ptclI, particle);
-    InitializeParticle(ptclI, particle);
+    InitializeParticle(ptclJ, particle);
 
 
     // we also need to revert the neighbor list of Particles

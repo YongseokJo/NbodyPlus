@@ -158,7 +158,6 @@ void Binary::IntegrateBinary(Particle* ptclCM, double next_time) {
     double Rinv;
     double ratioM;
 
-    double L[3][4];
     double dtau, dtau2, dtau3, dtau4, dtau5, dtau6;
 
 

@@ -75,7 +75,7 @@ void Binary::getStumpffCoefficients(double z){
 
 
 
-void Binary::InitializeBinary(Particle* BinaryParticleI, Particle* BinaryParticleJ, double current_time) {
+void Binary::InitializeBinary(Particle* ptclCM, double current_time) {
 
     
     double x[Dim],xdot[Dim];
@@ -104,13 +104,19 @@ void Binary::InitializeBinary(Particle* BinaryParticleI, Particle* BinaryParticl
     double dt, dt2, dt3;
     double rinv, rinv2, rinv3, rinv4, rinv5;
 
+    Particle* ptclI;
+    Particle* ptclJ;
+
     
+    ptclI = ptclCM->BinaryParticleI;
+    ptclJ = ptclCM->BinaryParticleJ;
+
     
     // define the relative coordinates for binaries
 
     for (int dim=0; dim<Dim; dim++) {
-        x[dim] = BinaryParticleI->PredPosition[dim] - BinaryParticleJ->PredPosition[dim];
-        xdot[dim] = BinaryParticleI->PredVelocity[dim] - BinaryParticleJ->PredVelocity[dim];
+        x[dim] = ptclI->PredPosition[dim] - ptclJ->PredPosition[dim];
+        xdot[dim] = ptclI->PredVelocity[dim] - ptclJ->PredVelocity[dim];
         r2 += x[dim]*x[dim];
     }
 
@@ -184,13 +190,13 @@ void Binary::InitializeBinary(Particle* BinaryParticleI, Particle* BinaryParticl
 
         for (int dim=0; dim<Dim; dim++) {
 
-            dxi[dim] = ptcl->PredPosition[dim] - BinaryParticleI->PredPosition[dim];
-            dvi[dim] = ptcl->PredVelocity[dim] - BinaryParticleJ->PredVelocity[dim];
+            dxi[dim] = ptcl->PredPosition[dim] - ptclI->PredPosition[dim];
+            dvi[dim] = ptcl->PredVelocity[dim] - ptclJ->PredVelocity[dim];
             dr2i += dxi[dim]*dxi[dim];
             dxdvi += dxi[dim]*dvi[dim];
 
-            dxj[dim] = ptcl->PredPosition[dim] - BinaryParticleI->PredPosition[dim];
-            dvj[dim] = ptcl->PredVelocity[dim] - BinaryParticleJ->PredVelocity[dim];
+            dxj[dim] = ptcl->PredPosition[dim] - ptclI->PredPosition[dim];
+            dvj[dim] = ptcl->PredVelocity[dim] - ptclJ->PredVelocity[dim];
             dr2j += dxj[dim]*dxj[dim];
             dxdvj += dxj[dim]*dvj[dim];
 

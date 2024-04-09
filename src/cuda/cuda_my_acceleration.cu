@@ -27,8 +27,8 @@ static int devid, numGPU;
 static bool is_open = false;
 static bool devinit = false;
 //BackgroundParticle *h_background, *d_background;
-BackgroundParticle *h_background = nullptr; //, *background;
-BackgroundParticle *d_background = nullptr;
+BackgroundParticle *h_background; // = nullptr; //, *background;
+BackgroundParticle *d_background; // = nullptr;
 
 
 

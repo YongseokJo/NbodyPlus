@@ -395,7 +395,7 @@ void NewKSInitialization(Particle* ptclI, std::vector<Particle*> &particle, doub
 
     // calculate the initial values of relevant variables
 
-    ptclBin->InitializeBinary(ptclI, ptclJ, current_time);
+    ptclBin->InitializeBinary(ptclCM, current_time);
 
 
     // delete the individual particles and add the new CM particle
