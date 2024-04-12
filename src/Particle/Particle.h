@@ -148,6 +148,7 @@ class Binary
 		int NumberOfAC;     // number of neighbors
 		double RadiusOfAC;
 		std::vector<Particle*> ACList;     // list of AC neighbor 
+        Particle* ptclCM;
 
 
         // information of binary particles in cartesian coordinates
@@ -318,11 +319,11 @@ class Binary
             }
 		}
 
-        void InitializeBinary(Particle* ptclCM, double current_time);
+        void InitializeBinary(double current_time);
         void getStumpffCoefficients(double z);
-        void KSIntegration(Particle* ptclCM);
-        void predictBinary(Particle* ptclCM, double next_time);
-        void IntegrateBinary(Particle* ptclCM, double next_time);
+        void KSIntegration(double next_time);
+        void predictBinary(double next_time);
+        void IntegrateBinary(double next_time);
 
 };
 

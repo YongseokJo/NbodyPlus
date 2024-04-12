@@ -359,6 +359,10 @@ void NewKSInitialization(Particle* ptclI, std::vector<Particle*> &particle, doub
 
     ptclCM->isBinary = true;
     ptclI->isBinary = false;
+    ptclBin->ptclCM = ptclCM;
+
+    // add it to binary list
+    BinaryList.push_back(ptclBin);
 
 
     // copy the neighbor list for c.m particle
@@ -395,7 +399,7 @@ void NewKSInitialization(Particle* ptclI, std::vector<Particle*> &particle, doub
 
     // calculate the initial values of relevant variables
 
-    ptclBin->InitializeBinary(ptclCM, current_time);
+    ptclBin->InitializeBinary(current_time);
 
 
     // delete the individual particles and add the new CM particle

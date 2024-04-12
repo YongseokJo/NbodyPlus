@@ -13,20 +13,22 @@ void direct_sum(double *x, double *v, double r2, double vx,
 
 // refer to ksint.f
 
-void Binary::KSIntegration(Particle* ptclCM){
+void Binary::KSIntegration(Particle* ptclCM, double next_time){
 
-    double next_time;
+    double binary_time;
 
+    while ((CurrentTime + TimeStep)<next_time) {
 
-    next_time = CurrentTime + TimeStep;
+        // first predict the future position of the binary particle. 
 
-    // first predict the future position of the binary particle. 
+        binary_time = CurrentTime + TimeStep;
 
-    predictBinary(ptclCM, next_time);
+        predictBinary(ptclCM, binary_time);
 
-    // if there are zero neighbors for binary particles, calculate by unperturbed equations
+        // if there are zero neighbors for binary particles, calculate by unperturbed equations
 
-    IntegrateBinary(ptclCM, next_time);
+        IntegrateBinary(ptclCM, binary_time);
+    }
 
 }
 
@@ -424,8 +426,6 @@ void Binary::IntegrateBinary(Particle* ptclCM, double next_time) {
 
 
     // update the time
-
-    CurrentTime = next_time;
 
 
     // generate new stumpff coefficients

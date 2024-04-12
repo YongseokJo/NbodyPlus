@@ -8,7 +8,7 @@ int writeParticle(std::vector<Particle*> &particle, double MinRegTime, int outpu
 // int ReceiveFromEzno(std::vector<Particle*> &particle);
 // int SendToEzno(std::vector<Particle*> &particle);
 bool CreateComputationChain(std::vector<Particle*> &particle);
-void KSAccelerationRoutine(std::vector<Particle*> &particle);
+void BinaryAccelerationRoutine(double next_time);
 bool RegularAccelerationRoutine(std::vector<Particle*> &particle);
 bool IrregularAccelerationRoutine(std::vector<Particle*> &particle);
 
@@ -33,11 +33,16 @@ void Evolve(std::vector<Particle*> &particle) {
 
 	while (true) {
 
+		double binary_time = 0;
+
 		// It's time to compute regular force.
-		//KSAccelerationRoutine(particle);
+		if (BinaryList.size()>0) {
+			BinaryAccelerationRoutine(binary_time);
+		}
 		RegularAccelerationRoutine(particle); // do not update particles unless NNB=0
 		IrregularAccelerationRoutine(particle);
 		global_time = NextRegTime;
+		binary_time = FirstComputation->CurrentTimeIrr + FirstComputation->TimeStepIrr;
 
 		// create output at appropriate time intervals
 			
