@@ -14,7 +14,6 @@ std::vector<int> LevelList;
 double EnzoTimeStep;
 const double dt_min = 9.3132257e-10;
 const int dt_level_min = -30;
-double outputTimeStep     = 0.;
 int newNNB = 0;
 std::vector<int> RegIndexList; 
 int NumNeighborMax = 100;
@@ -35,8 +34,12 @@ int main(int argc, char *argv[]) {
 
 	//InitialCommunication(particle);
 	Parser(argc, argv);
-	
-	EnzoTimeStep = inputTime;
+
+	EnzoTimeStep   = endTime/1e10; // endTime should be Myr
+	outputTimeStep = outputTimeStep/endTime; // endTime should be Myr
+
+	cout << "EnzoTimeStep = "   << EnzoTimeStep   << endl;
+	cout << "outputTimeStep = " << outputTimeStep << endl;
 
 	if (readData(particle) == FAIL)
 		fprintf(stderr, "Read Data Failed!\n");

@@ -166,14 +166,6 @@ void CalculateRegAccelerationOnGPU(std::vector<int> IndexList, std::vector<Parti
 		} // endfor i2, over regular particles
 	} // endfor p,
 
-	std::cout <<  "1. a_tot= "<< particle[0]->a_tot[0][0] << ", a_irr= "<< particle[0]->a_irr[0][0] << std::endl; //<< ',' << particle[0]->a_tot[1][0]\
-		<< ',' << particle[0]->a_tot[2][0] << std::endl;
-
-	std::cout <<  "2. a_tot= "<< particle[1]->a_tot[0][0] << ", a_irr= "<< particle[1]->a_irr[0][0] <<std::endl; 
-	std::cout <<  "3. a_tot= "<< particle[2]->a_tot[0][0] << ", a_irr= "<< particle[2]->a_irr[0][0] <<std::endl; 
-	//std::cout <<  "2. a_tot= "<< particle[1]->a_tot[0][0]<< ',' << particle[1]->a_tot[1][0]\
-		<< ',' << particle[1]->a_tot[2][0] << std::endl;
-
 	std::cout <<  "Calculation On Device Done ..." << std::endl;
 
 
@@ -223,22 +215,12 @@ void CalculateRegAccelerationOnGPU(std::vector<int> IndexList, std::vector<Parti
 		<< ',' << particle[0]->a_tot[2][0] << std::endl;
 	std::cout <<  "4. a_tot= "<< particle[1]->a_tot[0][0]<< ',' << particle[1]->a_tot[1][0]\
 		<< ',' << particle[1]->a_tot[2][0] << std::endl;
-	std::cout <<  "5. a_tot= "<< particle[2]->a_tot[0][0]<< ',' << particle[2]->a_tot[1][0]\
-		<< ',' << particle[2]->a_tot[2][0] << std::endl;
 
 	std::cout <<  "3. a_irr= "<< particle[0]->a_irr[0][0]<< ',' << particle[0]->a_irr[1][0]\
 		<< ',' << particle[0]->a_irr[2][0] << std::endl;
 	std::cout <<  "4. a_irr= "<< particle[1]->a_irr[0][0]<< ',' << particle[1]->a_irr[1][0]\
 		<< ',' << particle[1]->a_irr[2][0] << std::endl;
-	std::cout <<  "5. a_irr= "<< particle[2]->a_irr[0][0]<< ',' << particle[2]->a_irr[1][0]\
-		<< ',' << particle[2]->a_irr[2][0] << std::endl;
 
-	std::cout <<  "3. a_reg= "<< particle[0]->a_reg[0][0]<< ',' << particle[0]->a_reg[1][0]\
-		<< ',' << particle[0]->a_reg[2][0] << std::endl;
-	std::cout <<  "4. a_reg= "<< particle[1]->a_reg[0][0]<< ',' << particle[1]->a_reg[1][0]\
-		<< ',' << particle[1]->a_reg[2][0] << std::endl;
-	std::cout <<  "5. a_reg= "<< particle[2]->a_reg[0][0]<< ',' << particle[2]->a_reg[1][0]\
-		<< ',' << particle[2]->a_reg[2][0] << std::endl;
 
 	// free all temporary variables
 	delete[] MassSend;

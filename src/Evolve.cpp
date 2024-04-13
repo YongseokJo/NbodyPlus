@@ -12,7 +12,7 @@ bool RegularAccelerationRoutine(std::vector<Particle*> &particle);
 bool IrregularAccelerationRoutine(std::vector<Particle*> &particle);
 
 bool IsOutput         = false;
-double outputTime = 0.;
+double outputTime = 0;
 double NextRegTime    = 0.;
 std::vector<Particle*> ComputationChain{};
 
@@ -29,6 +29,8 @@ void Evolve(std::vector<Particle*> &particle) {
 //	}
 
 	//CreateComputationChain(particle);
+	writeParticle(particle, global_time, outNum++);
+	outputTime = outputTimeStep;
 
 	while (true) {
 
@@ -38,15 +40,13 @@ void Evolve(std::vector<Particle*> &particle) {
 		global_time = NextRegTime;
 
 		// create output at appropriate time intervals
-			
-		if (outputTime < global_time) {
-			writeParticle(particle, global_time, ++outNum);
-			outputTime += EnzoTimeStep;
+		if (outputTime <= global_time ) {
+			writeParticle(particle, global_time, outNum++);
+			outputTime += outputTimeStep;
 		}
 
 		// end if the global time exceeds the end time
-		
-		if (global_time > endTime) {
+		if (global_time > 1) {
 			std::cout << EnzoTimeStep << std::endl;
 			exit(EXIT_FAILURE);
 		}
