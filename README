@@ -1,3 +1,11 @@
-how to run this code
+How to run this code
 
-./nbodyplus.exe -f binary.dat -t 0.01 -dt 0.001 >stdout 2>stderr &
+<OPTIONS>
+-f      : the file name of the nbody particles
+-dtdump : time step for data dump in the unit of year
+-tend   : end time for simulation in the unit of year
+-d      : the file name of output data
+example:
+./nbodyplus.exe -f binary.dat -dtdump 1e6 -tend 1e9 -d snap >stdout 2>stderr &
+This will read nbody particles from binary.dat and output results in output/snap_*.txt every 1 Myr (1e6 yr) for 1 Gyr.
+
