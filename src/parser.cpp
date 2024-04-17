@@ -2,8 +2,10 @@
 #include "global.h"
 
 char* fname;
+char* foutput;
 double inputTime = 0.0;
 double endTime = 0.0;
+double outputTimeStep = 0.;
 
 int Parser(int argc, char *argv[]) {
 	for (int i = 1; i < argc; ++i) {
@@ -25,27 +27,31 @@ int Parser(int argc, char *argv[]) {
 				return -1; // Error: Missing argument
 			}
 
-		} else if (arg == "-dt" || arg == "--timestep") {
-            // Check if the next argument exists
-            	if (i + 1 < argc) {
-                	inputTime = std::atof(argv[i + 1]);
-                	std::cout << "Double value: " << inputTime << std::endl;
-                	i++; // Skip the next argument as it's already processed
-            	} else {
-                	std::cerr << "Error: Missing argument for -t/--double option" << std::endl;
-                	return -2; // Error: Missing argument
-		}
+		} else if (arg == "-dtdump" || arg == "--timestep") {
+			if (i + 1 < argc) {
+				outputTimeStep = std::atof(argv[i + 1]);
+				std::cout << "Double value: " << outputTimeStep << std::endl;
+				i++; // Skip the next argument as it's already processed
+			} else {
+				std::cerr << "Error: Missing argument for -t/--double option" << std::endl;
+				return -2; // Error: Missing argument
+			}
 
 		} else if (arg == "-tend" || arg == "--end") {
-            	// Check if the next argument exists
-	            if (i + 1 < argc) {
-        	        endTime = std::atof(argv[i + 1]);
-               		std::cout << "Double value: " << endTime << std::endl;
-                	i++; // Skip the next argument as it's already processed
-            	} else {
-                	std::cerr << "Error: Missing argument for -tend/--double option" << std::endl;
-                	return -2; // Error: Missing argument
-		}
+			if (i + 1 < argc) {
+				endTime = std::atof(argv[i + 1]);
+				std::cout << "Double value: " << endTime << std::endl;
+				i++; // Skip the next argument as it's already processed
+			} else {
+				std::cerr << "Error: Missing argument for -tend/--double option" << std::endl;
+				return -2; // Error: Missing argument
+			}
+		} else if (arg == "-d" || arg == "--dir") {
+			if (i + 1 < argc) {
+				foutput = argv[i + 1];
+				std::cout << "Output file name: " << fname << std::endl;
+				i++; // Skip the next argument as it's already processed
+			}
 		} else {
 			// Handle unrecognized arguments
 			std::cerr << "Error: Unrecognized argument: " << arg << std::endl;

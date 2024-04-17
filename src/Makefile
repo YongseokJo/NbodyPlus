@@ -1,6 +1,6 @@
 # Compiler
-#CXX = icc
-CXX = g++
+CXX = icc
+#CXX = g++
 NVCC = nvcc
 
 # Compiler flags
@@ -9,7 +9,7 @@ NVCCFLAGS = -O2 -G -Xcompiler -rdynamic -lineinfo
 
 # Libraries
 LDFLAGS = -L/usr/local/cuda-11.8/lib64/ -lcudart
-# LDFLAGS = -L/mnt/sw/nix/store/zi2wc26znf75csf5hhz77p0d2bbz53ih-cuda-11.8.0/lib64/ -lcudart
+#LDFLAGS = -L/mnt/sw/nix/store/zi2wc26znf75csf5hhz77p0d2bbz53ih-cuda-11.8.0/lib64/ -lcudart
 
 # Source files
 CXX_SRCS = main.cpp ReadWrite.cpp Particle/ParticleRoutines.cpp ComputationChainRoutine.cpp SortComputationChain.cpp InitializeParticles.cpp TimeStepRoutines.cpp Particle/CalculateIrrForce.cpp IrregularAccelerationRoutine.cpp Particle/CalculateRegForce.cpp RegularAccelerationRoutine.cpp Particle/UpdateParticle.cpp Particle/CalculateTimeStep.cpp InitializeTimeStep.cpp Evolve.cpp Particle/CheckNeighborForEvolution.cpp Particle/UpdateEvolveParticle.cpp parser.cpp cuda/CalculateRegularAcceleration.cpp cuda/CalculateAccelerationForAll.cpp Particle/EvolveStar.cpp Binary/BinaryRoutines.cpp Binary/KSRegularlizationInitialization.cpp Binary/KSRegularlizationIntegration.cpp Binary/KSRegularlizationTermination.cpp

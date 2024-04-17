@@ -152,10 +152,11 @@ int writeParticle(std::vector<Particle*> &particle, double current_time, int out
     // Now let's save the outputs in a new directory
 
     // Construct the filename with the timestamp
-    std::string filename = directoryPath + "/snapshot_" +std::to_string(outputNum) + ".txt";
+    std::string filename = directoryPath + "/" + foutput + "_" + std::to_string(outputNum) + ".txt";
 
     // Open a file for writing
     std::ofstream outputFile(filename);
+
 
     // Check if the file is opened successfully
     if (!outputFile.is_open()) {
@@ -163,7 +164,12 @@ int writeParticle(std::vector<Particle*> &particle, double current_time, int out
         return 1;
     }
 
-		outputFile << current_time*1e4 << " Myr";
+		outputFile << current_time*EnzoTimeStep*1e10/1e6 << " Myr, "; //
+		outputFile << global_time*EnzoTimeStep*1e10/1e6 << " Myr"; //
+		outputFile << "\n";
+		outputFile << outputTime << ", "; //
+		outputFile << outputTimeStep << ", "; //
+		outputFile << global_time << ""; //
 		outputFile << "\n";
     outputFile << std::left << std::setw(width) << "Mass (Msun)"
 			<< std::setw(width) << "X (pc)"

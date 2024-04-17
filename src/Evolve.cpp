@@ -8,12 +8,11 @@ int writeParticle(std::vector<Particle*> &particle, double MinRegTime, int outpu
 // int ReceiveFromEzno(std::vector<Particle*> &particle);
 // int SendToEzno(std::vector<Particle*> &particle);
 bool CreateComputationChain(std::vector<Particle*> &particle);
-void BinaryAccelerationRoutine(double next_time);
 bool RegularAccelerationRoutine(std::vector<Particle*> &particle);
 bool IrregularAccelerationRoutine(std::vector<Particle*> &particle);
 
 bool IsOutput         = false;
-double outputTime = 0.;
+double outputTime = 0;
 double NextRegTime    = 0.;
 std::vector<Particle*> ComputationChain{};
 
@@ -30,30 +29,24 @@ void Evolve(std::vector<Particle*> &particle) {
 //	}
 
 	//CreateComputationChain(particle);
+	writeParticle(particle, global_time, outNum++);
+	outputTime = outputTimeStep;
 
 	while (true) {
 
-		double binary_time = 0;
-
 		// It's time to compute regular force.
-		if (BinaryList.size()>0) {
-			BinaryAccelerationRoutine(binary_time);
-		}
 		RegularAccelerationRoutine(particle); // do not update particles unless NNB=0
 		IrregularAccelerationRoutine(particle);
 		global_time = NextRegTime;
-		binary_time = FirstComputation->CurrentTimeIrr + FirstComputation->TimeStepIrr;
 
 		// create output at appropriate time intervals
-			
-		if (outputTime < global_time) {
-			writeParticle(particle, global_time, ++outNum);
-			outputTime += EnzoTimeStep;
+		if (outputTime <= global_time ) {
+			writeParticle(particle, global_time, outNum++);
+			outputTime += outputTimeStep;
 		}
 
 		// end if the global time exceeds the end time
-		
-		if (global_time > endTime) {
+		if (global_time > 1) {
 			std::cout << EnzoTimeStep << std::endl;
 			exit(EXIT_FAILURE);
 		}

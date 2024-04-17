@@ -34,6 +34,7 @@ extern double EnzoTimeStep;
 
 
 // i/o
+extern char* foutput;
 extern bool IsOutput;
 extern double outputTime;
 extern double outputTimeStep;
