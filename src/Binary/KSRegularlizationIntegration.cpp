@@ -13,7 +13,7 @@ void direct_sum(double *x, double *v, double r2, double vx,
 
 // refer to ksint.f
 
-void Binary::KSIntegration(Particle* ptclCM, double next_time){
+void Binary::KSIntegration(double next_time){
 
     double binary_time;
 
@@ -23,18 +23,18 @@ void Binary::KSIntegration(Particle* ptclCM, double next_time){
 
         binary_time = CurrentTime + TimeStep;
 
-        predictBinary(ptclCM, binary_time);
+        predictBinary(binary_time);
 
         // if there are zero neighbors for binary particles, calculate by unperturbed equations
 
-        IntegrateBinary(ptclCM, binary_time);
+        IntegrateBinary(binary_time);
     }
 
 }
 
 
 
-void Binary::predictBinary(Particle* ptclCM, double next_time) {
+void Binary::predictBinary(double next_time) {
 
     double dt, dt2, dt3;
     double dtau, dtau2, dtau3, dtau4;
@@ -149,7 +149,7 @@ void Binary::predictBinary(Particle* ptclCM, double next_time) {
 
 
 
-void Binary::IntegrateBinary(Particle* ptclCM, double next_time) {
+void Binary::IntegrateBinary(double next_time) {
 
     // variables for position, velocity prediction
 

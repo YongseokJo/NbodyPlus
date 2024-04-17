@@ -76,7 +76,7 @@ void Binary::getStumpffCoefficients(double z){
 
 
 
-void Binary::InitializeBinary(Particle* ptclCM, double current_time) {
+void Binary::InitializeBinary(double current_time) {
 
     
     double x[Dim],xdot[Dim];

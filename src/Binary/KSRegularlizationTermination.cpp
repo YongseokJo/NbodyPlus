@@ -16,7 +16,7 @@ void KSTermination(Particle* ptclCM, std::vector<Particle*> &particle){
     double ratioM;
 
     double L[3][4];
-    size_t ptclCMIndex;
+    int ptclCMIndex;
 
     Particle* ptclI;
     Particle* ptclJ;

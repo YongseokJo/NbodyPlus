@@ -19,7 +19,7 @@ void direct_sum(double *x, double *v, double r2, double vx,
 //       /////////////////////        //
 
 
-void CalculateKSAcceleration(Particle* ptclI, Particle* ptclJ, Binary* ptclCM, std::vector<Particle*> &particle, double current_time) {
+void CalculateKSAcceleration(Particle* ptclI, Particle* ptclJ, Particle* ptclCM, std::vector<Particle*> &particle, double current_time) {
 
     int j=0;
     Particle* ptcl1;
@@ -309,8 +309,8 @@ void NewKSInitialization(Particle* ptclI, std::vector<Particle*> &particle, doub
     Binary *ptclBin;
     std::vector<Particle*> KSNeighborList;
 
-    size_t ptclIIndex;
-    size_t ptclJIndex;
+    int ptclIIndex;
+    int ptclJIndex;
 
 
     // BASIC DEFINITIONS
@@ -394,7 +394,7 @@ void NewKSInitialization(Particle* ptclI, std::vector<Particle*> &particle, doub
 
     // calculate the 0th, 1st, 2nd, 3rd derivative of accleration accurately for the binary pair particle and the cm particle
 
-    CalculateKSAcceleration(ptclI,ptclJ,ptclBin,particle,current_time);
+    CalculateKSAcceleration(ptclI,ptclJ,ptclCM,particle,current_time);
 
 
     // calculate the initial values of relevant variables
