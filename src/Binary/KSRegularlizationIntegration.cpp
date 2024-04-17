@@ -9,6 +9,7 @@
 void generate_Matrix(double a[3], double (&A)[3][4]);
 void direct_sum(double *x, double *v, double r2, double vx,
                 double mass, double mdot, double (&a)[3], double (&adot)[3]);
+void getBlockTimeStep(double dt, int& TimeLevel, double &TimeStep);
 
 
 // refer to ksint.f
@@ -30,6 +31,10 @@ void Binary::KSIntegration(double next_time){
         IntegrateBinary(binary_time);
     }
 
+    if ((r>1.5*KSDistance)||(TimeStep>1.5*KSTime)) {
+        isTerminate = true;
+    }
+
 }
 
 
@@ -37,6 +42,7 @@ void Binary::KSIntegration(double next_time){
 void Binary::predictBinary(double next_time) {
 
     double dt, dt2, dt3;
+    double dtCM, dt2CM, dt3CM;
     double dtau, dtau2, dtau3, dtau4;
     double rinv, rinv2, rinv3, rinv4, rinv5;
 
@@ -55,9 +61,14 @@ void Binary::predictBinary(double next_time) {
 
     // time interval for prediction
 
+    dtCM = next_time - ptclCM->CurrentTimeIrr;
+    dt2CM = dtCM*dtCM;
+    dt3CM = dt2CM*dtCM;
+
     dt = next_time - CurrentTime;
     dt2 = dt*dt;
     dt3 = dt2*dt;
+
 
     // inverse of r
 
@@ -72,8 +83,8 @@ void Binary::predictBinary(double next_time) {
     // first, we need to predict the future position of the center of mass
 
     for (int dim=0; dim<Dim; dim++) {
-		PredPosition[dim] = Position[dim] + Velocity[dim]*dt + a_tot[dim][0]*dt2/2 + a_tot[dim][1]*dt3/6;
-		PredVelocity[dim] = Velocity[dim] + a_tot[dim][0]*dt + a_tot[dim][1]*dt2/2;
+		PredPosition[dim] = ptclCM->Position[dim] + ptclCM->Velocity[dim]*dtCM + ptclCM->a_tot[dim][0]*dt2CM/2 + ptclCM->a_tot[dim][1]*dt3CM/6;
+		PredVelocity[dim] = ptclCM->Velocity[dim] + ptclCM->a_tot[dim][0]*dtCM + ptclCM->a_tot[dim][1]*dt2CM/2;
 	}
 
 
@@ -161,6 +172,7 @@ void Binary::IntegrateBinary(double next_time) {
     double ratioM;
 
     double dtau, dtau2, dtau3, dtau4, dtau5, dtau6;
+    double dtau_temp;
 
 
     // variables for perturbing acceleration calculation
@@ -188,6 +200,11 @@ void Binary::IntegrateBinary(double next_time) {
 
     Particle* ptclI;
     Particle* ptclJ;
+
+    // variables for updating time step
+    
+    int TimeLevelTmp;
+    double TimeStepTmp;
 
 
     ptclI = ptclCM->BinaryParticleI;
@@ -441,5 +458,36 @@ void Binary::IntegrateBinary(double next_time) {
 
     CurrentTime = next_time;
     CurrentTau += dtau;
+
+
+
+    dtau_temp = std::min(r/Mass,0.5*abs(h));
+    dtau = 0.8*eta*sqrt(dtau_temp)/pow((1 + 1000.0 * gamma), 1.0/3/0);
+
+    dtau2 = dtau*dtau;
+    dtau3 = dtau2*dtau;
+    dtau4 = dtau3*dtau;
+    dtau5 = dtau4*dtau;
+    dtau6 = dtau5*dtau;
+
+
+    // obtain the Stumpff coefficients
+
+    z = -0.5*h*dtau;
+    getStumpffCoefficients(z);
+
+
+    // obtain the physical interval corresponding to dtau using stumpff coefficients
+    // note that r = t', r'=t'' and so on...
+
+    TimeStep = tdot*dtau + t2dot*dtau2/2 + t3dot*dtau3/6 + t4dot*dtau4/24 \
+             + t5dot*cn_4z[5]*dtau5/120 + t6dot*cn_4z[6]*dtau6/720;
+
+    // also, convert the time step into block steps. 
+
+    getBlockTimeStep(TimeStep, TimeLevelTmp, TimeStepTmp);
+
+    TimeLevel = TimeLevelTmp;
+    dTau = dtau;
     
 }

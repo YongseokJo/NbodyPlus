@@ -50,7 +50,8 @@ class Particle {
         int isEvolve;
         bool isRegular;
         bool isStarEvolution;
-        bool isBinary;
+        bool isBinary; // check whether this is a member of the binary
+        bool isCMptcl; // check if this particle is center-of-mass particle
 
         // Constructor
         Particle(void) {
@@ -90,6 +91,7 @@ class Particle {
             BinaryInfo = nullptr;
 
             isBinary = false;
+            isCMptcl = false;
         }
 
         void updateParticle(double mass, double *vel, double pos[], int particletype) {
@@ -150,6 +152,8 @@ class Binary
 		std::vector<Particle*> ACList;     // list of AC neighbor 
         Particle* ptclCM;
 
+        bool isTerminate;
+
 
         // information of binary particles in cartesian coordinates
 
@@ -191,6 +195,7 @@ class Binary
         // r: distance between two binaries
 
         double r;
+        double r0; // initial separation between binaries
         double rdot;
         double r2dot;
         double r3dot;
@@ -240,6 +245,8 @@ class Binary
 		Binary(void) {
 			//std::cout << "Constructor called" << std::endl;
 
+            isTerminate = false;
+
             NumberOfAC     = 0; // number of neighbors
 			RadiusOfAC     = InitialRadiusOfAC;
 
@@ -258,6 +265,7 @@ class Binary
             gamma = 0;
             a     = 0;
 
+            r0    = 0; // initial separation between binaries
             r     = 0;
             rdot  = 0;
             r2dot = 0;

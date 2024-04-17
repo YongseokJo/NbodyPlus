@@ -17,6 +17,7 @@ void KSTermination(Particle* ptclCM, std::vector<Particle*> &particle){
 
     double L[3][4];
     int ptclCMIndex;
+    int ptclBinIndex;
 
     Particle* ptclI;
     Particle* ptclJ;
@@ -108,5 +109,21 @@ void KSTermination(Particle* ptclCM, std::vector<Particle*> &particle){
             ptcl->ACList.push_back(ptclJ);
         }
     }
+
+    // we also need to delete it from the binary list
+
+    ptclBinIndex = -1;
+
+    for (Binary* ptcl : BinaryList) {
+
+        ptclBinIndex += 1;
+
+        if (ptcl == ptclBin) {
+            break;
+        }
+    }
+
+    BinaryList.erase(BinaryList.begin() + ptclBinIndex);
+
 
 }

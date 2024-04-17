@@ -176,6 +176,11 @@ void CalculateKSAcceleration(Particle* ptclI, Particle* ptclJ, Particle* ptclCM,
 		}
 	}
 
+    // save the regular and irregular time steps as well
+    
+
+
+
 
 }
 
@@ -329,7 +334,7 @@ void NewKSInitialization(Particle* ptclI, std::vector<Particle*> &particle, doub
     // define the new center of mass particle
 
     ptclCM = new Particle;
-    ptclBin =  new Binary;
+    ptclBin = new Binary;
 
     // calculate the values of the center of mass particle
     // and save it to the new center of mass particle
@@ -351,15 +356,21 @@ void NewKSInitialization(Particle* ptclI, std::vector<Particle*> &particle, doub
 
     ptclCM->CurrentTimeReg = ptclI->CurrentTimeReg;
     ptclCM->CurrentTimeIrr = ptclI->CurrentTimeIrr;
+    ptclCM->TimeStepIrr = ptclI->TimeStepIrr;
+    ptclCM->TimeStepReg = ptclI->TimeStepReg;
+    ptclCM->TimeLevelIrr = ptclI->TimeLevelIrr;
+    ptclCM->TimeLevelReg = ptclI->TimeLevelReg;
     ptclCM->PredTime = current_time;
 
     ptclCM->BinaryParticleI = ptclI;
     ptclCM->BinaryParticleJ = ptclJ;
     ptclCM->BinaryInfo = ptclBin;
 
-    ptclCM->isBinary = true;
-    ptclI->isBinary = false;
+    ptclCM->isCMptcl = true;
+    ptclJ->isBinary = true;
     ptclBin->ptclCM = ptclCM;
+
+
 
     // add it to binary list
     BinaryList.push_back(ptclBin);
@@ -395,6 +406,9 @@ void NewKSInitialization(Particle* ptclI, std::vector<Particle*> &particle, doub
     // calculate the 0th, 1st, 2nd, 3rd derivative of accleration accurately for the binary pair particle and the cm particle
 
     CalculateKSAcceleration(ptclI,ptclJ,ptclCM,particle,current_time);
+
+    ptclCM->calculateTimeStepIrr(ptclCM->a_tot, ptclCM->a_irr); // calculate irregular time step based on total force
+    ptclCM->calculateTimeStepReg(ptclCM->a_reg, ptclCM->a_reg); // calculate regular time step based on total force
 
 
     // calculate the initial values of relevant variables
@@ -469,7 +483,9 @@ void NewKSInitialization(Particle* ptclI, std::vector<Particle*> &particle, doub
         }
     }
 
+    // Add the binary to binary integration list
 
+    BinaryList.push_back(ptclBin);
 
 }
 

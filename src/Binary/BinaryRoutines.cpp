@@ -327,28 +327,11 @@ void Binary::InitializeBinary(double current_time) {
 
     getBlockTimeStep(TimeStep, TimeLevelTmp, TimeStepTmp);
 
-    TimeStep = TimeStepTmp;
     TimeLevel = TimeLevelTmp;
+    dTau = dtau;
+
+    // save the initial seperation
+    r0 = r;
 
     
-    // time interval for prediction
-
-    dt = TimeStep;
-    dt2 = dt*dt;
-    dt3 = dt2*dt;
-
-    // inverse of r
-
-    rinv = 1/r;
-    rinv2 = rinv/r;
-    rinv3 = rinv2/r;
-    rinv4 = rinv3/r;
-    rinv5 = rinv4/r;
-
-
-    // calculate multiples of time beforehand
-
-    dTau =  dt*rinv - t2dot*dt2*rinv3/2 + t2dot*t2dot*dt3*rinv5/2 - t3dot*dt3*rinv4/6;
-    
-
 }
