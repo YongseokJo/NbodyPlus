@@ -4,8 +4,8 @@ CXX = g++
 NVCC = nvcc
 
 # Compiler flags
-CXXFLAGS  = -std=c++11 -Wall -Wextra -Wuninitialized -I./Particle -I./
-NVCCFLAGS = -O2 -G -Xcompiler -rdynamic -lineinfo
+CXXFLAGS  = -std=c++11 -Wall -Wextra -Wuninitialized -I./Particle -I./ -g 
+NVCCFLAGS = -O2 -G -Xcompiler -rdynamic -lineinfo -g
 
 # Libraries
 LDFLAGS = -L/mnt/sw/nix/store/zi2wc26znf75csf5hhz77p0d2bbz53ih-cuda-11.8.0/lib64/ -lcudart

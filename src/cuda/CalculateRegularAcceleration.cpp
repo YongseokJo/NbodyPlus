@@ -282,7 +282,7 @@ void CalculateSingleAcceleration(Particle *ptcl1, Particle *ptcl2, double (&a)[3
 	}
 
 	if (dr2 < EPS2) {
-		dr2 = EPS2;
+		dr2 += EPS2;
 	}
 
 	m_r3 = ptcl2->Mass/dr2/sqrt(dr2);
