@@ -20,7 +20,7 @@ CU_SRCS = cuda/cuda_my_acceleration.cu
 OBJS = $(CU_SRCS:.cu=.o) $(CXX_SRCS:.cpp=.o)
 
 # Executable name
-EXEC = nbodyplus.exe
+EXEC = nbodyplus_new.exe
 
 # Main target
 all: $(EXEC)

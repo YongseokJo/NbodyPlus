@@ -15,9 +15,9 @@
 //#define BLOCK 32    // 32 for A100 
 
 #define THREAD 128 // 2048 for A100
-#define BLOCK 32    // 32 for A100 
+#define BLOCK 128    // 32 for A100 
 
-#define ESP2 4e-5
+#define ESP2 1e-6
 #define new_size(A) (A > 1024) ? int(pow(2,ceil(log(A)/log(2.0)))) : 1024
 
 
@@ -130,12 +130,12 @@ void GetAcceleration(
 		for (int tg_offset = offset; tg_offset < offset+NumTarget_local; tg_offset += BLOCK) {
 			block = std::min(BLOCK, NumTarget_local-tg_offset);
 			block_size.x = block;
-			printf("CUDA: i=%d, block=%d\n",tg_offset, block);
+			//printf("CUDA: i=%d, block=%d\n",tg_offset, block);
 			CalculateAcceleration <<< block_size, thread_size >>>
 				(NNB, NumTarget_local, tg_offset, d_target, d_background, d_result, do_neighbor);
 		} // endfor i, target particles
 		cudaDeviceSynchronize();
-		printf("CUDA: calculation done\n");
+		//printf("CUDA: calculation done\n");
 	} // endfor offset
 
 	for (int offset=1; offset*BLOCK*THREAD<NumTarget; offset++) {
@@ -238,11 +238,13 @@ __global__ void CalculateAcceleration(
 
 	//printf("CUDA: 6. (%d,%d), res=%e\n", tg_index, bg_index, res[threadIdx.x].acc.x);
 	// res=(%.3e,%.3e,%.3e)\n",
-	if (threadIdx.x == 0 && tg_index < NumTarget) {
+	/*
+		 if (threadIdx.x == 0 && tg_index < NumTarget) {
 		printf("CUDA: (%d,%d), result=(%.3e,%.3e,%.3e)\n",  
 			 	threadIdx.x, tg_index, result[tg_index].acc.x, result[tg_index].acc.y, result[tg_index].acc.z);
 			 	//res[0].acc.x, res[0].acc.y, res[0].acc.z);
 	}
+	*/
 
 }
 
@@ -397,7 +399,7 @@ void _ReceiveFromHost(
 	}
 
 	fprintf(stdout, "CUDA: receive starts\n");
-	printf("CUDA: new size of NNB=%d\n", variable_size);
+	//printf("CUDA: new size of NNB=%d\n", variable_size);
 	/*
 	cudaStatus = cudaMallocManaged(&background, new_size(NNB)*sizeof(BackgroundParticle)); //NNB*sizeof(BackgroundParticle));
 

@@ -46,7 +46,7 @@ void Evolve(std::vector<Particle*> &particle) {
 		}
 
 		// end if the global time exceeds the end time
-		if (global_time > 1) {
+		if (global_time >= 1) {
 			std::cout << EnzoTimeStep << std::endl;
 			exit(EXIT_FAILURE);
 		}

@@ -136,7 +136,8 @@ void Particle::calculateIrrForce() {
 		std::cout << "\n" << std::endl;
 		} // endfor dim
 		*/
-	
+
+	/*
 	std::cout << "\nIrregular Calculation\n" << std::flush;
 	std::cout <<  "3. a_irr= "<< a_irr[0][0]<< ',' << a_irr[1][0]\
 		<< ',' << a_irr[2][0] << std::endl;
@@ -144,6 +145,7 @@ void Particle::calculateIrrForce() {
 		<< ',' << a_irr[2][0] << std::endl;
 	std::cout <<  "5. a_irr= "<< a_irr[0][0]<< ',' << a_irr[1][0]\
 		<< ',' << a_irr[2][0] << std::endl;
+		*/
 
 	// update the current irregular time and irregular time steps
 	//this->updateParticle((CurrentTimeIrr+TimeStepIrr)*EnzoTimeStep, a_irr);

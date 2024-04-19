@@ -101,12 +101,15 @@ void CalculateRegAccelerationOnGPU(std::vector<int> IndexList, std::vector<Parti
 	treg[0] = particle[IndexList[0]]->CurrentTimeReg;  // current regular time
 	dt      = particle[IndexList[0]]->TimeStepReg;
 	treg[1] = treg[0] + dt;  // next regular time
+	if (treg[1] != NextRegTime) {
+		fprintf(stderr, "Something wrong! NextRegTime does not match! :CalculateAcceleration.C:105\n");
+	}	
 	dt     *= EnzoTimeStep;  // unit conversion
 
 
 	// first let's open the GPU
 	//OpenDevice(&mpi_rank);
-
+	
 	std::cout <<  "Starting Calculation On Device ..." << std::endl;
 	for (int p=0; p<2; p++) {
 		// send information of all the particles to GPU
@@ -202,15 +205,34 @@ void CalculateRegAccelerationOnGPU(std::vector<int> IndexList, std::vector<Parti
 			ptcl->a_tot[dim][3] = ptcl->a_reg[dim][3] + ptcl->a_irr[dim][3];
 		}
 
+		// Neighbor update
 		ptcl->ACList.clear();
 		ptcl->NumberOfAC = NumNeighborReceive[0][i];
 		for (int j=0; j<ptcl->NumberOfAC;j++) {
 			NeighborIndex = ACListReceive[0][i][j];  // gained neighbor particle (in next time list)
 			ptcl->ACList.push_back(particle[NeighborIndex]);
 		}
+
+
+		// Particle Update
+		if (ptcl->NumberOfAC == 0) {
+			ptcl->updateParticle(NextRegTime, ptcl->a_tot);
+			ptcl->CurrentTimeReg += ptcl->TimeStepReg;
+			ptcl->CurrentTimeIrr  = ptcl->CurrentTimeReg;
+		}
+		else {
+			ptcl->CurrentTimeReg = ptcl->CurrentTimeIrr;
+		}
+		ptcl->calculateTimeStepReg(ptcl->a_reg, ptcl->a_reg);
+		ptcl->calculateTimeStepIrr(ptcl->a_tot, ptcl->a_irr);
+		ptcl->isRegular = false;
 	} // correction and calculation of higher orders finished
 
 
+
+
+
+	/*
 	std::cout <<  "3. a_tot= "<< particle[0]->a_tot[0][0]<< ',' << particle[0]->a_tot[1][0]\
 		<< ',' << particle[0]->a_tot[2][0] << std::endl;
 	std::cout <<  "4. a_tot= "<< particle[1]->a_tot[0][0]<< ',' << particle[1]->a_tot[1][0]\
@@ -220,6 +242,7 @@ void CalculateRegAccelerationOnGPU(std::vector<int> IndexList, std::vector<Parti
 		<< ',' << particle[0]->a_irr[2][0] << std::endl;
 	std::cout <<  "4. a_irr= "<< particle[1]->a_irr[0][0]<< ',' << particle[1]->a_irr[1][0]\
 		<< ',' << particle[1]->a_irr[2][0] << std::endl;
+		*/
 
 
 	// free all temporary variables
