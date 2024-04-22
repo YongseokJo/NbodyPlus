@@ -114,6 +114,7 @@ void Binary::InitializeBinary(double current_time) {
     ptclI = ptclCM->BinaryParticleI;
     ptclJ = ptclCM->BinaryParticleJ;
 
+    r2 = 0;
     
     // define the relative coordinates for binaries
 

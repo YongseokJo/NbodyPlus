@@ -91,10 +91,6 @@ void CalculateRegAccelerationOnGPU(std::vector<int> IndexList, std::vector<Parti
 		ACListReceive[p]      = new int*[ListSize];
 		for (int i=0; i<ListSize; i++) {
 			ACListReceive[p][i] = new int[NumNeighborMax];
-			for (int dim=0; dim<Dim; dim++){
-				AccIrr[p][i][dim]    = 0;
-				AccIrrDot[p][i][dim] = 0;
-			}
 		}
 	}
 

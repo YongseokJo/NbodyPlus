@@ -42,7 +42,7 @@ void CalculateKSAcceleration(Particle* ptclI, Particle* ptclJ, Particle* ptclCM,
 
     for (int i=0; i<2; i++) {
 
-        if (i=0) {
+        if (i==0) {
             ptcl1 = ptclI;
 
         } else {

@@ -37,18 +37,16 @@
 #define EPS2 1e-2 // smoothing length
 #define InitialRadiusOfAC 0.01 // 0.04 pc
 
-
-// KS regularlization related variables
-
-#define stumpffN 12 // the order of approximation for stumpff functions
-#define KSDistance 0.00001  // the distance of binary particles from each other
-#define KSTime 2e-8  // short timestep criteria for binary search
-#define PerturberDistance 0.01  // the distance of binary perturbers from the pair
-
 // Physical constants
 #define G_cgs 6.67430e-8
 #define G // pc, yr, Msun
 
+// KS regularlization related variables
+//
+#define stumpffN 12 // the order of approximation for stumpff functions
+#define KSDistance 0.00001  // the distance of binary particles from each other
+#define KSTime 2e-8  // short timestep criteria for binary search
+#define PerturberDistance 0.01  // the distance of binary perturbers from the pair
 
 
 // Physical units in cgs

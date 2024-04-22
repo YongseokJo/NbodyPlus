@@ -344,6 +344,7 @@ void Binary::IntegrateBinary(double next_time) {
 
     rdot_pred = 0.0; 
     hdot_pred = 0.0;
+    h2dot_pred = 0.0;
 
     generate_Matrix(u_pred,L);
     generate_Matrix(udot_pred,Ldot);
