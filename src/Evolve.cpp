@@ -10,14 +10,10 @@ int writeParticle(std::vector<Particle*> &particle, double MinRegTime, int outpu
 bool CreateComputationChain(std::vector<Particle*> &particle);
 bool RegularAccelerationRoutine(std::vector<Particle*> &particle);
 bool IrregularAccelerationRoutine(std::vector<Particle*> &particle);
-void AddNewBinariesToList(std::vector<Particle*> &particle);
-void BinaryAccelerationRoutine(double next_time);
-
 
 bool IsOutput         = false;
 double outputTime = 0;
 double NextRegTime    = 0.;
-double binary_time = 0;
 std::vector<Particle*> ComputationChain{};
 
 
@@ -38,15 +34,6 @@ void Evolve(std::vector<Particle*> &particle) {
 
 	while (true) {
 
-
-
-                // It's time to compute binary-related variables
-                AddNewBinariesToList(particle);
-                //
-                if (BinaryList.size()>0) {
-			 BinaryAccelerationRoutine(binary_time);
-                }
-                //
 		// It's time to compute regular force.
 		RegularAccelerationRoutine(particle); // do not update particles unless NNB=0
 		IrregularAccelerationRoutine(particle);
