@@ -3,7 +3,7 @@
 #include "../global.h"
 
 
-double getNewTimeStep(double f[3][4], double df[3][4]);
+double getNewTimeStep(double f[3][4], double df[3][4], double dt);
 void getBlockTimeStep(double dt, int& TimeLevel, double &TimeStep);
 
 // Update TimeStepIrr
@@ -14,9 +14,9 @@ void Particle::calculateTimeStepIrr(double f[3][4],double df[3][4]) {
 	if (this->NumberOfAC == 0)
 		return;
 
-	getBlockTimeStep(getNewTimeStep(f, df), TimeLevelTmp, TimeStepIrrTmp);
+	getBlockTimeStep(getNewTimeStep(f, df, TimeStepIrr), TimeLevelTmp, TimeStepIrrTmp);
 
-	while (CurrentTimeIrr+TimeStepIrrTmp > CurrentTimeReg+TimeStepReg) {
+	while ((CurrentTimeIrr+TimeStepIrrTmp > CurrentTimeReg+TimeStepReg) || (TimeStepIrrTmp >= TimeStepReg)) {
 		TimeStepIrrTmp *= 0.5;
 		TimeLevelTmp--;
 	}
@@ -32,7 +32,7 @@ void Particle::calculateTimeStepIrr(double f[3][4],double df[3][4]) {
 		}
 	}
 	else if (TimeStepIrrTmp < TimeStepIrr) {
-		if (0.5*TimeStepIrr > TimeStepIrrTmp) {
+		if (TimeStepIrrTmp < 0.5*TimeStepIrr) {
 			TimeStepIrrTmp = TimeStepIrr/4;
 			TimeLevelTmp -= 2;
 		}
@@ -40,11 +40,13 @@ void Particle::calculateTimeStepIrr(double f[3][4],double df[3][4]) {
 			TimeStepIrrTmp = TimeStepIrr/2;
 			TimeLevelTmp--;
 		}
+	} else {
+		TimeStepIrrTmp = TimeStepIrr;
+		TimeLevelTmp = TimeLevelIrr;
 	}
 
 	TimeStepIrr = TimeStepIrrTmp;
 	TimeLevelIrr = TimeLevelTmp;
-
 
 	if (TimeLevelIrr < dt_block_level+dt_level_min) {
 		std::cerr << "Timestep is too small" << std::endl;
@@ -61,7 +63,7 @@ void Particle::calculateTimeStepReg(double f[3][4], double df[3][4]) {
 	//std::cout << NumberOfAC << std::flush;
 	double TimeStepRegTmp;
 	int TimeLevelTmp;
-	getBlockTimeStep(getNewTimeStep(f, df), TimeLevelTmp, TimeStepRegTmp);
+	getBlockTimeStep(getNewTimeStep(f, df, TimeStepReg), TimeLevelTmp, TimeStepRegTmp);
 
 	std::cout << "NBODY+: TimeStepRegTmp = " << TimeStepRegTmp << std::endl;
 
@@ -86,13 +88,8 @@ void Particle::calculateTimeStepReg(double f[3][4], double df[3][4]) {
 		}
 	}
 	else {
-		TimeStepReg  = TimeStepRegTmp;
-		TimeLevelReg = TimeLevelTmp;
-	}
-
-	if (NumberOfAC == 0) {
-		TimeStepIrr    = TimeStepRegTmp;
-		TimeLevelIrr   = TimeLevelTmp;
+		TimeStepRegTmp  = TimeStepReg;
+		TimeLevelTmp = TimeLevelReg;
 	}
 
 	TimeStepReg  = std::min(1.,TimeStepRegTmp);
@@ -102,16 +99,10 @@ void Particle::calculateTimeStepReg(double f[3][4], double df[3][4]) {
 		TimeStepReg = 1 - CurrentTimeReg;
 	}
 
-	if (TimeStepIrr > TimeStepReg) {
-		//TimeStepIrr *= 0.5;
-		//TimeLevelIrr--;
-		TimeStepIrr = TimeStepRegTmp;
-		TimeLevelIrr = TimeLevelTmp;
-	}
 
 	if (this->NumberOfAC == 0) {
-		TimeStepIrr  = TimeStepRegTmp;
-		TimeLevelIrr = TimeLevelTmp;
+		TimeStepIrr  = TimeStepReg;
+		TimeLevelIrr = TimeLevelReg;
 	}
 
 	std::cout << "NBODY+: TimeStepReg = " << TimeStepReg << std::endl;

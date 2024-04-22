@@ -15,24 +15,21 @@
  *  Modified: 2024.01.10  by Yongseok Jo
  *
  */
-void Particle::predictParticleSecondOrder(double next_time) {
+void Particle::predictParticleSecondOrder(double current_time, double next_time) {
 
 	// Doubling check
 	// temporary variables for calculation
-
-	double dt;
-	if (NumberOfAC == 0)
-		dt = (next_time - CurrentTimeReg)*EnzoTimeStep;
-	else
-		dt = (next_time - CurrentTimeIrr)*EnzoTimeStep;
-
-	if (dt == 0) {
+	//
+	if (current_time == next_time) {
 		for (int dim=0; dim<Dim; dim++) {
 			PredPosition[dim] = Position[dim];
 			PredVelocity[dim] = Velocity[dim];
 		}
 		return;
 	}
+
+	double dt;
+	dt = (next_time - current_time)*EnzoTimeStep;
 
 	//if (PredTime == next_time)
 		//return;
@@ -57,14 +54,20 @@ void Particle::predictParticleSecondOrder(double next_time) {
  *  Modified: 2024.01.11  by Seoyoung Kim
  *
  */
-void Particle::correctParticleFourthOrder(double next_time, double a[3][4]) {
+void Particle::correctParticleFourthOrder(double current_time, double next_time, double a[3][4]) {
+
+	if (current_time == next_time) {
+		for (int dim=0; dim<Dim; dim++) {
+			PredPosition[dim] = Position[dim];
+			PredVelocity[dim] = Velocity[dim];
+		}
+		return;
+	}
+
 	double dt;
 	double dt3,dt4,dt5;
 
-	if (NumberOfAC == 0)
-		dt = (next_time - CurrentTimeReg)*EnzoTimeStep;
-	else
-		dt = (next_time - CurrentTimeIrr)*EnzoTimeStep;
+	dt = (next_time - current_time)*EnzoTimeStep;
 
 	dt3 = dt*dt*dt;
 	dt4 = dt3*dt;
@@ -80,10 +83,18 @@ void Particle::correctParticleFourthOrder(double next_time, double a[3][4]) {
 }
 
 
-void Particle::updateParticle(double next_time, double a[3][4]) {
-	predictParticleSecondOrder(next_time);
-	correctParticleFourthOrder(next_time, a);
-	Mass += evolveStarMass(CurrentTimeIrr, next_time);
+void Particle::updateParticle(double current_time, double next_time, double a[3][4]) {
+
+	if (current_time == next_time) {
+		for (int dim=0; dim<Dim; dim++) {
+			PredPosition[dim] = Position[dim];
+			PredVelocity[dim] = Velocity[dim];
+		}
+		return;
+	}
+	predictParticleSecondOrder(current_time, next_time);
+	correctParticleFourthOrder(current_time, next_time, a);
+	Mass += evolveStarMass(current_time, next_time); // CurrentTimeIrr
 }
 
 

@@ -6,7 +6,7 @@
 #include "cuda_functions.h"
 
 
-void SendAllParticlesToGPU(double sendTime, std::vector <Particle*> &particle);
+void SendAllParticlesToGPU(double current_time, double next_time, std::vector <Particle*> &particle);
 void CalculateSingleAcceleration(Particle *ptcl1, Particle *ptcl2, double (&a)[3], double (&adot)[3]);
 
 
@@ -103,7 +103,8 @@ void CalculateRegAccelerationOnGPU(std::vector<int> IndexList, std::vector<Parti
 	treg[1] = treg[0] + dt;  // next regular time
 	if (treg[1] != NextRegTime) {
 		fprintf(stderr, "Something wrong! NextRegTime does not match! :CalculateAcceleration.C:105\n");
-	}	
+		fprintf(stderr, "NextRegTime=%.3e, treg[1]=%.3e\n", NextRegTime, treg[1]);
+	}
 	dt     *= EnzoTimeStep;  // unit conversion
 
 
@@ -114,7 +115,7 @@ void CalculateRegAccelerationOnGPU(std::vector<int> IndexList, std::vector<Parti
 	for (int p=0; p<2; p++) {
 		// send information of all the particles to GPU
 		// includes prediction
-		SendAllParticlesToGPU(treg[p], particle);
+		SendAllParticlesToGPU(particle[IndexList[0]]->CurrentTimeReg, treg[p], particle);
 
 		// copy the data of regular particles to the arrays to be sent
 		// predicted positions and velocities should be sent
@@ -139,12 +140,12 @@ void CalculateRegAccelerationOnGPU(std::vector<int> IndexList, std::vector<Parti
 		for (int i2=0; i2<ListSize; i2++) {
 			ptcl = particle[IndexList[i2]];  // regular particle in particle list
 
-			std::cout <<  "MyIndex=" << IndexList[i2];
-			std::cout <<  "(" << NumNeighborReceive[0][i2] << ")" << std::endl;
-			std::cout <<  "NeighborIndex = ";
+			//std::cout <<  "MyIndex=" << IndexList[i2];
+			//std::cout <<  "(" << NumNeighborReceive[0][i2] << ")" << std::endl;
+			//std::cout <<  "NeighborIndex = ";
 			for (int j1=0;  j1<NumNeighborReceive[0][i2]; j1++) {
 				NeighborIndex = ACListReceive[0][i2][j1];  // gained neighbor particle (in next time list)
-				std::cout <<  NeighborIndex << "  ";
+				//std::cout <<  NeighborIndex << "  ";
 				CalculateSingleAcceleration(ptcl, particle[NeighborIndex], a_tmp, adot_tmp);
 
 				for (int dim=0; dim<Dim; dim++) {
@@ -154,7 +155,7 @@ void CalculateRegAccelerationOnGPU(std::vector<int> IndexList, std::vector<Parti
 					AccRegDotReceive[p][i2][dim] -= adot_tmp[dim];
 				} // endfor dim
 			} // endfor j1, over neighbor at current time
-			std::cout << std::endl;
+			//std::cout << std::endl;
 
 			if (p == 0) {
 				for (int dim=0; dim<Dim; dim++) {
@@ -216,11 +217,13 @@ void CalculateRegAccelerationOnGPU(std::vector<int> IndexList, std::vector<Parti
 
 		// Particle Update
 		if (ptcl->NumberOfAC == 0) {
-			ptcl->updateParticle(NextRegTime, ptcl->a_tot);
+			//ptcl->updateParticle(ptcl->CurrentTimeReg, treg[1], ptcl->a_tot);
+			ptcl->correctParticleFourthOrder(ptcl->CurrentTimeReg, treg[1], ptcl->a_tot);
 			ptcl->CurrentTimeReg += ptcl->TimeStepReg;
 			ptcl->CurrentTimeIrr  = ptcl->CurrentTimeReg;
 		}
 		else {
+			//ptcl->CurrentTimeReg += ptcl->TimeStepReg;
 			ptcl->CurrentTimeReg = ptcl->CurrentTimeIrr;
 		}
 		ptcl->calculateTimeStepReg(ptcl->a_reg, ptcl->a_reg);

@@ -35,7 +35,7 @@
 // Physics related parameters
 #define eta 0.01 // by YS Jo subject to modifty 
 #define EPS2 1e-6 // smoothing length
-#define InitialRadiusOfAC 0.00002 // 0.04 pc
+#define InitialRadiusOfAC 0.1 // 0.04 pc
 
 // Physical constants
 #define G_cgs 6.67430e-8

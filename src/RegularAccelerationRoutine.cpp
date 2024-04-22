@@ -12,14 +12,43 @@ bool RegularAccelerationRoutine(std::vector<Particle*> &particle)
 #define GPU
 #ifdef GPU
 	if (RegIndexList.size() > 0) {
-		for (int i=0; i<3; i++) {
-			fprintf(stdout, "Time = %.2f Myr, dtIrr = %.4e Myr, dtReg = %.4e Myr, a_tot = (%.2e,%.2e,%.2e)\n", 
+		for (int i: RegIndexList) {
+			fprintf(stdout, "PID=%d, Time = %.2e Myr, NextRegTime=%.2e Myr, dtIrr = %.4e Myr, dtReg = %.4e Myr,\n a_tot = (%.2e,%.2e,%.2e), a_reg = (%.2e,%.2e,%.2e), a_irr = (%.2e,%.2e,%.2e), n_n=%d\n"\
+					"a1_reg = (%.2e,%.2e,%.2e), a2_reg = (%.2e,%.2e,%.2e), a3_reg = (%.2e,%.2e,%.2e)\n"\
+					"a1_irr = (%.2e,%.2e,%.2e), a2_irr = (%.2e,%.2e,%.2e), a3_irr = (%.2e,%.2e,%.2e)\n", 
+					particle[i]->PID,
 					particle[i]->CurrentTimeIrr*EnzoTimeStep*1e10/1e6,
+					NextRegTime*EnzoTimeStep*1e10/1e6,
 					particle[i]->TimeStepIrr*EnzoTimeStep*1e10/1e6,
 					particle[i]->TimeStepReg*EnzoTimeStep*1e10/1e6,
 					particle[i]->a_tot[0][0],
 					particle[i]->a_tot[1][0],
-					particle[i]->a_tot[2][0]
+					particle[i]->a_tot[2][0],
+					particle[i]->a_reg[0][0],
+					particle[i]->a_reg[1][0],
+					particle[i]->a_reg[2][0],
+					particle[i]->a_irr[0][0],
+					particle[i]->a_irr[1][0],
+					particle[i]->a_irr[2][0],
+					particle[i]->NumberOfAC,
+					particle[i]->a_reg[0][1],
+					particle[i]->a_reg[1][1],
+					particle[i]->a_reg[2][1],
+					particle[i]->a_reg[0][2],
+					particle[i]->a_reg[1][2],
+					particle[i]->a_reg[2][2],
+					particle[i]->a_reg[0][3],
+					particle[i]->a_reg[1][3],
+					particle[i]->a_reg[2][3],
+					particle[i]->a_irr[0][1],
+					particle[i]->a_irr[1][1],
+					particle[i]->a_irr[2][1],
+					particle[i]->a_irr[0][2],
+					particle[i]->a_irr[1][2],
+					particle[i]->a_irr[2][2],
+					particle[i]->a_irr[0][3],
+					particle[i]->a_irr[1][3],
+					particle[i]->a_irr[2][3]
 					);
 		}
 		CalculateRegAccelerationOnGPU(RegIndexList, particle);

@@ -69,8 +69,8 @@ void Particle::calculateRegAccelerationSecondOrder(std::vector<Particle*> &parti
 		r2 = 0;
 		vx = 0;
 
-		ptcl->predictParticleSecondOrder(CurrentTimeReg); // this takes nbody unit
-		this->predictParticleSecondOrder(CurrentTimeReg);
+		ptcl->predictParticleSecondOrder(CurrentTimeReg, CurrentTimeReg); // this takes nbody unit
+		this->predictParticleSecondOrder(CurrentTimeReg, CurrentTimeReg+TimeStepReg);
 		for (int dim=0; dim<Dim; dim++) {
 			// When particles are not at the current time, extrapolate up to 2nd order
 			x[dim] = ptcl->PredPosition[dim] - Position[dim];
@@ -144,8 +144,8 @@ void Particle::calculateRegAccelerationFourthOrder(std::vector<Particle*> &parti
 		r2 = 0;
 		vx = 0;
 
-		ptcl->predictParticleSecondOrder(CurrentTimeReg + TimeStepReg); // this takes nbody unit
-		this->predictParticleSecondOrder(CurrentTimeReg + TimeStepReg);
+		ptcl->predictParticleSecondOrder(CurrentTimeReg, CurrentTimeReg + TimeStepReg); // this takes nbody unit
+		this->predictParticleSecondOrder(CurrentTimeReg, CurrentTimeReg + TimeStepReg);
 		for (int dim=0; dim<Dim; dim++) {
 			// When particles are not at the current time, extrapolate up to 2nd order
 			x[dim] = ptcl->PredPosition[dim] - this->PredPosition[dim];
@@ -167,8 +167,8 @@ void Particle::calculateRegAccelerationFourthOrder(std::vector<Particle*> &parti
 		r2 = 0;
 		vx = 0;
 
-		ptcl->predictParticleSecondOrder(CurrentTimeReg + TimeStepReg); // this takes nbody unit
-		this->predictParticleSecondOrder(CurrentTimeReg + TimeStepReg);
+		ptcl->predictParticleSecondOrder(CurrentTimeReg, CurrentTimeReg + TimeStepReg); // this takes nbody unit
+		this->predictParticleSecondOrder(CurrentTimeReg, CurrentTimeReg + TimeStepReg);
 		for (int dim=0; dim<Dim; dim++) {
 			// When particles are not at the current time, extrapolate up to 2nd order
 			x[dim] = ptcl->PredPosition[dim] - this->PredPosition[dim];
