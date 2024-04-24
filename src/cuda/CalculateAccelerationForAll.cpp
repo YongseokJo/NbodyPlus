@@ -393,7 +393,7 @@ void SendAllParticlesToGPU(double current_time, double next_time, std::vector <P
 	for (int i=0; i<NNB; i++) {
 		Mass[i] = particle[i]->Mass;
 		Mdot[i] = 0; //particle[i]->Mass;
-		particle[i]->predictParticleSecondOrder(current_time, next_time);
+		particle[i]->predictParticleSecondOrder(current_time, next_time, particle[i]->a_reg);
 
 		for (int dim=0; dim<Dim; dim++) {
 			Position[i][dim] = particle[i]->PredPosition[dim];

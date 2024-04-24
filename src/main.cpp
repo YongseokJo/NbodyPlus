@@ -12,8 +12,15 @@ int NNB; double global_time; //bool debug;
 std::vector<int> LevelList;
 //MPI_Comm  comm, inter_comm, nbody_comm;
 double EnzoTimeStep;
-const double dt_min = 9.3132257e-10;
-const int dt_level_min = -30;
+/*
+const double dt_min = 0.00012207031;
+const int dt_level_min = -13;
+const double dt_min = 0.00001525878;
+const int dt_level_min = -16;
+*/
+const double dt_min = 9.53674316e-7;
+const int dt_level_min = -20;
+
 int newNNB = 0;
 std::vector<int> RegIndexList; 
 int NumNeighborMax = 100;

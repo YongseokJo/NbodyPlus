@@ -12,15 +12,21 @@ Particle *FirstComputation;
 bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 {
 
+#ifdef time_trace
+		_time.irr_chain.markStart();
+#endif
 		Particle *ParticleForComputation;
-    std::cout << "Creating a computation chain ...\n";
+    //std::cout << "Creating a computation chain ...\n";
     if (CreateComputationChain(particle) == false) {
         std::cout << "No irregular particle to update ...\n";
         return true;
     }
 
-    std::cout << "Calculating irregular force ...\n" << std::endl;
-
+    //std::cout << "Calculating irregular force ...\n" << std::endl;
+#ifdef time_trace
+		_time.irr_chain.markEnd();
+		_time.irr_chain.getDuration();
+#endif
 		// Caculating irregular acceleration
 		ParticleForComputation = FirstComputation;
 		while (ParticleForComputation != nullptr) {
@@ -31,10 +37,19 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 					ParticleForComputation->CurrentTimeIrr*EnzoTimeStep*1e10/1e6, ParticleForComputation->TimeStepIrr*EnzoTimeStep*1e10/1e6, ParticleForComputation->CurrentTimeReg*EnzoTimeStep*1e10/1e6, ParticleForComputation->TimeStepReg*EnzoTimeStep*1e10/1e6);
 
 
-			ParticleForComputation->calculateIrrForce(); // this includes particle position and time evolution.
-			//ParticleForComputation = ParticleForComputation->NextParticleForComputation;
+#ifdef time_trace
+		_time.irr_force.markStart();
+#endif
+			ParticleForComputation->calculateIrrForce(); // this includes particle position
+#ifdef time_trace
+		_time.irr_force.markEnd();
+		_time.irr_force.getDuration();
+#endif
+			//ParticleForComputation = ParticleForComputation->NextParticleForComputation;// this includes time evolution.
 			ParticleForComputation = SortComputationChain(ParticleForComputation);
 		}
+    std::cout << "Finishing irregular force ...\n" << std::endl;
+
 
 		/*
 		for (Particle *ptcl : ComputationChain)
@@ -49,7 +64,7 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 		}
 		*/
 
-    std::cout << "Finishing irregular force ...\n" << std::endl;
+    //std::cout << "Finishing irregular force ...\n" << std::endl;
 		return true;
 }
 

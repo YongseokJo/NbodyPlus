@@ -110,12 +110,21 @@ void CalculateRegAccelerationOnGPU(std::vector<int> IndexList, std::vector<Parti
 
 	// first let's open the GPU
 	//OpenDevice(&mpi_rank);
-	
-	std::cout <<  "Starting Calculation On Device ..." << std::endl;
+
+	//std::cout <<  "Starting Calculation On Device ..." << std::endl;
 	for (int p=0; p<2; p++) {
 		// send information of all the particles to GPU
 		// includes prediction
+#ifdef time_trace
+		_time.reg_sendall.markStart();
+#endif
+
 		SendAllParticlesToGPU(particle[IndexList[0]]->CurrentTimeReg, treg[p], particle);
+
+#ifdef time_trace
+		_time.reg_sendall.markEnd();
+		_time.reg_sendall.getDuration();
+#endif
 
 		// copy the data of regular particles to the arrays to be sent
 		// predicted positions and velocities should be sent
@@ -133,8 +142,17 @@ void CalculateRegAccelerationOnGPU(std::vector<int> IndexList, std::vector<Parti
 		}
 
 		// calculate the force by sending the particles to GPU
+#ifdef time_trace
+		_time.reg_gpu.markStart();
+#endif
 		CalculateAccelerationOnDevice(&ListSize, PositionSend, VelocitySend, AccRegReceive[p], AccRegDotReceive[p],
 			 	MdotSend, RadiusOfAC2Send, NumNeighborReceive[p], ACListReceive[p]);
+#ifdef time_trace
+		_time.reg_gpu.markEnd();
+		_time.reg_gpu.getDuration();
+
+		_time.reg_cpu1.markStart();
+#endif
 
 		// Calculate the irregular acceleration components based on neighbors of current regular time.
 		for (int i2=0; i2<ListSize; i2++) {
@@ -168,12 +186,18 @@ void CalculateRegAccelerationOnGPU(std::vector<int> IndexList, std::vector<Parti
 				}
 			} // current time update ptcl acc
 		} // endfor i2, over regular particles
+#ifdef time_trace
+		_time.reg_cpu1.markEnd();
+		_time.reg_cpu1.getDuration();
+#endif
 	} // endfor p,
 
-	std::cout <<  "Calculation On Device Done ..." << std::endl;
-
+	//std::cout <<  "Calculation On Device Done ..." << std::endl;
 
 	for (int i=0; i<ListSize; i++) {
+#ifdef time_trace
+		_time.reg_cpu2.markStart();
+#endif
 		ptcl = particle[IndexList[i]];  // regular particle in particle list
 		// CALCULATE AND SAVE THE 0TH, 1ST, 2ND, 3RD DERIVATIVES OF REGULAR AND IRREGULAR FORCE
 		dt2 = dt*dt;
@@ -206,6 +230,12 @@ void CalculateRegAccelerationOnGPU(std::vector<int> IndexList, std::vector<Parti
 			ptcl->a_tot[dim][3] = ptcl->a_reg[dim][3] + ptcl->a_irr[dim][3];
 		}
 
+#ifdef time_trace
+		_time.reg_cpu2.markEnd();
+		_time.reg_cpu2.getDuration();
+
+		_time.reg_cpu3.markStart();
+#endif
 		// Neighbor update
 		ptcl->ACList.clear();
 		ptcl->NumberOfAC = NumNeighborReceive[0][i];
@@ -214,7 +244,12 @@ void CalculateRegAccelerationOnGPU(std::vector<int> IndexList, std::vector<Parti
 			ptcl->ACList.push_back(particle[NeighborIndex]);
 		}
 
+#ifdef time_trace
+		_time.reg_cpu3.markEnd();
+		_time.reg_cpu3.getDuration();
 
+		_time.reg_cpu4.markStart();
+#endif
 		// Particle Update
 		if (ptcl->NumberOfAC == 0) {
 			//ptcl->updateParticle(ptcl->CurrentTimeReg, treg[1], ptcl->a_tot);
@@ -224,11 +259,22 @@ void CalculateRegAccelerationOnGPU(std::vector<int> IndexList, std::vector<Parti
 		}
 		else {
 			//ptcl->CurrentTimeReg += ptcl->TimeStepReg;
+			ptcl->correctParticleFourthOrder(ptcl->CurrentTimeReg, treg[1], ptcl->a_reg);
 			ptcl->CurrentTimeReg = ptcl->CurrentTimeIrr;
 		}
-		ptcl->calculateTimeStepReg(ptcl->a_reg, ptcl->a_reg);
+		ptcl->calculateTimeStepReg(ptcl->a_reg, ptcl->a_reg); // open question
+#ifdef time_trace
+		_time.reg_cpu4.markEnd();
+		_time.reg_cpu4.getDuration();
+
+		_time.reg_cpu5.markStart();
+#endif
 		ptcl->calculateTimeStepIrr(ptcl->a_tot, ptcl->a_irr);
 		ptcl->isRegular = false;
+#ifdef time_trace
+		_time.reg_cpu5.markEnd();
+		_time.reg_cpu5.getDuration();
+#endif
 	} // correction and calculation of higher orders finished
 
 
@@ -307,9 +353,11 @@ void CalculateSingleAcceleration(Particle *ptcl1, Particle *ptcl2, double (&a)[3
 		dxdv   += dx[dim]*dv[dim];
 	}
 
+	/*
 	if (dr2 < EPS2) {
 		dr2 += EPS2;
 	}
+	*/
 
 	m_r3 = ptcl2->Mass/dr2/sqrt(dr2);
 

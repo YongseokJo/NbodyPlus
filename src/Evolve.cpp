@@ -3,7 +3,6 @@
 #include "defs.h"
 #include "global.h"
 
-
 int writeParticle(std::vector<Particle*> &particle, double MinRegTime, int outputNum);
 // int ReceiveFromEzno(std::vector<Particle*> &particle);
 // int SendToEzno(std::vector<Particle*> &particle);
@@ -15,7 +14,7 @@ bool IsOutput         = false;
 double outputTime = 0;
 double NextRegTime    = 0.;
 std::vector<Particle*> ComputationChain{};
-
+TimeTracer _time;
 
 void Evolve(std::vector<Particle*> &particle) {
 
@@ -23,22 +22,42 @@ void Evolve(std::vector<Particle*> &particle) {
 	int outNum = 0;
 	int freq   = 0;
 
-//	if (NNB == 0) { 
+
+//	if (NNB == 0) {
 //		std::cout << "No particle to be calculated ..." << std::endl;
 //		goto Communication;
 //	}
 
 	//CreateComputationChain(particle);
+
 	writeParticle(particle, global_time, outNum++);
 	outputTime = outputTimeStep;
 
 	while (true) {
 
 		// It's time to compute regular force.
-		RegularAccelerationRoutine(particle); // do not update particles unless NNB=0
-		IrregularAccelerationRoutine(particle);
-		global_time = NextRegTime;
+#ifdef time_trace
+		_time.reg.markStart();
+#endif
 
+		RegularAccelerationRoutine(particle); // do not update particles unless NNB=0
+																					//
+#ifdef time_trace
+		_time.reg.markEnd();
+		_time.irr.markStart();
+#endif
+
+		IrregularAccelerationRoutine(particle);
+
+#ifdef time_trace
+		_time.irr.markEnd();
+
+		_time.reg.getDuration();
+		_time.irr.getDuration();
+		_time.output();
+#endif
+
+		global_time = NextRegTime;
 		// create output at appropriate time intervals
 		if (outputTime <= global_time ) {
 			writeParticle(particle, global_time, outNum++);

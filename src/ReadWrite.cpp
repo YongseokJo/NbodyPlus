@@ -214,3 +214,10 @@ int writeParticle(std::vector<Particle*> &particle, double current_time, int out
     return 0;
 
 }
+
+
+#ifdef time_trace
+void output_time_trace() {
+
+}
+#endif

@@ -100,7 +100,7 @@ bool RegularAccelerationRoutine(std::vector<Particle*> &particle)
 	global_time = NextRegTime;
 	// update the next regular time step
 	UpdateNextRegTime(particle);
-	std::cout << "Finishing regular force ...\n" << std::flush;
+	//std::cout << "Finishing regular force ...\n" << std::flush;
 	return true;
 }
 
