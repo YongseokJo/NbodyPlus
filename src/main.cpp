@@ -16,6 +16,7 @@ const double dt_min = 9.3132257e-10;
 const int dt_level_min = -30;
 int newNNB = 0;
 std::vector<int> RegIndexList; 
+std::vector<Binary*> BinaryList;
 int NumNeighborMax = 100;
 
 
