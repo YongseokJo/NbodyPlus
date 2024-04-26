@@ -266,6 +266,7 @@ void CalculateInitialAcceleration(Particle* ptcl1, std::vector<Particle*> &parti
 		}
 	}
 
+	/*
 	std::cout << "NBODY+: total acceleartion\n" << std::flush;
 	for (int dim=0; dim<Dim; dim++)	 {
 		for (int order=0; order<HERMITE_ORDER; order++) {
@@ -281,6 +282,7 @@ void CalculateInitialAcceleration(Particle* ptcl1, std::vector<Particle*> &parti
 		}
 	} // endfor dim
 	std::cout << '\n' << std::endl;
+	*/
 }
 
 

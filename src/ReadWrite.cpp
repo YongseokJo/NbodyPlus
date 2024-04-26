@@ -171,7 +171,9 @@ int writeParticle(std::vector<Particle*> &particle, double current_time, int out
 		outputFile << outputTimeStep << ", "; //
 		outputFile << global_time << ""; //
 		outputFile << "\n";
-    outputFile << std::left << std::setw(width) << "Mass (Msun)"
+    outputFile << std::left 
+			<< std::setw(width) << "PID"
+			<< std::setw(width) << "Mass (Msun)"
 			<< std::setw(width) << "X (pc)"
 			<< std::setw(width) << "Y (pc)"
 			<< std::setw(width) << "Z (pc)"
@@ -183,7 +185,9 @@ int writeParticle(std::vector<Particle*> &particle, double current_time, int out
     // Write particle data to the file
 		for (Particle* ptcl:particle) {
 			if (current_time == ptcl->CurrentTimeIrr)
-        outputFile  << std::left << std::setw(width) << ptcl->Mass*mass_unit 
+        outputFile  << std::left 
+										<< std::setw(width) << ptcl->PID
+										<< std::setw(width) << ptcl->Mass*mass_unit 
                     << std::setw(width) << ptcl->Position[0]*position_unit
                     << std::setw(width) << ptcl->Position[1]*position_unit
                     << std::setw(width) << ptcl->Position[2]*position_unit
@@ -191,7 +195,9 @@ int writeParticle(std::vector<Particle*> &particle, double current_time, int out
                     << std::setw(width) << ptcl->Velocity[1]*velocity_unit/yr*pc/1e5 
                     << std::setw(width) << ptcl->Velocity[2]*velocity_unit/yr*pc/1e5 << '\n';
 			else
-        outputFile  << std::left << std::setw(width) << ptcl->Mass*mass_unit 
+        outputFile  << std::left 
+										<< std::setw(width) << ptcl->PID
+										<< std::setw(width) << ptcl->Mass*mass_unit 
                     << std::setw(width) << ptcl->PredPosition[0]*position_unit 
                     << std::setw(width) << ptcl->PredPosition[1]*position_unit 
                     << std::setw(width) << ptcl->PredPosition[2]*position_unit 
