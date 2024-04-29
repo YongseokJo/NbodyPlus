@@ -9,6 +9,9 @@ int writeParticle(std::vector<Particle*> &particle, double MinRegTime, int outpu
 bool CreateComputationChain(std::vector<Particle*> &particle);
 bool RegularAccelerationRoutine(std::vector<Particle*> &particle);
 bool IrregularAccelerationRoutine(std::vector<Particle*> &particle);
+void AddNewBinariesToList(std::vector<Particle*> &particle);
+void BinaryAccelerationRoutine(double next_time);
+
 
 bool IsOutput         = false;
 double binary_time = 0;
