@@ -50,11 +50,13 @@ void Particle::calculateTimeStepIrr(double f[3][4],double df[3][4]) {
 
 	if (TimeLevelIrr < dt_block_level+dt_level_min) {
 		std::cerr << "Timestep is too small" << std::endl;
-		std::cout << "In CalTimeStep, timestep is too small."\
+		//std::cout << "In CalTimeStep, timestep is too small."\
 		 	<< " TimeStepIrr=" << TimeStepIrr	<< std::endl;
 		TimeStepIrr  = std::max(dt_block*dt_min,             TimeStepIrr);
 		TimeLevelIrr = std::max(dt_block_level+dt_level_min, TimeLevelIrr);
 	}
+	TimeStepIrr  = std::max(dt_min/2,             TimeStepIrr);
+	TimeLevelIrr = std::max(dt_level_min-1, TimeLevelIrr);
 }
 
 // Update TimeStepReg // need to review
@@ -63,9 +65,20 @@ void Particle::calculateTimeStepReg(double f[3][4], double df[3][4]) {
 	//std::cout << NumberOfAC << std::flush;
 	double TimeStepRegTmp;
 	int TimeLevelTmp;
+
+#ifdef time_trace
+		_time.reg_dt1.markStart();
+#endif
 	getBlockTimeStep(getNewTimeStep(f, df, TimeStepReg), TimeLevelTmp, TimeStepRegTmp);
 
-	std::cout << "NBODY+: TimeStepRegTmp = " << TimeStepRegTmp << std::endl;
+#ifdef time_trace
+		_time.reg_dt1.markEnd();
+		_time.reg_dt1.getDuration();
+
+		_time.reg_dt2.markStart();
+#endif
+
+	//std::cout << "NBODY+: TimeStepRegTmp = " << TimeStepRegTmp << std::endl;
 
 	if (TimeStepRegTmp > 2*TimeStepReg) {
 		if (fmod(CurrentTimeReg, 2*TimeStepReg)==0 && CurrentTimeReg != 0) {
@@ -92,6 +105,14 @@ void Particle::calculateTimeStepReg(double f[3][4], double df[3][4]) {
 		TimeLevelTmp = TimeLevelReg;
 	}
 
+
+#ifdef time_trace
+		_time.reg_dt2.markEnd();
+		_time.reg_dt2.getDuration();
+
+		_time.reg_dt3.markStart();
+#endif
+
 	TimeStepReg  = std::min(1.,TimeStepRegTmp);
 	TimeLevelReg = std::min(0,TimeLevelTmp);
 
@@ -105,5 +126,13 @@ void Particle::calculateTimeStepReg(double f[3][4], double df[3][4]) {
 		TimeLevelIrr = TimeLevelReg;
 	}
 
-	std::cout << "NBODY+: TimeStepReg = " << TimeStepReg << std::endl;
+	TimeStepReg  = std::max(dt_min,       TimeStepReg);
+	TimeLevelReg = std::max(dt_level_min, TimeLevelReg);
+
+#ifdef time_trace
+		_time.reg_dt3.markEnd();
+		_time.reg_dt3.getDuration();
+#endif
+
+	//std::cout << "NBODY+: TimeStepReg = " << TimeStepReg << std::endl;
 }

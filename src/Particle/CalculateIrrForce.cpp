@@ -8,9 +8,11 @@ void direct_sum(double *x, double *v, double r2, double vx,
 	 	        double mass, double mdot, double (&a)[2][3], double (&adot)[2][3], int p) {
 	double _r3;
 
+	/*
 	if (r2 < EPS2)
 		r2 += EPS2;  // add softening length
 
+		*/
 
 	_r3 = 1/r2/sqrt(r2);
 
@@ -69,8 +71,8 @@ void Particle::calculateIrrForce() {
 			r2 = 0.0;
 			vx = 0.0;
 
-			ptcl->predictParticleSecondOrder(ptcl->CurrentTimeIrr, tirr[p]);
-			this->predictParticleSecondOrder(ptcl->CurrentTimeIrr, tirr[p]);
+			ptcl->predictParticleSecondOrder(ptcl->CurrentTimeIrr, tirr[p], ptcl->a_irr);
+			this->predictParticleSecondOrder(ptcl->CurrentTimeIrr, tirr[p], ptcl->a_irr);
 			for (int dim=0; dim<Dim; dim++) {
 				// calculate position and velocity differences for current time
 				x[dim] = ptcl->PredPosition[dim] - this->PredPosition[dim];
@@ -149,9 +151,10 @@ void Particle::calculateIrrForce() {
 
 	// update the current irregular time and irregular time steps
 	//this->updateParticle((CurrentTimeIrr+TimeStepIrr)*EnzoTimeStep, a_irr);
+	this->updateParticle(CurrentTimeIrr, CurrentTimeIrr+TimeStepIrr, a_irr);
 	//this->updateParticle(CurrentTimeIrr, CurrentTimeIrr+TimeStepIrr, a_tot);
-	this->correctParticleFourthOrder(CurrentTimeIrr, CurrentTimeIrr+TimeStepIrr, a_tot);
-	CurrentTimeIrr += TimeStepIrr;
+	//this->correctParticleFourthOrder(CurrentTimeIrr, CurrentTimeIrr+TimeStepIrr, a_irr);
+	CurrentTimeIrr += TimeStepIrr; // in sorting
 	this->calculateTimeStepIrr(a_tot, a_irr); // calculate irregular time step based on total force
 }
 

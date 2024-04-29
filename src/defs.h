@@ -58,4 +58,9 @@
 #define position_unit 4. // in 4 pc
 #define velocity_unit 4e-10 // in 4e-10 pc/yr
 //#define mass_unit 256e-20  // 256e-20 Msun in the unit that G = 1.
-#define mass_unit 0.0001424198  // Msun in the unit that G = 1.
+#define mass_unit 0.0001424198  // Msun in the unit that G = 1. 
+
+#define time_trace
+
+
+

@@ -15,7 +15,6 @@
 
 class Binary; 
 
-
 class Particle
 {
 	private:
@@ -50,18 +49,18 @@ class Particle
 		double BackgroundAcceleration[Dim];
 		Particle* NextParticleInEnzo;
 		Particle* NextParticleForComputation;
-        	Particle* BinaryPairParticle;
-        	Particle* BinaryParticleI;
-        	Particle* BinaryParticleJ;
-		Binary* BinaryInfo;
+        Particle* BinaryPairParticle;
+        Particle* BinaryParticleI;
+        Particle* BinaryParticleJ;
+        Binary* BinaryInfo;
 		std::vector<Particle*> ACList;     // list of AC neighbor 
 		int NumberOfAC; // number of neighbors
 		double RadiusOfAC;
 		int isEvolve;
 		bool isRegular;
 		bool isStarEvolution;
-        	bool isBinary; // check whether this is a member of the binary
-       	 	bool isCMptcl; // check if this particle is center-of-mass particle
+        bool isBinary; // check whether this is a member of the binary
+        bool isCMptcl; // check if this particle is center-of-mass particle
 
 		// Constructor
 		Particle(void) {
@@ -82,8 +81,6 @@ class Particle
 			isEvolve        = 0;
 			isRegular       = false;
 			isStarEvolution = true;
-			isBinary = false;
-			isCMptcl = false;
 			for (int i=0; i<Dim; i++) {
 				Velocity[i]     = 0;
 				Position[i]     = 0;
@@ -97,10 +94,6 @@ class Particle
 			}
 			NextParticleInEnzo = nullptr;
 			NextParticleForComputation = nullptr;
-            		BinaryPairParticle = nullptr;
-            		BinaryParticleI = nullptr;
-            		BinaryParticleJ = nullptr;
-            		BinaryInfo = nullptr;
 		}
 
 		void updateParticle(double mass, double *vel, double pos[], int particletype) {
@@ -131,18 +124,16 @@ class Particle
 		void calculateIrrForce();
 		void calculateRegAccelerationSecondOrder(std::vector<Particle*> &particle);
 		void calculateRegAccelerationFourthOrder(std::vector<Particle*> &particle);
-		void predictParticleSecondOrder(double current_time, double next_time);
+        void predictParticleSecondOrder(double next_time);
+		void predictParticleSecondOrder(double current_time, double next_time, double a[3][4]);
 		void correctParticleFourthOrder(double current_time, double next_time, double a[3][4]);
 		void normalizeParticle();
 		void calculateTimeStepIrr(double f[3][4], double df[3][4]);
 		void calculateTimeStepReg(double f[3][4], double df[3][4]);
 		bool checkNeighborForEvolution();
 		void updateEvolveParticle(std::vector<Particle*> &particle);
-		void predictParticleSecondOrder(double next_time);
 		void updateParticle(double current_time, double next_time, double a[3][4]);
 		double evolveStarMass(double t1, double t2);
-
-		void isKSCandidate(double next_time);
 };
 
 
@@ -168,25 +159,25 @@ class Binary
 	double Mass;
 
 	double Position[Dim];
-        double Velocity[Dim];
-        double PredPosition[Dim];
+    double Velocity[Dim];
+    double PredPosition[Dim];
 	double PredVelocity[Dim];
 
-        double PredTime;
+    double PredTime;
 	double CurrentTime;
 	double TimeStep;
 	int TimeLevel;
 
-        double a_tot[Dim][HERMITE_ORDER];
+    double a_tot[Dim][HERMITE_ORDER];
 	double a_reg[Dim][HERMITE_ORDER];
 	double a_irr[Dim][HERMITE_ORDER];
 	double BackgroundAcceleration[Dim];
 
 
-        // information of binary particles after Levi-civita transformation
+    // information of binary particles after Levi-civita transformation
 
-        double u[4];
-        double udot[4];
+    double u[4];
+    double udot[4];
         double u_pred[4];
 	double udot_pred[4];
 
@@ -339,3 +330,4 @@ class Binary
 };
 
 #endif
+

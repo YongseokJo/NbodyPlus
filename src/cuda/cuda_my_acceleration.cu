@@ -101,7 +101,7 @@ void GetAcceleration(
 
 	// actually all the data is on the memory already we can just pass the indices
 	toDevice(h_target  , d_target  , variable_size); 
-	printf("CUDA: transfer done\n");
+	////printf("CUDA: transfer done\n");
 
 
 	dim3 thread_size(THREAD, 1, 1);
@@ -123,13 +123,13 @@ void GetAcceleration(
 	//} // endfor offset
 
 
-	printf("CUDA: neighbor post processing done\n");
+	//printf("CUDA: neighbor post processing done\n");
 
 	toHost(h_result  , d_result  , variable_size);
 	toHost(h_target  , d_target  , variable_size);
 	toHost(h_neighbor, d_neighbor, variable_size);
 	cudaDeviceSynchronize();
-	printf("CUDA: transfer to host done\n");
+	//printf("CUDA: transfer to host done\n");
 
 	for (int i=0;i<NumTarget;i++) {
 		for (int j=0;j<h_neighbor[i].NumNeighbor;j++) {
@@ -148,7 +148,7 @@ void GetAcceleration(
 		adot[i][2] = h_result[i].adot.z;
 	}
 
-	printf("CUDA: done?\n");
+	//printf("CUDA: done?\n");
 }
 
 
@@ -256,9 +256,11 @@ __device__ void kernel(
 		//*(neighbor_list+tg_index*blockDim.x*100+threadIdx.x*100+neighbor_num) = bg_index;
 	}
 
+	/*
 	if (dr2 < ESP2) {
 		dr2 +=  ESP2;
 	}
+	*/
 
 	float drdv      = dx*dvx + dy*dvy + dz*dvz;
 	float drdv3_dr2 = 3*drdv/dr2;
@@ -376,7 +378,7 @@ void _ReceiveFromHost(
 		my_allocate_d(&do_neighbor, variable_size*THREAD);
 	}
 
-	fprintf(stdout, "CUDA: receive starts\n");
+	//fprintf(stdout, "CUDA: receive starts\n");
 	//printf("CUDA: new size of NNB=%d\n", variable_size);
 	/*
 	cudaStatus = cudaMallocManaged(&background, new_size(NNB)*sizeof(BackgroundParticle)); //NNB*sizeof(BackgroundParticle));
@@ -388,7 +390,7 @@ void _ReceiveFromHost(
 	}
 	toDevice(h_background,d_background,variable_size);
 
-	fprintf(stdout, "CUDA: receive done\n");
+	//fprintf(stdout, "CUDA: receive done\n");
 }
 
 
