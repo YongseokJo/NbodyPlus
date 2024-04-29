@@ -410,10 +410,27 @@ void NewKSInitialization(Particle* ptclI, std::vector<Particle*> &particle, doub
     ptclCM->calculateTimeStepIrr(ptclCM->a_tot, ptclCM->a_irr); // calculate irregular time step based on total force
     ptclCM->calculateTimeStepReg(ptclCM->a_reg, ptclCM->a_reg); // calculate regular time step based on total force
 
+    fprintf(binout, "KSRegularlizationInitialization.cpp: result of CM particle value calculation\n");
+    fprintf(binout, "from function NewKSInitialization\n");
+
+    fprintf(binout, "Position - x:%f, y:%f, z:%f, \n", ptclCM->Position[0], ptclCM->Position[1], ptclCM->Position[2]);
+    fprintf(binout, "Velocity - vx:%f, vy:%f, vz:%f, \n", ptclCM->Velocity[0], ptclCM->Velocity[1], ptclCM->Velocity[2]);
+
+    fprintf(binout, "Total Acceleration - ax:%f, ay:%f, az:%f, \n", ptclCM->a_tot[0], ptclCM->a_tot[1], ptclCM->a_tot[2]);
+    fprintf(binout, "Time Steps - irregular:%f, regular:%f/n", ptclCM->TimeStepIrr, ptclCM->TimeStepReg);
+
+
+
 
     // calculate the initial values of relevant variables
 
     ptclBin->InitializeBinary(current_time);
+
+    fprintf(binout, "KS coordinates - u1:%f, u2:%f, u3:%f, u4:%f/n", ptclBin->u[0], ptclBin->u[1], ptclBin->u[2], ptclBin->u[3]);
+    fprintf(binout, "KS coordinates - udot1:%f, udot2:%f, udot3:%f, udot4:%f/n", ptclBin->udot[0], ptclBin->udot[1], ptclBin->udot[2], ptclBin->udot[3]);
+    fprintf(binout, "KS coordinates - udot1:%f, udot2:%f, udot3:%f, udot4:%f/n", ptclBin->udot[0], ptclBin->udot[1], ptclBin->udot[2], ptclBin->udot[3]);
+    fprintf(binout, "Other important KS variables - r:%f, h:%f, gamma: %f, tau:%f, step:%f/n", ptclBin->r, ptclBin->h, ptclBin->gamma, ptclBin->dTau, ptclBin->TimeStep);
+
 
 
     // delete the individual particles and add the new CM particle

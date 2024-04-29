@@ -10,7 +10,7 @@ bool CreateComputationChain(std::vector<Particle*> &particle);
 bool RegularAccelerationRoutine(std::vector<Particle*> &particle);
 bool IrregularAccelerationRoutine(std::vector<Particle*> &particle);
 void AddNewBinariesToList(std::vector<Particle*> &particle);
-void BinaryAccelerationRoutine(double next_time);
+void BinaryAccelerationRoutine(double next_time, std::vector<Particle*> &particle);
 
 
 bool IsOutput         = false;
@@ -39,12 +39,10 @@ void Evolve(std::vector<Particle*> &particle) {
 
 	while (true) {
 
-                // It's time to compute regular force.
-                AddNewBinariesToList(particle);
-
-                if (BinaryList.size()>0) {
-                        BinaryAccelerationRoutine(binary_time);
-                }
+		fprintf(binout, "-------------------------------------\n");
+		fprintf(binout, "Evolve.cpp: starting a new while loop\n");
+		fprintf(binout, "global_time = %f\n",global_time);
+		fprintf(binout, "binary_time = %f\n",binary_time);
 
 
 		// It's time to compute regular force.
@@ -54,6 +52,16 @@ void Evolve(std::vector<Particle*> &particle) {
 
 		RegularAccelerationRoutine(particle); // do not update particles unless NNB=0
 																					//
+
+		// It's time to compute binary-related variables.
+		AddNewBinariesToList(particle);
+
+		if (BinaryList.size()>0) {
+				fprintf(binout, "Evolve.cpp: integrating binaries\n");
+				fprintf(binout, "# of binaries = %d\n",BinaryList.size());
+				BinaryAccelerationRoutine(binary_time, particle);
+		}
+
 #ifdef time_trace
 		_time.reg.markEnd();
 		_time.irr.markStart();
@@ -70,7 +78,7 @@ void Evolve(std::vector<Particle*> &particle) {
 #endif
 
 		global_time = NextRegTime;
-                binary_time = FirstComputation->CurrentTimeIrr + FirstComputation->TimeStepIrr;
+        binary_time = FirstComputation->CurrentTimeIrr + FirstComputation->TimeStepIrr;
 		// create output at appropriate time intervals
 		if (outputTime <= global_time ) {
 			writeParticle(particle, global_time, outNum++);
