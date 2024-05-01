@@ -5,7 +5,7 @@
 #include <iostream>
 
 
-double getNewTimeStep(double f[3][4], double df[3][4], double dt) {
+double getNewTimeStep(double f[3][4], double df[3][4]) {
 
 	double F2, Fdot2, F2dot2, F3dot2, TimeStep, DivergentPrevent;
 

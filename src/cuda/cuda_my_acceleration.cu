@@ -256,11 +256,9 @@ __device__ void kernel(
 		//*(neighbor_list+tg_index*blockDim.x*100+threadIdx.x*100+neighbor_num) = bg_index;
 	}
 
-	/*
 	if (dr2 < ESP2) {
 		dr2 +=  ESP2;
 	}
-	*/
 
 	float drdv      = dx*dvx + dy*dvy + dz*dvz;
 	float drdv3_dr2 = 3*drdv/dr2;

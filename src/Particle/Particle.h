@@ -27,6 +27,8 @@ class Particle
 		double DynamicalTime;
 		double Velocity[Dim];
 		double Position[Dim];
+		double NewVelocity[Dim];
+		double NewPosition[Dim];
 		double PredTime;
 		double PredTimeIrr;
 		double PredTimeReg;
@@ -41,6 +43,9 @@ class Particle
 		double a_tot[Dim][HERMITE_ORDER];
 		double a_reg[Dim][HERMITE_ORDER];
 		double a_irr[Dim][HERMITE_ORDER];
+		//double ap_tot[Dim][2];
+		//double ap_reg[Dim][2];
+		//double ap_irr[Dim][2];
 		double BackgroundAcceleration[Dim];
 		Particle* NextParticleInEnzo;
 		Particle* NextParticleForComputation;
@@ -77,6 +82,7 @@ class Particle
 				PredVelocity[i] = 0;
 				BackgroundAcceleration[i] = 0;
 				for (int j=0; j<HERMITE_ORDER; j++) {
+					a_tot[i][j] = 0;
 					a_reg[i][j] = 0;
 					a_irr[i][j] = 0;
 				}
@@ -113,14 +119,17 @@ class Particle
 		void calculateIrrForce();
 		void calculateRegAccelerationSecondOrder(std::vector<Particle*> &particle);
 		void calculateRegAccelerationFourthOrder(std::vector<Particle*> &particle);
-		void predictParticleSecondOrder(double current_time, double next_time, double a[3][4]);
+
+		void predictParticleSecondOrder(double time);
 		void correctParticleFourthOrder(double current_time, double next_time, double a[3][4]);
+
 		void normalizeParticle();
 		void calculateTimeStepIrr(double f[3][4], double df[3][4]);
-		void calculateTimeStepReg(double f[3][4], double df[3][4]);
+		void calculateTimeStepReg();
 		bool checkNeighborForEvolution();
 		void updateEvolveParticle(std::vector<Particle*> &particle);
-		void updateParticle(double current_time, double next_time, double a[3][4]);
+		//void updateParticle(double current_time, double next_time, double a[3][4]);
+		void updateParticle();
 		double evolveStarMass(double t1, double t2);
 };
 

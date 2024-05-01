@@ -15,11 +15,11 @@ double outputTime = 0;
 double NextRegTime    = 0.;
 std::vector<Particle*> ComputationChain{};
 TimeTracer _time;
+int outNum = 0;
 
 void Evolve(std::vector<Particle*> &particle) {
 
 	std::cout << "Evolve starting ..." << std::endl;
-	int outNum = 0;
 	int freq   = 0;
 
 
