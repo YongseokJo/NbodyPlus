@@ -55,7 +55,9 @@ void CalculateKSAcceleration(Particle* ptclI, Particle* ptclJ, Particle* ptclCM,
             vx = 0;
             v2 = 0;
 
-
+	    if (ptcl1 == ptcl2) {
+		continue;
+	    }
             // if current time = the time we need, then PredPosition and PredVelocity is same as Position and Velocity
             ptcl2->predictParticleSecondOrder(current_time);
 
@@ -92,7 +94,7 @@ void CalculateKSAcceleration(Particle* ptclI, Particle* ptclJ, Particle* ptclCM,
             for (int order=0; order<HERMITE_ORDER; order++) {
                 ptcl1->a_tot[dim][order] = ptcl1->a_reg[dim][order] + ptcl1->a_irr[dim][order]; 
             }
-	    }
+	}
 
     }// end of loop for pair particle, ptclI and ptclJ
 
@@ -103,7 +105,7 @@ void CalculateKSAcceleration(Particle* ptclI, Particle* ptclJ, Particle* ptclCM,
     for (int dim=0; dim<Dim; dim++)	 {
 		for (int order=0; order<HERMITE_ORDER; order++) {
             if (order<2) {
-			    ptclCM->a_reg[dim][order] = (ptclI->a_reg[dim][order]*ptclI->Mass + ptclJ->a_reg[dim][order]*ptclJ->Mass)/(ptclCM->Mass); 
+		ptclCM->a_reg[dim][order] = (ptclI->a_reg[dim][order]*ptclI->Mass + ptclJ->a_reg[dim][order]*ptclJ->Mass)/(ptclCM->Mass); 
                 ptclCM->a_irr[dim][order] = (ptclI->a_irr[dim][order]*ptclI->Mass + ptclJ->a_irr[dim][order]*ptclJ->Mass)/(ptclCM->Mass); 
                 ptclCM->a_tot[dim][order] = (ptclI->a_tot[dim][order]*ptclI->Mass + ptclJ->a_tot[dim][order]*ptclJ->Mass)/(ptclCM->Mass); 
             } else {
@@ -111,8 +113,8 @@ void CalculateKSAcceleration(Particle* ptclI, Particle* ptclJ, Particle* ptclCM,
                 ptclCM->a_irr[dim][order] = 0.0;
                 ptclCM->a_tot[dim][order] = 0.0;
             }
-		}
 	}
+    }
 
 
     // updated the predicted positions and velocities just in case
@@ -127,6 +129,9 @@ void CalculateKSAcceleration(Particle* ptclI, Particle* ptclJ, Particle* ptclCM,
             vx = 0;
             v2 = 0;
 
+	    if ((ptcl2 == ptclI)||(ptcl2==ptclJ)) {
+		continue;
+	    }
 
             // if current time = the time we need, then PredPosition and PredVelocity is same as Position and Velocity
             ptcl2->predictParticleSecondOrder(current_time);
@@ -168,7 +173,7 @@ void CalculateKSAcceleration(Particle* ptclI, Particle* ptclJ, Particle* ptclCM,
 
     for (int dim=0; dim<Dim; dim++)	 {
 		for (int order=2; order<HERMITE_ORDER; order++) {
-            ptclCM->a_tot[dim][order] = (ptclCM->a_reg[dim][order] + ptclCM->a_reg[dim][order]*ptclJ->Mass); 
+	            ptclCM->a_tot[dim][order] = (ptclCM->a_reg[dim][order] + ptclCM->a_reg[dim][order]*ptclJ->Mass); 
 		}
 	}
 
@@ -424,7 +429,10 @@ void NewKSInitialization(Particle* ptclI, std::vector<Particle*> &particle, doub
     fprintf(binout, "Position - x:%f, y:%f, z:%f, \n", ptclCM->Position[0], ptclCM->Position[1], ptclCM->Position[2]);
     fprintf(binout, "Velocity - vx:%f, vy:%f, vz:%f, \n", ptclCM->Velocity[0], ptclCM->Velocity[1], ptclCM->Velocity[2]);
 
-    fprintf(binout, "Total Acceleration - ax:%f, ay:%f, az:%f, \n", *ptclCM->a_tot[0], *ptclCM->a_tot[1], *ptclCM->a_tot[2]);
+    fprintf(binout, "Total Acceleration - ax:%f, ay:%f, az:%f, \n", ptclCM->a_tot[0][0], ptclCM->a_tot[1][0], ptclCM->a_tot[2][0]);
+    fprintf(binout, "Total Acceleration - axdot:%f, aydot:%f, azdot:%f, \n", ptclCM->a_tot[0][1], ptclCM->a_tot[1][1], ptclCM->a_tot[2][1]);
+    fprintf(binout, "Total Acceleration - ax2dot:%f, ay2dot:%f, az2dot:%f, \n", ptclCM->a_tot[0][2], ptclCM->a_tot[1][2], ptclCM->a_tot[2][2]);
+    fprintf(binout, "Total Acceleration - ax3dot:%f, ay3dot:%f, az3dot:%f, \n", ptclCM->a_tot[0][3], ptclCM->a_tot[1][3], ptclCM->a_tot[2][3]);
     fprintf(binout, "Time Steps - irregular:%f, regular:%f/n", ptclCM->TimeStepIrr, ptclCM->TimeStepReg);
 
 

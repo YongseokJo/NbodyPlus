@@ -115,6 +115,11 @@ void Binary::InitializeBinary(double current_time) {
     ptclI = ptclCM->BinaryParticleI;
     ptclJ = ptclCM->BinaryParticleJ;
 
+    // just in case
+    ptclI->predictParticleSecondOrder(current_time);
+    ptclJ->predictParticleSecondOrder(current_time);
+
+
     r2 = 0;
     
     // define the relative coordinates for binaries
@@ -143,10 +148,13 @@ void Binary::InitializeBinary(double current_time) {
 
         u[3] = 0.0;
         u[0] = sqrt(0.5*(r+x[0]));
-        u[1] = 0.5*x[1]/u[1];
-        u[2] = 0.5*x[2]/u[1];
+        u[1] = 0.5*x[1]/u[0];
+        u[2] = 0.5*x[2]/u[0];
 
     }
+
+    fprintf(binout, "KS coordinates - u1:%f, u2:%f, u3:%f, u4:%f /n", u[0],u[1],u[2],u[3]);
+
 
     // form the Levi-civita transformation matrix based on initial values
 
@@ -220,6 +228,9 @@ void Binary::InitializeBinary(double current_time) {
     }
 
     Ptot = sqrt(P[0]*P[0] + P[0]*P[0] + P[0]*P[0]);
+    fprintf(binout, "Perturbing force - P:%f, Py:%f, Pz:%f /n", P[0],P[1],P[2]);
+
+
 
     // scale the perturbing force by modification factor...?
     // CHECK
