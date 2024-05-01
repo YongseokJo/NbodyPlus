@@ -81,6 +81,8 @@ class Particle
 			isEvolve        = 0;
 			isRegular       = false;
 			isStarEvolution = true;
+			isBinary        = false;
+			isCMptcl        = false;
 			for (int i=0; i<Dim; i++) {
 				Velocity[i]     = 0;
 				Position[i]     = 0;
@@ -94,6 +96,9 @@ class Particle
 			}
 			NextParticleInEnzo = nullptr;
 			NextParticleForComputation = nullptr;
+			BinaryPairParticle = nullptr;
+			BinaryParticleI = nullptr;
+			BinaryParticleJ = nullptr;
 		}
 
 		void updateParticle(double mass, double *vel, double pos[], int particletype) {
@@ -226,9 +231,9 @@ class Binary
         // tau: time unit for new coordinate system, tau = r*t
 
         double PredTau;
-		double CurrentTau;
+	double CurrentTau;
         double dTau;
-		double TauStep;
+	double TauStep;
 
         // other variables
         

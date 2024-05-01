@@ -1,4 +1,5 @@
 #include "../global.h"
+#include "../defs.h"
 #include <vector>
 #include <iostream>
 #include <cmath>

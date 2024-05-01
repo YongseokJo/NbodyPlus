@@ -1,5 +1,5 @@
-#include <cmath>
 #include <iostream>
+#include <cmath>
 #include "defs.h"
 #include "global.h"
 
@@ -54,12 +54,15 @@ void Evolve(std::vector<Particle*> &particle) {
 																					//
 
 		// It's time to compute binary-related variables.
+	        std::cout << "Adding new binaries to list ..." << std::endl;
+
 		AddNewBinariesToList(particle);
 
 		if (BinaryList.size()>0) {
-				fprintf(binout, "Evolve.cpp: integrating binaries\n");
-				fprintf(binout, "# of binaries = %d\n",BinaryList.size());
-				BinaryAccelerationRoutine(binary_time, particle);
+			std::cout << "Integrating Binaries ..." << std::endl;
+			fprintf(binout, "Evolve.cpp: integrating binaries\n");
+		//	fprintf(binout, "# of binaries = %d\n",BinaryList.size());
+			BinaryAccelerationRoutine(binary_time, particle);
 		}
 
 #ifdef time_trace

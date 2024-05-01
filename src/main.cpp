@@ -31,7 +31,7 @@ int NumNeighborMax = 100;
 
 
 int main(int argc, char *argv[]) {
-	cout << "Staring Nbody+ ..." << endl;
+	std::cout << "Staring Nbody+ ..." << std::endl;
 	binout = fopen("binary_output.txt", "w");
 	fprintf(binout, "Starting nbody - Binary OUTPUT\n");
 	std::vector<Particle*> particle{};
