@@ -50,6 +50,25 @@ void CalculateKSAcceleration(Particle* ptclI, Particle* ptclJ, Particle* ptclCM,
             
         ptcl1->predictParticleSecondOrder(current_time);
 
+	// initialization of relevant variables 
+	
+	j = 0;
+
+	for(int dim=0; dim<Dim; dim++) {
+		for (int order=0; order<HERMITE_ORDER; order++) {
+
+			ptcl1->a_reg[dim][order] = 0.0;
+                        ptcl1->a_irr[dim][order] = 0.0;
+                        ptcl1->a_tot[dim][order] = 0.0;
+
+	 	        ptclCM->a_reg[dim][order] = 0.0;
+                	ptclCM->a_irr[dim][order] = 0.0;
+                	ptclCM->a_tot[dim][order] = 0.0;
+		}
+	}
+
+
+
         for (Particle *ptcl2: particle) {
 
             r2 = 0;
@@ -105,16 +124,10 @@ void CalculateKSAcceleration(Particle* ptclI, Particle* ptclJ, Particle* ptclCM,
     // and initialize the 3rd and 4th order derivatives just in case
 
     for (int dim=0; dim<Dim; dim++)	 {
-		for (int order=0; order<HERMITE_ORDER; order++) {
-            if (order<2) {
-		        ptclCM->a_reg[dim][order] = (ptclI->a_reg[dim][order]*ptclI->Mass + ptclJ->a_reg[dim][order]*ptclJ->Mass)/(ptclCM->Mass); 
-                ptclCM->a_irr[dim][order] = (ptclI->a_irr[dim][order]*ptclI->Mass + ptclJ->a_irr[dim][order]*ptclJ->Mass)/(ptclCM->Mass); 
-                ptclCM->a_tot[dim][order] = (ptclI->a_tot[dim][order]*ptclI->Mass + ptclJ->a_tot[dim][order]*ptclJ->Mass)/(ptclCM->Mass); 
-            } else {
-                ptclCM->a_reg[dim][order] = 0.0; 
-                ptclCM->a_irr[dim][order] = 0.0;
-                ptclCM->a_tot[dim][order] = 0.0;
-            }
+		for (int order=0; order<2; order++) {
+			ptclCM->a_reg[dim][order] = (ptclI->a_reg[dim][order]*ptclI->Mass + ptclJ->a_reg[dim][order]*ptclJ->Mass)/(ptclCM->Mass); 
+                	ptclCM->a_irr[dim][order] = (ptclI->a_irr[dim][order]*ptclI->Mass + ptclJ->a_irr[dim][order]*ptclJ->Mass)/(ptclCM->Mass); 
+                	ptclCM->a_tot[dim][order] = (ptclI->a_tot[dim][order]*ptclI->Mass + ptclJ->a_tot[dim][order]*ptclJ->Mass)/(ptclCM->Mass); 
 	}
     }
 
@@ -123,7 +136,7 @@ void CalculateKSAcceleration(Particle* ptclI, Particle* ptclJ, Particle* ptclCM,
             
     //ptcl1 = ptclCM;
     //ptcl1->predictParticleSecondOrder(current_time);
-
+    j = 0;
 
     for (Particle *ptcl2: particle) {
 
@@ -180,10 +193,6 @@ void CalculateKSAcceleration(Particle* ptclI, Particle* ptclJ, Particle* ptclCM,
 	}
 
     // save the regular and irregular time steps as well
-    
-
-
-
 
 }
 
@@ -335,6 +344,14 @@ void NewKSInitialization(Particle* ptclI, std::vector<Particle*> &particle, doub
     ptclI->predictParticleSecondOrder(current_time);
     ptclJ->predictParticleSecondOrder(current_time);
 
+    fprintf(binout, "Position: ptclI - x:%f, y:%f, z:%f, \n", ptclI->Position[0], ptclI->Position[1], ptclI->Position[2]);
+    fprintf(binout, "Velocity: ptclI - vx:%f, vy:%f, vz:%f, \n", ptclI->Velocity[0], ptclI->Velocity[1], ptclI->Velocity[2]);
+
+    fprintf(binout, "Total Acceleration - ax:%f, ay:%f, az:%f, \n", ptclI->a_tot[0][0], ptclI->a_tot[1][0], ptclI->a_tot[2][0]);
+    fprintf(binout, "Total Acceleration - axdot:%f, aydot:%f, azdot:%f, \n", ptclI->a_tot[0][1], ptclI->a_tot[1][1], ptclI->a_tot[2][1]);
+    fprintf(binout, "Total Acceleration - ax2dot:%f, ay2dot:%f, az2dot:%f, \n", ptclI->a_tot[0][2], ptclI->a_tot[1][2], ptclI->a_tot[2][2]);
+    fprintf(binout, "Total Acceleration - ax3dot:%f, ay3dot:%f, az3dot:%f, \n", ptclI->a_tot[0][3], ptclI->a_tot[1][3], ptclI->a_tot[2][3]);
+    fprintf(binout, "Time Steps - irregular:%f, regular:%f/n", ptclI->TimeStepIrr, ptclI->TimeStepReg);
 
     // need to put option if there aren't any close neighbors
 
@@ -445,10 +462,10 @@ void NewKSInitialization(Particle* ptclI, std::vector<Particle*> &particle, doub
 
     ptclBin->InitializeBinary(current_time);
 
-    fprintf(binout, "KS coordinates - u1:%f, u2:%f, u3:%f, u4:%f/n", ptclBin->u[0], ptclBin->u[1], ptclBin->u[2], ptclBin->u[3]);
-    fprintf(binout, "KS coordinates - udot1:%f, udot2:%f, udot3:%f, udot4:%f/n", ptclBin->udot[0], ptclBin->udot[1], ptclBin->udot[2], ptclBin->udot[3]);
-    fprintf(binout, "KS coordinates - udot1:%f, udot2:%f, udot3:%f, udot4:%f/n", ptclBin->udot[0], ptclBin->udot[1], ptclBin->udot[2], ptclBin->udot[3]);
-    fprintf(binout, "Other important KS variables - r:%f, h:%f, gamma: %f, tau:%f, step:%f/n", ptclBin->r, ptclBin->h, ptclBin->gamma, ptclBin->dTau, ptclBin->TimeStep);
+    fprintf(binout, "KS coordinates - u1:%f, u2:%f, u3:%f, u4:%f \n", ptclBin->u[0], ptclBin->u[1], ptclBin->u[2], ptclBin->u[3]);
+    fprintf(binout, "KS coordinates - udot1:%f, udot2:%f, udot3:%f, udot4:%f \n", ptclBin->udot[0], ptclBin->udot[1], ptclBin->udot[2], ptclBin->udot[3]);
+    fprintf(binout, "KS coordinates - udot1:%f, udot2:%f, udot3:%f, udot4:%f \n", ptclBin->udot[0], ptclBin->udot[1], ptclBin->udot[2], ptclBin->udot[3]);
+    fprintf(binout, "Other important KS variables - r:%f, h:%f, gamma: %f, tau:%f, step:%f \n", ptclBin->r, ptclBin->h, ptclBin->gamma, ptclBin->dTau, ptclBin->TimeStep);
 
 
 
