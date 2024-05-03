@@ -39,12 +39,11 @@ void CalculateKSAcceleration(Particle* ptclI, Particle* ptclJ, Particle* ptclCM,
 
 
 	for (int i=0; i<2; i++) {
-
-        if (i==0) {
-            ptcl1 = ptclI;
-        } else {
-            ptcl1 = ptclJ;
-        }	
+	if (i==0) {
+		ptcl1 = ptclI;
+	} else {
+		ptcl1 = ptclJ;
+	}	
 
         // updated the predicted positions and velocities just in case
             
@@ -56,10 +55,9 @@ void CalculateKSAcceleration(Particle* ptclI, Particle* ptclJ, Particle* ptclCM,
             vx = 0;
             v2 = 0;
 
-            if (ptcl1 == ptcl2) {
-            continue;
-            }
-
+	    if (ptcl1 == ptcl2) {
+		continue;
+	    }
             // if current time = the time we need, then PredPosition and PredVelocity is same as Position and Velocity
             ptcl2->predictParticleSecondOrder(current_time);
 
@@ -107,7 +105,7 @@ void CalculateKSAcceleration(Particle* ptclI, Particle* ptclJ, Particle* ptclCM,
     for (int dim=0; dim<Dim; dim++)	 {
 		for (int order=0; order<HERMITE_ORDER; order++) {
             if (order<2) {
-		        ptclCM->a_reg[dim][order] = (ptclI->a_reg[dim][order]*ptclI->Mass + ptclJ->a_reg[dim][order]*ptclJ->Mass)/(ptclCM->Mass); 
+		ptclCM->a_reg[dim][order] = (ptclI->a_reg[dim][order]*ptclI->Mass + ptclJ->a_reg[dim][order]*ptclJ->Mass)/(ptclCM->Mass); 
                 ptclCM->a_irr[dim][order] = (ptclI->a_irr[dim][order]*ptclI->Mass + ptclJ->a_irr[dim][order]*ptclJ->Mass)/(ptclCM->Mass); 
                 ptclCM->a_tot[dim][order] = (ptclI->a_tot[dim][order]*ptclI->Mass + ptclJ->a_tot[dim][order]*ptclJ->Mass)/(ptclCM->Mass); 
             } else {
@@ -127,55 +125,55 @@ void CalculateKSAcceleration(Particle* ptclI, Particle* ptclJ, Particle* ptclCM,
 
     for (Particle *ptcl2: particle) {
 
-        r2 = 0;
-        vx = 0;
-        v2 = 0;
+            r2 = 0;
+            vx = 0;
+            v2 = 0;
 
 	    if ((ptcl2 == ptclI)||(ptcl2==ptclJ)) {
 		continue;
 	    }
 
-        // if current time = the time we need, then PredPosition and PredVelocity is same as Position and Velocity
-        ptcl2->predictParticleSecondOrder(current_time);
+            // if current time = the time we need, then PredPosition and PredVelocity is same as Position and Velocity
+            ptcl2->predictParticleSecondOrder(current_time);
 
-        for (int dim=0; dim<Dim; dim++) {
-            x[dim] = ptclCM->PredPosition[dim] - ptcl2->PredPosition[dim];
-            v[dim] = ptclCM->PredVelocity[dim] - ptcl2->PredVelocity[dim];
-            r2    += x[dim]*x[dim];
-            vx    += v[dim]*x[dim];
-            v2    += v[dim]*v[dim];
-        }
-
-        //r2  += EPS2;
-        m_r3 = ptcl2->Mass/r2/sqrt(r2);
-
-        vx_r2   = vx/r2;
-        v2x2_r4 = vx_r2*vx_r2;
-        v2_r2__ax_r2__v2x2_r4 = (v2+x[0]*a[0]+x[1]*a[1]+x[2]*a[2])/r2+v2x2_r4;
-        A = (9*(v[0]*a[0]+v[1]*a[1]+v[2]*a[2]) + 3*(x[0]*adot[0]+x[1]*adot[1]+x[2]*adot[2]))/r2\
-                +3*vx_r2*(3*v2_r2__ax_r2__v2x2_r4 - 4*v2x2_r4);
-
-        for (int dim=0; dim<Dim; dim++) {
-            B     = v[dim] - 3*x[dim]*vx_r2;
-            a2dot = (v[dim] - 6*B*vx_r2                 - 3*v2_r2__ax_r2__v2x2_r4*x[dim])*m_r3;
-            a3dot = (a[dim] - 9*B*v2_r2__ax_r2__v2x2_r4 - A*x[dim]                      )*m_r3\
-                            - 9*vx_r2*a2dot;
-            if ((ptclCM->NumberOfAC==0) || (ptcl2 != ptcl1->ACList[j])) {
-                ptclCM->a_reg[dim][2] += a2dot;
-                ptclCM->a_reg[dim][3] += a3dot;
+            for (int dim=0; dim<Dim; dim++) {
+                x[dim] = ptclCM->PredPosition[dim] - ptcl2->PredPosition[dim];
+                v[dim] = ptclCM->PredVelocity[dim] - ptcl2->PredVelocity[dim];
+                r2    += x[dim]*x[dim];
+                vx    += v[dim]*x[dim];
+                v2    += v[dim]*v[dim];
             }
-            else {
-                ptclCM->a_irr[dim][2] += a2dot;
-                ptclCM->a_irr[dim][3] += a3dot;
-                j++;
-            }
-        } // endfor dim
+
+            //r2  += EPS2;
+            m_r3 = ptcl2->Mass/r2/sqrt(r2);
+
+            vx_r2   = vx/r2;
+            v2x2_r4 = vx_r2*vx_r2;
+            v2_r2__ax_r2__v2x2_r4 = (v2+x[0]*a[0]+x[1]*a[1]+x[2]*a[2])/r2+v2x2_r4;
+            A = (9*(v[0]*a[0]+v[1]*a[1]+v[2]*a[2]) + 3*(x[0]*adot[0]+x[1]*adot[1]+x[2]*adot[2]))/r2\
+                    +3*vx_r2*(3*v2_r2__ax_r2__v2x2_r4 - 4*v2x2_r4);
+
+            for (int dim=0; dim<Dim; dim++) {
+                B     = v[dim] - 3*x[dim]*vx_r2;
+                a2dot = (v[dim] - 6*B*vx_r2                 - 3*v2_r2__ax_r2__v2x2_r4*x[dim])*m_r3;
+                a3dot = (a[dim] - 9*B*v2_r2__ax_r2__v2x2_r4 - A*x[dim]                      )*m_r3\
+                                - 9*vx_r2*a2dot;
+                if ((ptclCM->NumberOfAC==0) || (ptcl2 != ptcl1->ACList[j])) {
+                    ptclCM->a_reg[dim][2] += a2dot;
+                    ptclCM->a_reg[dim][3] += a3dot;
+                }
+                else {
+                    ptclCM->a_irr[dim][2] += a2dot;
+                    ptclCM->a_irr[dim][3] += a3dot;
+                    j++;
+                }
+            } // endfor dim
 
     } // end of loop for ptcl2 (full particle)
 
     for (int dim=0; dim<Dim; dim++)	 {
 		for (int order=2; order<HERMITE_ORDER; order++) {
-	            ptclCM->a_tot[dim][order] = (ptclCM->a_reg[dim][order] + ptclCM->a_irr[dim][order]); 
+	            ptclCM->a_tot[dim][order] = (ptclCM->a_reg[dim][order] + ptclCM->a_reg[dim][order]*ptclJ->Mass); 
 		}
 	}
 
