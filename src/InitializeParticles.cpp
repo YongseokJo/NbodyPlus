@@ -96,7 +96,7 @@ void InitializeParticle(Particle* newParticle, std::vector<Particle*> &particle)
 void FindNeighbor(Particle* ptcl1, std::vector<Particle*> &particle) {
 
 	// No need to find neighbors if the total number of particles is less than 100
-	if (NNB<=100) return;
+	//if (NNB<=100) return;
 
 	double dx;
 	double r2;
@@ -266,7 +266,6 @@ void CalculateInitialAcceleration(Particle* ptcl1, std::vector<Particle*> &parti
 		}
 	}
 
-	/*
 	std::cout << "NBODY+: total acceleartion\n" << std::flush;
 	for (int dim=0; dim<Dim; dim++)	 {
 		for (int order=0; order<HERMITE_ORDER; order++) {
@@ -274,15 +273,14 @@ void CalculateInitialAcceleration(Particle* ptcl1, std::vector<Particle*> &parti
 		}
 	} // endfor dim
 	std::cout << std::endl;
+	std::cout << "NumberOfAC=" << ptcl1->NumberOfAC << std::endl;
 
-	std::cout << ptcl1->NumberOfAC << std::endl;
 	for (int dim=0; dim<Dim; dim++)	 {
 		for (int order=0; order<HERMITE_ORDER; order++) {
 			std::cout << ptcl1->a_irr[dim][order]*position_unit/time_unit/time_unit << " ";
 		}
 	} // endfor dim
 	std::cout << '\n' << std::endl;
-	*/
 }
 
 

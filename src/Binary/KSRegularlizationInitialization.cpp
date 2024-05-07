@@ -8,6 +8,10 @@
 void direct_sum(double *x, double *v, double r2, double vx,
 		        double mass, double (&a)[3], double (&adot)[3]);
 
+double getNewTimeStep(double f[3][4], double df[3][4]);
+void getBlockTimeStep(double dt, int &TimeLevel, double &TimeStep);
+
+
 
 
 //       /////////////////////        //
@@ -331,6 +335,9 @@ void NewKSInitialization(Particle* ptclI, std::vector<Particle*> &particle, doub
     int ptclIIndex;
     int ptclJIndex;
 
+    double dtReg, dtIrr;
+
+
     std::cout <<"Starting Routine NewKSInitialization" << std::endl;
 
     // BASIC DEFINITIONS
@@ -351,7 +358,7 @@ void NewKSInitialization(Particle* ptclI, std::vector<Particle*> &particle, doub
     fprintf(binout, "Total Acceleration - axdot:%f, aydot:%f, azdot:%f, \n", ptclI->a_tot[0][1], ptclI->a_tot[1][1], ptclI->a_tot[2][1]);
     fprintf(binout, "Total Acceleration - ax2dot:%f, ay2dot:%f, az2dot:%f, \n", ptclI->a_tot[0][2], ptclI->a_tot[1][2], ptclI->a_tot[2][2]);
     fprintf(binout, "Total Acceleration - ax3dot:%f, ay3dot:%f, az3dot:%f, \n", ptclI->a_tot[0][3], ptclI->a_tot[1][3], ptclI->a_tot[2][3]);
-    fprintf(binout, "Time Steps - irregular:%f, regular:%f/n", ptclI->TimeStepIrr, ptclI->TimeStepReg);
+    fprintf(binout, "Time Steps - irregular:%e, regular:%e \n", ptclI->TimeStepIrr, ptclI->TimeStepReg);
 
     // need to put option if there aren't any close neighbors
 
@@ -438,8 +445,34 @@ void NewKSInitialization(Particle* ptclI, std::vector<Particle*> &particle, doub
 
     //std::cout << "Calculating Time steps" << std::endl;
 
-    ptclCM->calculateTimeStepIrr(ptclCM->a_tot, ptclCM->a_irr); // calculate irregular time step based on total force
-    ptclCM->calculateTimeStepReg(ptclCM->a_reg, ptclCM->a_reg); // calculate regular time step based on total force
+    //ptclCM->calculateTimeStepIrr(ptclCM->a_tot, ptclCM->a_irr); // calculate irregular time step based on total force
+    //ptclCM->calculateTimeStepReg(ptclCM->a_reg, ptclCM->a_reg); // calculate regular time step based on total force
+
+
+	dtReg = getNewTimeStep(ptclCM->a_reg, ptclCM->a_reg);
+	//std::cout << "dtReg=" << dtReg << std::endl;
+	getBlockTimeStep(dtReg, ptclCM->TimeLevelReg, ptclCM->TimeStepReg);
+
+	if (ptclCM->NumberOfAC != 0) {
+		dtIrr = getNewTimeStep(ptclCM->a_tot, ptclCM->a_irr);
+		getBlockTimeStep(dtIrr, ptclCM->TimeLevelIrr, ptclCM->TimeStepIrr);
+	}
+	else {
+		ptclCM->TimeLevelIrr = ptclCM->TimeLevelReg;
+		ptclCM->TimeStepIrr  = ptclCM->TimeStepReg;
+	}
+
+	ptclCM->TimeStepReg = std::min(1.,ptclCM->TimeStepReg);
+	ptclCM->TimeLevelReg = std::min(0,ptclCM->TimeLevelReg);
+
+
+	if (ptclCM->NumberOfAC != 0) {
+		while (ptclCM->TimeStepIrr >= ptclCM->TimeStepReg) {
+			ptclCM->TimeStepIrr *= 0.5; 
+			ptclCM->TimeLevelIrr--; 
+		}
+	}
+
 
 
     fprintf(binout, "KSRegularlizationInitialization.cpp: result of CM particle value calculation\n");
@@ -452,7 +485,7 @@ void NewKSInitialization(Particle* ptclI, std::vector<Particle*> &particle, doub
     fprintf(binout, "Total Acceleration - axdot:%f, aydot:%f, azdot:%f, \n", ptclCM->a_tot[0][1], ptclCM->a_tot[1][1], ptclCM->a_tot[2][1]);
     fprintf(binout, "Total Acceleration - ax2dot:%f, ay2dot:%f, az2dot:%f, \n", ptclCM->a_tot[0][2], ptclCM->a_tot[1][2], ptclCM->a_tot[2][2]);
     fprintf(binout, "Total Acceleration - ax3dot:%f, ay3dot:%f, az3dot:%f, \n", ptclCM->a_tot[0][3], ptclCM->a_tot[1][3], ptclCM->a_tot[2][3]);
-    fprintf(binout, "Time Steps - irregular:%f, regular:%f/n", ptclCM->TimeStepIrr, ptclCM->TimeStepReg);
+    fprintf(binout, "Time Steps - irregular:%e, regular:%e \n", ptclCM->TimeStepIrr, ptclCM->TimeStepReg);
 
 
 

@@ -18,11 +18,12 @@ const int dt_level_min = -13;
 const double dt_min = 0.00001525878;
 const int dt_level_min = -16;
 */
+
 const double dt_min = 9.53674316e-7;
 const int dt_level_min = -20;
 
 int newNNB = 0;
-std::vector<int> RegIndexList; 
+std::vector<int> RegIndexList;
 std::vector<Binary*> BinaryList;
 FILE* binout;
 
@@ -31,9 +32,9 @@ int NumNeighborMax = 100;
 
 
 int main(int argc, char *argv[]) {
-	std::cout << "Staring Nbody+ ..." << std::endl;
-	binout = fopen("binary_output.txt", "w");
-	fprintf(binout, "Starting nbody - Binary OUTPUT\n");
+	cout << "Staring Nbody+ ..." << endl;
+        binout = fopen("binary_output.txt", "w");                                                                          
+        fprintf(binout, "Starting nbody - Binary OUTPUT\n"); 
 	std::vector<Particle*> particle{};
 	int irank=0;
 
@@ -63,10 +64,9 @@ int main(int argc, char *argv[]) {
 		std::cout << std::endl;
 	 ***/
 
-	fprintf(binout, "Initializing Device\n");
+        fprintf(binout, "Initializing Device\n"); 	
 	fprintf(stderr, "Initializing Device!\n");
 	InitializeDevice(&irank);
-	fprintf(binout, "Initializing Particles\n");
 	fprintf(stderr, "Initializing Particles!\n");
 	InitializeParticle(particle);
 
@@ -93,13 +93,12 @@ int main(int argc, char *argv[]) {
 	std::cout << std::endl;
 	*/
 
-	fprintf(binout, "Starting Evolution\n");
+        fprintf(binout, "Starting Evolution\n"); 
 
 	Evolve(particle);
 
 	// Particle should be deleted at some point
-
-	fclose(binout);
+        fclose(binout);
 
 	return 0;
 }

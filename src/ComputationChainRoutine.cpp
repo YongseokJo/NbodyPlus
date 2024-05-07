@@ -121,6 +121,7 @@ bool CreateComputationChain(std::vector<Particle*> &particle) {
 	//std::cout << "NextIrrTime:\n" << std::endl;
 	for (Particle *ptcl : particle)
 	{
+		// advance irregular time without irregular routine
 		NextIrrTime = ptcl->CurrentTimeIrr + ptcl->TimeStepIrr;
 		//std::cout << NextIrrTime << " ";
 		if ((ptcl->NumberOfAC != 0) && (NextIrrTime <= NextRegTime)) {

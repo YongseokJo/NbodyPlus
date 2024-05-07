@@ -48,6 +48,7 @@ extern char* foutput;
 extern bool IsOutput;
 extern double outputTime;
 extern double outputTimeStep;
+extern int outNum;
 //
 //
 
@@ -63,7 +64,6 @@ extern double EnzoTime;
 extern double EnzoTimeStep;
 
 
+// for outputs for binary debugging                                                                        
 
-// for outputs for binary debugging
-
-extern FILE* binout;
+ extern FILE* binout;

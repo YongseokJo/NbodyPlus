@@ -43,6 +43,8 @@ class Particle
 		int TimeLevelReg;
 		double PredPosition[Dim];
 		double PredVelocity[Dim];
+                double NewVelocity[Dim];                                                                   
+                double NewPosition[Dim]; 
 		double a_tot[Dim][HERMITE_ORDER];
 		double a_reg[Dim][HERMITE_ORDER];
 		double a_irr[Dim][HERMITE_ORDER];
@@ -90,6 +92,7 @@ class Particle
 				PredVelocity[i] = 0;
 				BackgroundAcceleration[i] = 0;
 				for (int j=0; j<HERMITE_ORDER; j++) {
+					a_tot[i][j] = 0;
 					a_reg[i][j] = 0;
 					a_irr[i][j] = 0;
 				}
@@ -129,15 +132,14 @@ class Particle
 		void calculateIrrForce();
 		void calculateRegAccelerationSecondOrder(std::vector<Particle*> &particle);
 		void calculateRegAccelerationFourthOrder(std::vector<Particle*> &particle);
-	        void predictParticleSecondOrder(double next_time);
-		void predictParticleSecondOrder(double current_time, double next_time, double a[3][4]);
+                void predictParticleSecondOrder(double time); 
 		void correctParticleFourthOrder(double current_time, double next_time, double a[3][4]);
 		void normalizeParticle();
 		void calculateTimeStepIrr(double f[3][4], double df[3][4]);
-		void calculateTimeStepReg(double f[3][4], double df[3][4]);
+		void calculateTimeStepReg();
 		bool checkNeighborForEvolution();
 		void updateEvolveParticle(std::vector<Particle*> &particle);
-		void updateParticle(double current_time, double next_time, double a[3][4]);
+		void updateParticle();
 		double evolveStarMass(double t1, double t2);
 		void isKSCandidate(double next_time);
 };
