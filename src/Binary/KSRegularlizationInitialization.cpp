@@ -130,9 +130,9 @@ void CalculateKSAcceleration(Particle* ptclI, Particle* ptclJ, Particle* ptclCM,
     for (int dim=0; dim<Dim; dim++)	 {
 		for (int order=0; order<2; order++) {
 			ptclCM->a_reg[dim][order] = (ptclI->a_reg[dim][order]*ptclI->Mass + ptclJ->a_reg[dim][order]*ptclJ->Mass)/(ptclCM->Mass); 
-                	ptclCM->a_irr[dim][order] = (ptclI->a_irr[dim][order]*ptclI->Mass + ptclJ->a_irr[dim][order]*ptclJ->Mass)/(ptclCM->Mass); 
-                	ptclCM->a_tot[dim][order] = (ptclI->a_tot[dim][order]*ptclI->Mass + ptclJ->a_tot[dim][order]*ptclJ->Mass)/(ptclCM->Mass); 
-	}
+            ptclCM->a_irr[dim][order] = (ptclI->a_irr[dim][order]*ptclI->Mass + ptclJ->a_irr[dim][order]*ptclJ->Mass)/(ptclCM->Mass); 
+            ptclCM->a_tot[dim][order] = (ptclI->a_tot[dim][order]*ptclI->Mass + ptclJ->a_tot[dim][order]*ptclJ->Mass)/(ptclCM->Mass); 
+	    }
     }
 
 
@@ -351,13 +351,13 @@ void NewKSInitialization(Particle* ptclI, std::vector<Particle*> &particle, doub
     ptclI->predictParticleSecondOrder(current_time);
     ptclJ->predictParticleSecondOrder(current_time);
 
-    fprintf(binout, "Position: ptclI - x:%f, y:%f, z:%f, \n", ptclI->Position[0], ptclI->Position[1], ptclI->Position[2]);
-    fprintf(binout, "Velocity: ptclI - vx:%f, vy:%f, vz:%f, \n", ptclI->Velocity[0], ptclI->Velocity[1], ptclI->Velocity[2]);
+    fprintf(binout, "Position: ptclI - x:%e, y:%e, z:%e, \n", ptclI->Position[0], ptclI->Position[1], ptclI->Position[2]);
+    fprintf(binout, "Velocity: ptclI - vx:%e, vy:%e, vz:%e, \n", ptclI->Velocity[0], ptclI->Velocity[1], ptclI->Velocity[2]);
 
-    fprintf(binout, "Total Acceleration - ax:%f, ay:%f, az:%f, \n", ptclI->a_tot[0][0], ptclI->a_tot[1][0], ptclI->a_tot[2][0]);
-    fprintf(binout, "Total Acceleration - axdot:%f, aydot:%f, azdot:%f, \n", ptclI->a_tot[0][1], ptclI->a_tot[1][1], ptclI->a_tot[2][1]);
-    fprintf(binout, "Total Acceleration - ax2dot:%f, ay2dot:%f, az2dot:%f, \n", ptclI->a_tot[0][2], ptclI->a_tot[1][2], ptclI->a_tot[2][2]);
-    fprintf(binout, "Total Acceleration - ax3dot:%f, ay3dot:%f, az3dot:%f, \n", ptclI->a_tot[0][3], ptclI->a_tot[1][3], ptclI->a_tot[2][3]);
+    fprintf(binout, "Total Acceleration - ax:%e, ay:%e, az:%e, \n", ptclI->a_tot[0][0], ptclI->a_tot[1][0], ptclI->a_tot[2][0]);
+    fprintf(binout, "Total Acceleration - axdot:%e, aydot:%e, azdot:%e, \n", ptclI->a_tot[0][1], ptclI->a_tot[1][1], ptclI->a_tot[2][1]);
+    fprintf(binout, "Total Acceleration - ax2dot:%e, ay2dot:%e, az2dot:%e, \n", ptclI->a_tot[0][2], ptclI->a_tot[1][2], ptclI->a_tot[2][2]);
+    fprintf(binout, "Total Acceleration - ax3dot:%e, ay3dot:%e, az3dot:%e, \n", ptclI->a_tot[0][3], ptclI->a_tot[1][3], ptclI->a_tot[2][3]);
     fprintf(binout, "Time Steps - irregular:%e, regular:%e \n", ptclI->TimeStepIrr, ptclI->TimeStepReg);
 
     // need to put option if there aren't any close neighbors
@@ -478,13 +478,13 @@ void NewKSInitialization(Particle* ptclI, std::vector<Particle*> &particle, doub
     fprintf(binout, "KSRegularlizationInitialization.cpp: result of CM particle value calculation\n");
     fprintf(binout, "from function NewKSInitialization\n");
 
-    fprintf(binout, "Position - x:%f, y:%f, z:%f, \n", ptclCM->Position[0], ptclCM->Position[1], ptclCM->Position[2]);
-    fprintf(binout, "Velocity - vx:%f, vy:%f, vz:%f, \n", ptclCM->Velocity[0], ptclCM->Velocity[1], ptclCM->Velocity[2]);
+    fprintf(binout, "Position - x:%e, y:%e, z:%e, \n", ptclCM->Position[0], ptclCM->Position[1], ptclCM->Position[2]);
+    fprintf(binout, "Velocity - vx:%e, vy:%e, vz:%e, \n", ptclCM->Velocity[0], ptclCM->Velocity[1], ptclCM->Velocity[2]);
 
-    fprintf(binout, "Total Acceleration - ax:%f, ay:%f, az:%f, \n", ptclCM->a_tot[0][0], ptclCM->a_tot[1][0], ptclCM->a_tot[2][0]);
-    fprintf(binout, "Total Acceleration - axdot:%f, aydot:%f, azdot:%f, \n", ptclCM->a_tot[0][1], ptclCM->a_tot[1][1], ptclCM->a_tot[2][1]);
-    fprintf(binout, "Total Acceleration - ax2dot:%f, ay2dot:%f, az2dot:%f, \n", ptclCM->a_tot[0][2], ptclCM->a_tot[1][2], ptclCM->a_tot[2][2]);
-    fprintf(binout, "Total Acceleration - ax3dot:%f, ay3dot:%f, az3dot:%f, \n", ptclCM->a_tot[0][3], ptclCM->a_tot[1][3], ptclCM->a_tot[2][3]);
+    fprintf(binout, "Total Acceleration - ax:%e, ay:%e, az:%e, \n", ptclCM->a_tot[0][0], ptclCM->a_tot[1][0], ptclCM->a_tot[2][0]);
+    fprintf(binout, "Total Acceleration - axdot:%e, aydot:%e, azdot:%e, \n", ptclCM->a_tot[0][1], ptclCM->a_tot[1][1], ptclCM->a_tot[2][1]);
+    fprintf(binout, "Total Acceleration - ax2dot:%e, ay2dot:%e, az2dot:%e, \n", ptclCM->a_tot[0][2], ptclCM->a_tot[1][2], ptclCM->a_tot[2][2]);
+    fprintf(binout, "Total Acceleration - ax3dot:%e, ay3dot:%e, az3dot:%e, \n", ptclCM->a_tot[0][3], ptclCM->a_tot[1][3], ptclCM->a_tot[2][3]);
     fprintf(binout, "Time Steps - irregular:%e, regular:%e \n", ptclCM->TimeStepIrr, ptclCM->TimeStepReg);
 
 
@@ -495,10 +495,10 @@ void NewKSInitialization(Particle* ptclI, std::vector<Particle*> &particle, doub
 
     ptclBin->InitializeBinary(current_time);
 
-    fprintf(binout, "KS coordinates - u1:%f, u2:%f, u3:%f, u4:%f \n", ptclBin->u[0], ptclBin->u[1], ptclBin->u[2], ptclBin->u[3]);
-    fprintf(binout, "KS coordinates - udot1:%f, udot2:%f, udot3:%f, udot4:%f \n", ptclBin->udot[0], ptclBin->udot[1], ptclBin->udot[2], ptclBin->udot[3]);
-    fprintf(binout, "KS coordinates - udot1:%f, udot2:%f, udot3:%f, udot4:%f \n", ptclBin->udot[0], ptclBin->udot[1], ptclBin->udot[2], ptclBin->udot[3]);
-    fprintf(binout, "Other important KS variables - r:%f, h:%f, gamma: %f, tau:%f, step:%f \n", ptclBin->r, ptclBin->h, ptclBin->gamma, ptclBin->dTau, ptclBin->TimeStep);
+    fprintf(binout, "KS coordinates - u1:%e, u2:%e, u3:%e, u4:%e \n", ptclBin->u[0], ptclBin->u[1], ptclBin->u[2], ptclBin->u[3]);
+    fprintf(binout, "KS coordinates - udot1:%e, udot2:%e, udot3:%e, udot4:%e \n", ptclBin->udot[0], ptclBin->udot[1], ptclBin->udot[2], ptclBin->udot[3]);
+    fprintf(binout, "KS coordinates - udot1:%e, udot2:%e, udot3:%e, udot4:%e \n", ptclBin->udot[0], ptclBin->udot[1], ptclBin->udot[2], ptclBin->udot[3]);
+    fprintf(binout, "Other important KS variables - r:%e, h:%e, gamma: %e, tau:%e, step:%e \n", ptclBin->r, ptclBin->h, ptclBin->gamma, ptclBin->dTau, ptclBin->TimeStep);
 
 
 
@@ -589,15 +589,14 @@ void NewKSInitialization(Particle* ptclI, std::vector<Particle*> &particle, doub
 
         if (itJ != ptcl->ACList.end()) {
                 ptclJIndex = std::distance(ptcl->ACList.begin(),itJ);
-		if ( ptclIIndex == -1 ) {
-			ptcl->ACList[ptclJIndex] = ptclCM;
-		} else {
-			ptcl->ACList.erase(itJ); 
-		}
+            if ( ptclIIndex == -1 ) {
+                ptcl->ACList[ptclJIndex] = ptclCM;
+            } else {
+                ptcl->ACList.erase(itJ); 
+            }
         }
 
     }
-
 
 
 

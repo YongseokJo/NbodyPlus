@@ -33,7 +33,7 @@ void BinaryAccelerationRoutine(double next_time, std::vector<Particle*> &particl
 
 	for (Binary* ptclBin: BinaryList) {
 
-	        ptclBin->IntegrateBinary(next_time);
+	    ptclBin->IntegrateBinary(next_time);
 
 		count += 1;
 		std::cout << "Integrating Binary ..." << std::endl;
