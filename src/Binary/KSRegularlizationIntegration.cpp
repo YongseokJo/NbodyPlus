@@ -17,12 +17,17 @@ void getBlockTimeStep(double dt, int& TimeLevel, double &TimeStep);
 void Binary::KSIntegration(double next_time){
 
     double binary_time;
+    int calnum = 0;
 
     while ((CurrentTime + TimeStep)<next_time) {
 
         // first predict the future position of the binary particle. 
 
         binary_time = CurrentTime + TimeStep;
+        calnum += 1;
+
+        fprintf(binout,"-----------------------------------------------------------------------------------------------");
+        fprintf(binout, "\nIn KSRegularlizationIntegration.cpp KSIntegration, after position prediction for %dth time\n",calnum);
 
         predictBinary(binary_time);
 
@@ -119,7 +124,7 @@ void Binary::predictBinary(double next_time) {
     R[0]   = u_pred[0]*u_pred[0] - u_pred[1]*u_pred[1] - u_pred[2]*u_pred[2] + u_pred[3]*u_pred[3];
     R[1]   = 2*(u_pred[0]*u_pred[1] - u_pred[2]*u_pred[3]);
     R[2]   = 2*(u_pred[0]*u_pred[2] + u_pred[1]*u_pred[3]);
-    ratioM = ptclJ->Mass/Mass;
+    ratioM = ptclJ->Mass/ptclCM->Mass;
 
 
     for (int dim=0; dim<Dim; dim++) {
@@ -151,6 +156,13 @@ void Binary::predictBinary(double next_time) {
         ptclJ->PredVelocity[dim] = ptclI->PredVelocity[dim] - Rdot[dim];
     }
 
+    fprintf(binout, "CM particle: x = %e, y = %e, z = %e", ptclCM->PredPosition[0], ptclCM->PredPosition[1], ptclCM->PredPosition[2]);
+    fprintf(binout, "CM particle: vx = %e, vy = %e, vz = %e", ptclCM->PredVelocity[0], ptclCM->PredVelocity[1], ptclCM->PredVelocity[2]);
+    fprintf(binout, "Ith particle: x = %e, y = %e, z = %e", ptclI->PredPosition[0], ptclI->PredPosition[1], ptclI->PredPosition[2]);
+    fprintf(binout, "Ith particle: vx = %e, vy = %e, vz = %e", ptclI->PredVelocity[0], ptclI->PredVelocity[1], ptclI->PredVelocity[2]);
+    fprintf(binout, "Jth particle: x = %e, y = %e, z = %e", ptclJ->PredPosition[0], ptclJ->PredPosition[1], ptclJ->PredPosition[2]);
+    fprintf(binout, "Jth particle: vx = %e, vy = %e, vz = %e", ptclJ->PredVelocity[0], ptclJ->PredVelocity[1], ptclJ->PredVelocity[2]);
+
 }
 
 
@@ -179,7 +191,7 @@ void Binary::IntegrateBinary(double next_time) {
 
     double P[Dim], Pdot[Dim];  // perturbing acceleration and jerk
     double dxi[Dim],dvi[Dim],dxj[Dim],dvj[Dim];
-    double dr2i, dr2j, dxdvi, dxdvj;
+    double dr2i, _dr3i, dr2j, _dr3j, dxdvi, dxdvj;
 
 
     // variables for calculating correction factors
@@ -205,6 +217,8 @@ void Binary::IntegrateBinary(double next_time) {
     
     int TimeLevelTmp;
     double TimeStepTmp;
+
+    fprintf(binout, "\nIn KSRegularlizationIntegration.cpp, IntegrateBinary\n");
 
 
     ptclI = ptclCM->BinaryParticleI;
@@ -243,16 +257,16 @@ void Binary::IntegrateBinary(double next_time) {
 
         for (int dimu=0; dimu<4; dimu++) {
             u_pred[dimu]    = u[dimu] + udot[dimu]*dtau + u2dot[dimu]*dtau2/2 + u3dot[dimu]*dtau3/6 \
-                    + cn[4]*u4dot[dimu]*dtau4/24 + cn[5]*u5dot[dimu]*dtau5/120;
+                            + cn[4]*u4dot[dimu]*dtau4/24 + cn[5]*u5dot[dimu]*dtau5/120;
             udot_pred[dimu] = udot[dimu] + u2dot[dimu]*dtau + u3dot[dimu]*dtau2/2 \
-                    + cn[4]*u4dot[dimu]*dtau3/6+ cn[5]*u5dot[dimu]*dtau4/24;
+                            + cn[4]*u4dot[dimu]*dtau3/6+ cn[5]*u5dot[dimu]*dtau4/24;
         }
 
 
         R[0]   = u_pred[0]*u_pred[0] - u_pred[1]*u_pred[1] - u_pred[2]*u_pred[2] + u_pred[3]*u_pred[3];
         R[1]   = 2*(u_pred[0]*u_pred[1] - u_pred[2]*u_pred[3]);
         R[2]   = 2*(u_pred[0]*u_pred[2] + u_pred[1]*u_pred[3]);
-        ratioM = ptclJ->Mass/Mass;
+        ratioM = ptclJ->Mass/ptclCM->Mass;
 
 
         for (int dim=0; dim<Dim; dim++) {
@@ -284,28 +298,41 @@ void Binary::IntegrateBinary(double next_time) {
 
         for (Particle* ptcl: ACList) {
 
-            dr2i = 0;
-            dr2j = 0;
+            dr2i = 0.0;
+            dr2j = 0.0;
 
-            dxdvi = 0;
-            dxdvj = 0;
+            dxdvi = 0.0;
+            dxdvj = 0.0;
 
             for (int dim=0; dim<Dim; dim++) {
 
                 dxi[dim] = ptcl->PredPosition[dim] - ptclI->PredPosition[dim];
-                dvi[dim] = ptcl->PredVelocity[dim] - ptclJ->PredVelocity[dim];
+                dvi[dim] = ptcl->PredVelocity[dim] - ptclI->PredVelocity[dim];
                 dr2i += dxi[dim]*dxi[dim];
                 dxdvi += dxi[dim]*dvi[dim];
 
-                dxj[dim] = ptcl->PredPosition[dim] - ptclI->PredPosition[dim];
+                dxj[dim] = ptcl->PredPosition[dim] - ptclJ->PredPosition[dim];
                 dvj[dim] = ptcl->PredVelocity[dim] - ptclJ->PredVelocity[dim];
                 dr2j += dxj[dim]*dxj[dim];
                 dxdvj += dxj[dim]*dvj[dim];
 
             }
 
-            direct_sum(dxi ,dvi, dr2i, dxdvi, ptcl->Mass, mdot, P, Pdot);
-            direct_sum(dxj ,dvj, dr2j, dxdvj, -ptcl->Mass, mdot, P, Pdot);
+            _dr3i = 1/(dr2i)/sqrt(dr2i);
+            _dr3j = 1/(dr2j)/sqrt(dr2j);
+
+            for (int dim=0; dim<Dim; dim++) {
+                // ith particle
+                P[dim]    += ptcl->Mass*_dr3i*dxi[dim];
+                Pdot[dim] += ptcl->Mass*_dr3i*(dvi[dim] - 3*dxi[dim]*dxdvi/dr2i);//+mdot*_dr3i*dxi[dim];
+
+                // jth partilce
+                P[dim]    -= ptcl->Mass*_dr3j*dxj[dim];
+                Pdot[dim] -= ptcl->Mass*_dr3j*(dvj[dim] - 3*dxj[dim]*dxdvj/dr2j);//+mdot*_dr3j*dxj[dim];
+            }
+
+            //direct_sum(dxi ,dvi, dr2i, dxdvi, ptcl->Mass, mdot, P, Pdot);
+            //direct_sum(dxj ,dvj, dr2j, dxdvj, -ptcl->Mass, mdot, P, Pdot);
 
         }
 
@@ -319,7 +346,7 @@ void Binary::IntegrateBinary(double next_time) {
     // calculating perturbation from particle systems
     // add later on
 
-    gamma = sqrt(P[0]*P[0]+P[1]*P[1]+P[2]*P[2])*r_pred*r_pred/Mass;
+    gamma = sqrt(P[0]*P[0]+P[1]*P[1]+P[2]*P[2])*r_pred*r_pred/ptclCM->Mass;
 
 
 
@@ -462,8 +489,8 @@ void Binary::IntegrateBinary(double next_time) {
 
 
 
-    dtau_temp = std::min(r/Mass,0.5*abs(h));
-    dtau = 0.8*eta*sqrt(dtau_temp)/pow((1 + 1000.0 * gamma), 1.0/3/0);
+    dtau_temp = std::min(r/ptclCM->Mass,0.5*abs(h));
+    dtau = 0.8*eta*sqrt(dtau_temp)/pow((1 + 1000.0 * gamma), 1.0/3.0);
 
     dtau2 = dtau*dtau;
     dtau3 = dtau2*dtau;
@@ -490,5 +517,20 @@ void Binary::IntegrateBinary(double next_time) {
 
     TimeLevel = TimeLevelTmp;
     dTau = dtau;
+
+
+    fprintf(binout, "\nPerturbing term Q - Q0:%e, Q1:%e, Q2:%e, Q3: %e \n", Q[0], Q[1], Q[2], Q[3]);
+    fprintf(binout, "Perturbing term Qdot - Qdot0:%e, Qdot1:%e, Qdot2:%e, Qdot3: %e \n", Qdot[0], Qdot[1], Qdot[2], Qdot[3]);
+
+    fprintf(binout, "derivatives of r: r0 = %e r1 = %e r2 = %e r3 = %e r4 = %e r5 = %e \n", r, rdot, r2dot, r3dot, r4dot, r5dot);
+    fprintf(binout, "derivatives of h: h0 = %e h1 = %e h2 = %e h3 = %e h4 = %e \n", h, hdot, h2dot, h3dot, h4dot);
+    
+    fprintf(binout, "derivatives of u[0]: u0 = %e u1 = %e u2 = %e u3 = %e u4 = %e u5 = %e \n", u[0], udot[0], u2dot[0], u3dot[0], u4dot[0], u5dot[0]);
+    fprintf(binout, "derivatives of u[1]: u0 = %e u1 = %e u2 = %e u3 = %e u4 = %e u5 = %e \n", u[1], udot[1], u2dot[1], u3dot[1], u4dot[1], u5dot[1]);
+    fprintf(binout, "derivatives of u[2]: u0 = %e u1 = %e u2 = %e u3 = %e u4 = %e u5 = %e \n", u[2], udot[2], u2dot[2], u3dot[2], u4dot[2], u5dot[2]);
+    fprintf(binout, "derivatives of u[3]: u0 = %e u1 = %e u2 = %e u3 = %e u4 = %e u5 = %e \n", u[3], udot[3], u2dot[3], u3dot[3], u4dot[3], u5dot[3]);
+
+    fprintf(binout,"Stumpff Coefficinets : c1 = %e c2 = %e c3 = %e c4 = %e c5 = %e \n \n ", cn[1], cn[2], cn[3], cn[4], cn[5]);
+    fprintf(binout,"dTau = %e, TimeStep = %e, gamma = %e\n\n", dTau, TimeStep, gamma);
     
 }

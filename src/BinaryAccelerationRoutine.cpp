@@ -38,16 +38,16 @@ void BinaryAccelerationRoutine(double next_time, std::vector<Particle*> &particl
 		count += 1;
 		std::cout << "Integrating Binary ..." << std::endl;
 
-		fprintf(binout, "BinaryAccelerationRoutine.cpp: After KS Integration of %dth binary....\n", count);
-		fprintf(binout, "KS coordinates - u1:%f, u2:%f, u3:%f, u4:%f/n", ptclBin->u[0], ptclBin->u[1], ptclBin->u[2], ptclBin->u[3]);
-		fprintf(binout, "KS coordinates - udot1:%f, udot2:%f, udot3:%f, udot4:%f/n", ptclBin->udot[0], ptclBin->udot[1], ptclBin->udot[2], ptclBin->udot[3]);
-		fprintf(binout, "KS coordinates - udot1:%f, udot2:%f, udot3:%f, udot4:%f/n", ptclBin->udot[0], ptclBin->udot[1], ptclBin->udot[2], ptclBin->udot[3]);
-		fprintf(binout, "Other important KS variables - r:%f, h:%f, gamma: %f, tau:%f, step:%f/n", ptclBin->r, ptclBin->h, ptclBin->gamma, ptclBin->dTau, ptclBin->TimeStep);
+		fprintf(binout, "\nBinaryAccelerationRoutine.cpp: After KS Integration of %dth binary....\n", count);
+		fprintf(binout, "KS coordinates - u1:%e, u2:%e, u3:%e, u4:%e\n", ptclBin->u[0], ptclBin->u[1], ptclBin->u[2], ptclBin->u[3]);
+		fprintf(binout, "KS coordinates - udot1:%e, udot2:%e, udot3:%e, udot4:%e\n", ptclBin->udot[0], ptclBin->udot[1], ptclBin->udot[2], ptclBin->udot[3]);
+		fprintf(binout, "KS coordinates - udot1:%e, udot2:%e, udot3:%e, udot4:%e\n", ptclBin->udot[0], ptclBin->udot[1], ptclBin->udot[2], ptclBin->udot[3]);
+		fprintf(binout, "Other important KS variables - r:%e, h:%e, gamma: %e, tau:%e, step:%e\n", ptclBin->r, ptclBin->h, ptclBin->gamma, ptclBin->dTau, ptclBin->TimeStep);
 
 
 		// check for termination
 		
-		if ((ptclBin->r>(ptclBin->r0*2)) || (ptclBin->TimeStep > 2*KSTime)) {
+		if ((ptclBin->r>(ptclBin->r0*1.5)) || (ptclBin->TimeStep > 1.5*KSTime)) {
 	                std::cout << "Terminating Binary ..." << std::endl;
 			KSTermination(ptclBin->ptclCM, particle);
 		}
