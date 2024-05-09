@@ -342,7 +342,7 @@ void Binary::InitializeBinary(double current_time) {
 
     // obtain the apropriate time step for binary
 
-    dtau_temp = std::min(r/Mass,0.5*abs(h));
+    dtau_temp = std::min(r/ptclCM->Mass,0.5*abs(h));
     dtau = 0.8*eta*sqrt(dtau_temp)/pow((1 + 1000.0 * gamma), 1.0/3.0);
 
     dtau2 = dtau*dtau;
