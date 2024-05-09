@@ -166,7 +166,7 @@ void Binary::InitializeBinary(double current_time) {
     // calculate the velocity in new coordinates using Levi-civita matrix
     // and also the binding energy per unit reduced mass, represented as h
 
-    h = 0; //binding energy per unit reduced mass
+    h = 0.0; //binding energy per unit reduced mass
 
     for (int dim=0; dim<4; dim++) {
 
@@ -177,8 +177,8 @@ void Binary::InitializeBinary(double current_time) {
         h += 2*udot[dim]*udot[dim];
     }
 
-    h -= Mass/r;
-    a = -0.5*Mass/h;
+    h -= ptclCM->Mass/r;
+    a = -0.5*ptclCM->Mass/h;
 
 
     // form the list of perturbers : refer to kslist.f
@@ -187,6 +187,12 @@ void Binary::InitializeBinary(double current_time) {
     // change the step of the 2nd particle so it won't be calculated in the list.
     // need to add exclusion of particles CHECK!!
 
+    // Initialize the perturbing force
+
+    for (int dim=0; dim<Dim; dim++) {
+        P[dim] = 0.0;
+        Pdot[dim] = 0.0;
+    }
 
 
     // CALCULATION OF PERTURBER FORCE AND FORCE POLYNOMIALS
@@ -244,7 +250,7 @@ void Binary::InitializeBinary(double current_time) {
         Pdot[dim] *= r;
     }
 
-    Ptot = sqrt(P[0]*P[0] + P[0]*P[0] + P[0]*P[0]);
+    Ptot = sqrt(P[0]*P[0] + P[1]*P[1] + P[2]*P[2]);
     fprintf(binout, "Perturbing force - Px:%e, Py:%e, Pz:%e \n", P[0],P[1],P[2]);
 
     gamma = Ptot*r*r/ptclCM->Mass;

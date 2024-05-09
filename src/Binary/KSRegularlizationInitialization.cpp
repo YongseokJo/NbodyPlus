@@ -252,7 +252,7 @@ void Particle::isKSCandidate(double next_time) {
         // if particle time step is too large, skip
         // if the neighbor step is larger then 8 times of the candidate particle, then skip
 
-	r2 = 0.0;
+	    r2 = 0.0;
         
         if ((ptcl->TimeStepIrr) > (8*TimeStepIrr)) {
             continue;
