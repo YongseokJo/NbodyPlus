@@ -31,6 +31,10 @@ void BinaryAccelerationRoutine(double next_time, std::vector<Particle*> &particl
 
 	count = 0;
 
+	if (next_time == 0) {
+		return;
+	}
+
 	for (Binary* ptclBin: BinaryList) {
 
 	    ptclBin->IntegrateBinary(next_time);
