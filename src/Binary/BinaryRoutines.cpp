@@ -205,20 +205,20 @@ void Binary::InitializeBinary(double current_time) {
 
         ptcl->predictParticleSecondOrder(current_time);
 
-        dr2i = 0;
-        dr2j = 0;
+        dr2i = 0.0;
+        dr2j = 0.0;
 
-        dxdvi = 0;
-        dxdvj = 0;
+        dxdvi = 0.0;
+        dxdvj = 0.0;
 
         for (int dim=0; dim<Dim; dim++) {
 
             dxi[dim] = ptcl->PredPosition[dim] - ptclI->PredPosition[dim];
-            dvi[dim] = ptcl->PredVelocity[dim] - ptclJ->PredVelocity[dim];
+            dvi[dim] = ptcl->PredVelocity[dim] - ptclI->PredVelocity[dim];
             dr2i += dxi[dim]*dxi[dim];
             dxdvi += dxi[dim]*dvi[dim];
 
-            dxj[dim] = ptcl->PredPosition[dim] - ptclI->PredPosition[dim];
+            dxj[dim] = ptcl->PredPosition[dim] - ptclJ->PredPosition[dim];
             dvj[dim] = ptcl->PredVelocity[dim] - ptclJ->PredVelocity[dim];
             dr2j += dxj[dim]*dxj[dim];
             dxdvj += dxj[dim]*dvj[dim];
@@ -228,6 +228,10 @@ void Binary::InitializeBinary(double current_time) {
         _dr3i = 1/(dr2i)/sqrt(dr2i);
         _dr3j = 1/(dr2j)/sqrt(dr2j);
 
+	//fprintf(binout, "dxi = %e %e %e  dvi = %e %e %e \n",dxi[0],dxi[1],dxi[2],dvi[0],dvi[1],dvi[2]);
+    	//fprintf(binout, "dxj = %e %e %e  dvj = %e %e %e \n \n",dxj[0],dxj[1],dxj[2],dvj[0],dvj[1],dvj[2]);
+
+
         for (int dim=0; dim<Dim; dim++) {
 
             // ith particle
@@ -235,8 +239,8 @@ void Binary::InitializeBinary(double current_time) {
             Pdot[dim] += ptcl->Mass*_dr3i*(dvi[dim] - 3*dxi[dim]*dxdvi/dr2i);//+mdot*_dr3i*dxi[dim];
 
             // jth partilce
-            P[dim]    += -ptcl->Mass*_dr3j*dxj[dim];
-            Pdot[dim] += -ptcl->Mass*_dr3j*(dvj[dim] - 3*dxj[dim]*dxdvj/dr2j);//+mdot*_dr3j*dxj[dim];
+            P[dim]    -= ptcl->Mass*_dr3j*dxj[dim];
+            Pdot[dim] -= ptcl->Mass*_dr3j*(dvj[dim] - 3*dxj[dim]*dxdvj/dr2j);//+mdot*_dr3j*dxj[dim];
         }
 
         //direct_sum(dxi ,dvi, dr2i, dxdvi, ptcl->Mass, mdot, P, Pdot);

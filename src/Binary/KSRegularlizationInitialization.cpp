@@ -351,9 +351,9 @@ void NewKSInitialization(Particle* ptclI, std::vector<Particle*> &particle, doub
     ptclI->predictParticleSecondOrder(current_time);
     ptclJ->predictParticleSecondOrder(current_time);
 
-    fprintf(binout, "\n -------------------------NEW-BINARY------------------------\n", ptclI->TimeStepIrr, ptclI->TimeStepReg);
+    fprintf(binout, "\n -------------------------NEW-BINARY------------------------\n") ;
 
-    fprintf(binout, "Position: ptclI - x:%e, y:%e, z:%e, \n", ptclI->Position[0], ptclI->Position[1], ptclI->Position[2]);
+    fprintf(binout, "\n Position: ptclI - x:%e, y:%e, z:%e, \n", ptclI->Position[0], ptclI->Position[1], ptclI->Position[2]);
     fprintf(binout, "Velocity: ptclI - vx:%e, vy:%e, vz:%e, \n", ptclI->Velocity[0], ptclI->Velocity[1], ptclI->Velocity[2]);
 
     fprintf(binout, "Total Acceleration - ax:%e, ay:%e, az:%e, \n", ptclI->a_tot[0][0], ptclI->a_tot[1][0], ptclI->a_tot[2][0]);
@@ -361,6 +361,10 @@ void NewKSInitialization(Particle* ptclI, std::vector<Particle*> &particle, doub
     fprintf(binout, "Total Acceleration - ax2dot:%e, ay2dot:%e, az2dot:%e, \n", ptclI->a_tot[0][2], ptclI->a_tot[1][2], ptclI->a_tot[2][2]);
     fprintf(binout, "Total Acceleration - ax3dot:%e, ay3dot:%e, az3dot:%e, \n", ptclI->a_tot[0][3], ptclI->a_tot[1][3], ptclI->a_tot[2][3]);
     fprintf(binout, "Time Steps - irregular:%e, regular:%e \n", ptclI->TimeStepIrr, ptclI->TimeStepReg);
+
+    fprintf(binout, "\n Position: ptclJ - x:%e, y:%e, z:%e, \n", ptclJ->Position[0], ptclJ->Position[1], ptclJ->Position[2]);
+    fprintf(binout, "Velocity: ptclJ - vx:%e, vy:%e, vz:%e, \n", ptclJ->Velocity[0], ptclJ->Velocity[1], ptclJ->Velocity[2]);
+
 
     // need to put option if there aren't any close neighbors
 
@@ -606,7 +610,7 @@ void NewKSInitialization(Particle* ptclI, std::vector<Particle*> &particle, doub
     //std::cout << "Add the ptclBin to Binary List" << std::endl;
     BinaryList.push_back(ptclBin);
 
-    fprintf(binout, "\n ---------------------END-OF-NEW-BINARY---------------------\n", ptclI->TimeStepIrr, ptclI->TimeStepReg);
+    fprintf(binout, "\n ---------------------END-OF-NEW-BINARY---------------------\n");
 
 
 }
