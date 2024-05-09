@@ -153,6 +153,8 @@ void Binary::InitializeBinary(double current_time) {
 
     }
 
+    fprintf(binout, "\n >>>>>>>>>>>>from BinaryRoutines.cpp<<<<<<<<<< \n");
+
     fprintf(binout, "KS coordinates - u1:%e, u2:%e, u3:%e, u4:%e \n", u[0],u[1],u[2],u[3]);
 
 
@@ -224,11 +226,11 @@ void Binary::InitializeBinary(double current_time) {
 
             // ith particle
             P[dim]    += ptcl->Mass*_dr3i*dxi[dim];
-            Pdot[dim] += ptcl->Mass*_dr3i*(dvi[dim] - 3*x[dim]*dxdvi/dr2i)+mdot*_dr3i*dxi[dim];
+            Pdot[dim] += ptcl->Mass*_dr3i*(dvi[dim] - 3*dxi[dim]*dxdvi/dr2i);//+mdot*_dr3i*dxi[dim];
 
             // jth partilce
             P[dim]    += -ptcl->Mass*_dr3j*dxj[dim];
-            Pdot[dim] += -ptcl->Mass*_dr3j*(dvj[dim] - 3*x[dim]*dxdvj/dr2j)+mdot*_dr3j*dxj[dim];
+            Pdot[dim] += -ptcl->Mass*_dr3j*(dvj[dim] - 3*dxj[dim]*dxdvj/dr2j);//+mdot*_dr3j*dxj[dim];
         }
 
         //direct_sum(dxi ,dvi, dr2i, dxdvi, ptcl->Mass, mdot, P, Pdot);
@@ -374,4 +376,6 @@ void Binary::InitializeBinary(double current_time) {
     fprintf(binout, "derivatives of u[3]: u0 = %e u1 = %e u2 = %e u3 = %e u4 = %e u5 = %e \n", u[3], udot[3], u2dot[3], u3dot[3], u4dot[3], u5dot[3]);
 
     fprintf(binout,"Stumpff Coefficinets : c1 = %e c2 = %e c3 = %e c4 = %e c5 = %e \n \n ", cn[1], cn[2], cn[3], cn[4], cn[5]);
+
+    fprintf(binout, "\n >>>>>>>>>>>>from BinaryRoutines.cpp<<<<<<<<<< \n");
 }
