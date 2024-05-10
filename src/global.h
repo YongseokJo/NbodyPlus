@@ -2,7 +2,7 @@
 // #include <mpi.h>
 #include <iostream>
 #include "Particle/Particle.h"
-
+#include <stdio.h>
 
 #ifdef time_trace
 #include "TimeTrace.h"
