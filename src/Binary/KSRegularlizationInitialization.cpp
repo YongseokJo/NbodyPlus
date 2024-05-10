@@ -382,15 +382,15 @@ void NewKSInitialization(Particle* ptclI, std::vector<Particle*> &particle, doub
     ptclCM->Mass = ptclI->Mass + ptclJ->Mass;
 
     for (int dim=0; dim<Dim; dim++) {
+
         ptclCM->Position[dim] = (ptclI->PredPosition[dim]*ptclI->Mass + ptclJ->PredPosition[dim]*ptclJ->Mass)/ptclCM->Mass;
         ptclCM->Velocity[dim] = (ptclI->PredVelocity[dim]*ptclI->Mass + ptclJ->PredVelocity[dim]*ptclJ->Mass)/ptclCM->Mass;
         ptclCM->PredPosition[dim] = ptclCM->Position[dim];
         ptclCM->PredVelocity[dim] = ptclCM->Velocity[dim];
-
-        ptclBin->Position[dim] = (ptclI->PredPosition[dim]*ptclI->Mass + ptclJ->PredPosition[dim]*ptclJ->Mass)/ptclCM->Mass;
-        ptclBin->Velocity[dim] = (ptclI->PredVelocity[dim]*ptclI->Mass + ptclJ->PredVelocity[dim]*ptclJ->Mass)/ptclCM->Mass;
-        ptclBin->PredPosition[dim] = ptclCM->Position[dim];
-        ptclBin->PredVelocity[dim] = ptclCM->Velocity[dim];
+        // ptclBin->Position[dim] = (ptclI->PredPosition[dim]*ptclI->Mass + ptclJ->PredPosition[dim]*ptclJ->Mass)/ptclCM->Mass;
+        // ptclBin->Velocity[dim] = (ptclI->PredVelocity[dim]*ptclI->Mass + ptclJ->PredVelocity[dim]*ptclJ->Mass)/ptclCM->Mass;
+        // ptclBin->PredPosition[dim] = ptclCM->Position[dim];
+        // ptclBin->PredVelocity[dim] = ptclCM->Velocity[dim];
 
     }
 
@@ -408,7 +408,11 @@ void NewKSInitialization(Particle* ptclI, std::vector<Particle*> &particle, doub
 
     ptclCM->isCMptcl = true;
     ptclJ->isBinary = true;
+
     ptclBin->ptclCM = ptclCM;
+    ptclBin->CurrentTime = ptclI->CurrentTimeIrr;
+    // ptclBin->CurrentTau = 0.0; // already initialized at formation, but added for safety.
+    // ptclBin->PredTau = 0.0;
 
 
 

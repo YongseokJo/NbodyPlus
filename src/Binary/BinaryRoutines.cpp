@@ -388,4 +388,6 @@ void Binary::InitializeBinary(double current_time) {
     fprintf(binout,"Stumpff Coefficinets : c1 = %e c2 = %e c3 = %e c4 = %e c5 = %e \n \n ", cn[1], cn[2], cn[3], cn[4], cn[5]);
 
     fprintf(binout, "\n >>>>>>>>>>>>from BinaryRoutines.cpp<<<<<<<<<< \n");
+
+
 }

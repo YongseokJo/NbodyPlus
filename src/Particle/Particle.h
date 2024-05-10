@@ -156,9 +156,11 @@ class Binary
 
 		// corresponding single particles and neighbor particles
 
-		int NumberOfAC;     // number of neighbors - not currently in use
-		double RadiusOfAC;
-		std::vector<Particle*> ACList;     // list of AC neighbor - not currently in use
+		// overlapping variables with ptclCM are deleted. 
+		// int NumberOfAC;     // number of neighbors - not currently in use
+		// double RadiusOfAC;
+		// std::vector<Particle*> ACList;     // list of AC neighbor - not currently in use
+
 		Particle* ptclCM;
 
 		bool isTerminate;
@@ -168,20 +170,20 @@ class Binary
 
 		double Mass;
 
-		double Position[Dim];
-		double Velocity[Dim];
-		double PredPosition[Dim];
-		double PredVelocity[Dim];
+		// double Position[Dim];
+		// double Velocity[Dim];
+		// double PredPosition[Dim];
+		// double PredVelocity[Dim];
 
 		double PredTime;
-		double CurrentTime;
+		double CurrentTime;  // this show how much the binary system has evolved
 		double TimeStep;
 		int TimeLevel;
 
-		double a_tot[Dim][HERMITE_ORDER];
-		double a_reg[Dim][HERMITE_ORDER];
-		double a_irr[Dim][HERMITE_ORDER];
-		double BackgroundAcceleration[Dim];
+		// double a_tot[Dim][HERMITE_ORDER];
+		// double a_reg[Dim][HERMITE_ORDER];
+		// double a_irr[Dim][HERMITE_ORDER];
+		// double BackgroundAcceleration[Dim];
 
 
 		// information of binary particles after Levi-civita transformation
@@ -237,7 +239,7 @@ class Binary
 		double PredTau;
 		double CurrentTau;
 		double dTau;
-		double TauStep;
+		// double TauStep;
 
 		// other variables
 
@@ -256,18 +258,18 @@ class Binary
 			//std::cout << "Constructor called" << std::endl;
 
 			isTerminate = false;
-			NumberOfAC     = 0; // number of neighbors
-			RadiusOfAC     = InitialRadiusOfAC;
-			Mass           = 0;
+			// NumberOfAC     = 0; // number of neighbors
+			// RadiusOfAC     = InitialRadiusOfAC;
+			// Mass           = 0;
 			PredTime       = 0;
 			CurrentTime    = 0;
-			TimeStep       = 9999;
-			TimeLevel      = 9999;
+			TimeStep       = 0;
+			TimeLevel      = 0;
 
 			PredTau       = 0;
 			CurrentTau    = 0;
 			dTau          = 9999;
-			TauStep       = 9999;
+			// TauStep       = 9999;
 
 			gamma = 0;
 			a     = 0;
@@ -294,21 +296,21 @@ class Binary
 			h3dot = 0;
 			h4dot = 0;
 
-			for (int i=0; i<Dim; i++) {
+			// for (int i=0; i<Dim; i++) {
 
-				Position[i]     = 0;
-				Velocity[i]     = 0;
-				PredPosition[i] = 0;
-				PredVelocity[i] = 0;
+			// 	Position[i]     = 0;
+			// 	Velocity[i]     = 0;
+			// 	PredPosition[i] = 0;
+			// 	PredVelocity[i] = 0;
 
-				BackgroundAcceleration[i] = 0;
+			// 	BackgroundAcceleration[i] = 0;
 
-				for (int j=0; j<HERMITE_ORDER; j++) {
-					a_reg[i][j] = 0;
-					a_irr[i][j] = 0;
-					a_tot[i][j] = 0;
-				}
-			}
+			// 	for (int j=0; j<HERMITE_ORDER; j++) {
+			// 		a_reg[i][j] = 0;
+			// 		a_irr[i][j] = 0;
+			// 		a_tot[i][j] = 0;
+			// 	}
+			// }  -> it is all saved in the CM particle information
 
 			for (int i=0; i<4; i++){
 

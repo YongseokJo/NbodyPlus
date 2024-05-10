@@ -3,11 +3,11 @@
 
 
 int writeParticle(std::vector<Particle*> &particle, double MinRegTime, int outputNum);
-bool CreateComputationChain(std::vector<Particle*> &particle);
+// bool CreateComputationChain(std::vector<Particle*> &particle);
 bool SortComputationChain(std::vector<Particle*> ComputationChain);
 Particle *SortComputationChain(Particle* ptcl);
 
-Particle *FirstComputation;
+// Particle *FirstComputation;
 // 1. sort particles according to next irregular time
 // 2. the sorted list should be update regularly
 bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
@@ -17,11 +17,12 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 		_time.irr_chain.markStart();
 #endif
 		Particle *ParticleForComputation;
-    //std::cout << "Creating a computation chain ...\n";
-    if (CreateComputationChain(particle) == false) {
-        std::cout << "No irregular particle to update ...\n";
-        return true;
-    }
+    // //std::cout << "Creating a computation chain ...\n";
+    // if (CreateComputationChain(particle) == false) {
+    //     std::cout << "No irregular particle to update ...\n";
+    //     return true;
+    // }
+
 
     //std::cout << "Calculating irregular force ...\n" << std::endl;
 #ifdef time_trace
