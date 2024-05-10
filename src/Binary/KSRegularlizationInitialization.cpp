@@ -80,7 +80,7 @@ void CalculateKSAcceleration(Particle* ptclI, Particle* ptclJ, Particle* ptclCM,
             v2 = 0;
 
             if (ptcl1 == ptcl2) {
-            continue;
+	            continue;
             }
 
             // if current time = the time we need, then PredPosition and PredVelocity is same as Position and Velocity

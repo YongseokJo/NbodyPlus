@@ -336,7 +336,7 @@ class Binary
 
 		void InitializeBinary(double current_time);
 		void getStumpffCoefficients(double z);
-		void KSIntegration(double next_time);
+		void KSIntegration(double next_time, int &calnum);
 		void predictBinary(double next_time);
 		void IntegrateBinary(double next_time);
 

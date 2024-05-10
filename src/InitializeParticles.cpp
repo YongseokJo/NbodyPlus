@@ -80,6 +80,24 @@ void InitializeParticle(Particle* newParticle, std::vector<Particle*> &particle)
 }
 
 
+void ReInitializeKSParticle(Particle* KSParticle, std::vector<Particle*> &particle) {
+
+	std::cout << "Re-Initialization of KS Pair Particle starts.\n" << std::endl;
+	
+	FindNeighbor(KSParticle, particle);
+	CalculateInitialAcceleration(KSParticle, particle);
+
+	for (int dim=0; dim<Dim; dim++) {
+		KSParticle->PredPosition[dim] =  KSParticle->Position[dim];
+		KSParticle->PredVelocity[dim] =  KSParticle->Velocity[dim];
+	}
+
+	std::cout << "Timestep initializing...\n" << std::endl;
+	InitializeTimeStep(KSParticle, 1);
+	std::cout << "Timestep finished.\n" << std::endl;
+	std::cout << "Initialization of KS Pair Particle finished.\n" << std::endl;
+}
+
 
 /*
  *  Purporse: find neighbors
