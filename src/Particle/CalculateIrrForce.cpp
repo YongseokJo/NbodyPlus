@@ -60,10 +60,15 @@ void Particle::calculateIrrForce() {
 	 * Irregular Acceleartion Calculation
 	 ********************************************************/
 	this->predictParticleSecondOrder(new_time);
+	fprintf(stdout,"finishing prediction\n");
+	fprintf(stdout,"the ID of neighbors are");
+
 	for (Particle* ptcl: ACList) {
 		// reset temporary variables at the start of a new calculation
 		r2 = 0.0;
 		vx = 0.0;
+
+		fprintf(stdout," %d ",ptcl->PID);
 
 		ptcl->predictParticleSecondOrder(new_time);
 		for (int dim=0; dim<Dim; dim++) {
@@ -84,6 +89,7 @@ void Particle::calculateIrrForce() {
 		direct_sum(x ,v, r2, vx, ptcl->Mass, mdot, a_tmp, adot_tmp);
 	} // endfor ptcl
 
+	fprintf(stdout,"Irr force calculation of neighbor finished \n");
 
 	double a2, a3, da_dt2, adot_dt, dt2, dt3, dt4, dt5;
 
@@ -118,6 +124,7 @@ void Particle::calculateIrrForce() {
 	}
 
 
+
 	double dt_ex = new_time - this->CurrentTimeReg;
 
 	for (int dim=0; dim<Dim; dim++) {
@@ -127,6 +134,7 @@ void Particle::calculateIrrForce() {
 		a_tot[dim][3] = a_reg[dim][3] + a_irr[dim][3];
 	}
 
+	fprintf(stdout,"correction up to 4th order finished\n");
 	/*
 		 std::cout << "\ntotal acceleartion\n" << std::flush;
 		 for (int dim=0; dim<Dim; dim++)	 {
@@ -153,8 +161,10 @@ void Particle::calculateIrrForce() {
 	//this->updateParticle(CurrentTimeIrr, CurrentTimeIrr+TimeStepIrr, a_tot);
 	//this->correctParticleFourthOrder(CurrentTimeIrr, CurrentTimeIrr+TimeStepIrr, a_irr);
 	this->updateParticle();
+	fprintf(stdout,"updating particles finished \n");
 	CurrentTimeIrr += TimeStepIrr; // in sorting
 	this->calculateTimeStepIrr(a_tot, a_irr); // calculate irregular time step based on total force
+
 }
 
 
