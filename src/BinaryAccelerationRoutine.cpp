@@ -3,7 +3,7 @@
 #include "defs.h"
 
 void NewKSInitialization(Particle* ptclI, std::vector<Particle*> &particle, double current_time);
-void KSTermination(Particle* ptclCM, std::vector<Particle*> &particle);
+void KSTermination(Particle* ptclCM, std::vector<Particle*> &particle, double current_time);
 
 void AddNewBinariesToList(std::vector<Particle*> &particle) {
 
@@ -46,6 +46,7 @@ void BinaryAccelerationRoutine(double next_time, std::vector<Particle*> &particl
 
 		fprintf(binout, "\nBinaryAccelerationRoutine.cpp: After KS Integration of %dth binary....\n", count);
 		fprintf(binout, "The ID of ith particle is %d \n",ptclBin->ptclCM->BinaryParticleI->PID);
+		fprintf(binout, "The ID of ith particle is %d \n",ptclBin->ptclCM->BinaryParticleJ->PID);
 		fflush(binout);	
 
 		if (bincount>0) {
@@ -63,7 +64,7 @@ void BinaryAccelerationRoutine(double next_time, std::vector<Particle*> &particl
 		
 		if ((ptclBin->r>(ptclBin->r0*2.0)) || (ptclBin->TimeStep > 2.0*KSTime)) {
 	        std::cout << "Terminating Binary ..." << std::endl;
-			KSTermination(ptclBin->ptclCM, particle);
+			KSTermination(ptclBin->ptclCM, particle, next_time);
 		}
 
     }

@@ -420,10 +420,6 @@ void NewKSInitialization(Particle* ptclI, std::vector<Particle*> &particle, doub
 
 
 
-    // add it to binary list
-    BinaryList.push_back(ptclBin);
-
-
     // copy the neighbor list for c.m particle
 
     ptclCM->RadiusOfAC = ptclI->RadiusOfAC;

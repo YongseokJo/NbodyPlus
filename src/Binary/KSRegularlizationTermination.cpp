@@ -9,7 +9,7 @@
 void generate_Matrix(double a[3], double (&A)[3][4]);
 void ReInitializeKSParticle(Particle* KSParticle, std::vector<Particle*> &particle);
 
-void KSTermination(Particle* ptclCM, std::vector<Particle*> &particle){
+void KSTermination(Particle* ptclCM, std::vector<Particle*> &particle, double current_time){
 
     double R[Dim], Rdot[Dim];
     double Rinv;
@@ -100,11 +100,11 @@ void KSTermination(Particle* ptclCM, std::vector<Particle*> &particle){
     particle.push_back(ptclI);
     particle.push_back(ptclJ);
 
-    ptclI->CurrentTimeIrr = ptclCM->CurrentTimeIrr;
-    ptclI->CurrentTimeReg = ptclCM->CurrentTimeReg;
+    ptclI->CurrentTimeIrr = current_time; //ptclCM->CurrentTimeIrr;
+    ptclI->CurrentTimeReg = current_time; //ptclCM->CurrentTimeReg;
 
-    ptclJ->CurrentTimeIrr = ptclCM->CurrentTimeIrr;
-    ptclJ->CurrentTimeReg = ptclCM->CurrentTimeReg;
+    ptclJ->CurrentTimeIrr = current_time; //ptclCM->CurrentTimeIrr;
+    ptclJ->CurrentTimeReg = current_time; //ptclCM->CurrentTimeReg;
 
 
     fprintf(stdout,"initialize particle I \n");
@@ -169,8 +169,8 @@ void KSTermination(Particle* ptclCM, std::vector<Particle*> &particle){
 
     fprintf(stdout,"end of KS Regularlization Termination \n ");
 
-    fprintf(binout, "\nPosition: ptclJ - x:%e, y:%e, z:%e, \n", ptclI->Position[0], ptclI->Position[1], ptclI->Position[2]);
-    fprintf(binout, "Velocity: ptclJ - vx:%e, vy:%e, vz:%e, \n", ptclI->Velocity[0], ptclI->Velocity[1], ptclI->Velocity[2]);
+    fprintf(binout, "\nPosition: ptclI - x:%e, y:%e, z:%e, \n", ptclI->Position[0], ptclI->Position[1], ptclI->Position[2]);
+    fprintf(binout, "Velocity: ptclI - vx:%e, vy:%e, vz:%e, \n", ptclI->Velocity[0], ptclI->Velocity[1], ptclI->Velocity[2]);
     fflush(binout);
 
     fprintf(binout, "Total Acceleration - ax:%e, ay:%e, az:%e, \n", ptclI->a_tot[0][0], ptclI->a_tot[1][0], ptclI->a_tot[2][0]);
@@ -193,7 +193,16 @@ void KSTermination(Particle* ptclCM, std::vector<Particle*> &particle){
     fflush(binout);
 
 
+    fprintf(binout, "\nPosition: ptclCM - x:%e, y:%e, z:%e, \n", ptclCM->Position[0], ptclCM->Position[1], ptclCM->Position[2]);
+    fprintf(binout, "Velocity: ptclCM - vx:%e, vy:%e, vz:%e, \n", ptclCM->Velocity[0], ptclCM->Velocity[1], ptclCM->Velocity[2]);
+    fflush(binout);
 
+    fprintf(binout, "Total Acceleration - ax:%e, ay:%e, az:%e, \n", ptclCM->a_tot[0][0], ptclCM->a_tot[1][0], ptclCM->a_tot[2][0]);
+    fprintf(binout, "Total Acceleration - axdot:%e, aydot:%e, azdot:%e, \n", ptclCM->a_tot[0][1], ptclCM->a_tot[1][1], ptclCM->a_tot[2][1]);
+    fprintf(binout, "Total Acceleration - ax2dot:%e, ay2dot:%e, az2dot:%e, \n", ptclCM->a_tot[0][2], ptclCM->a_tot[1][2], ptclCM->a_tot[2][2]);
+    fprintf(binout, "Total Acceleration - ax3dot:%e, ay3dot:%e, az3dot:%e, \n", ptclCM->a_tot[0][3], ptclCM->a_tot[1][3], ptclCM->a_tot[2][3]);
+    fprintf(binout, "Time Steps - irregular:%e, regular:%e \n", ptclCM->TimeStepIrr, ptclCM->TimeStepReg);
+    fflush(binout);
 
     fprintf(stdout,"--------------------------------------\n");
     fflush(stdout); 
