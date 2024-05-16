@@ -34,10 +34,6 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 
 			fprintf(stdout, "PID=%d, NextRegTime= %.2e Myr, NextIrrTime = %.2e Myr\n",
 					ParticleForComputation->getPID(), NextRegTime*EnzoTimeStep*1e10/1e6, (ParticleForComputation->CurrentTimeIrr + ParticleForComputation->TimeStepIrr)*EnzoTimeStep*1e10/1e6);
-			if (ParticleForComputation->getPID()>1000) {
-				fprintf(stdout,"irregular force computation of CM particle");
-			}
-
 			fprintf(stdout, "CurrentTimeIrr = %.2e Myr, TimeStepIrr = %.2e Myr, CurrentTimeReg=%.2e Myr, TimeStepReg=%.2e Myr\n",
 					ParticleForComputation->CurrentTimeIrr*EnzoTimeStep*1e10/1e6, ParticleForComputation->TimeStepIrr*EnzoTimeStep*1e10/1e6, ParticleForComputation->CurrentTimeReg*EnzoTimeStep*1e10/1e6, ParticleForComputation->TimeStepReg*EnzoTimeStep*1e10/1e6);
 

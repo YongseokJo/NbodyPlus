@@ -33,6 +33,8 @@ class Particle
 		double DynamicalTime;
 		double Velocity[Dim];
 		double Position[Dim];
+		double NewVelocity[Dim];
+		double NewPosition[Dim];	
 		double PredTime;
 		double PredTimeIrr;
 		double PredTimeReg;
@@ -44,8 +46,6 @@ class Particle
 		int TimeLevelReg;
 		double PredPosition[Dim];
 		double PredVelocity[Dim];
-		double NewVelocity[Dim];                                                                   
-		double NewPosition[Dim]; 
 		double a_tot[Dim][HERMITE_ORDER];
 		double a_reg[Dim][HERMITE_ORDER];
 		double a_irr[Dim][HERMITE_ORDER];
@@ -103,9 +103,9 @@ class Particle
 			BinaryPairParticle = nullptr;
 			BinaryParticleI = nullptr;
 			BinaryParticleJ = nullptr;
-			}
+		}
 
-			void updateParticle(double mass, double *vel, double pos[], int particletype) {
+		void updateParticle(double mass, double *vel, double pos[], int particletype) {
 
 			Mass = mass;
 			ParticleType = particletype;
@@ -115,7 +115,6 @@ class Particle
 			Position[i] = pos[i];
 			}
 		}
-		
 		double getDistanceTo(Particle *particle);
 		void setParticleInfo(double *data, int PID);
 		void setParticleInfo(double *data, int PID, Particle* NextParticleInEnzo);
@@ -134,8 +133,10 @@ class Particle
 		void calculateIrrForce();
 		void calculateRegAccelerationSecondOrder(std::vector<Particle*> &particle);
 		void calculateRegAccelerationFourthOrder(std::vector<Particle*> &particle);
-		void predictParticleSecondOrder(double time); 
+
+		void predictParticleSecondOrder(double time);
 		void correctParticleFourthOrder(double current_time, double next_time, double a[3][4]);
+
 		void normalizeParticle();
 		void calculateTimeStepIrr(double f[3][4], double df[3][4]);
 		void calculateTimeStepReg();

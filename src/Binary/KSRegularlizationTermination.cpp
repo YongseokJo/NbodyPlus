@@ -202,6 +202,7 @@ void KSTermination(Particle* ptclCM, std::vector<Particle*> &particle, double cu
     fprintf(binout, "Total Acceleration - ax2dot:%e, ay2dot:%e, az2dot:%e, \n", ptclCM->a_tot[0][2], ptclCM->a_tot[1][2], ptclCM->a_tot[2][2]);
     fprintf(binout, "Total Acceleration - ax3dot:%e, ay3dot:%e, az3dot:%e, \n", ptclCM->a_tot[0][3], ptclCM->a_tot[1][3], ptclCM->a_tot[2][3]);
     fprintf(binout, "Time Steps - irregular:%e, regular:%e \n", ptclCM->TimeStepIrr, ptclCM->TimeStepReg);
+    fprintf(binout, "Current time - irregular: %e, regular:%e \n", ptclCM->CurrentTimeIrr, ptclCM->CurrentTimeReg);
     fflush(binout);
 
     fprintf(stdout,"--------------------------------------\n");

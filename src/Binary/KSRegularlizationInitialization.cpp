@@ -455,35 +455,32 @@ void NewKSInitialization(Particle* ptclI, std::vector<Particle*> &particle, doub
 
     //std::cout << "Calculating Time steps" << std::endl;
 
-    //ptclCM->calculateTimeStepIrr(ptclCM->a_tot, ptclCM->a_irr); // calculate irregular time step based on total force
-    //ptclCM->calculateTimeStepReg(ptclCM->a_reg, ptclCM->a_reg); // calculate regular time step based on total force
-
-
-	dtReg = getNewTimeStep(ptclCM->a_reg, ptclCM->a_reg);
+	//dtReg = getNewTimeStep(ptclCM->a_reg, ptclCM->a_reg);
 	//std::cout << "dtReg=" << dtReg << std::endl;
-	getBlockTimeStep(dtReg, ptclCM->TimeLevelReg, ptclCM->TimeStepReg);
+	//getBlockTimeStep(dtReg, ptclCM->TimeLevelReg, ptclCM->TimeStepReg);
 
-	if (ptclCM->NumberOfAC != 0) {
-		dtIrr = getNewTimeStep(ptclCM->a_tot, ptclCM->a_irr);
-		getBlockTimeStep(dtIrr, ptclCM->TimeLevelIrr, ptclCM->TimeStepIrr);
-	}
-	else {
-		ptclCM->TimeLevelIrr = ptclCM->TimeLevelReg;
-		ptclCM->TimeStepIrr  = ptclCM->TimeStepReg;
-	}
+	//if (ptclCM->NumberOfAC != 0) {
+	//	dtIrr = getNewTimeStep(ptclCM->a_tot, ptclCM->a_irr);
+	//	getBlockTimeStep(dtIrr, ptclCM->TimeLevelIrr, ptclCM->TimeStepIrr);
+	//}
+	//else {
+	//	ptclCM->TimeLevelIrr = ptclCM->TimeLevelReg;
+	//	ptclCM->TimeStepIrr  = ptclCM->TimeStepReg;
+	//}
 
-	ptclCM->TimeStepReg = std::min(1.,ptclCM->TimeStepReg);
-	ptclCM->TimeLevelReg = std::min(0,ptclCM->TimeLevelReg);
-
-
-	if (ptclCM->NumberOfAC != 0) {
-		while (ptclCM->TimeStepIrr >= ptclCM->TimeStepReg) {
-			ptclCM->TimeStepIrr *= 0.5; 
-			ptclCM->TimeLevelIrr--; 
-		}
-	}
+	//ptclCM->TimeStepReg = std::min(1.,ptclCM->TimeStepReg);
+	//ptclCM->TimeLevelReg = std::min(0,ptclCM->TimeLevelReg);
 
 
+	//if (ptclCM->NumberOfAC != 0) {
+	//	while (ptclCM->TimeStepIrr >= ptclCM->TimeStepReg) {
+	//		ptclCM->TimeStepIrr *= 0.5; 
+	//		ptclCM->TimeLevelIrr--; 
+	//	}
+	//}
+
+    ptclCM->calculateTimeStepReg();
+    ptclCM->calculateTimeStepIrr(ptclCM->a_tot, ptclCM->a_irr);
 
     fprintf(binout, "\nKSRegularlizationInitialization.cpp: result of CM particle value calculation\n");
     fprintf(binout, "from function NewKSInitialization\n");

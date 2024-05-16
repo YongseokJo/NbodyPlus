@@ -63,7 +63,8 @@ void BinaryAccelerationRoutine(double next_time, std::vector<Particle*> &particl
 		// check for termination
 		
 		if ((ptclBin->r>(ptclBin->r0*2.0)) || (ptclBin->TimeStep > 2.0*KSTime)) {
-	        std::cout << "Terminating Binary ..." << std::endl;
+	        	std::cout << "Terminating Binary ..." << std::endl;
+			fprintf(binout, "Terminating Binary at time : %e \n", next_time);
 			KSTermination(ptclBin->ptclCM, particle, next_time);
 		}
 

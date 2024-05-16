@@ -92,8 +92,11 @@ void ReInitializeKSParticle(Particle* KSParticle, std::vector<Particle*> &partic
 		KSParticle->PredVelocity[dim] =  KSParticle->Velocity[dim];
 	}
 
-	std::cout << "Timestep initializing...\n" << std::endl;
-	InitializeTimeStep(KSParticle, 1);
+	std::cout << "Timestep calculation...\n" << std::endl;
+//	InitializeTimeStep(KSParticle, 1);
+	KSParticle->calculateTimeStepReg();
+	KSParticle->calculateTimeStepIrr(KSParticle->a_tot, KSParticle->a_irr);
+
 	std::cout << "Timestep finished.\n" << std::endl;
 	std::cout << "Initialization of KS Pair Particle finished.\n" << std::endl;
 }
