@@ -113,6 +113,15 @@ void KSTermination(Particle* ptclCM, std::vector<Particle*> &particle, double cu
     ReInitializeKSParticle(ptclJ, particle);
 
 
+    // change the booleans and pointers for binary
+    ptclI->isBinary = false;
+    ptclI->BinaryPairParticle = nullptr;
+
+    ptclJ->isBinary = false;
+    ptclJ->BinaryPairParticle = nullptr;
+
+
+
     // we also need to revert the neighbor list of Particles
     // assuming that all the neighbors are bidirectional
     // may need to update later if the radius for neighbor differs depending on the particle
@@ -143,7 +152,7 @@ void KSTermination(Particle* ptclCM, std::vector<Particle*> &particle, double cu
         }
 
 	if (findPtclCM) {
-	    particle.erase(particle.begin() + ptclCMIndex);
+	    ptcl1->ACList.erase(ptcl1->ACList.begin() + ptclCMIndex);
 	    ptcl1->ACList.push_back(ptclI);
 	    ptcl1->ACList.push_back(ptclJ);
 	}

@@ -288,8 +288,17 @@ void Particle::isKSCandidate(double next_time) {
 
 
     // save the KS pair information
+    // don't regularlize if the system is already a binary for now
+    // cause that part needs 3 or 4 body regularlization
 
-    if (numberOfPairCandidate>0) {
+    // check if any CM ptcl is chosen for KS regularlization candidate just for debugging
+
+    //if (((isCMptcl == true) || (minPtcl->isCMptcl == true))) {
+    //    fprintf(binout,"CM ptcl is found in the finding KS candidate process \n");
+    //}
+
+
+    if (numberOfPairCandidate>0) { //&& ((isCMptcl == false) && (minPtcl->isCMptcl == false))) {
         isBinary = true;
         BinaryPairParticle = minPtcl;
     }
@@ -406,12 +415,14 @@ void NewKSInitialization(Particle* ptclI, std::vector<Particle*> &particle, doub
     ptclCM->TimeLevelReg = ptclI->TimeLevelReg;
     ptclCM->PredTime = current_time;
 
+    ptclCM->PID = ptclI->PID + NNB;
     ptclCM->BinaryParticleI = ptclI;
     ptclCM->BinaryParticleJ = ptclJ;
     ptclCM->BinaryInfo = ptclBin;
 
     ptclCM->isCMptcl = true;
     ptclJ->isBinary = true;
+    ptclJ->BinaryPairParticle = ptclI;
 
     ptclBin->ptclCM = ptclCM;
     ptclBin->CurrentTime = ptclI->CurrentTimeIrr;
@@ -486,6 +497,7 @@ void NewKSInitialization(Particle* ptclI, std::vector<Particle*> &particle, doub
     fprintf(binout, "from function NewKSInitialization\n");
     fflush(binout);
 
+    fprintf(binout, "The ID of ith particle is %d \n",ptclCM->PID);
     fprintf(binout, "Position - x:%e, y:%e, z:%e, \n", ptclCM->Position[0], ptclCM->Position[1], ptclCM->Position[2]);
     fprintf(binout, "Velocity - vx:%e, vy:%e, vz:%e, \n", ptclCM->Velocity[0], ptclCM->Velocity[1], ptclCM->Velocity[2]);
     fflush(binout);

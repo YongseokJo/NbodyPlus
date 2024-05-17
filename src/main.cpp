@@ -19,8 +19,8 @@ const double dt_min = 0.00001525878;
 const int dt_level_min = -16;
 */
 
-const double dt_min = 2.9802322e-9; //9.53674316e-7;
-const int dt_level_min = -25; //-20;
+const double dt_min = 9.53674316e-7; //2.9802322e-9; //9.53674316e-7;
+const int dt_level_min = -20; //-25; //-20;
 
 int newNNB = 0;
 std::vector<int> RegIndexList;
