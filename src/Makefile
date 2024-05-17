@@ -4,7 +4,7 @@ CXX = g++
 NVCC = nvcc
 
 # Compiler flags
-CXXFLAGS  = -std=c++11 -Wall -Wextra -Wuninitialized -I./Particle -I./ -g 
+CXXFLAGS  = -std=c++11 -Wall -Wextra -Wuninitialized -I./Particle -I./ -g #-fsanitize=address -fsanitize=undefined
 NVCCFLAGS = -O2 -G -Xcompiler -rdynamic -lineinfo -g
 
 # Libraries

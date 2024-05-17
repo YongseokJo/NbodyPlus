@@ -32,6 +32,7 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 		ParticleForComputation = FirstComputation;
 		while (ParticleForComputation != nullptr) {
 
+			/*
 			fprintf(stdout, "PID=%d, NextRegTime= %.2e Myr, NextIrrTime = %.2e Myr\n",
 					ParticleForComputation->getPID(), NextRegTime*EnzoTimeStep*1e10/1e6, (ParticleForComputation->CurrentTimeIrr + ParticleForComputation->TimeStepIrr)*EnzoTimeStep*1e10/1e6);
 			fprintf(stdout, "CurrentTimeIrr = %.2e Myr, TimeStepIrr = %.2e Myr, CurrentTimeReg=%.2e Myr, TimeStepReg=%.2e Myr\n",
@@ -55,6 +56,7 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 					ParticleForComputation->a_irr[1][3],
 					ParticleForComputation->a_irr[2][3],
 					ParticleForComputation->NumberOfAC);
+					*/
 					
 
 #ifdef time_trace
@@ -65,8 +67,16 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 		_time.irr_force.markEnd();
 		_time.irr_force.getDuration();
 #endif
+
+#ifdef time_trace
+		_time.irr_sort.markStart();
+#endif
 			//ParticleForComputation = ParticleForComputation->NextParticleForComputation;// this includes time evolution.
 			ParticleForComputation = SortComputationChain(ParticleForComputation);
+#ifdef time_trace
+		_time.irr_sort.markEnd();
+		_time.irr_sort.getDuration();
+#endif
 
 #define no_IRR_TEST
 #ifdef IRR_TEST

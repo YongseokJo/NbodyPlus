@@ -6,7 +6,7 @@ module add intel-oneapi-mpi
 module add cuda
 
 make clean
-make
+make -j4
 
 
 #./nbodyplus.exe -f nbody.dat >stdout 2>stderr

@@ -97,13 +97,13 @@ Particle *SortComputationChain(Particle* ptcl) {
 
 
 	NextParticle = NextComputation; 
-	std::cout << "Time:";
+	//std::cout << "Time:";
 	while (NextParticle != nullptr) {
 		NextParticleNextIrrTime = NextParticle->CurrentTimeIrr + NextParticle->TimeStepIrr;
-		std::cout << NextParticleNextIrrTime << '(' << NextParticle->PID << ')' << ' ';
+		//std::cout << NextParticleNextIrrTime << '(' << NextParticle->PID << ')' << ' ';
 		NextParticle = NextParticle->NextParticleForComputation;
 	}
-	std::cout << std::endl;
+	//std::cout << std::endl;
 
 
 	return NextComputation;
