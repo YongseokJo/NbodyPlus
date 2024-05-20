@@ -87,10 +87,16 @@ void InitializeParticle(Particle* newParticle, std::vector<Particle*> &particle)
 void ReInitializeKSParticle(Particle* KSParticle, std::vector<Particle*> &particle) {
 
 	std::cout << "Re-Initialization of KS Pair Particle starts.\n" << std::endl;
-	
+
+	std::cout << "Finding Neighbors... \n" << std::endl;	
 	FindNeighbor(KSParticle, particle);
+
+	std::cout << "Calculating Acceleration... \n" << std::endl;	
 	CalculateInitialAcceleration(KSParticle, particle);
 
+
+	std::cout << "copying the position and velocities to predictions... \n" << std::endl;	
+	
 	for (int dim=0; dim<Dim; dim++) {
 		KSParticle->PredPosition[dim] =  KSParticle->Position[dim];
 		KSParticle->PredVelocity[dim] =  KSParticle->Velocity[dim];

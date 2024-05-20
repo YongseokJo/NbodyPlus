@@ -106,6 +106,13 @@ void KSTermination(Particle* ptclCM, std::vector<Particle*> &particle, double cu
     ptclJ->CurrentTimeIrr = current_time; //ptclCM->CurrentTimeIrr;
     ptclJ->CurrentTimeReg = current_time; //ptclCM->CurrentTimeReg;
 
+    ptclI->ACList.clear();
+    ptclI->NumberOfAC = 0;
+
+    ptclJ->ACList.clear();
+    ptclJ->NumberOfAC = 0;
+
+
 
     fprintf(stdout,"initialize particle I \n");
     ReInitializeKSParticle(ptclI, particle);
