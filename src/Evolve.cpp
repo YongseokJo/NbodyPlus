@@ -39,11 +39,6 @@ void Evolve(std::vector<Particle*> &particle) {
 
 	while (true) {
 
-                 // fprintf(binout, "-------------------------------------\n");                                                
-                 // fprintf(binout, "Evolve.cpp: starting a new while loop\n");                                                
-                 // fprintf(binout, "global_time = %e \n",global_time);                                                         
-                 // fprintf(binout, "binary_time = %e \n",binary_time);
-
 		// It's time to compute regular force.
 #ifdef time_trace
 		_time.reg.markStart();
@@ -63,7 +58,7 @@ void Evolve(std::vector<Particle*> &particle) {
 			fprintf(binout, "# of binaries = %d \n",int(BinaryList.size()));
 			BinaryAccelerationRoutine(binary_time, particle);
 		}
-		
+																							//
 #ifdef time_trace
 		_time.reg.markEnd();
 		_time.irr.markStart();

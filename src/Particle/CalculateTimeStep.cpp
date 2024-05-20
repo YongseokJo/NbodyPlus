@@ -49,7 +49,7 @@ void Particle::calculateTimeStepIrr(double f[3][4],double df[3][4]) {
 	TimeLevelIrr = TimeLevelTmp;
 
 	if (TimeLevelIrr < dt_block_level+dt_level_min) {
-		std::cerr << "Timestep is too small" << std::endl;
+		//std::cerr << "Timestep is too small" << std::endl;
 		//std::cout << "In CalTimeStep, timestep is too small."\
 		 	<< " TimeStepIrr=" << TimeStepIrr	<< std::endl;
 		TimeStepIrr  = std::max(dt_block*dt_min,             TimeStepIrr);
@@ -71,6 +71,7 @@ void Particle::calculateTimeStepReg() {
 #endif
 	getBlockTimeStep(getNewTimeStep(a_reg, a_reg), TimeLevelTmp, TimeStepRegTmp);
 
+	fprintf(stderr, "in CalReg, raw time step=%.2eMyr, ", TimeStepRegTmp*EnzoTimeStep*1e10/1e6);
 #ifdef time_trace
 		_time.reg_dt1.markEnd();
 		_time.reg_dt1.getDuration();
@@ -129,6 +130,8 @@ void Particle::calculateTimeStepReg() {
 
 		_time.reg_dt3.markStart();
 #endif
+
+	fprintf(stderr, " final time step=%.2eMyr\n", TimeStepRegTmp*EnzoTimeStep*1e10/1e6);
 
 	TimeStepReg  = std::min(1.,TimeStepRegTmp);
 	TimeLevelReg = std::min(0,TimeLevelTmp);

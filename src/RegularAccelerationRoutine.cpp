@@ -53,6 +53,7 @@ bool RegularAccelerationRoutine(std::vector<Particle*> &particle)
 					particle[i]->a_irr[2][3]
 					);
 		}
+		fflush(stdout);
 		CalculateRegAccelerationOnGPU(RegIndexList, particle);
 	}
 #else

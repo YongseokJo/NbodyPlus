@@ -49,6 +49,7 @@ void CalculateAllAccelerationOnGPU(std::vector<Particle*> &particle){
 	bool neighborOK;
 	int ACnumi2;
 	int ACjid;
+	double dt = particle[0]->TimeStepReg*EnzoTimeStep;
 
 
 
@@ -102,7 +103,7 @@ void CalculateAllAccelerationOnGPU(std::vector<Particle*> &particle){
 		numGpuCal = std::min(1024,(NNB-i));
 
 		CalculateAccelerationOnDevice(&NNB, PositionSend, VelocitySend,
-					AccSend, AccDotSend, MdotSend, r2OfACSend, NumNeighborReceive, ACListReceive);
+					AccSend, AccDotSend, MdotSend, r2OfACSend, NumNeighborReceive, ACListReceive, dt);
 
 		// copy the values of regular forces and neighbors obtained in GPU to particles
 		// and also calculate the irregular forces in the process

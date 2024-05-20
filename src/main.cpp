@@ -15,12 +15,18 @@ double EnzoTimeStep;
 /*
 const double dt_min = 0.00012207031;
 const int dt_level_min = -13;
+
+
 const double dt_min = 0.00001525878;
 const int dt_level_min = -16;
+
+const double dt_min = 9.53674316e-7*0.00012207031;
+const int dt_level_min = -33;
 */
 
-const double dt_min = 9.53674316e-7; //2.9802322e-9; //9.53674316e-7;
-const int dt_level_min = -20; //-25; //-20;
+
+const double dt_min = 0.00001525878/16;
+const int dt_level_min = -20;
 
 int newNNB = 0;
 std::vector<int> RegIndexList;
@@ -64,7 +70,6 @@ int main(int argc, char *argv[]) {
 		std::cout << std::endl;
 	 ***/
 
-        fprintf(binout, "Initializing Device\n"); 	
 	fprintf(stderr, "Initializing Device!\n");
 	InitializeDevice(&irank);
 	fprintf(stderr, "Initializing Particles!\n");
@@ -93,12 +98,12 @@ int main(int argc, char *argv[]) {
 	std::cout << std::endl;
 	*/
 
-        fprintf(binout, "Starting Evolution\n"); 
+
 
 	Evolve(particle);
 
 	// Particle should be deleted at some point
-        fclose(binout);
+	fclose(binout);
 
 	return 0;
 }
