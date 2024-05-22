@@ -76,6 +76,15 @@ int main(int argc, char *argv[]) {
 	InitializeParticle(particle);
 
 
+	// just for binary particle purposes
+
+	for (Particle* ptcl: particle) {
+		ptcl->TimeStepIrr = EnzoTimeStep;
+		ptcl->TimeStepReg = EnzoTimeStep;
+		ptcl->TimeLevelIrr = 1;
+		ptcl->TimeLevelReg = 1;
+	}
+
 	//createComputationChain(particle);
 
 	/*

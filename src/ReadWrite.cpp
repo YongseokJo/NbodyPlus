@@ -139,7 +139,10 @@ bool createDirectory(const std::string& path) {
 
 int writeParticle(std::vector<Particle*> &particle, double current_time, int outputNum) {
 
-		const int width = 18;
+    Particle* ptclI;
+    Particle* ptclJ;
+
+	const int width = 18;
     std::string directoryPath = "output";
 
     // Create the directory or check if it already exists
@@ -171,7 +174,7 @@ int writeParticle(std::vector<Particle*> &particle, double current_time, int out
 		outputFile << outputTimeStep << ", "; //
 		outputFile << global_time << ""; //
 		outputFile << "\n";
-    outputFile << std::left 
+    	outputFile << std::left 
 			<< std::setw(width) << "PID"
 			<< std::setw(width) << "Mass (Msun)"
 			<< std::setw(width) << "X (pc)"
@@ -184,26 +187,57 @@ int writeParticle(std::vector<Particle*> &particle, double current_time, int out
 
     // Write particle data to the file
 		for (Particle* ptcl:particle) {
-			if (current_time == ptcl->CurrentTimeIrr)
-        outputFile  << std::left 
-										<< std::setw(width) << ptcl->PID
-										<< std::setw(width) << ptcl->Mass*mass_unit 
-                    << std::setw(width) << ptcl->Position[0]*position_unit
-                    << std::setw(width) << ptcl->Position[1]*position_unit
-                    << std::setw(width) << ptcl->Position[2]*position_unit
-                    << std::setw(width) << ptcl->Velocity[0]*velocity_unit/yr*pc/1e5
-                    << std::setw(width) << ptcl->Velocity[1]*velocity_unit/yr*pc/1e5 
-                    << std::setw(width) << ptcl->Velocity[2]*velocity_unit/yr*pc/1e5 << '\n';
-			else
-        outputFile  << std::left 
-										<< std::setw(width) << ptcl->PID
-										<< std::setw(width) << ptcl->Mass*mass_unit 
-                    << std::setw(width) << ptcl->PredPosition[0]*position_unit 
-                    << std::setw(width) << ptcl->PredPosition[1]*position_unit 
-                    << std::setw(width) << ptcl->PredPosition[2]*position_unit 
-                    << std::setw(width) << ptcl->PredVelocity[0]*velocity_unit/yr*pc/1e5 
-                    << std::setw(width) << ptcl->PredVelocity[1]*velocity_unit/yr*pc/1e5
-                    << std::setw(width) << ptcl->PredVelocity[2]*velocity_unit/yr*pc/1e5 << '\n';
+
+			if (ptcl->isCMptcl == true) {
+
+				ptcl->BinaryInfo->predictBinary(current_time);
+
+            	ptclI = ptcl->BinaryParticleI;
+            	ptclJ = ptcl->BinaryParticleJ;
+
+				outputFile  << std::left 
+				<< std::setw(width) << ptclI->PID
+				<< std::setw(width) << ptclI->Mass*mass_unit 
+				<< std::setw(width) << ptclI->PredPosition[0]*position_unit
+				<< std::setw(width) << ptclI->PredPosition[1]*position_unit
+				<< std::setw(width) << ptclI->PredPosition[2]*position_unit
+				<< std::setw(width) << ptclI->PredVelocity[0]*velocity_unit/yr*pc/1e5
+				<< std::setw(width) << ptclI->PredVelocity[1]*velocity_unit/yr*pc/1e5 
+				<< std::setw(width) << ptclI->PredVelocity[2]*velocity_unit/yr*pc/1e5 << '\n';
+
+				outputFile  << std::left 
+				<< std::setw(width) << ptclJ->PID
+				<< std::setw(width) << ptclJ->Mass*mass_unit 
+				<< std::setw(width) << ptclJ->PredPosition[0]*position_unit
+				<< std::setw(width) << ptclJ->PredPosition[1]*position_unit
+				<< std::setw(width) << ptclJ->PredPosition[2]*position_unit
+				<< std::setw(width) << ptclJ->PredVelocity[0]*velocity_unit/yr*pc/1e5
+				<< std::setw(width) << ptclJ->PredVelocity[1]*velocity_unit/yr*pc/1e5 
+				<< std::setw(width) << ptclJ->PredVelocity[2]*velocity_unit/yr*pc/1e5 << '\n';
+
+			} else {
+
+				if (current_time == ptcl->CurrentTimeIrr)
+					outputFile  << std::left 
+					<< std::setw(width) << ptcl->PID
+					<< std::setw(width) << ptcl->Mass*mass_unit 
+					<< std::setw(width) << ptcl->Position[0]*position_unit
+					<< std::setw(width) << ptcl->Position[1]*position_unit
+					<< std::setw(width) << ptcl->Position[2]*position_unit
+					<< std::setw(width) << ptcl->Velocity[0]*velocity_unit/yr*pc/1e5
+					<< std::setw(width) << ptcl->Velocity[1]*velocity_unit/yr*pc/1e5 
+					<< std::setw(width) << ptcl->Velocity[2]*velocity_unit/yr*pc/1e5 << '\n';
+				else
+					outputFile  << std::left 
+					<< std::setw(width) << ptcl->PID
+					<< std::setw(width) << ptcl->Mass*mass_unit 
+					<< std::setw(width) << ptcl->PredPosition[0]*position_unit 
+					<< std::setw(width) << ptcl->PredPosition[1]*position_unit 
+					<< std::setw(width) << ptcl->PredPosition[2]*position_unit 
+					<< std::setw(width) << ptcl->PredVelocity[0]*velocity_unit/yr*pc/1e5 
+					<< std::setw(width) << ptcl->PredVelocity[1]*velocity_unit/yr*pc/1e5
+					<< std::setw(width) << ptcl->PredVelocity[2]*velocity_unit/yr*pc/1e5 << '\n';
+			}
     }
 
     // Close the file

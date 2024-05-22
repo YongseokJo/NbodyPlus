@@ -37,6 +37,9 @@ int output(std::vector<Particle*> &particle, int outputNum) {
     // First let's create a new directory
     // only create a new directory if the directory doesn't exist
 
+    Particle* ptclI;
+    Particle* ptclJ;
+
     std::string directoryPath = "output";
 
     // Create the directory or check if it already exists
@@ -65,13 +68,35 @@ int output(std::vector<Particle*> &particle, int outputNum) {
 
     // Write particle data to the file
     for (int i = 0; i < NNB; ++i) {
-        outputFile  << particle[i]->Mass << '\t'
-                    << particle[i]->Position[0] << '\t'
-                    << particle[i]->Position[1] << '\t'
-                    << particle[i]->Position[2] << '\t'
-                    << particle[i]->Velocity[0] << '\t'
-                    << particle[i]->Velocity[1] << '\t'
-                    << particle[i]->Velocity[2] << '\n';
+        if (particle[i]->isCMptcl == true) {
+
+            ptclI = particle[i]->BinaryParticleI;
+            ptclJ = particle[i]->BinaryParticleJ;
+
+            outputFile  << ptclI->Mass << '\t'
+                        << ptclI->Position[0] << '\t'
+                        << ptclI->Position[1] << '\t'
+                        << ptclI->Position[2] << '\t'
+                        << ptclI->Velocity[0] << '\t'
+                        << ptclI->Velocity[1] << '\t'
+                        << ptclI->Velocity[2] << '\n';
+                        
+            outputFile  << ptclJ->Mass << '\t'
+                        << ptclJ->Position[0] << '\t'
+                        << ptclJ->Position[1] << '\t'
+                        << ptclJ->Position[2] << '\t'
+                        << ptclJ->Velocity[0] << '\t'
+                        << ptclJ->Velocity[1] << '\t'
+                        << ptclJ->Velocity[2] << '\n';
+        }else { 
+            outputFile  << particle[i]->Mass << '\t'
+                        << particle[i]->Position[0] << '\t'
+                        << particle[i]->Position[1] << '\t'
+                        << particle[i]->Position[2] << '\t'
+                        << particle[i]->Velocity[0] << '\t'
+                        << particle[i]->Velocity[1] << '\t'
+                        << particle[i]->Velocity[2] << '\n';
+        }
     }
 
     // Close the file

@@ -37,6 +37,8 @@ void Evolve(std::vector<Particle*> &particle) {
 	writeParticle(particle, global_time, outNum++);
 	outputTime = outputTimeStep;
 
+	AddNewBinariesToList(particle);
+
 	while (true) {
 
 		// It's time to compute regular force.
@@ -44,27 +46,30 @@ void Evolve(std::vector<Particle*> &particle) {
 		_time.reg.markStart();
 #endif
 
-		RegularAccelerationRoutine(particle); // do not update particles unless NNB=0
-		std::cout << "Adding new binaries to list ..." << std::endl;
-		AddNewBinariesToList(particle);
+		// RegularAccelerationRoutine(particle); // do not update particles unless NNB=0
+		//std::cout << "Adding new binaries to list ..." << std::endl;
+		//AddNewBinariesToList(particle);
 
-		if ((BinaryList.size()>0)&(binary_time_prev != binary_time)) {
-	                fprintf(binout, "-------------------------------------\n");                                                                        
-                	fprintf(binout, "global_time = %e \n",global_time);                                                         
-                 	fprintf(binout, "binary_time = %e \n",binary_time);
+		global_time += outputTimeStep;
+        binary_time += outputTimeStep;
 
-			std::cout << "Integrating Binaries ..." << std::endl;
-			fprintf(binout, "Evolve.cpp: integrating binaries\n");
-			fprintf(binout, "# of binaries = %d \n",int(BinaryList.size()));
-			BinaryAccelerationRoutine(binary_time, particle);
-		}
-																							//
+
+		//if ((BinaryList.size()>0)&(binary_time_prev != binary_time)) {
+	    fprintf(binout, "-------------------------------------\n");                                                                        
+        //fprintf(binout, "global_time = %e \n",global_time);                                                         
+        fprintf(binout, "binary_time = %e \n",binary_time);
+
+		std::cout << "Integrating Binaries ..." << std::endl;
+		fprintf(binout, "Evolve.cpp: integrating binaries\n");
+		fprintf(binout, "# of binaries = %d \n",int(BinaryList.size()));
+		BinaryAccelerationRoutine(binary_time, particle);
+
 #ifdef time_trace
 		_time.reg.markEnd();
 		_time.irr.markStart();
 #endif
 
-		IrregularAccelerationRoutine(particle);
+		//IrregularAccelerationRoutine(particle);
 
 #ifdef time_trace
 		_time.irr.markEnd();
@@ -73,12 +78,6 @@ void Evolve(std::vector<Particle*> &particle) {
 		_time.irr.getDuration();
 		_time.output();
 #endif
-
-		global_time = NextRegTime;
-		binary_time_prev = binary_time;
-        	binary_time = FirstComputation->CurrentTimeIrr + FirstComputation->TimeStepIrr;
-
-
 
  
 		// create output at appropriate time intervals
