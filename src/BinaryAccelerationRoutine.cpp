@@ -10,8 +10,9 @@ void AddNewBinariesToList(std::vector<Particle*> &particle) {
     // add new binaries
     //
     for (Particle *ptcl : particle) {
+	fprintf(binout, "Adding new binaries to list");
     // if the irregular time step is too short, check if it is binary
-    	if ((ptcl->TimeStepIrr<KSTime) && ( (ptcl->isBinary == false) && (ptcl->isCMptcl == false) )) {
+    	if ( (ptcl->isBinary == false) && (ptcl->isCMptcl == false) ) {
     		ptcl->isKSCandidate(ptcl->CurrentTimeIrr + ptcl->TimeStepIrr);
     		if (ptcl->isBinary) {
 		        std::cout << "AddNewBinaries ... new binary pair found" << std::endl;
@@ -51,16 +52,15 @@ void BinaryAccelerationRoutine(double next_time, std::vector<Particle*> &particl
 		fprintf(binout, "The ID of ith particle is %d \n",ptclBin->ptclCM->BinaryParticleJ->PID);
 		fflush(binout);	
 
-		//if (bincount>0) {
-		//	std::cout << "Integrating Binary ..." << std::endl;
-
-		//	fprintf(binout, "KS coordinates - u1:%e, u2:%e, u3:%e, u4:%e\n", ptclBin->u[0], ptclBin->u[1], ptclBin->u[2], ptclBin->u[3]);
-		//	fprintf(binout, "KS coordinates - udot1:%e, udot2:%e, udot3:%e, udot4:%e\n", ptclBin->udot[0], ptclBin->udot[1], ptclBin->udot[2], ptclBin->udot[3]);
-		//	fprintf(binout, "KS coordinates - udot1:%e, udot2:%e, udot3:%e, udot4:%e\n", ptclBin->udot[0], ptclBin->udot[1], ptclBin->udot[2], ptclBin->udot[3]);
-		//	fprintf(binout, "Other important KS variables - r:%e, h:%e, gamma: %e, tau:%e, step:%e, currentTime: %e \n", ptclBin->r, ptclBin->h, ptclBin->gamma, ptclBin->dTau, ptclBin->TimeStep, ptclBin->CurrentTime);
-		//	fprintf(binout, "loop number = %d \n", bincount);
-		//	fflush(binout);
-		//}
+		if (bincount>0) {
+			std::cout << "Integrating Binary ..." << std::endl;
+			fprintf(binout, "KS coordinates - u1:%e, u2:%e, u3:%e, u4:%e\n", ptclBin->u[0], ptclBin->u[1], ptclBin->u[2], ptclBin->u[3]);
+			fprintf(binout, "KS coordinates - udot1:%e, udot2:%e, udot3:%e, udot4:%e\n", ptclBin->udot[0], ptclBin->udot[1], ptclBin->udot[2], ptclBin->udot[3]);
+			fprintf(binout, "KS coordinates - udot1:%e, udot2:%e, udot3:%e, udot4:%e\n", ptclBin->udot[0], ptclBin->udot[1], ptclBin->udot[2], ptclBin->udot[3]);
+			fprintf(binout, "Other important KS variables - r:%e, h:%e, gamma: %e, tau:%e, step:%e, currentTime: %e \n", ptclBin->r, ptclBin->h, ptclBin->gamma, ptclBin->dTau, ptclBin->TimeStep, ptclBin->CurrentTime);
+			fprintf(binout, "loop number = %d \n", bincount);
+			fflush(binout);
+		}
 
 		// check for termination
 		

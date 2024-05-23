@@ -36,7 +36,7 @@ void InitializeParticle(std::vector<Particle*> &particle) {
 	}
 
 	std::cout << "Timestep initializing..." << std::endl;
-	InitializeTimeStep(particle);
+//	InitializeTimeStep(particle);
 	std::cout << "Timestep finished." << std::endl;
 	int i = 0;
 	RegIndexList.clear();

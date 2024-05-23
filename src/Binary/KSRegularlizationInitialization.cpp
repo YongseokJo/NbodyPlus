@@ -242,7 +242,7 @@ void Particle::isKSCandidate(double next_time) {
     // particle regularlized if the conditions are satisfied at a future time
 
 
-    this->predictParticleSecondOrder(next_time);
+//    this->predictParticleSecondOrder(next_time);
 
     // need to consider case when c.m particles are the cause of the small steps
     // need to be added later - CHECK
@@ -254,14 +254,14 @@ void Particle::isKSCandidate(double next_time) {
 
 	    r2 = 0.0;
         
-        if ((ptcl->TimeStepIrr) > (8*TimeStepIrr)) {
-            continue;
-        }
+        //if ((ptcl->TimeStepIrr) > (8*TimeStepIrr)) {
+        //    continue;
+        //}
 
 
         // find out what the paired particle is
 
-        ptcl->predictParticleSecondOrder(next_time);
+        //ptcl->predictParticleSecondOrder(next_time);
 
         for (int dim=0; dim<Dim; dim++) {
 				

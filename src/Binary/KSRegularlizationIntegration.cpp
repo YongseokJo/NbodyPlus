@@ -43,12 +43,12 @@ void Binary::KSIntegration(double next_time, int &calnum){
         isTerminate = true;
     }
 
-//    fprintf(binout,"KSREGULARLIZATIONINTEGRATION");
-//    fflush(binout);
-//    fprintf(binout,"total number of Calculation = %d \n", calnum);
-//    fflush(binout);
-//    fprintf(binout,"binary time after calculation is %e \n", binaryCalTime); 
-//    fflush(binout);
+    fprintf(binout,"KSREGULARLIZATIONINTEGRATION");
+    fflush(binout);
+    fprintf(binout,"total number of Calculation = %d \n", calnum);
+    fflush(binout);
+    fprintf(binout,"binary time after calculation is %e \n", binaryCalTime); 
+    fflush(binout);
 
 }
 
