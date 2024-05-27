@@ -28,6 +28,10 @@ extern Particle* FirstComputation;
 extern int NumNeighborMax;
 
 
+extern std::vector<Particle*> ComputationList;
+extern int ComputationTimeMarker;
+
+
 //extern bool debug;
 extern char* fname;
 extern double inputTime;
@@ -55,12 +59,5 @@ extern int outNum;
 // MPI variables
 //extern MPI_Comm inter_comm;
 //extern MPI_Comm nbody_comm;
-
-// Enzo to Nbody
-extern Particle* FirstEnzoParticle;
-extern double EnzoLength, EnzoMass, EnzoVelocity, EnzoTime, EnzoForce, EnzoAcceleration;
-extern double EnzoTime;
-extern double EnzoTimeStep;
-
 
 

@@ -5,7 +5,8 @@
 #include "defs.h"
 
 
-#define FixNumNeighbor 30
+//#define FixNumNeighbor 30
+#define FixNumNeighbor 1
 
 void FindNeighbor(Particle* ptcl1, std::vector<Particle*> &particle);
 void CalculateInitialAcceleration(Particle* ptcl1, std::vector<Particle*> &particle);
@@ -35,8 +36,11 @@ void InitializeParticle(std::vector<Particle*> &particle) {
 	int j = 0;
 	for (Particle* ptcl:particle) {
 		std::cout <<  j++ << ": ";
+		std::cout << std::flush;
 		FindNeighbor(ptcl, particle);
+		std::cout << std::flush;
 		CalculateInitialAcceleration(ptcl, particle);
+		std::cout << std::flush;
 	}
 
 	std::cout << "Timestep initializing..." << std::endl;

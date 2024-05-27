@@ -182,9 +182,11 @@ void Particle::calculateIrrForce() {
 	//this->updateParticle((CurrentTimeIrr+TimeStepIrr)*EnzoTimeStep, a_irr);
 	//this->updateParticle(CurrentTimeIrr, CurrentTimeIrr+TimeStepIrr, a_tot);
 	//this->correctParticleFourthOrder(CurrentTimeIrr, CurrentTimeIrr+TimeStepIrr, a_irr);
-	this->updateParticle();
-	CurrentTimeIrr += TimeStepIrr; // in sorting
-	this->calculateTimeStepIrr(a_tot, a_irr); // calculate irregular time step based on total force
+
+
+	//this->updateParticle();
+	//CurrentTimeIrr += TimeStepIrr; // in sorting
+	//this->calculateTimeStepIrr(a_tot, a_irr); // calculate irregular time step based on total force
 }
 
 
