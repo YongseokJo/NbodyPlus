@@ -118,6 +118,7 @@ class Particle
 		void calculateRegAccelerationFourthOrder(std::vector<Particle*> &particle);
 
 		void predictParticleSecondOrder(double time);
+		void predictParticleSecondOrderIrr(double time);
 		void correctParticleFourthOrder(double current_time, double next_time, double a[3][4]);
 
 		void normalizeParticle();

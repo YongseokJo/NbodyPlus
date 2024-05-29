@@ -17,6 +17,9 @@ void CalculateSingleAcceleration(Particle *ptcl1, Particle *ptcl2, double (&a)[3
  *
  */
 void CalculateRegAccelerationOnGPU(std::vector<int> IndexList, std::vector<Particle*> &particle){
+
+
+
 	// regIds are the list of positions of particles subject to regular force calculation in std::vector list particle
 
 	// variables for opening GPU
@@ -62,6 +65,19 @@ void CalculateRegAccelerationOnGPU(std::vector<int> IndexList, std::vector<Parti
 	Particle *ptcl;
 
 
+	dt       = particle[IndexList[0]]->TimeStepReg;
+	new_time = particle[IndexList[0]]->CurrentTimeReg + dt;  // next regular time
+	if (new_time != NextRegTime) {
+		if (NextRegTime == 0) {
+			fprintf(stderr, "First RegularCalculation skips! :CalculateAcceleration.C:105\n");
+		}
+		else{
+			fprintf(stderr, "Something wrong! NextRegTime does not match! :CalculateAcceleration.C:105\n");
+			fprintf(stderr, "NextRegTime=%.3e, treg[1]=%.3e\n", NextRegTime, new_time);
+		}
+		return;
+	}
+
 
 	// need to make array to send to GPU
 	// allocate memory to the temporary variables
@@ -90,18 +106,7 @@ void CalculateRegAccelerationOnGPU(std::vector<int> IndexList, std::vector<Parti
 	// set the current time to 0 and next time to 1
 	// and set the time step dt to regular time step
 
-	dt       = particle[IndexList[0]]->TimeStepReg;
-	new_time = particle[IndexList[0]]->CurrentTimeReg + dt;  // next regular time
-	if (new_time != NextRegTime) {
-		if (NextRegTime == 0) {
-			fprintf(stderr, "First RegularCalculation skips! :CalculateAcceleration.C:105\n");
-		}
-		else{
-			fprintf(stderr, "Something wrong! NextRegTime does not match! :CalculateAcceleration.C:105\n");
-			fprintf(stderr, "NextRegTime=%.3e, treg[1]=%.3e\n", NextRegTime, new_time);
-		}
-		return;
-	}
+
 
 
 	dt *= EnzoTimeStep;  // unit conversion
@@ -137,6 +142,7 @@ void CalculateRegAccelerationOnGPU(std::vector<int> IndexList, std::vector<Parti
 	// copy the data of regular particles to the arrays to be sent
 	// predicted positions and velocities should be sent
 	// but predictions are already done when sending all particles, so no need for duplicated calculation
+
 	for (int i=0; i<ListSize; i++) {
 		ptcl = particle[IndexList[i]];
 		MassSend[i]   = ptcl->Mass;

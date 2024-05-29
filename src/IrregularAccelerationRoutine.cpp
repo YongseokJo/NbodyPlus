@@ -75,6 +75,8 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 		_time.irr_force.markStart();
 #endif
 			ParticleForComputation->calculateIrrForce(); // this includes particle position
+
+
 #ifdef time_trace
 		_time.irr_force.markEnd();
 		_time.irr_force.getDuration();
@@ -91,7 +93,6 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 		_time.irr_sort.getDuration();
 #endif
 
-#define no_IRR_TEST
 #ifdef IRR_TEST
 			// create output at appropriate time intervals just for irr
 			if (outputTime <= particle[0]->CurrentTimeIrr ) {
@@ -105,9 +106,9 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 		std::cout << "Update and Sort\n" << std::flush;
 		// update particles and chain
 		for (Particle* ptcl:ComputationList) {
-			ptcl->updateParticle();	
-			ptcl->CurrentTimeIrr += ptcl->TimeStepIrr; 
-			ptcl->calculateTimeStepIrr(ptcl->a_tot, ptcl->a_irr); 
+			ptcl->updateParticle();
+			ptcl->CurrentTimeIrr += ptcl->TimeStepIrr;
+			ptcl->calculateTimeStepIrr(ptcl->a_tot, ptcl->a_irr);
 			ParticleForComputation = SortComputationChain(ptcl);
 		}
 
