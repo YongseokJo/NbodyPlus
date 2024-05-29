@@ -102,6 +102,7 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 
 		}
 
+		std::cout << "Update and Sort\n" << std::flush;
 		// update particles and chain
 		for (Particle* ptcl:ComputationList) {
 			ptcl->updateParticle();	
@@ -110,6 +111,7 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 			ParticleForComputation = SortComputationChain(ptcl);
 		}
 
+		std::cout << "CreateComputationList\n" << std::flush;
 		if (CreateComputationList(ParticleForComputation) && ComputationList.size() != 0) {
 			goto computation;
 		}

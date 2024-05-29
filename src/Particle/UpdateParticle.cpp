@@ -20,7 +20,7 @@ void Particle::predictParticleSecondOrder(double time) {
 
 	// Doubling check
 	// temporary variables for calculation
-	if (this->CurrentTimeIrr == time) {
+	if (this->CurrentTimeReg == time) {
 		for (int dim=0; dim<Dim; dim++) {
 			PredPosition[dim] = Position[dim];
 			PredVelocity[dim] = Velocity[dim];
@@ -29,12 +29,13 @@ void Particle::predictParticleSecondOrder(double time) {
 	}
 
 	double dt;
-	dt = (time - this->CurrentTimeIrr)*EnzoTimeStep;
+	//dt = (time - this->CurrentTimeIrr)*EnzoTimeStep;
+	dt = (time - this->CurrentTimeReg)*EnzoTimeStep;
 
 	// only predict the positions if necessary
 	// how about using polynomial correction here?
 	for (int dim=0; dim<Dim; dim++) {
-		PredPosition[dim] = ((a_tot[dim][1]*dt/6 + a_tot[dim][0])*dt/2 + Velocity[dim])*dt + Position[dim];
+		PredPosition[dim] = ((a_tot[dim][1]*dt/3 + a_tot[dim][0])*dt/2 + Velocity[dim])*dt + Position[dim];
 		PredVelocity[dim] =  (a_tot[dim][1]*dt/2 + a_tot[dim][0])*dt   + Velocity[dim];
 	}
 

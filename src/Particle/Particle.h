@@ -40,12 +40,9 @@ class Particle
 		int TimeLevelReg;
 		double PredPosition[Dim];
 		double PredVelocity[Dim];
-		double a_tot[Dim][HERMITE_ORDER];
 		double a_reg[Dim][HERMITE_ORDER];
 		double a_irr[Dim][HERMITE_ORDER];
-		//double ap_tot[Dim][2];
-		//double ap_reg[Dim][2];
-		//double ap_irr[Dim][2];
+		double a_tot[Dim][HERMITE_ORDER];
 		double BackgroundAcceleration[Dim];
 		Particle* NextParticleInEnzo;
 		Particle* NextParticleForComputation;
@@ -76,15 +73,15 @@ class Particle
 			isRegular       = false;
 			isStarEvolution = true;
 			for (int i=0; i<Dim; i++) {
-				Velocity[i]     = 0;
-				Position[i]     = 0;
-				PredPosition[i] = 0;
-				PredVelocity[i] = 0;
-				BackgroundAcceleration[i] = 0;
+				Velocity[i]     = 0.;
+				Position[i]     = 0.;
+				PredPosition[i] = 0.;
+				PredVelocity[i] = 0.;
+				BackgroundAcceleration[i] = 0.;
 				for (int j=0; j<HERMITE_ORDER; j++) {
-					a_tot[i][j] = 0;
-					a_reg[i][j] = 0;
-					a_irr[i][j] = 0;
+					a_tot[i][j] = 0.;
+					a_reg[i][j] = 0.;
+					a_irr[i][j] = 0.;
 				}
 			}
 			NextParticleInEnzo = nullptr;

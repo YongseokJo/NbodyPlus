@@ -9,6 +9,8 @@ void MergeSort(std::vector<int> index, std::vector<double> timesteps, int left, 
 
 
 // Function to perform argsort on a vector
+#define no_OLD
+#ifdef OLD
 bool SortComputationChain(std::vector<Particle*> ComputationChainTmp) {
 
 	std::vector<int> index{};
@@ -44,37 +46,6 @@ bool SortComputationChain(std::vector<Particle*> ComputationChainTmp) {
 
 	return true;
 }
-
-
-
-// Function to perform argsort on a vector
-bool CreateComputationList(Particle* ptcl) {
-
-	if (ptcl == nullptr) {
-		return false;
-	}
-
-	Particle *NextParticle;
-	double ThisIrrTime = 0.0;
-	double NextIrrTime = 0.0;
-
-	ComputationList.clear();
-	ComputationList.push_back(ptcl);
-	ThisIrrTime = ptcl->CurrentTimeIrr + ptcl->TimeStepIrr;
-
-	while (true) {
-		NextParticle = ptcl->NextParticleForComputation;
-		NextIrrTime = NextParticle->CurrentTimeIrr + NextParticle->TimeStepIrr;
-		if (NextIrrTime == ThisIrrTime)
-			ComputationList.push_back(NextParticle);
-		else
-			break;
-	}
-
-	return true;
-}
-
-
 
 // Function to perform argsort on a vector
 Particle *SortComputationChain(Particle* ptcl) {
@@ -133,6 +104,102 @@ Particle *SortComputationChain(Particle* ptcl) {
 
 	return NextComputation;
 }
+
+#else
+
+
+// Function to perform argsort on a vector
+bool CreateComputationList(Particle* ptcl) {
+
+	if (ptcl == nullptr) {
+		return false;
+	}
+
+	Particle *NextParticle=ptcl;
+	double ThisIrrTime = 0.0;
+	double NextIrrTime = 0.0;
+
+	ComputationList.clear();
+	ComputationList.push_back(ptcl);
+	ThisIrrTime = ptcl->CurrentTimeIrr + ptcl->TimeStepIrr;
+
+
+	while (NextParticle->NextParticleForComputation != nullptr) {
+		NextParticle = NextParticle->NextParticleForComputation;
+		NextIrrTime = NextParticle->CurrentTimeIrr + NextParticle->TimeStepIrr;
+		std::cout << "ThisIrrTime, NextIrrTime" << ThisIrrTime << "," << NextIrrTime << std::endl;
+		if (NextIrrTime == ThisIrrTime) {
+			ComputationList.push_back(NextParticle);
+			std::cout << "CreateComputationList size =" << ComputationList.size() << std::endl;
+		}
+		else
+			break;
+	}
+
+	return true;
+}
+
+// Function to perform argsort on a vector
+Particle *SortComputationChain(Particle* ptcl) {
+
+	Particle *NextParticle, *PreviousParticle, *NextComputation;
+	double NextIrrTime = 0.0, NextParticleNextIrrTime=0.0;
+
+	NextComputation = ptcl->NextParticleForComputation;
+	NextIrrTime = ptcl->CurrentTimeIrr + ptcl->TimeStepIrr;
+
+	// this paticle's reached NextRegTime.
+	if ((ptcl->NumberOfAC == 0) || (NextIrrTime > NextRegTime)) {
+		//return false;
+		ptcl->NextParticleForComputation = nullptr;
+		return NextComputation;
+	}
+
+	// if there's only one particle left
+	if (NextComputation == nullptr && NextIrrTime <= NextRegTime) {
+		return nullptr;
+	}
+
+	PreviousParticle = ptcl;
+	NextParticle     = NextComputation;
+	while (NextParticle != nullptr) {
+		NextParticleNextIrrTime = NextParticle->CurrentTimeIrr + NextParticle->TimeStepIrr;
+		if (NextIrrTime <= NextParticleNextIrrTime) {
+			// This part should be improved.
+			if (PreviousParticle == ptcl) {
+				ptcl->NextParticleForComputation = NextParticle;
+				NextComputation = ptcl;
+			}
+			else
+			{
+				PreviousParticle->NextParticleForComputation = ptcl;
+				ptcl->NextParticleForComputation = NextParticle;
+			}
+			break;
+		}
+		PreviousParticle = NextParticle;
+		NextParticle     = NextParticle->NextParticleForComputation;
+	}
+
+	if ((NextParticle == nullptr) && NextIrrTime <= NextRegTime) {
+		PreviousParticle->NextParticleForComputation = ptcl; 
+		ptcl->NextParticleForComputation = nullptr;
+	}
+
+	NextParticle = NextComputation; 
+	//std::cout << "Time:";
+	while (NextParticle != nullptr) {
+		NextParticleNextIrrTime = NextParticle->CurrentTimeIrr + NextParticle->TimeStepIrr;
+		//std::cout << NextParticleNextIrrTime << '(' << NextParticle->PID << ')' << ' ';
+		NextParticle = NextParticle->NextParticleForComputation;
+	}
+	//std::cout << std::endl;
+
+	return NextComputation;
+}
+
+#endif
+
 
 
 bool CreateComputationChain(std::vector<Particle*> &particle) {
