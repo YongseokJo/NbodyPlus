@@ -16,6 +16,21 @@ void Particle::calculateTimeStepIrr(double f[3][4],double df[3][4]) {
 
 	getBlockTimeStep(getNewTimeStep(a_tot, a_irr), TimeLevelTmp, TimeStepIrrTmp);
 
+	double areg=0., airr=0.;
+	for (int dim=0; dim<Dim; dim++) {
+		areg += a_reg[dim][0]*a_reg[dim][0];	
+		airr += a_irr[dim][0]*a_irr[dim][0];	
+	}
+
+	if (areg >= airr) {
+		if (TimeStepIrrTmp >= TimeStepReg){
+			TimeStepIrr = TimeStepReg;
+			TimeLevelIrr = TimeLevelReg;
+			return;
+		}
+	}
+
+
 	std::cout << "TimeStepIrrTmp=" << TimeStepIrrTmp << std::endl;
 
 	while ((CurrentTimeIrr+TimeStepIrrTmp > CurrentTimeReg+TimeStepReg) || (TimeStepIrrTmp >= TimeStepReg)) {
@@ -256,8 +271,11 @@ void Particle::calculateTimeStepReg() {
 	TimeLevelReg = std::max(dt_level_min, TimeLevelReg);
 
 	while (TimeStepReg < TimeStepIrr) {
-		TimeStepIrr /= 2;
-		TimeLevelIrr -= 1;
+		//TimeStepIrr /= 2;
+		//TimeLevelIrr -= 1;
+
+		TimeStepIrr = TimeStepReg;
+		TimeLevelIrr = TimeLevelReg;
 	}
 
 #ifdef time_trace

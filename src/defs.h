@@ -34,7 +34,7 @@
 
 // Physics related parameters
 #define eta 0.01 // by YS Jo subject to modifty 
-#define EPS2 1e-6 // smoothing length
+#define EPS2 1e-4 // smoothing length
 #define InitialRadiusOfAC 0.1 // 0.04 pc
 //#define InitialRadiusOfAC 1000. // 0.04 pc
 

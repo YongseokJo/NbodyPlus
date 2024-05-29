@@ -53,9 +53,15 @@ int InitializeTimeStep(std::vector<Particle*> &particle) {
 	// Irregular Time Step Correction
 	for (Particle* ptcl: particle) {
 		if (ptcl->NumberOfAC != 0) {
+			/*
 			while (ptcl->TimeStepIrr >= ptcl->TimeStepReg) {
 				ptcl->TimeStepIrr *= 0.5; 
 				ptcl->TimeLevelIrr--; 
+			}
+			*/
+			if (ptcl->TimeStepIrr >= ptcl->TimeStepReg) {
+				ptcl->TimeStepIrr = ptcl->TimeStepReg; 
+				ptcl->TimeLevelIrr = ptcl->TimeLevelReg; 
 			}
 		}
 		if (ptcl->TimeStepIrr < timestep_min) { 

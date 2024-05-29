@@ -1,6 +1,7 @@
 #include <vector>
 #include <iostream>
 #include <cmath>
+#include <algorithm>
 #include "global.h"
 #include "defs.h"
 
@@ -166,6 +167,7 @@ void FindNeighbor(Particle* ptcl1, std::vector<Particle*> &particle) {
 		ptcl1->ACList.push_back(particle[j]);
 		std::cout << j << ", ";
 	}
+	std::sort(ptcl1->ACList.begin(),ptcl1->ACList.end());
 	std::cout << std::endl;
 	//
 		//

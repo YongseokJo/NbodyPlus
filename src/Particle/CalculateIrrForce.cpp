@@ -84,6 +84,8 @@ void Particle::calculateIrrForce() {
 																													 //
 																													 // add the contribution of jth particle to acceleration of current and predicted times
 
+		if (r2 < EPS2)
+			r2 = EPS2;  // add softening length
 
 		m_r3 = ptcl->Mass/r2/sqrt(r2);
 
@@ -97,7 +99,7 @@ void Particle::calculateIrrForce() {
 
 
 	double a2, a3, da_dt2, adot_dt, dt2, dt3, dt4, dt5;
-	double dt_ex = new_time - this->CurrentTimeReg;
+	double dt_ex = (new_time - this->CurrentTimeReg)*EnzoTimeStep;
 
 	dt2 = dt*dt;
 	dt3 = dt2*dt;
@@ -147,6 +149,15 @@ void Particle::calculateIrrForce() {
 		}
 		std::cout << std::endl;
 	} // endfor dim
+		//
+	std::cout << "\nreg acceleartion\n" << std::flush;
+	for (int order=0; order<HERMITE_ORDER; order++) {
+		for (int dim=0; dim<Dim; dim++)	 {
+			std::cout << a_reg[dim][order] << " ";
+		}
+		std::cout << std::endl;
+	} // endfor dim
+	std::cout << std::endl;
 
 	std::cout << "\nirr acceleartion\n" << std::flush;
 	for (int order=0; order<HERMITE_ORDER; order++) {
