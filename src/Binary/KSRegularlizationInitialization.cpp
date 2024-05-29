@@ -25,19 +25,22 @@ void CalculateKSAcceleration(Particle* ptclI, Particle* ptclJ, Particle* ptclCM,
 
 	int j=0;
 	Particle* ptcl1;
-	double x[Dim], v[Dim], a[Dim], adot[Dim];
-	double r2 = 0;
-	double vx = 0;
-	double v2 = 0;
-	double m_r3, vx_r2, v2x2_r4,v2_r2__ax_r2__v2x2_r4, a2dot, a3dot;
-	double A,B;
+	double x[Dim], v[Dim];
+    double a21[Dim], a21dot[Dim], a1[Dim], a2[Dim], a1dot[Dim], a2dot[Dim];
+	double rdf_r2, vdf_r2, rdfdot_r2, v2, r2, r3, vr, m_r3;
+	double adot2, adot3;
+    double a,b,c;
+
+    // Initialize relevant variables
 
 	for (int dim=0; dim<Dim; dim++) {
 		x[dim]    = 0.;
 		v[dim]    = 0.;
-		a[dim]    = 0.;
-		adot[dim] = 0.;
 	}
+
+    r2 = 0;
+    vr = 0;
+    v2 = 0;
 
 	//std::cout << "nbody+: Entering CalculateInitialAcceleration  ..." << std::endl;
 
@@ -54,29 +57,27 @@ void CalculateKSAcceleration(Particle* ptclI, Particle* ptclJ, Particle* ptclCM,
             
         ptcl1->predictParticleSecondOrder(current_time);
 
-	// initialization of relevant variables 
-	
-	j = 0;
+        // initialization of relevant variables 
+        
+        j = 0;
 
-	for(int dim=0; dim<Dim; dim++) {
-		for (int order=0; order<HERMITE_ORDER; order++) {
+        for(int dim=0; dim<Dim; dim++) {
+            for (int order=0; order<HERMITE_ORDER; order++) {
+                ptcl1->a_reg[dim][order] = 0.0;
+                ptcl1->a_irr[dim][order] = 0.0;
+                ptcl1->a_tot[dim][order] = 0.0;
 
-			ptcl1->a_reg[dim][order] = 0.0;
-                        ptcl1->a_irr[dim][order] = 0.0;
-                        ptcl1->a_tot[dim][order] = 0.0;
-
-	 	        ptclCM->a_reg[dim][order] = 0.0;
-                	ptclCM->a_irr[dim][order] = 0.0;
-                	ptclCM->a_tot[dim][order] = 0.0;
-		}
-	}
-
+                ptclCM->a_reg[dim][order] = 0.0;
+                ptclCM->a_irr[dim][order] = 0.0;
+                ptclCM->a_tot[dim][order] = 0.0;
+            }
+        }
 
 
         for (Particle *ptcl2: particle) {
 
             r2 = 0;
-            vx = 0;
+            vr = 0;
             v2 = 0;
 
             if (ptcl1 == ptcl2) {
@@ -90,7 +91,7 @@ void CalculateKSAcceleration(Particle* ptclI, Particle* ptclJ, Particle* ptclCM,
                 x[dim] = ptcl1->PredPosition[dim] - ptcl2->PredPosition[dim];
                 v[dim] = ptcl1->PredVelocity[dim] - ptcl2->PredVelocity[dim];
                 r2    += x[dim]*x[dim];
-                vx    += v[dim]*x[dim];
+                vr    += v[dim]*x[dim];
                 v2    += v[dim]*v[dim];
             }
 
@@ -101,11 +102,11 @@ void CalculateKSAcceleration(Particle* ptclI, Particle* ptclJ, Particle* ptclCM,
                 // Calculate 0th and 1st derivatives of acceleration
                 if ((ptcl1->NumberOfAC==0) || (ptcl2 != ptcl1->ACList[j])) {
                     ptcl1->a_reg[dim][0] += m_r3*x[dim];
-                    ptcl1->a_reg[dim][1] += m_r3*(v[dim] - 3*x[dim]*vx/r2);
+                    ptcl1->a_reg[dim][1] += m_r3*(v[dim] - 3*x[dim]*vr/r2);
                 }
                 else {
                     ptcl1->a_irr[dim][0] += m_r3*x[dim];
-                    ptcl1->a_irr[dim][1] += m_r3*(v[dim] - 3*x[dim]*vx/r2);
+                    ptcl1->a_irr[dim][1] += m_r3*(v[dim] - 3*x[dim]*vr/r2);
                     j++;
                 }
             }
@@ -119,7 +120,7 @@ void CalculateKSAcceleration(Particle* ptclI, Particle* ptclJ, Particle* ptclCM,
             for (int order=0; order<HERMITE_ORDER; order++) {
                 ptcl1->a_tot[dim][order] = ptcl1->a_reg[dim][order] + ptcl1->a_irr[dim][order]; 
             }
-	}
+	    }
 
     }// end of loop for pair particle, ptclI and ptclJ
 
@@ -142,11 +143,25 @@ void CalculateKSAcceleration(Particle* ptclI, Particle* ptclJ, Particle* ptclCM,
     //ptcl1->predictParticleSecondOrder(current_time);
     j = 0;
 
+	for (int dim=0; dim<Dim; dim++) {
+		x[dim]      = 0.;
+		v[dim]      = 0.;
+		a21[dim]    = 0.;
+		a21dot[dim] = 0.;
+		a1[dim]     = ptcl1->a_tot[dim][0];
+		a1dot[dim]  = ptcl1->a_tot[dim][1];
+	}
+
+
     for (Particle *ptcl2: particle) {
 
-        r2 = 0;
-        vx = 0;
-        v2 = 0;
+		r2 = 0;
+		r3 = 0;
+		v2 = 0;
+		vr = 0;
+		rdf_r2 = 0;
+		vdf_r2 = 0;
+		rdfdot_r2 = 0;
 
 	    if ((ptcl2 == ptclI)||(ptcl2==ptclJ)) {
 		continue;
@@ -155,38 +170,49 @@ void CalculateKSAcceleration(Particle* ptclI, Particle* ptclJ, Particle* ptclCM,
         // if current time = the time we need, then PredPosition and PredVelocity is same as Position and Velocity
         ptcl2->predictParticleSecondOrder(current_time);
 
+		// updated the predicted positions and velocities just in case
+		// if current time = the time we need, then PredPosition and PredVelocity is same as Position and Velocity
+		for (int dim=0; dim<Dim; dim++) {
+			a2[dim]    = ptcl2->a_tot[dim][0];
+			a2dot[dim] = ptcl2->a_tot[dim][1];
+			x[dim]     = ptcl2->Position[dim] - ptcl1->Position[dim];
+			v[dim]     = ptcl2->Velocity[dim] - ptcl1->Velocity[dim];
+			r2        += x[dim]*x[dim];
+			vr        += v[dim]*x[dim];
+			v2        += v[dim]*v[dim];
+		}
+
+		r3   = r2*sqrt(r2);
+		m_r3 = ptcl2->Mass/r3;
+
+		for (int dim=0; dim<Dim; dim++) {
+			a21[dim]    = m_r3*x[dim];
+			a21dot[dim] = m_r3*(v[dim] - 3*x[dim]*vr/r2);
+			rdf_r2     += x[dim]*(a1[dim]-a2[dim])/r2;
+			vdf_r2     += v[dim]*(a1[dim]-a2[dim])/r2;
+			rdfdot_r2  += x[dim]*(a1dot[dim]-a2dot[dim])/r2;
+		}
+
+		a = vr/r2;
+		b = v2/r2 + rdf_r2 + a*a;
+		c = 3*vdf_r2 + rdfdot_r2 + a*(3*b-4*a*a);
+
         for (int dim=0; dim<Dim; dim++) {
-            x[dim] = ptclCM->PredPosition[dim] - ptcl2->PredPosition[dim];
-            v[dim] = ptclCM->PredVelocity[dim] - ptcl2->PredVelocity[dim];
-            r2    += x[dim]*x[dim];
-            vx    += v[dim]*x[dim];
-            v2    += v[dim]*v[dim];
-        }
 
-        //r2  += EPS2;
-        m_r3 = ptcl2->Mass/r2/sqrt(r2);
+			adot2 = -ptcl2->Mass*(a1[dim]-a2[dim])/r3-6*a*a21dot[dim]-3*b*a21[dim];
+			adot3 = -ptcl2->Mass*(a1dot[dim]-a2dot[dim])/r3-9*a*adot2-9*b*a21dot[dim]-3*c*a21[dim];
 
-        vx_r2   = vx/r2;
-        v2x2_r4 = vx_r2*vx_r2;
-        v2_r2__ax_r2__v2x2_r4 = (v2+x[0]*a[0]+x[1]*a[1]+x[2]*a[2])/r2+v2x2_r4;
-        A = (9*(v[0]*a[0]+v[1]*a[1]+v[2]*a[2]) + 3*(x[0]*adot[0]+x[1]*adot[1]+x[2]*adot[2]))/r2\
-                +3*vx_r2*(3*v2_r2__ax_r2__v2x2_r4 - 4*v2x2_r4);
-
-        for (int dim=0; dim<Dim; dim++) {
-            B     = v[dim] - 3*x[dim]*vx_r2;
-            a2dot = (v[dim] - 6*B*vx_r2                 - 3*v2_r2__ax_r2__v2x2_r4*x[dim])*m_r3;
-            a3dot = (a[dim] - 9*B*v2_r2__ax_r2__v2x2_r4 - A*x[dim]                      )*m_r3\
-                            - 9*vx_r2*a2dot;
             if ((ptclCM->NumberOfAC==0) || (ptcl2 != ptcl1->ACList[j])) {
-                ptclCM->a_reg[dim][2] += a2dot;
-                ptclCM->a_reg[dim][3] += a3dot;
+                ptclCM->a_reg[dim][2] += adot2;
+                ptclCM->a_reg[dim][3] += adot3;
             }
             else {
-                ptclCM->a_irr[dim][2] += a2dot;
-                ptclCM->a_irr[dim][3] += a3dot;
-                j++;
+                ptclCM->a_irr[dim][2] += adot2;
+                ptclCM->a_irr[dim][3] += adot3;
             }
         } // endfor dim
+        
+        j++;
 
     } // end of loop for ptcl2 (full particle)
 
