@@ -116,25 +116,30 @@ bool CreateComputationList(Particle* ptcl) {
 	}
 
 	Particle *NextParticle=ptcl;
-	double ThisIrrTime = 0.0;
-	double NextIrrTime = 0.0;
+	ULL ThisIrrBlock = 0;
+	ULL NextIrrBlock = 0;
 
 	ComputationList.clear();
 	ComputationList.push_back(ptcl);
-	ThisIrrTime = ptcl->CurrentTimeIrr + ptcl->TimeStepIrr;
+	ThisIrrBlock = ptcl->CurrentBlockIrr + ptcl->TimeBlockIrr;
 
 
 	while (NextParticle->NextParticleForComputation != nullptr) {
 		NextParticle = NextParticle->NextParticleForComputation;
-		NextIrrTime = NextParticle->CurrentTimeIrr + NextParticle->TimeStepIrr;
-		std::cout << "ThisIrrTime, NextIrrTime" << ThisIrrTime << "," << NextIrrTime << std::endl;
-		if (NextIrrTime == ThisIrrTime) {
+		NextIrrBlock = NextParticle->CurrentBlockIrr + NextParticle->TimeBlockIrr;
+		std::cout << "ThisIrrTime =" << ThisIrrBlock << ", NextIrrTime=" << NextIrrBlock << \
+			", dt="<< ThisIrrBlock-NextIrrBlock << std::endl;
+		// new scheme might be needed i can use integer
+		if (NextIrrBlock == ThisIrrBlock) {
 			ComputationList.push_back(NextParticle);
-			std::cout << "CreateComputationList size =" << ComputationList.size() << std::endl;
+			//std::cout << "CreateComputationList size =" << ComputationList.size() << std::endl;
 		}
 		else
 			break;
 	}
+	if (NextParticle->NextParticleForComputation == nullptr)
+		std::cout << "NextParticle is null." << std::endl;
+
 
 	return true;
 }
@@ -143,28 +148,31 @@ bool CreateComputationList(Particle* ptcl) {
 Particle *SortComputationChain(Particle* ptcl) {
 
 	Particle *NextParticle, *PreviousParticle, *NextComputation;
-	double NextIrrTime = 0.0, NextParticleNextIrrTime=0.0;
+	ULL NextIrrBlock= 0, NextParticleNextIrrBlock =0;
 
 	NextComputation = ptcl->NextParticleForComputation;
-	NextIrrTime = ptcl->CurrentTimeIrr + ptcl->TimeStepIrr;
+	NextIrrBlock = ptcl->CurrentBlockIrr + ptcl->TimeBlockIrr;
 
 	// this paticle's reached NextRegTime.
-	if ((ptcl->NumberOfAC == 0) || (NextIrrTime > NextRegTime)) {
+	
+	std::cout << "in sort, ("<< ptcl->PID<<") NextIrrBlock=" << NextIrrBlock << std::endl;
+	if ((ptcl->NumberOfAC == 0) || (NextIrrBlock  > NextRegTimeBlock)) {
 		//return false;
 		ptcl->NextParticleForComputation = nullptr;
 		return NextComputation;
 	}
 
 	// if there's only one particle left
-	if (NextComputation == nullptr && NextIrrTime <= NextRegTime) {
-		return nullptr;
+	if (NextComputation == nullptr && NextIrrBlock <= NextRegTimeBlock) {
+		//return nullptr;
+		return ptcl;
 	}
 
 	PreviousParticle = ptcl;
 	NextParticle     = NextComputation;
 	while (NextParticle != nullptr) {
-		NextParticleNextIrrTime = NextParticle->CurrentTimeIrr + NextParticle->TimeStepIrr;
-		if (NextIrrTime <= NextParticleNextIrrTime) {
+		NextParticleNextIrrBlock = NextParticle->CurrentBlockIrr + NextParticle->TimeBlockIrr;
+		if (NextIrrBlock <= NextParticleNextIrrBlock) {
 			// This part should be improved.
 			if (PreviousParticle == ptcl) {
 				ptcl->NextParticleForComputation = NextParticle;
@@ -181,15 +189,16 @@ Particle *SortComputationChain(Particle* ptcl) {
 		NextParticle     = NextParticle->NextParticleForComputation;
 	}
 
-	if ((NextParticle == nullptr) && NextIrrTime <= NextRegTime) {
+	if ((NextParticle == nullptr) && NextIrrBlock <= NextRegTimeBlock) {
 		PreviousParticle->NextParticleForComputation = ptcl; 
 		ptcl->NextParticleForComputation = nullptr;
 	}
 
 	NextParticle = NextComputation; 
 	//std::cout << "Time:";
+
 	while (NextParticle != nullptr) {
-		NextParticleNextIrrTime = NextParticle->CurrentTimeIrr + NextParticle->TimeStepIrr;
+		NextParticleNextIrrBlock = NextParticle->CurrentBlockIrr + NextParticle->TimeBlockIrr;
 		//std::cout << NextParticleNextIrrTime << '(' << NextParticle->PID << ')' << ' ';
 		NextParticle = NextParticle->NextParticleForComputation;
 	}
@@ -207,18 +216,18 @@ bool CreateComputationChain(std::vector<Particle*> &particle) {
 	std::vector<int> index{};
 	std::vector<int> sorted_index{};
 	std::vector<double> time{};
-	double NextIrrTime = 0.0;
+	ULL NextIrrBlock = 0;
 
 	int i=0;
 	//std::cout << "NextIrrTime:\n" << std::endl;
 	for (Particle *ptcl : particle)
 	{
 		// advance irregular time without irregular routine
-		NextIrrTime = ptcl->CurrentTimeIrr + ptcl->TimeStepIrr;
+		NextIrrBlock = ptcl->CurrentBlockIrr + ptcl->TimeBlockIrr;
 		//std::cout << NextIrrTime << " ";
-		if ((ptcl->NumberOfAC != 0) && (NextIrrTime <= NextRegTime)) {
+		if ((ptcl->NumberOfAC != 0) && (NextIrrBlock <= NextRegTimeBlock)) {
 			index.push_back(i);
-			time.push_back(NextIrrTime);
+			time.push_back(NextIrrBlock);
 		}
 		i++;
 	}
@@ -283,7 +292,7 @@ bool CreateComputationChain(std::vector<Particle*> &particle) {
 	int ind;
 	for (int i=index.size()-1; i>=0; i--) {
 		ind = index[sorted_index[i]];
-		NextIrrTime = particle[ind]->CurrentTimeIrr + particle[ind]->TimeStepIrr;
+		NextIrrBlock = particle[ind]->CurrentBlockIrr + particle[ind]->TimeBlockIrr;
 		//std::cout << NextIrrTime << "(" << particle[ind]->PID << ")" <<  " ";
 		particle[ind]->NextParticleForComputation = NextParticle;
 		NextParticle = particle[ind];

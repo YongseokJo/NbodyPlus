@@ -18,8 +18,8 @@
 #define THREAD 1 // 2048 for A100
 #define BLOCK 2048    // 32 for A100 
 
-#define FixNumNeighbor 30
-//#define FixNumNeighbor 1
+//#define FixNumNeighbor 30
+#define FixNumNeighbor 50
 
 #define ESP2 1e-4
 #define new_size(A) ((A > 1024) ? int(pow(2,ceil(log(A)/log(2.0)))) : 1024)

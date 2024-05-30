@@ -34,8 +34,12 @@ class Particle
 		double PredTimeReg;
 		double CurrentTimeIrr;
 		double CurrentTimeReg;
+		ULL CurrentBlockIrr;
+		ULL CurrentBlockReg;
 		double TimeStepIrr;
 		double TimeStepReg;
+		ULL TimeBlockIrr;
+		ULL TimeBlockReg;
 		int TimeLevelIrr;
 		int TimeLevelReg;
 		double PredPosition[Dim];
@@ -63,12 +67,16 @@ class Particle
 			ParticleType    = -9999;
 			CurrentTimeIrr  = 0.; // consistent with actual current time
 			CurrentTimeReg  = 0.;
+			CurrentBlockIrr = 0; // consistent with actual current time
+			CurrentBlockReg = 0;
 			PredTimeIrr     = 0;
 			PredTimeReg     = 0;
 			TimeStepIrr     = 0;
 			TimeStepReg     = 0;
-			TimeLevelIrr    = 9999;
-			TimeLevelReg    = 9999;
+			TimeLevelIrr    = 0;
+			TimeLevelReg    = 0;
+			TimeBlockIrr    = 0;
+			TimeBlockReg    = 0;
 			isEvolve        = 0;
 			isRegular       = false;
 			isStarEvolution = true;

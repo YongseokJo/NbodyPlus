@@ -46,11 +46,12 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 		//while (ParticleForComputation != nullptr) {
 		for (Particle* ParticleForComputation:ComputationList) {
 
-			fprintf(stdout, "PID=%d, NextRegTime= %.2e Myr, NextIrrTime = %.2e Myr\n",
-					ParticleForComputation->getPID(), NextRegTime*EnzoTimeStep*1e10/1e6, (ParticleForComputation->CurrentTimeIrr + ParticleForComputation->TimeStepIrr)*EnzoTimeStep*1e10/1e6);
-			fprintf(stdout, "CurrentTimeIrr = %.2e Myr, TimeStepIrr = %.2e Myr, CurrentTimeReg=%.2e Myr, TimeStepReg=%.2e Myr\n",
-					ParticleForComputation->CurrentTimeIrr*EnzoTimeStep*1e10/1e6, ParticleForComputation->TimeStepIrr*EnzoTimeStep*1e10/1e6, ParticleForComputation->CurrentTimeReg*EnzoTimeStep*1e10/1e6, ParticleForComputation->TimeStepReg*EnzoTimeStep*1e10/1e6);
+			fprintf(stdout, "PID=%d, NextRegTimeBlock= %llu, NextIrrBlock = %llu (%.2e Myr)\n",
+					ParticleForComputation->getPID(), NextRegTimeBlock, ParticleForComputation->CurrentBlockIrr+ParticleForComputation->TimeBlockIrr, (ParticleForComputation->CurrentTimeIrr + ParticleForComputation->TimeStepIrr)*EnzoTimeStep*1e10/1e6);
+			fprintf(stdout, "CurrentTimeIrr = %.2e Myr, TimeStepIrr = %.2e Myr, CurrentBlockReg=%llu, TimeBlockReg=%llu\n",
+					ParticleForComputation->CurrentTimeIrr*EnzoTimeStep*1e10/1e6, ParticleForComputation->TimeStepIrr*EnzoTimeStep*1e10/1e6, ParticleForComputation->CurrentBlockReg, ParticleForComputation->TimeBlockReg);
 
+			/*
 
 			fprintf(stdout, "a_tot = (%.2e,%.2e,%.2e), a_irr = (%.2e,%.2e,%.2e), a1_irr = (%.2e,%.2e,%.2e), a2_irr = (%.2e,%.2e,%.2e), a3_irr = (%.2e,%.2e,%.2e), n_n=%d\n",
 					ParticleForComputation->a_tot[0][0],
@@ -69,6 +70,7 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 					ParticleForComputation->a_irr[1][3],
 					ParticleForComputation->a_irr[2][3],
 					ParticleForComputation->NumberOfAC);
+					*/
 					
 
 #ifdef time_trace
@@ -82,17 +84,13 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 		_time.irr_force.getDuration();
 #endif
 
-#ifdef time_trace
-		_time.irr_sort.markStart();
-#endif
+
 			//ParticleForComputation = ParticleForComputation->NextParticleForComputation;// this includes time evolution.
 			//ParticleForComputation = SortComputationChain(ParticleForComputation);
 
-#ifdef time_trace
-		_time.irr_sort.markEnd();
-		_time.irr_sort.getDuration();
-#endif
 
+
+#define no_IRR_TEST
 #ifdef IRR_TEST
 			// create output at appropriate time intervals just for irr
 			if (outputTime <= particle[0]->CurrentTimeIrr ) {
@@ -107,16 +105,22 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 		// update particles and chain
 		for (Particle* ptcl:ComputationList) {
 			ptcl->updateParticle();
-			ptcl->CurrentTimeIrr += ptcl->TimeStepIrr;
+			ptcl->CurrentBlockIrr += ptcl->TimeBlockIrr;
+			ptcl->CurrentTimeIrr   = ptcl->CurrentBlockIrr*time_step;
 			ptcl->calculateTimeStepIrr(ptcl->a_tot, ptcl->a_irr);
 			ParticleForComputation = SortComputationChain(ptcl);
 		}
-
+#ifdef time_trace
+		_time.irr_sort.markStart();
+#endif
 		std::cout << "CreateComputationList\n" << std::flush;
 		if (CreateComputationList(ParticleForComputation) && ComputationList.size() != 0) {
 			goto computation;
 		}
-
+#ifdef time_trace
+		_time.irr_sort.markEnd();
+		_time.irr_sort.getDuration();
+#endif
     std::cout << "Finishing irregular force ...\n" << std::endl;
 
 

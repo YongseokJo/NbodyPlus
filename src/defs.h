@@ -37,6 +37,7 @@
 #define EPS2 1e-4 // smoothing length
 #define InitialRadiusOfAC 0.1 // 0.04 pc
 //#define InitialRadiusOfAC 1000. // 0.04 pc
+#define MIN_LEVEL_BUFFER 5
 
 // Physical constants
 #define G_cgs 6.67430e-8
@@ -57,6 +58,8 @@
 #define mass_unit 0.0001424198  // Msun in the unit that G = 1. 
 
 #define time_trace
+
+typedef unsigned long long ULL;
 
 
 

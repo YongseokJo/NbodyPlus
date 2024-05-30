@@ -142,6 +142,7 @@ void Particle::calculateIrrForce() {
 		a_tot[dim][3] = a_reg[dim][3] + a_irr[dim][3];
 	}
 
+	/*
 	std::cout << "\ntotal acceleartion\n" << std::flush;
 	for (int order=0; order<HERMITE_ORDER; order++) {
 		for (int dim=0; dim<Dim; dim++)	 {
@@ -168,6 +169,7 @@ void Particle::calculateIrrForce() {
 	} // endfor dim
 	std::cout << std::endl;
 
+	*/
 	// *position_unit/time_unit/time_unit
 
 		 //std::cout << "\nIrregular Calculation\n" << std::flush;

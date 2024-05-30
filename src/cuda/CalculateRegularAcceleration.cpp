@@ -55,8 +55,7 @@ void CalculateRegAccelerationOnGPU(std::vector<int> IndexList, std::vector<Parti
 
 	double a_tmp[Dim]{0}, adot_tmp[Dim]{0};
 	double da, dadot;
-	double new_time;  // 0 is current time and 1 is next time
-	double a2, a3, da_dt2, adot_dt, dt, dt2, dt3, dt4, dt5;
+	double a2, a3, da_dt2, adot_dt, dt2, dt3, dt4, dt5;
 
 
 	double DFR, FRD, SUM, AT3, BT2;
@@ -65,15 +64,17 @@ void CalculateRegAccelerationOnGPU(std::vector<int> IndexList, std::vector<Parti
 	Particle *ptcl;
 
 
-	dt       = particle[IndexList[0]]->TimeStepReg;
-	new_time = particle[IndexList[0]]->CurrentTimeReg + dt;  // next regular time
-	if (new_time != NextRegTime) {
-		if (NextRegTime == 0) {
+	double dt       = particle[IndexList[0]]->TimeStepReg;
+	double new_time = particle[IndexList[0]]->CurrentTimeReg + dt;  // next regular time
+	ULL new_block = particle[IndexList[0]]->CurrentBlockReg + particle[IndexList[0]]->TimeBlockReg;  // next regular time
+	
+	if (new_block != NextRegTimeBlock) {
+		if (NextRegTimeBlock == 0) {
 			fprintf(stderr, "First RegularCalculation skips! :CalculateAcceleration.C:105\n");
 		}
 		else{
 			fprintf(stderr, "Something wrong! NextRegTime does not match! :CalculateAcceleration.C:105\n");
-			fprintf(stderr, "NextRegTime=%.3e, treg[1]=%.3e\n", NextRegTime, new_time);
+			fprintf(stderr, "NextRegTime=%llu, treg[1]=%llu\n", NextRegTimeBlock, new_block);
 		}
 		return;
 	}
@@ -263,10 +264,13 @@ void CalculateRegAccelerationOnGPU(std::vector<int> IndexList, std::vector<Parti
 	for (int i=0; i<ListSize; i++) {
 		ptcl = particle[IndexList[i]];
 		ptcl->updateParticle();
-		ptcl->CurrentTimeReg = NextRegTime;
+		ptcl->CurrentBlockReg = NextRegTimeBlock;
+		ptcl->CurrentTimeReg = NextRegTimeBlock*time_step;
 		ptcl->calculateTimeStepReg();
-		if (ptcl->NumberOfAC == 0)
-			ptcl->CurrentTimeIrr = NextRegTime;
+		if (ptcl->NumberOfAC == 0) {
+			ptcl->CurrentBlockIrr = NextRegTimeBlock;
+			ptcl->CurrentTimeIrr = NextRegTimeBlock*time_step;
+		}
 	}
 	//std::cout <<  "Calculation On Device Done ..." << std::endl;
 

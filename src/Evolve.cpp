@@ -12,7 +12,7 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle);
 
 bool IsOutput         = false;
 double outputTime = 0;
-double NextRegTime    = 0.;
+ULL NextRegTimeBlock    = 0;
 std::vector<Particle*> ComputationChain{};
 TimeTracer _time;
 int outNum = 0;
@@ -57,7 +57,7 @@ void Evolve(std::vector<Particle*> &particle) {
 		_time.output();
 #endif
 
-		global_time = NextRegTime;
+		global_time = NextRegTimeBlock*time_step;
 		// create output at appropriate time intervals
 		if (outputTime <= global_time ) {
 			writeParticle(particle, global_time, outNum++);

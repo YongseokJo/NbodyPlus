@@ -6,8 +6,8 @@
 #include "defs.h"
 
 
-#define FixNumNeighbor 30
-//#define FixNumNeighbor 1
+//#define FixNumNeighbor 30
+#define FixNumNeighbor 50
 
 void FindNeighbor(Particle* ptcl1, std::vector<Particle*> &particle);
 void CalculateAcceleration01(Particle* ptcl1, std::vector<Particle*> &particle);
@@ -37,10 +37,9 @@ void InitializeParticle(std::vector<Particle*> &particle) {
 	// loop over particles to initialize their values
 	int j = 0;
 	for (Particle* ptcl:particle) {
-		std::cout <<  j++ << ": ";
-		std::cout << std::flush;
+		//std::cout <<  j << ": ";
+		//std::cout << std::flush;
 		FindNeighbor(ptcl, particle);
-		std::cout << std::flush;
 		CalculateAcceleration01(ptcl, particle);
 	}
 	for (Particle* ptcl:particle) {
@@ -163,12 +162,15 @@ void FindNeighbor(Particle* ptcl1, std::vector<Particle*> &particle) {
 		}
 		i++;
 	} // endfor
+
+
 	for (int j:nb_index) {
 		ptcl1->ACList.push_back(particle[j]);
-		std::cout << j << ", ";
+		//std::cout << j << ", ";
 	}
+	//std::cout << std::endl;
+
 	std::sort(ptcl1->ACList.begin(),ptcl1->ACList.end());
-	std::cout << std::endl;
 	//
 		//
 	//std::cout << "# of Neighbors = " << ptcl1->NumberOfAC << std::endl;
@@ -380,6 +382,7 @@ void CalculateAcceleration23(Particle* ptcl1, std::vector<Particle*> &particle) 
 
 
 
+	/*
 	std::cout << "NBODY+: total acceleartion = " << std::flush;
 	for (int order=0; order<HERMITE_ORDER; order++) {
 		std::cout << "a" << order << "(";
@@ -409,6 +412,7 @@ void CalculateAcceleration23(Particle* ptcl1, std::vector<Particle*> &particle) 
 		std::cout << "), ";
 	} // endfor dim
 	std::cout << std::endl;
+	*/
 }
 
 
