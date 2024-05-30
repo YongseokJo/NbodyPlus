@@ -9,7 +9,7 @@
 void generate_Matrix(double a[3], double (&A)[3][4]);
 void direct_sum(double *x, double *v, double r2, double vx,
                 double mass, double mdot, double (&a)[3], double (&adot)[3]);
-void getBlockTimeStep(double dt, int& TimeLevel, double &TimeStep);
+//void getBlockTimeStep(double dt, int& TimeLevel, double &TimeStep);
 
 
 // refer to ksint.f
@@ -505,8 +505,6 @@ void Binary::IntegrateBinary(double next_time) {
     CurrentTime = next_time;
     CurrentTau += dtau;
 
-
-
     dtau_temp = std::min(r/ptclCM->Mass,0.5*abs(h));
     dtau = 0.8*eta*sqrt(dtau_temp)/pow((1 + 1000.0 * gamma), 1.0/3.0);
 
@@ -531,9 +529,9 @@ void Binary::IntegrateBinary(double next_time) {
 
     // also, convert the time step into block steps. 
 
-    getBlockTimeStep(TimeStep, TimeLevelTmp, TimeStepTmp);
+//    getBlockTimeStep(TimeStep, TimeLevelTmp, TimeStepTmp);
 
-    TimeLevel = TimeLevelTmp;
+//    TimeLevel = TimeLevelTmp;
     dTau = dtau;
 
 

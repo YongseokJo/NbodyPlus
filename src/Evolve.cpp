@@ -16,7 +16,7 @@ bool IsOutput         = false;
 double binary_time = 0;
 double binary_time_prev = 0;
 double outputTime = 0;
-double NextRegTime    = 0.;
+ULL NextRegTimeBlock    = 0;
 std::vector<Particle*> ComputationChain{};
 TimeTracer _time;
 int outNum = 0;
@@ -58,7 +58,7 @@ void Evolve(std::vector<Particle*> &particle) {
 			fprintf(binout, "# of binaries = %d \n",int(BinaryList.size()));
 			BinaryAccelerationRoutine(binary_time, particle);
 		}
-																							//
+																						//
 #ifdef time_trace
 		_time.reg.markEnd();
 		_time.irr.markStart();
@@ -74,13 +74,10 @@ void Evolve(std::vector<Particle*> &particle) {
 		_time.output();
 #endif
 
-		global_time = NextRegTime;
+		global_time = NextRegTimeBlock*time_step;
 		binary_time_prev = binary_time;
-        	binary_time = FirstComputation->CurrentTimeIrr + FirstComputation->TimeStepIrr;
+		binary_time = FirstComputation->CurrentTimeIrr + FirstComputation->TimeStepIrr;
 
-
-
- 
 		// create output at appropriate time intervals
 		if (outputTime <= global_time ) {
 			writeParticle(particle, global_time, outNum++);

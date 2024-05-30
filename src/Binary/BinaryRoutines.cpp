@@ -5,7 +5,7 @@
 #include <cmath>
 #include <algorithm>
 
-void getBlockTimeStep(double dt, int& TimeLevel, double &TimeStep);
+//void getBlockTimeStep(double dt, int& TimeLevel, double &TimeStep);
 void direct_sum(double *x, double *v, double r2, double vx,
                 double mass, double mdot, double (&a)[3], double (&adot)[3]);
 
@@ -366,9 +366,9 @@ void Binary::InitializeBinary(double current_time) {
 
     // also, convert the time step into block steps. 
 
-    getBlockTimeStep(TimeStep, TimeLevelTmp, TimeStepTmp);
+//    getBlockTimeStep(TimeStep, TimeLevelTmp, TimeStepTmp);
 
-    TimeLevel = TimeLevelTmp;
+ //   TimeLevel = TimeLevelTmp;
     dTau = dtau;
 
     // save the initial seperation

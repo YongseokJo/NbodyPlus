@@ -11,23 +11,25 @@ extern TimeTracer _time;
 
 
 
-
-
 extern std::vector<int> LevelList;
 extern int NNB;
 extern int newNNB;
-extern double global_time;
-extern double NextRegTime;
-extern const double dt_min;
-extern const int dt_level_min;
-extern double dt_block;  // this stores the minimum time step
-extern int dt_block_level;
-extern std::vector<Particle*> ComputationChain;
-extern std::vector<int> RegIndexList; // how about changing this to particle list
-extern std::vector<Binary*> BinaryList; // List of binaries to calculate
-extern Particle* FirstComputation;
 extern int NumNeighborMax;
 
+// Time
+extern double global_time;
+extern ULL NextRegTimeBlock;
+extern int time_block;
+extern double time_step;
+extern ULL block_max;
+
+// ComputationChain
+extern std::vector<Particle*> ComputationChain;
+extern Particle* FirstComputation;
+extern std::vector<Particle*> ComputationList;
+extern int ComputationTimeMarker;
+extern std::vector<int> RegIndexList; // how about changing this to particle list
+extern std::vector<Binary*> BinaryList; // List of binaries to calculate
 
 //extern bool debug;
 extern char* fname;
@@ -57,14 +59,6 @@ extern int outNum;
 //extern MPI_Comm inter_comm;
 //extern MPI_Comm nbody_comm;
 
-// Enzo to Nbody
-extern Particle* FirstEnzoParticle;
-extern double EnzoLength, EnzoMass, EnzoVelocity, EnzoTime, EnzoForce, EnzoAcceleration;
-extern double EnzoTime;
-extern double EnzoTimeStep;
+// for outputs for binary debugging
 
-
-// for outputs for binary debugging                                                                        
-
- extern FILE* binout;
-
+extern FILE* binout;

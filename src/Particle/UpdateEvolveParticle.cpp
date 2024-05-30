@@ -3,6 +3,7 @@
 
 void Particle::updateEvolveParticle(std::vector<Particle*> &list) {
 
+	/*
 	double next_time;
 
 	next_time = CurrentTimeIrr + TimeStepIrr;
@@ -21,6 +22,7 @@ void Particle::updateEvolveParticle(std::vector<Particle*> &list) {
 			i++;
 		}
 	}
+	*/
 }
 
 
