@@ -76,11 +76,11 @@ void Binary::predictBinary(double next_time) {
 
     // time interval for prediction
 
-    dtCM = next_time - ptclCM->CurrentTimeIrr;
+    dtCM = (next_time - ptclCM->CurrentTimeIrr)*EnzoTimeStep;
     dt2CM = dtCM*dtCM;
     dt3CM = dt2CM*dtCM;
 
-    dt = next_time - CurrentTime;
+    dt = (next_time - CurrentTime)*EnzoTimeStep;
     dt2 = dt*dt;
     dt3 = dt2*dt;
 
@@ -524,8 +524,8 @@ void Binary::IntegrateBinary(double next_time) {
     // obtain the physical interval corresponding to dtau using stumpff coefficients
     // note that r = t', r'=t'' and so on...
 
-    TimeStep = tdot*dtau + t2dot*dtau2/2 + t3dot*dtau3/6 + t4dot*dtau4/24 \
-             + t5dot*cn_4z[5]*dtau5/120 + t6dot*cn_4z[6]*dtau6/720;
+    TimeStep = (tdot*dtau + t2dot*dtau2/2 + t3dot*dtau3/6 + t4dot*dtau4/24 \
+             + t5dot*cn_4z[5]*dtau5/120 + t6dot*cn_4z[6]*dtau6/720)/EnzoTimeStep;
 
     // also, convert the time step into block steps. 
 

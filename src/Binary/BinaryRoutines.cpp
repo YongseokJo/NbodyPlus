@@ -361,8 +361,8 @@ void Binary::InitializeBinary(double current_time) {
     // obtain the physical interval corresponding to dtau using stumpff coefficients
     // note that r = t', r'=t'' and so on...
 
-    TimeStep = tdot*dtau + t2dot*dtau2/2 + t3dot*dtau3/6 + t4dot*dtau4/24 \
-             + t5dot*cn_4z[5]*dtau5/120 + t6dot*cn_4z[6]*dtau6/720;
+    TimeStep = (tdot*dtau + t2dot*dtau2/2 + t3dot*dtau3/6 + t4dot*dtau4/24 \
+             + t5dot*cn_4z[5]*dtau5/120 + t6dot*cn_4z[6]*dtau6/720)/EnzoTimeStep;
 
     // also, convert the time step into block steps. 
 

@@ -9,7 +9,7 @@
 void generate_Matrix(double a[3], double (&A)[3][4]);
 void ReInitializeKSParticle(Particle* KSParticle, std::vector<Particle*> &particle);
 
-void KSTermination(Particle* ptclCM, std::vector<Particle*> &particle, double current_time){
+void KSTermination(Particle* ptclCM, std::vector<Particle*> &particle, double current_time, ULL current_block){
 
     double R[Dim], Rdot[Dim];
     double Rinv;
@@ -102,9 +102,15 @@ void KSTermination(Particle* ptclCM, std::vector<Particle*> &particle, double cu
 
     ptclI->CurrentTimeIrr = current_time; //ptclCM->CurrentTimeIrr;
     ptclI->CurrentTimeReg = current_time; //ptclCM->CurrentTimeReg;
+    ptclI->CurrentBlockIrr = current_block;
+    ptclI->CurrentBlockReg = current_block;
+
 
     ptclJ->CurrentTimeIrr = current_time; //ptclCM->CurrentTimeIrr;
     ptclJ->CurrentTimeReg = current_time; //ptclCM->CurrentTimeReg;
+    ptclJ->CurrentBlockIrr = current_block;
+    ptclJ->CurrentBlockReg = current_block;
+
 
     ptclI->ACList.clear();
     ptclI->NumberOfAC = 0;

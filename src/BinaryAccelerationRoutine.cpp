@@ -3,7 +3,7 @@
 #include "defs.h"
 
 void NewKSInitialization(Particle* ptclI, std::vector<Particle*> &particle, double current_time);
-void KSTermination(Particle* ptclCM, std::vector<Particle*> &particle, double current_time);
+void KSTermination(Particle* ptclCM, std::vector<Particle*> &particle, double current_time, ULL current_block);
 
 void AddNewBinariesToList(std::vector<Particle*> &particle) {
 
@@ -29,7 +29,7 @@ void AddNewBinariesToList(std::vector<Particle*> &particle) {
 
 }
 
-void BinaryAccelerationRoutine(double next_time, std::vector<Particle*> &particle) {
+void BinaryAccelerationRoutine(double next_time, ULL next_block, std::vector<Particle*> &particle) {
 
 	int count;
         int bincount = 0;
@@ -67,7 +67,7 @@ void BinaryAccelerationRoutine(double next_time, std::vector<Particle*> &particl
 		if ((ptclBin->r>(ptclBin->r0*2.0)) || (ptclBin->TimeStep > 2.0*KSTime)) {
 	        	std::cout << "Terminating Binary ..." << std::endl;
 			fprintf(binout, "Terminating Binary at time : %e \n", next_time);
-			KSTermination(ptclBin->ptclCM, particle, next_time);
+			KSTermination(ptclBin->ptclCM, particle, next_time, next_block);
 		}
 
     }

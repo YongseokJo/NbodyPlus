@@ -26,10 +26,10 @@ void CalculateKSAcceleration(Particle* ptclI, Particle* ptclJ, Particle* ptclCM,
 	int j=0;
 	Particle* ptcl1;
 	double x[Dim], v[Dim];
-    double a21[Dim], a21dot[Dim], a1[Dim], a2[Dim], a1dot[Dim], a2dot[Dim];
+	double a21[Dim], a21dot[Dim], a1[Dim], a2[Dim], a1dot[Dim], a2dot[Dim];
 	double rdf_r2, vdf_r2, rdfdot_r2, v2, r2, r3, vr, m_r3;
 	double adot2, adot3;
-    double a,b,c;
+	double a,b,c;
 
     // Initialize relevant variables
 
@@ -38,9 +38,9 @@ void CalculateKSAcceleration(Particle* ptclI, Particle* ptclJ, Particle* ptclCM,
 		v[dim]    = 0.;
 	}
 
-    r2 = 0;
-    vr = 0;
-    v2 = 0;
+   	r2 = 0;
+    	vr = 0;
+    	v2 = 0;
 
 	//std::cout << "nbody+: Entering CalculateInitialAcceleration  ..." << std::endl;
 
@@ -435,10 +435,17 @@ void NewKSInitialization(Particle* ptclI, std::vector<Particle*> &particle, doub
 
     ptclCM->CurrentTimeReg = ptclI->CurrentTimeReg;
     ptclCM->CurrentTimeIrr = ptclI->CurrentTimeIrr;
+    ptclCM->CurrentBlockIrr = ptclI->CurrentBlockReg;
+    ptclCM->CurrentBlockReg = ptclI->CurrentBlockIrr;
+
     ptclCM->TimeStepIrr = ptclI->TimeStepIrr;
     ptclCM->TimeStepReg = ptclI->TimeStepReg;
     ptclCM->TimeLevelIrr = ptclI->TimeLevelIrr;
     ptclCM->TimeLevelReg = ptclI->TimeLevelReg;
+
+    ptclCM->TimeBlockReg = ptclI->TimeBlockReg;
+    ptclCM->TimeBlockIrr = ptclI->TimeBlockIrr;
+
     ptclCM->PredTime = current_time;
 
     ptclCM->PID = ptclI->PID + NNB;
