@@ -246,24 +246,27 @@ void Particle::isKSCandidate(double next_time) {
 
     // temporary calculation variables
 
-    double x[Dim],v[Dim];
-    double r2;
+    double x[Dim],v[Dim],a_pert[Dim];
+    double r2, vx, v2, m_r3, a_pert_tot;
 
-    double rmin;
+    double r2min, vxmin;
     Particle* minPtcl;
 
-    // t
+    // track close neighbor list
     int numberOfPairCandidate;
+    std::vector<Particle*> pairCandidateList;
 
 
 
     // initialize variables and count numbers just in case
 
     r2 = 0.0;
-    rmin = 1e8;
+    r2min = 1e8;
     numberOfPairCandidate = 0;
 
-
+    for (int dim=0; dim<Dim; dim++) {
+	a_pert[dim] = 0.0;
+    }
     // predict the particle position to obtain more information
     // particle regularlized if the conditions are satisfied at a future time
 
@@ -278,8 +281,9 @@ void Particle::isKSCandidate(double next_time) {
         // if particle time step is too large, skip
         // if the neighbor step is larger then 8 times of the candidate particle, then skip
 
-	    r2 = 0.0;
-        
+	r2 = 0.0;
+        vx = 0.0;
+
         if ((ptcl->TimeStepIrr) > (8*TimeStepIrr)) {
             continue;
         }
@@ -297,20 +301,63 @@ void Particle::isKSCandidate(double next_time) {
 		
 		// calculate the square of radius and inner product of r and v for each case
 		r2 += x[dim]*x[dim];
+		vx += x[dim]*v[dim];
         }
 
         // find out the close particles
 
-        if (r2<KSDistance) {
+        if (r2<2*KSDistance*KSDistance) {
 
             numberOfPairCandidate += 1;
+	    pairCandidateList.push_back(ptcl);
 
-            if (r2<rmin) {
-                rmin = r2;
+            if ((r2<r2min) && (ptcl->isCMptcl==false)) {
+                r2min = r2;
+		vxmin = vx;
                 minPtcl = ptcl;
             }
         }
     }
+
+    // only consider approaching particles
+
+//    if (vxmin>0.02*sqrt((this->Mass + minPtcl->Mass)*sqrt(r2min))) {
+//	return;
+//    }
+
+    // check if the relative motion is dominant
+
+    for (Particle* ptcl : pairCandidateList) {
+	
+	r2 = 0.0;
+	vx = 0.0;
+	v2 = 0.0;
+
+	for (int dim=0; dim<Dim; dim++) {
+		x[dim] = ptcl->PredPosition[dim] - this->PredPosition[dim];
+		v[dim] = ptcl->PredVelocity[dim] - this->PredVelocity[dim];
+		r2    += x[dim]*x[dim];
+		vx    += v[dim]*x[dim];
+		v2    += v[dim]*v[dim];
+	}
+
+	m_r3 = ptcl->Mass/r2/sqrt(r2); 
+
+	if (ptcl == minPtcl) {
+	    m_r3 = -m_r3;
+	}
+
+	for (int dim = 0; dim<Dim; dim++) {
+	    a_pert[dim] += m_r3*x[dim];
+	}
+
+    }
+
+    a_pert_tot = a_pert[0]*a_pert[0] + a_pert[1]*a_pert[1] + a_pert[2]*a_pert[2];
+
+//    if ( (a_pert_tot*r2min/(this->Mass + minPtcl->Mass))>0.25 ) {
+//	return;
+//    }
 
 
     // save the KS pair information
