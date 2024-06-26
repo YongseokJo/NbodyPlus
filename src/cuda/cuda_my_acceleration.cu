@@ -19,7 +19,8 @@
 #define BLOCK 2048    // 32 for A100 
 
 //#define FixNumNeighbor 30
-#define FixNumNeighbor 50
+//#define FixNumNeighbor 50
+#define FixNumNeighbor 1
 
 #define ESP2 1e-4
 #define new_size(A) ((A > 1024) ? int(pow(2,ceil(log(A)/log(2.0)))) : 1024)
@@ -36,7 +37,7 @@ static bool is_open = false;
 static bool devinit = false;
 static bool first   = true;
 static int variable_size;
-const int memory_size = 512;
+//const int memory_size = 512;
 //BackgroundParticle *h_background, *d_background;
 BackgroundParticle *h_background; //, *background;
 BackgroundParticle *d_background;
@@ -177,8 +178,11 @@ __global__ void CalculateAcceleration(
 
 
 	float r_max = 0;
+#if FixNumNeighbor == 0
+	float r_nb[FixNumNeighbor+1];
+#else
 	float r_nb[FixNumNeighbor];
-	//float r_nb[FixNumNeighbor+1];
+#endif
 	int index_max;
 	int bg_index;
 	__shared__ Result res[THREAD];
@@ -296,9 +300,11 @@ __device__ void kernel(
 	}
 	//}
 
+	/*
 	if (dr2 < ESP2) {
 		dr2 =  ESP2;
 	}
+	*/
 
 	float drdv      = dx*dvx + dy*dvy + dz*dvz;
 	float drdv3_dr2 = 3*drdv/dr2;

@@ -20,7 +20,7 @@ void Binary::KSIntegration(double next_time, int &calnum){
 
     calnum = 0;
 
-    while ((CurrentTime + TimeStep)<next_time) {
+    while ((CurrentTime + TimeStep) <= next_time) {
 
         // first predict the future position of the binary particle. 
 

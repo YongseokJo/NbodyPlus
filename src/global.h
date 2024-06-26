@@ -2,7 +2,9 @@
 // #include <mpi.h>
 #include <iostream>
 #include "Particle/Particle.h"
+#include "Binary/Binary.h"
 #include <stdio.h>
+#include <stdexcept>
 
 #ifdef time_trace
 #include "TimeTrace.h"
@@ -18,17 +20,23 @@ extern int NumNeighborMax;
 
 // Time
 extern double global_time;
+extern double global_time_irr;
 extern ULL NextRegTimeBlock;
 extern int time_block;
 extern double time_step;
 extern ULL block_max;
+
+
+extern double binary_time;
+extern double binary_time_prev;
+extern ULL binary_block;
 
 // ComputationChain
 extern std::vector<Particle*> ComputationChain;
 extern Particle* FirstComputation;
 extern std::vector<Particle*> ComputationList;
 extern int ComputationTimeMarker;
-extern std::vector<int> RegIndexList; // how about changing this to particle list
+extern std::vector<Particle*> RegularList; // how about changing this to particle list
 extern std::vector<Binary*> BinaryList; // List of binaries to calculate
 
 //extern bool debug;

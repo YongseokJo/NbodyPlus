@@ -12,15 +12,16 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle);
 void AddNewBinariesToList(std::vector<Particle*> &particle);                                                               
 void BinaryAccelerationRoutine(double next_time, ULL next_block, std::vector<Particle*> &particle);
 
-bool IsOutput         = false;
-double binary_time = 0;
+bool IsOutput           = false;
+double binary_time      = 0;
 double binary_time_prev = 0;
-ULL binary_block = 0;
-double outputTime = 0;
+ULL binary_block        = 0;
+double outputTime       = 0;
 ULL NextRegTimeBlock    = 0;
+int outNum              = 0;
+double global_time_irr  = 0;
 std::vector<Particle*> ComputationChain{};
 TimeTracer _time;
-int outNum = 0;
 
 void Evolve(std::vector<Particle*> &particle) {
 
@@ -45,21 +46,10 @@ void Evolve(std::vector<Particle*> &particle) {
 		_time.reg.markStart();
 #endif
 
+
 		RegularAccelerationRoutine(particle); // do not update particles unless NNB=0
-		std::cout << "Adding new binaries to list ..." << std::endl;
-		AddNewBinariesToList(particle);
+		
 
-		if ((BinaryList.size()>0)&(binary_time_prev != binary_time)) {
-	                fprintf(binout, "-------------------------------------\n");                                                                        
-                	fprintf(binout, "global_time = %e \n",global_time);                                                         
-                 	fprintf(binout, "binary_time = %e \n",binary_time);
-
-			std::cout << "Integrating Binaries ..." << std::endl;
-			fprintf(binout, "Evolve.cpp: integrating binaries\n");
-			fprintf(binout, "# of binaries = %d \n",int(BinaryList.size()));
-			BinaryAccelerationRoutine(binary_time, binary_block, particle);
-		}
-																						//
 #ifdef time_trace
 		_time.reg.markEnd();
 		_time.irr.markStart();
@@ -76,9 +66,6 @@ void Evolve(std::vector<Particle*> &particle) {
 #endif
 
 		global_time = NextRegTimeBlock*time_step;
-		binary_time_prev = binary_time;
-		binary_time = FirstComputation->CurrentTimeIrr + FirstComputation->TimeStepIrr;
-		binary_block = FirstComputation->CurrentBlockIrr + FirstComputation->TimeBlockIrr;
 
 		// create output at appropriate time intervals
 		if (outputTime <= global_time ) {

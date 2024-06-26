@@ -21,7 +21,6 @@ void Particle::setParticleInfo(double *data, int PID) {
 	//this->NextParticleInEnzo = NextParticleInEnzo;
 	this->CurrentTimeReg             = 0;
 	this->CurrentTimeIrr             = 0;
-	this->isRegular      = true;
 }
 
 /*
@@ -36,7 +35,6 @@ void Particle::setParticleInfo(double *data, int PID, Particle* NextParticleInEn
 	this->Mass         = data[6];
 	this->ParticleType = NormalStar+SingleParticle;
 	this->NextParticleInEnzo = NextParticleInEnzo;
-	this->isRegular      = true;
 }
 
 void Particle::setParticleInfo(int *PID, double *BackgroundAcceleration[Dim], Particle* NextParticleInEnzo, int i) {
@@ -50,7 +48,6 @@ void Particle::setParticleInfo(int *PID, double *BackgroundAcceleration[Dim], Pa
 	this->NextParticleInEnzo = NextParticleInEnzo;
 	this->CurrentTimeReg             = 0;
 	this->CurrentTimeIrr             = 0;
-	this->isRegular      = true;
 }
 
 void Particle::setParticleInfo(double *Mass, double *BackgroundAcceleration[Dim], Particle* NextParticleInEnzo, int i) {
@@ -64,7 +61,6 @@ void Particle::setParticleInfo(double *Mass, double *BackgroundAcceleration[Dim]
 	this->NextParticleInEnzo = NextParticleInEnzo;
 	this->CurrentTimeReg             = 0;
 	this->CurrentTimeIrr             = 0;
-	this->isRegular      = true;
 }
 
 
@@ -91,7 +87,6 @@ void Particle::setParticleInfo(int *PID, double *Mass, double *CreationTime, dou
 	this->NextParticleInEnzo         = NextParticleInEnzo;
 	this->CurrentTimeReg             = 0;
 	this->CurrentTimeIrr             = 0;
-	this->isRegular      = true;
 }
 
 
@@ -116,7 +111,6 @@ void Particle::setParticleInfo(int *PID, double *Mass, double *CreationTime, dou
 	this->NextParticleInEnzo = NextParticleInEnzo;
 	this->CurrentTimeReg             = 0;
 	this->CurrentTimeIrr             = 0;
-	this->isRegular      = true;
 }
 */
 

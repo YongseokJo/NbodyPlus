@@ -156,7 +156,7 @@ void Binary::InitializeBinary(double current_time) {
     fprintf(binout, "\n >>>>>>>>>>>>from BinaryRoutines.cpp<<<<<<<<<< \n");
 
     fprintf(binout, "KS coordinates - u1:%e, u2:%e, u3:%e, u4:%e \n", u[0],u[1],u[2],u[3]);
-    fflush(binout);
+    //fflush(binout);
 
     // form the Levi-civita transformation matrix based on initial values
 
@@ -376,23 +376,23 @@ void Binary::InitializeBinary(double current_time) {
 
     fprintf(binout, "Perturbing term Q - Q0:%e, Q1:%e, Q2:%e, Q3: %e \n", Q[0], Q[1], Q[2], Q[3]);
     fprintf(binout, "Perturbing term Qdot - Qdot0:%e, Qdot1:%e, Qdot2:%e, Qdot3: %e \n", Qdot[0], Qdot[1], Qdot[2], Qdot[3]);
-    fflush(binout);
+    //fflush(binout);
 
     fprintf(binout, "derivatives of r: r0 = %e r1 = %e r2 = %e r3 = %e r4 = %e r5 = %e \n", r, rdot, r2dot, r3dot, r4dot, r5dot);
     fprintf(binout, "derivatives of h: h0 = %e h1 = %e h2 = %e h3 = %e h4 = %e \n", h, hdot, h2dot, h3dot, h4dot);
-    fflush(binout);
+    //fflush(binout);
     
     fprintf(binout, "derivatives of u[0]: u0 = %e u1 = %e u2 = %e u3 = %e u4 = %e u5 = %e \n", u[0], udot[0], u2dot[0], u3dot[0], u4dot[0], u5dot[0]);
     fprintf(binout, "derivatives of u[1]: u0 = %e u1 = %e u2 = %e u3 = %e u4 = %e u5 = %e \n", u[1], udot[1], u2dot[1], u3dot[1], u4dot[1], u5dot[1]);
     fprintf(binout, "derivatives of u[2]: u0 = %e u1 = %e u2 = %e u3 = %e u4 = %e u5 = %e \n", u[2], udot[2], u2dot[2], u3dot[2], u4dot[2], u5dot[2]);
     fprintf(binout, "derivatives of u[3]: u0 = %e u1 = %e u2 = %e u3 = %e u4 = %e u5 = %e \n", u[3], udot[3], u2dot[3], u3dot[3], u4dot[3], u5dot[3]);
-    fflush(binout);
+    //fflush(binout);
 
     fprintf(binout,"Stumpff Coefficinets : c1 = %e c2 = %e c3 = %e c4 = %e c5 = %e \n \n ", cn[1], cn[2], cn[3], cn[4], cn[5]);
-    fflush(binout);
+    //fflush(binout);
 
     fprintf(binout, "\n >>>>>>>>>>>>from BinaryRoutines.cpp<<<<<<<<<< \n");
-    fflush(binout);
+    //fflush(binout);
 
 
 }

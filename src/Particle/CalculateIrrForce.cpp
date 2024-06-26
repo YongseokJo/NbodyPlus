@@ -2,6 +2,7 @@
 #include <iostream>
 #include <cmath>
 #include "../global.h"
+#include <cassert>
 
 
 void direct_sum(double *x, double *v, double r2, double vx,
@@ -59,16 +60,62 @@ void Particle::calculateIrrForce() {
 	}
 
 
+
 	/*******************************************************
 	 * Irregular Acceleartion Calculation
 	 ********************************************************/
 	this->predictParticleSecondOrderIrr(new_time);
+
+	if (this->Position[0] !=  this->Position[0]) {
+		fprintf(stdout, "myself = %d\n", this->PID);
+		fprintf(stdout, "x[0] = %e\n", this->Position[0]);
+		fprintf(stdout, "a_irr[0] = %e\n", this->a_irr[0][0]);
+		fprintf(stdout, "a_reg[0] = %e\n", this->a_reg[0][0]);
+		fprintf(stdout, "a_tot[0] = %e\n", this->a_tot[0][0]);
+		/*
+		for (Particle* nn:particle) {
+			fprintf(stdout,"%.2e (%d),  ",nn->a_tot[0][0],nn->PID);	
+		}
+		*/
+		fprintf(stdout,"\n");	
+		//fflush(stdout);
+		assert(this->Position[0] ==  this->Position[0]);
+	}
+
+	if (this->PredPosition[0] !=  this->PredPosition[0]) {
+		fprintf(stdout, "myself = %d\n", this->PID);
+		fprintf(stdout, "pred x[0] = %e\n", this->PredPosition[0]);
+		//fflush(stdout);
+		assert(this->PredPosition[0] ==  this->PredPosition[0]);
+	}
+
+	if (this->a_tot[0][0] !=  this->a_tot[0][0]) {
+		fprintf(stdout, "myself = %d\n", this->PID);
+		fprintf(stdout, "a_tot[0] = %e\n", this->a_tot[0][0]);
+		//fflush(stdout);
+		assert(this->a_tot[0][0] == this->a_tot[0][0]);
+	}
+	
+
 	for (Particle* ptcl: ACList) {
+		if (ptcl->PID == PID)  {
+			fprintf(stderr, "Myself in neighbor (%d)", PID);
+			//fflush(stderr);
+			continue;
+		}
+		
 		// reset temporary variables at the start of a new calculation
 		r2 = 0.0;
 		vx = 0.0;
 
 		ptcl->predictParticleSecondOrderIrr(new_time);
+
+		if (ptcl->PredPosition[0] !=  ptcl->PredPosition[0]) {
+			fprintf(stdout, "target = %d, neighborhood = %d\n", this->PID, ptcl->PID);
+			fprintf(stdout, "x[0] = %e\n", ptcl->PredPosition[0]);
+			//fflush(stdout);
+			assert(ptcl->PredPosition[0] ==  ptcl->PredPosition[0]);
+		}
 		for (int dim=0; dim<Dim; dim++) {
 			// calculate position and velocity differences for current time
 			x[dim] = ptcl->PredPosition[dim] - this->PredPosition[dim];
@@ -78,14 +125,22 @@ void Particle::calculateIrrForce() {
 			r2 += x[dim]*x[dim];
 			vx += v[dim]*x[dim];
 		}
+		if (r2 == 0)  {
+			fprintf(stderr, "r2 is zero (%d and %d)",PID, ptcl->PID);
+			//fflush(stderr);
+			continue;
+		}
 
 		mdot = ptcl->evolveStarMass(CurrentTimeIrr,
 				CurrentTimeIrr+TimeStepIrr*1.01)/TimeStepIrr*1e-2; // derivative can be improved
 																													 //
 																													 // add the contribution of jth particle to acceleration of current and predicted times
 
+		/*
 		if (r2 < EPS2)
 			r2 = EPS2;  // add softening length
+		*/
+
 
 		m_r3 = ptcl->Mass/r2/sqrt(r2);
 
@@ -113,7 +168,7 @@ void Particle::calculateIrrForce() {
 
 
 		// do the higher order correcteion
-		da_dt2  = (a_irr[dim][0] - a_tmp[dim] - a_reg[dim][1]*dt_ex) / dt2;
+		da_dt2  = (a_irr[dim][0] - a_tmp[dim]) / dt2; //  - a_reg[dim][1]*dt_ex
 		adot_dt = (a_irr[dim][1] + adot_tmp[dim]) / dt;
 		a2 =  -6*da_dt2  - 2*adot_dt - 2*a_irr[dim][1]/dt;
 		a3 =  (12*da_dt2 + 6*adot_dt)/dt;
@@ -125,6 +180,8 @@ void Particle::calculateIrrForce() {
 		NewPosition[dim] = PredPosition[dim] + a2*dt4/24 + a3*dt5/120;
 		NewVelocity[dim] = PredVelocity[dim] + a2*dt3/6  + a3*dt4/24;
 
+		//NewPosition[dim] = PredPosition[dim];// + a2*dt4/24 + a3*dt5/120;
+		//NewVelocity[dim] = PredVelocity[dim];// + a2*dt3/6  + a3*dt4/24;
 
 		// note that these higher order terms and lowers have different neighbors
 		a_irr[dim][0] = a_tmp[dim];
@@ -136,11 +193,29 @@ void Particle::calculateIrrForce() {
 
 
 	for (int dim=0; dim<Dim; dim++) {
-		a_tot[dim][0] = a_reg[dim][0] + a_irr[dim][0] + a_reg[dim][1]*dt_ex;
+		a_tot[dim][0] = a_reg[dim][0] + a_irr[dim][0] + a_reg[dim][1]*dt_ex; // affect the next
 		a_tot[dim][1] = a_reg[dim][1] + a_irr[dim][1];
 		a_tot[dim][2] = a_reg[dim][2] + a_irr[dim][2];
 		a_tot[dim][3] = a_reg[dim][3] + a_irr[dim][3];
 	}
+
+	if (this->NewPosition[0] !=  this->NewPosition[0]) {
+		fprintf(stdout, "it breaks after calculation, myself = %d\n", this->PID);
+		fprintf(stdout, "x[0] = %e\n", this->NewPosition[0]);
+
+		fprintf(stdout, "neighbors: ");
+		for (Particle* nn:ACList) {
+			fprintf(stdout,"%.2e (%d),  ",nn->Position[0],nn->PID);	
+		}
+		fprintf(stdout,"\n");	
+		for (Particle* nn:ACList) {
+			fprintf(stdout,"%.2e (%d),  ",nn->a_tot[0][0],nn->PID);	
+		}
+		fprintf(stdout,"\n");	
+		//fflush(stdout);
+		assert(this->NewPosition[0] ==  this->NewPosition[0]);
+	}
+
 
 	/*
 	std::cout << "\ntotal acceleartion\n" << std::flush;

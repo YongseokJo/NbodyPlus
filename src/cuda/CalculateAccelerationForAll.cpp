@@ -383,18 +383,22 @@ void SendAllParticlesToGPU(double time, std::vector <Particle*> &particle) {
 	double * Mdot;
 	double(*Position)[Dim];
 	double(*Velocity)[Dim];
+	int size = particle.size();
 
 	// allocate memory to the temporary variables
-	Mass     = new double[NNB];
-	Mdot     = new double[NNB];
-	Position = new double[NNB][Dim];
-	Velocity = new double[NNB][Dim];
+	Mass     = new double[size];
+	Mdot     = new double[size];
+	Position = new double[size][Dim];
+	Velocity = new double[size][Dim];
 
 	// copy the data of particles to the arrays to be sent
-	for (int i=0; i<NNB; i++) {
+	for (int i=0; i<size; i++) {
 		Mass[i] = particle[i]->Mass;
 		Mdot[i] = 0; //particle[i]->Mass;
-		particle[i]->predictParticleSecondOrder(time);
+		if (particle[i]->NumberOfAC == 0)	
+			particle[i]->predictParticleSecondOrder(time);
+		else
+			particle[i]->predictParticleSecondOrderIrr(time);
 
 		for (int dim=0; dim<Dim; dim++) {
 			Position[i][dim] = particle[i]->PredPosition[dim];
@@ -403,7 +407,7 @@ void SendAllParticlesToGPU(double time, std::vector <Particle*> &particle) {
 	}
 
 	// send the arrays to GPU
-	SendToDevice(&NNB, Mass, Position, Velocity, Mdot, &NumNeighborMax);
+	SendToDevice(&size, Mass, Position, Velocity, Mdot, &NumNeighborMax);
 
 	// free the temporary variables
 	delete[] Mass;

@@ -7,7 +7,8 @@
 
 
 //#define FixNumNeighbor 30
-#define FixNumNeighbor 50
+//#define FixNumNeighbor 50
+#define FixNumNeighbor 1
 
 void FindNeighbor(Particle* ptcl1, std::vector<Particle*> &particle);
 void CalculateAcceleration01(Particle* ptcl1, std::vector<Particle*> &particle);
@@ -51,13 +52,13 @@ void InitializeParticle(std::vector<Particle*> &particle) {
 	InitializeTimeStep(particle);
 	std::cout << "Timestep finished." << std::endl;
 	int i = 0;
-	RegIndexList.clear();
+	RegularList.clear();
 	for (Particle* elem:particle) {
 		for (int dim=0; dim<Dim; dim++) {
 			elem->PredPosition[dim] =  elem->Position[dim];
 			elem->PredVelocity[dim] =  elem->Velocity[dim];
 		}
-		RegIndexList.push_back(i++);
+		RegularList.push_back(elem);
 	}
 	std::cout << "Initialization finished." << std::endl;
 }
@@ -100,6 +101,7 @@ void ReInitializeKSParticle(Particle* KSParticle, std::vector<Particle*> &partic
 	std::cout << "Re-Initialization of KS Pair Particle starts.\n" << std::endl;
 
 	std::cout << "Finding Neighbors... \n" << std::endl;	
+	KSParticle->ACList.clear();
 	FindNeighbor(KSParticle, particle);
 
 	std::cout << "Calculating Acceleration... \n" << std::endl;	
@@ -108,16 +110,19 @@ void ReInitializeKSParticle(Particle* KSParticle, std::vector<Particle*> &partic
 	CalculateAcceleration23(KSParticle, particle);
 
 	std::cout << "copying the position and velocities to predictions... \n" << std::endl;	
-	
+
 	for (int dim=0; dim<Dim; dim++) {
 		KSParticle->PredPosition[dim] =  KSParticle->Position[dim];
 		KSParticle->PredVelocity[dim] =  KSParticle->Velocity[dim];
+		KSParticle->NewPosition[dim]  =  KSParticle->Position[dim];
+		KSParticle->NewVelocity[dim]  =  KSParticle->Velocity[dim];
 	}
 
 	std::cout << "Timestep calculation...\n" << std::endl;
-//	InitializeTimeStep(KSParticle, 1);
-	KSParticle->calculateTimeStepReg();
-	KSParticle->calculateTimeStepIrr(KSParticle->a_tot, KSParticle->a_irr);
+
+
+	// advance here because cm particle didn't advance and was removed.
+	// ComputationList.push_back(KSParticle);
 
 	std::cout << "Timestep finished.\n" << std::endl;
 	std::cout << "Initialization of KS Pair Particle finished.\n" << std::endl;
@@ -374,9 +379,13 @@ void CalculateAcceleration23(Particle* ptcl1, std::vector<Particle*> &particle) 
 	
 	for (int dim=0; dim<Dim; dim++)	 {
 		for (int order=2; order<4; order++) {
-			ptcl1->a_tot[dim][order] = ptcl1->a_reg[dim][order] + ptcl1->a_irr[dim][order]; 
+			ptcl1->a_tot[dim][order] = ptcl1->a_reg[dim][order] + ptcl1->a_irr[dim][order];
 		}
 	}
+
+
+
+
 
 		// if the ptcl1 is new particle and ptcl2 is old particle
 		// then we need to change the values of ptcl2 as well. 

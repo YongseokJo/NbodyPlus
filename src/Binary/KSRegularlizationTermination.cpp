@@ -1,3 +1,4 @@
+#include "stdio.h"
 #include <vector>
 #include <iostream>
 #include <cmath>
@@ -5,229 +6,300 @@
 #include "../global.h"
 #include "../defs.h"
 
-
+bool CreateComputationList(Particle* ptcl);
+bool CreateComputationChain(std::vector<Particle*> &particle);
 void generate_Matrix(double a[3], double (&A)[3][4]);
 void ReInitializeKSParticle(Particle* KSParticle, std::vector<Particle*> &particle);
+void UpdateNextRegTime(std::vector<Particle*> &particle);
 
 void KSTermination(Particle* ptclCM, std::vector<Particle*> &particle, double current_time, ULL current_block){
 
-    double R[Dim], Rdot[Dim];
-    double Rinv;
-    double ratioM;
+	double R[Dim], Rdot[Dim];
+	double Rinv;
+	double ratioM;
 
-    double L[3][4];
-    int ptclCMIndex;
-    int ptclBinIndex;
+	double L[3][4];
+	int ptclCMIndex;
+	int ptclBinIndex;
 
-    bool findPtclCM;
+	bool findPtclCM;
 
-    Particle* ptclI;
-    Particle* ptclJ;
+	Particle* ptclI;
+	Particle* ptclJ;
 
-    Binary* ptclBin;
+	Binary* ptclBin;
 
-    fprintf(stdout,"--------------------------------------\n");
-    fprintf(stdout,"In KSRegularlizationTermination.cpp...\n\n");
+	fprintf(stdout,"--------------------------------------\n");
+	fprintf(stdout,"In KSRegularlizationTermination.cpp...\n\n");
 
-    ptclI = ptclCM->BinaryParticleI;
-    ptclJ = ptclCM->BinaryParticleJ;
-    ptclBin = ptclCM->BinaryInfo;
+	ptclI = ptclCM->BinaryParticleI;
+	ptclJ = ptclCM->BinaryParticleJ;
+	ptclBin = ptclCM->BinaryInfo;
 
-    fprintf(stdout,"Converting the KS coordinates to physical coordinates of ptclI and ptclJ\n");
+	fprintf(stdout,"Converting the KS coordinates to physical coordinates of ptclI and ptclJ\n");
 
-    // update the values of positions of ptclI and ptcl J
+	// update the values of positions of ptclI and ptcl J
 
-    R[0]   = ptclBin->u[0]*ptclBin->u[0] - ptclBin->u[1]*ptclBin->u[1] - ptclBin->u[2]*ptclBin->u[2] + ptclBin->u[3]*ptclBin->u[3];
-    R[1]   = 2*(ptclBin->u[0]*ptclBin->u[1] - ptclBin->u[2]*ptclBin->u[3]);
-    R[2]   = 2*(ptclBin->u[0]*ptclBin->u[2] + ptclBin->u[1]*ptclBin->u[3]);
-    ratioM = ptclJ->Mass/ptclCM->Mass;
+	R[0]   = ptclBin->u[0]*ptclBin->u[0] - ptclBin->u[1]*ptclBin->u[1] - ptclBin->u[2]*ptclBin->u[2] + ptclBin->u[3]*ptclBin->u[3];
+	R[1]   = 2*(ptclBin->u[0]*ptclBin->u[1] - ptclBin->u[2]*ptclBin->u[3]);
+	R[2]   = 2*(ptclBin->u[0]*ptclBin->u[2] + ptclBin->u[1]*ptclBin->u[3]);
+	ratioM = ptclJ->Mass/ptclCM->Mass;
 
-
-    for (int dim=0; dim<Dim; dim++) {
-        ptclI->Position[dim] = ptclCM->Position[dim] + ratioM*R[dim];
-        ptclJ->Position[dim] = ptclCM->Position[dim] - R[dim];
-    }
-
-
-    // do the same thing for velocity components
-
-
-    generate_Matrix(ptclBin->u,L);
-
-    Rinv = 1/(ptclBin->u[0]*ptclBin->u[0] + ptclBin->u[1]*ptclBin->u[1] + ptclBin->u[2]*ptclBin->u[2] + ptclBin->u[3]*ptclBin->u[3]) ;
-
-
-    for (int dim=0; dim<Dim; dim++) {
-
-        Rdot[dim] = 0.0;
-
-        for (int dimu=0; dimu<4; dimu++) {
-            Rdot[dim] += 2*L[dim][dimu]*ptclBin->udot[dim]*Rinv;
-        }
-    }
-
-
-    for (int dim=0; dim<Dim; dim++) {
-        ptclI->Velocity[dim] = ptclCM->Velocity[dim] + ratioM*Rdot[dim];
-        ptclJ->Velocity[dim] = ptclI->Velocity[dim] - Rdot[dim];
-    }
-
-
-    fprintf(stdout,"END CONVERTING THE COORDINATES\n \n");
-
-    // delete the original components from the list
-
-    fprintf(stdout,"deleting CM particle from the particle list\n");
-
-    ptclCMIndex = -1;
-
-    for (Particle* ptcl : particle) {
-
-        ptclCMIndex += 1;
-
-        if (ptcl == ptclCM) {
-            break;
-        }
-    }
-
-    particle.erase(particle.begin() + ptclCMIndex);
-
-
-    // add the original particles
-
-    fprintf(stdout,"add the binary components to particle list\n");
-
-    particle.push_back(ptclI);
-    particle.push_back(ptclJ);
-
-    ptclI->CurrentTimeIrr = current_time; //ptclCM->CurrentTimeIrr;
-    ptclI->CurrentTimeReg = current_time; //ptclCM->CurrentTimeReg;
-    ptclI->CurrentBlockIrr = current_block;
-    ptclI->CurrentBlockReg = current_block;
-
-
-    ptclJ->CurrentTimeIrr = current_time; //ptclCM->CurrentTimeIrr;
-    ptclJ->CurrentTimeReg = current_time; //ptclCM->CurrentTimeReg;
-    ptclJ->CurrentBlockIrr = current_block;
-    ptclJ->CurrentBlockReg = current_block;
-
-
-    ptclI->ACList.clear();
-    ptclI->NumberOfAC = 0;
-
-    ptclJ->ACList.clear();
-    ptclJ->NumberOfAC = 0;
-
-
-
-    fprintf(stdout,"initialize particle I \n");
-    ReInitializeKSParticle(ptclI, particle);
-    fprintf(stdout,"initialize particle J \n");
-    ReInitializeKSParticle(ptclJ, particle);
-
-
-    // change the booleans and pointers for binary
-    ptclI->isBinary = false;
-    ptclI->BinaryPairParticle = nullptr;
-
-    ptclJ->isBinary = false;
-    ptclJ->BinaryPairParticle = nullptr;
-
-
-
-    // we also need to revert the neighbor list of Particles
-    // assuming that all the neighbors are bidirectional
-    // may need to update later if the radius for neighbor differs depending on the particle
-
-    fprintf(stdout,"replacing CM particle in neighbor list to component particles \n");
-
-    for (Particle* ptcl1: particle) {
-
-        //auto it = std::find(ptcl->ACList.begin(), ptcl->ACList.end(), ptclCM);
-        
-        //if (it != ptclJ->ACList.end()) {
-        //    ptcl->ACList.erase(it);
-        //    ptcl->ACList.push_back(ptclI);
-        //    ptcl->ACList.push_back(ptclJ);
-        //}
-	
-	ptclCMIndex = -1;
-	findPtclCM = false;
-
-	for (Particle* ptcl2 : ptcl1->ACList) {
-
-       	    ptclCMIndex += 1;
-
-            if (ptcl2 == ptclCM) {
-		findPtclCM = true;
-                break;
-            }
-        }
-
-	if (findPtclCM) {
-	    ptcl1->ACList.erase(ptcl1->ACList.begin() + ptclCMIndex);
-	    ptcl1->ACList.push_back(ptclI);
-	    ptcl1->ACList.push_back(ptclJ);
+	for (int dim=0; dim<Dim; dim++) {
+		ptclI->Position[dim] = ptclCM->Position[dim] + ratioM*R[dim];
+		ptclJ->Position[dim] = ptclCM->Position[dim] - R[dim];
 	}
 
-    }
 
-    // we also need to delete it from the binary list
+	// do the same thing for velocity components
+	generate_Matrix(ptclBin->u,L);
 
-    fprintf(stdout,"deleting binary information from the BinaryList \n");
-
-    ptclBinIndex = -1;
-
-    for (Binary* ptcl : BinaryList) {
-
-        ptclBinIndex += 1;
-
-        if (ptcl == ptclBin) {
-            break;
-        }
-    }
-
-    BinaryList.erase(BinaryList.begin() + ptclBinIndex);
-
-    fprintf(stdout,"end of KS Regularlization Termination \n ");
-
-    fprintf(binout, "\nPosition: ptclI - x:%e, y:%e, z:%e, \n", ptclI->Position[0], ptclI->Position[1], ptclI->Position[2]);
-    fprintf(binout, "Velocity: ptclI - vx:%e, vy:%e, vz:%e, \n", ptclI->Velocity[0], ptclI->Velocity[1], ptclI->Velocity[2]);
-    fflush(binout);
-
-    fprintf(binout, "Total Acceleration - ax:%e, ay:%e, az:%e, \n", ptclI->a_tot[0][0], ptclI->a_tot[1][0], ptclI->a_tot[2][0]);
-    fprintf(binout, "Total Acceleration - axdot:%e, aydot:%e, azdot:%e, \n", ptclI->a_tot[0][1], ptclI->a_tot[1][1], ptclI->a_tot[2][1]);
-    fprintf(binout, "Total Acceleration - ax2dot:%e, ay2dot:%e, az2dot:%e, \n", ptclI->a_tot[0][2], ptclI->a_tot[1][2], ptclI->a_tot[2][2]);
-    fprintf(binout, "Total Acceleration - ax3dot:%e, ay3dot:%e, az3dot:%e, \n", ptclI->a_tot[0][3], ptclI->a_tot[1][3], ptclI->a_tot[2][3]);
-    fprintf(binout, "Time Steps - irregular:%e, regular:%e \n", ptclI->TimeStepIrr, ptclI->TimeStepReg);
-    fflush(binout);
+	Rinv = 1/(ptclBin->u[0]*ptclBin->u[0] + ptclBin->u[1]*ptclBin->u[1] + ptclBin->u[2]*ptclBin->u[2] + ptclBin->u[3]*ptclBin->u[3]) ;
 
 
-    fprintf(binout, "\nPosition: ptclJ - x:%e, y:%e, z:%e, \n", ptclJ->Position[0], ptclJ->Position[1], ptclJ->Position[2]);
-    fprintf(binout, "Velocity: ptclJ - vx:%e, vy:%e, vz:%e, \n", ptclJ->Velocity[0], ptclJ->Velocity[1], ptclJ->Velocity[2]);
-    fflush(binout);
-
-    fprintf(binout, "Total Acceleration - ax:%e, ay:%e, az:%e, \n", ptclI->a_tot[0][0], ptclI->a_tot[1][0], ptclJ->a_tot[2][0]);
-    fprintf(binout, "Total Acceleration - axdot:%e, aydot:%e, azdot:%e, \n", ptclJ->a_tot[0][1], ptclI->a_tot[1][1], ptclI->a_tot[2][1]);
-    fprintf(binout, "Total Acceleration - ax2dot:%e, ay2dot:%e, az2dot:%e, \n", ptclJ->a_tot[0][2], ptclJ->a_tot[1][2], ptclJ->a_tot[2][2]);
-    fprintf(binout, "Total Acceleration - ax3dot:%e, ay3dot:%e, az3dot:%e, \n", ptclJ->a_tot[0][3], ptclJ->a_tot[1][3], ptclJ->a_tot[2][3]);
-    fprintf(binout, "Time Steps - irregular:%e, regular:%e \n", ptclJ->TimeStepIrr, ptclJ->TimeStepReg);
-    fflush(binout);
+	for (int dim=0; dim<Dim; dim++) {
+		Rdot[dim] = 0.0;
+		for (int dimu=0; dimu<4; dimu++) {
+			Rdot[dim] += 2*L[dim][dimu]*ptclBin->udot[dim]*Rinv;
+		}
+	}
 
 
-    fprintf(binout, "\nPosition: ptclCM - x:%e, y:%e, z:%e, \n", ptclCM->Position[0], ptclCM->Position[1], ptclCM->Position[2]);
-    fprintf(binout, "Velocity: ptclCM - vx:%e, vy:%e, vz:%e, \n", ptclCM->Velocity[0], ptclCM->Velocity[1], ptclCM->Velocity[2]);
-    fflush(binout);
+	for (int dim=0; dim<Dim; dim++) {
+		ptclI->Velocity[dim] = ptclCM->Velocity[dim] + ratioM*Rdot[dim];
+		ptclJ->Velocity[dim] = ptclI->Velocity[dim] - Rdot[dim];
+	}
 
-    fprintf(binout, "Total Acceleration - ax:%e, ay:%e, az:%e, \n", ptclCM->a_tot[0][0], ptclCM->a_tot[1][0], ptclCM->a_tot[2][0]);
-    fprintf(binout, "Total Acceleration - axdot:%e, aydot:%e, azdot:%e, \n", ptclCM->a_tot[0][1], ptclCM->a_tot[1][1], ptclCM->a_tot[2][1]);
-    fprintf(binout, "Total Acceleration - ax2dot:%e, ay2dot:%e, az2dot:%e, \n", ptclCM->a_tot[0][2], ptclCM->a_tot[1][2], ptclCM->a_tot[2][2]);
-    fprintf(binout, "Total Acceleration - ax3dot:%e, ay3dot:%e, az3dot:%e, \n", ptclCM->a_tot[0][3], ptclCM->a_tot[1][3], ptclCM->a_tot[2][3]);
-    fprintf(binout, "Time Steps - irregular:%e, regular:%e \n", ptclCM->TimeStepIrr, ptclCM->TimeStepReg);
-    fprintf(binout, "Current time - irregular: %e, regular:%e \n", ptclCM->CurrentTimeIrr, ptclCM->CurrentTimeReg);
-    fflush(binout);
 
-    fprintf(stdout,"--------------------------------------\n");
-    fflush(stdout); 
+	fprintf(stdout,"END CONVERTING THE COORDINATES\n \n");
+
+
+
+	// add the original particles
+	fprintf(stdout,"add the binary components to particle list\n");
+
+	ptclI->CurrentBlockIrr = ptclCM->CurrentBlockIrr;
+	ptclI->CurrentBlockReg = ptclCM->CurrentBlockReg;
+	ptclI->CurrentTimeIrr = ptclCM->CurrentBlockIrr*time_step;
+	ptclI->CurrentTimeReg = ptclCM->CurrentBlockReg*time_step;
+
+	ptclI->TimeStepIrr     = ptclCM->TimeStepIrr;
+	ptclI->TimeBlockIrr    = ptclCM->TimeBlockIrr;
+	ptclI->TimeLevelIrr    = ptclCM->TimeLevelIrr;
+
+	ptclI->TimeStepReg     = ptclCM->TimeStepReg;
+	ptclI->TimeBlockReg    = ptclCM->TimeBlockReg;
+	ptclI->TimeLevelReg    = ptclCM->TimeLevelReg;
+
+	ptclJ->CurrentBlockIrr = ptclI->CurrentBlockIrr;
+	ptclJ->CurrentBlockReg = ptclI->CurrentBlockReg;
+	ptclJ->CurrentTimeIrr = ptclI->CurrentTimeIrr;
+	ptclJ->CurrentTimeReg = ptclI->CurrentTimeReg;
+
+	ptclJ->TimeStepIrr     = ptclCM->TimeStepIrr;
+	ptclJ->TimeBlockIrr    = ptclCM->TimeBlockIrr;
+	ptclJ->TimeLevelIrr    = ptclCM->TimeLevelIrr;
+
+	ptclJ->TimeStepReg     = ptclCM->TimeStepReg;
+	ptclJ->TimeBlockReg    = ptclCM->TimeBlockReg;
+	ptclJ->TimeLevelReg    = ptclCM->TimeLevelReg;
+
+	ptclI->ACList.clear();
+	ptclI->NumberOfAC = 0;
+
+	ptclJ->ACList.clear();
+	ptclJ->NumberOfAC = 0;
+
+	fprintf(stdout,"initialize particle I \n");
+	ReInitializeKSParticle(ptclI, particle);
+	fprintf(stdout,"initialize particle J \n");
+	ReInitializeKSParticle(ptclJ, particle);
+
+
+
+
+	//	InitializeTimeStep
+	ptclI->calculateTimeStepReg();
+	if (ptclI->TimeLevelReg <= ptclCM->TimeLevelReg-1 
+			&& ptclI->TimeBlockReg/2+ptclI->CurrentBlockReg > ptclCM->CurrentBlockIrr+ptclCM->TimeBlockIrr)  { // this ensures that irr time of any particles is smaller than adjusted new reg time.
+		ptclI->TimeLevelReg = ptclCM->TimeLevelReg-1;
+	}
+	else if  (ptclI->TimeLevelReg >= ptclCM->TimeLevelReg+1) {
+		ptclI->TimeLevelReg = ptclCM->TimeLevelReg+1;
+	}
+	else 
+		ptclI->TimeLevelReg = ptclCM->TimeLevelReg;
+
+	ptclI->TimeStepReg  = static_cast<double>(pow(2, ptclI->TimeLevelReg));
+	ptclI->TimeBlockReg = static_cast<ULL>(pow(2, ptclI->TimeLevelReg-time_block));
+	ptclI->calculateTimeStepIrr(ptclI->a_tot, ptclI->a_irr);
+
+	ptclJ->calculateTimeStepReg();
+	if (ptclJ->TimeLevelReg <= ptclCM->TimeLevelReg-1 
+			&& ptclJ->TimeBlockReg/2+ptclJ->CurrentBlockReg > ptclCM->CurrentBlockIrr+ptclCM->TimeBlockIrr)  { // this ensures that irr time of any particles is smaller than adjusted new reg time.
+		ptclJ->TimeLevelReg = ptclCM->TimeLevelReg-1;
+	}
+	else if  (ptclJ->TimeLevelReg >= ptclCM->TimeLevelReg+1) {
+		ptclJ->TimeLevelReg = ptclCM->TimeLevelReg+1;
+	}
+	else 
+		ptclJ->TimeLevelReg = ptclCM->TimeLevelReg;
+	ptclJ->TimeStepReg  = static_cast<double>(pow(2, ptclJ->TimeLevelReg));
+	ptclJ->TimeBlockReg = static_cast<ULL>(pow(2, ptclJ->TimeLevelReg-time_block));
+	ptclJ->calculateTimeStepIrr(ptclJ->a_tot, ptclJ->a_irr);
+
+
+
+	// we also need to revert the neighbor list of Particles
+	// assuming that all the neighbors are bidirectional
+	// may need to update later if the radius for neighbor differs depending on the particle
+	fprintf(stdout,"replacing CM particle in neighbor list to component particles \n");
+	ptclCM->isErase = true;
+	for (Particle* ptcl: particle) {
+		auto it = ptcl->ACList.erase(
+				std::remove_if(ptcl->ACList.begin(), ptcl->ACList.end(),
+					[](Particle* p) {
+					bool to_remove = p->isErase;
+					return to_remove;
+					}),
+				ptcl->ACList.end());
+
+		if (it != ptcl->ACList.end())  {
+			ptcl->ACList.push_back(ptclI);
+			ptcl->ACList.push_back(ptclJ);
+		}
+	}
+
+
+	particle.push_back(ptclI);
+	particle.push_back(ptclJ);
+
+
+	// delete the original components from the list
+	fprintf(stdout,"deleting CM particle from the particle list\n");
+
+
+	fprintf(stderr,"PID of (CM, I, J) = (%d,%d,%d)\n",ptclCM->PID, ptclI->PID, ptclJ->PID);
+	/*
+	ComputationList.erase(
+			std::remove_if(ComputationList.begin(), ComputationList.end(),
+				[](Particle* p) {
+				bool to_remove = p->isErase;
+				//if (to_remove) delete p;
+				return to_remove;
+				}),
+			ComputationList.end());
+			*/
+	// delete ptclCM from ComputationChain
+	Particle* NextParticle=FirstComputation;
+	while (NextParticle != nullptr) {
+		if (NextParticle->NextParticleForComputation == ptclCM) {
+			NextParticle->NextParticleForComputation = ptclCM->NextParticleForComputation;
+		}
+		NextParticle = NextParticle->NextParticleForComputation;
+	}
+	particle.erase(
+			std::remove_if(particle.begin(), particle.end(),
+				[](Particle* p) {
+				bool to_remove = p->isErase;
+				if (to_remove) delete p;
+				return to_remove;
+				}),
+			particle.end());
+
+	// we also need to delete it from the binary list
+	fprintf(stdout,"deleting binary information from the BinaryList \n");
+	ptclBin->isErase = true;
+	BinaryList.erase(
+			std::remove_if(BinaryList.begin(), BinaryList.end(),
+				[](Binary* p) {
+				bool to_remove = p->isErase;
+				if (to_remove) delete p;
+				return to_remove;
+				}),
+			BinaryList.end());
+
+
+	//re-do UpdateNextRegTime
+	UpdateNextRegTime(particle); //
+
+	fprintf(stderr, "particle:");
+	for (Particle* ptcl:particle) {
+		fprintf(stderr, "%d, ", ptcl->PID);
+	}
+	fprintf(stderr, "\n");
+
+	fprintf(stderr, "ComputationList:");
+	for (Particle* ptcl:ComputationList) {
+		fprintf(stderr, "%d, ", ptcl->PID);
+	}
+	fprintf(stderr, "\n");
+
+	// change the booleans and pointers for binary
+	ptclI->isBinary = false;
+	ptclI->BinaryPairParticle = nullptr;
+
+	ptclJ->isBinary = false;
+	ptclJ->BinaryPairParticle = nullptr;
+
+	fprintf(stdout,"total number of particles = %lu, total number of binaries = %lu \n", particle.size(), BinaryList.size());
+	fprintf(stdout,"total number of ComputationList = %lu\n", ComputationList.size());
+	fprintf(stdout,"PID=%d\n", particle[0]->PID);
+
+
+	fprintf(stdout,"end of KS Regularlization Termination \n ");
+
+	fprintf(binout,"PID=%d\n", ptclI->PID);
+	fprintf(binout, "\nPosition: ptclI - x:%e, y:%e, z:%e, \n", ptclI->Position[0], ptclI->Position[1], ptclI->Position[2]);
+	fprintf(binout, "Velocity: ptclI - vx:%e, vy:%e, vz:%e, \n", ptclI->Velocity[0], ptclI->Velocity[1], ptclI->Velocity[2]);
+	//fflush(binout);
+
+	fprintf(binout, "Total Acceleration - ax:%e, ay:%e, az:%e, \n", ptclI->a_tot[0][0], ptclI->a_tot[1][0], ptclI->a_tot[2][0]);
+	fprintf(binout, "Total Acceleration - axdot:%e, aydot:%e, azdot:%e, \n", ptclI->a_tot[0][1], ptclI->a_tot[1][1], ptclI->a_tot[2][1]);
+	fprintf(binout, "Total Acceleration - ax2dot:%e, ay2dot:%e, az2dot:%e, \n", ptclI->a_tot[0][2], ptclI->a_tot[1][2], ptclI->a_tot[2][2]);
+	fprintf(binout, "Total Acceleration - ax3dot:%e, ay3dot:%e, az3dot:%e, \n", ptclI->a_tot[0][3], ptclI->a_tot[1][3], ptclI->a_tot[2][3]);
+	fprintf(binout, "Irr  Acceleration - ax:%e, ay:%e, az:%e, \n", ptclI->a_irr[0][0], ptclI->a_irr[1][0], ptclI->a_irr[2][0]);
+	fprintf(binout, "Irr Acceleration - axdot:%e, aydot:%e, azdot:%e, \n", ptclI->a_irr[0][1], ptclI->a_irr[1][1], ptclI->a_irr[2][1]);
+	fprintf(binout, "Irr Acceleration - ax2dot:%e, ay2dot:%e, az2dot:%e, \n", ptclI->a_irr[0][2], ptclI->a_irr[1][2], ptclI->a_irr[2][2]);
+	fprintf(binout, "Irr Acceleration - ax3dot:%e, ay3dot:%e, az3dot:%e, \n", ptclI->a_irr[0][3], ptclI->a_irr[1][3], ptclI->a_irr[2][3]);
+	fprintf(binout, "Time Steps - irregular:%e, regular:%e \n", ptclI->TimeStepIrr, ptclI->TimeStepReg);
+	fprintf(binout, "Time Blocks - irregular:%llu, regular:%llu \n", ptclI->TimeBlockIrr, ptclI->TimeBlockReg);
+	fprintf(binout, "Current Blocks - irregular: %llu, regular:%llu \n", ptclI->CurrentBlockIrr, ptclI->CurrentBlockReg);
+	//fflush(binout);
+
+	fprintf(binout,"PID=%d\n", ptclJ->PID);
+	fprintf(binout, "\nPosition: ptclJ - x:%e, y:%e, z:%e, \n", ptclJ->Position[0], ptclJ->Position[1], ptclJ->Position[2]);
+	fprintf(binout, "Velocity: ptclJ - vx:%e, vy:%e, vz:%e, \n", ptclJ->Velocity[0], ptclJ->Velocity[1], ptclJ->Velocity[2]);
+	//fflush(binout);
+
+	fprintf(binout, "Total Acceleration - ax:%e, ay:%e, az:%e, \n", ptclI->a_tot[0][0], ptclI->a_tot[1][0], ptclJ->a_tot[2][0]);
+	fprintf(binout, "Total Acceleration - axdot:%e, aydot:%e, azdot:%e, \n", ptclJ->a_tot[0][1], ptclI->a_tot[1][1], ptclI->a_tot[2][1]);
+	fprintf(binout, "Total Acceleration - ax2dot:%e, ay2dot:%e, az2dot:%e, \n", ptclJ->a_tot[0][2], ptclJ->a_tot[1][2], ptclJ->a_tot[2][2]);
+	fprintf(binout, "Total Acceleration - ax3dot:%e, ay3dot:%e, az3dot:%e, \n", ptclJ->a_tot[0][3], ptclJ->a_tot[1][3], ptclJ->a_tot[2][3]);
+	fprintf(binout, "Irr Acceleration - ax:%e, ay:%e, az:%e, \n", ptclI->a_irr[0][0], ptclI->a_irr[1][0], ptclI->a_irr[2][0]);
+	fprintf(binout, "Irr Acceleration - axdot:%e, aydot:%e, azdot:%e, \n", ptclI->a_irr[0][1], ptclI->a_irr[1][1], ptclI->a_irr[2][1]);
+	fprintf(binout, "Irr Acceleration - ax2dot:%e, ay2dot:%e, az2dot:%e, \n", ptclI->a_irr[0][2], ptclI->a_irr[1][2], ptclI->a_irr[2][2]);
+	fprintf(binout, "Irr Acceleration - ax3dot:%e, ay3dot:%e, az3dot:%e, \n", ptclI->a_irr[0][3], ptclI->a_irr[1][3], ptclI->a_irr[2][3]);
+	fprintf(binout, "Time Steps - irregular:%e, regular:%e \n", ptclJ->TimeStepIrr, ptclJ->TimeStepReg);
+	fprintf(binout, "Time Blocks - irregular:%llu, regular:%llu \n", ptclJ->TimeBlockIrr, ptclJ->TimeBlockReg);
+	fprintf(binout, "Current Blocks - irregular: %llu, regular:%llu \n", ptclJ->CurrentBlockIrr, ptclJ->CurrentBlockReg);
+
+
+	/*
+	fprintf(binout, "\nPosition: ptclCM - x:%e, y:%e, z:%e, \n", ptclCM->Position[0], ptclCM->Position[1], ptclCM->Position[2]);
+	fprintf(binout, "Velocity: ptclCM - vx:%e, vy:%e, vz:%e, \n", ptclCM->Velocity[0], ptclCM->Velocity[1], ptclCM->Velocity[2]);
+	fflush(binout);
+
+	fprintf(binout, "Total Acceleration - ax:%e, ay:%e, az:%e, \n", ptclCM->a_tot[0][0], ptclCM->a_tot[1][0], ptclCM->a_tot[2][0]);
+	fprintf(binout, "Total Acceleration - axdot:%e, aydot:%e, azdot:%e, \n", ptclCM->a_tot[0][1], ptclCM->a_tot[1][1], ptclCM->a_tot[2][1]);
+	fprintf(binout, "Total Acceleration - ax2dot:%e, ay2dot:%e, az2dot:%e, \n", ptclCM->a_tot[0][2], ptclCM->a_tot[1][2], ptclCM->a_tot[2][2]);
+	fprintf(binout, "Total Acceleration - ax3dot:%e, ay3dot:%e, az3dot:%e, \n", ptclCM->a_tot[0][3], ptclCM->a_tot[1][3], ptclCM->a_tot[2][3]);
+	fprintf(binout, "Time Steps - irregular:%e, regular:%e \n", ptclCM->TimeStepIrr, ptclCM->TimeStepReg);
+	fprintf(binout, "Current time - irregular: %e, regular:%e \n", ptclCM->CurrentTimeIrr, ptclCM->CurrentTimeReg);
+	*/
+	//fflush(binout);
+
+	fprintf(stdout,"--------------------------------------\n");
+	//fflush(stdout); 
 
 }

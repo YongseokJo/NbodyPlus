@@ -1,13 +1,18 @@
 #include <iostream>
 #include "global.h"
 
+#define no_chain_debug
 
 std::vector<Particle*> ComputationList{};
 int writeParticle(std::vector<Particle*> &particle, double MinRegTime, int outputNum);
 bool CreateComputationChain(std::vector<Particle*> &particle);
-bool SortComputationChain(std::vector<Particle*> ComputationChain);
-Particle *SortComputationChain(Particle* ptcl);
+bool UpdateComputationChain(Particle* ptcl);
 bool CreateComputationList(Particle* ptcl);
+bool AddNewBinariesToList(std::vector<Particle*> &ComputationList, std::vector<Particle*> &particle);
+void BinaryAccelerationRoutine(double next_time, ULL next_block, std::vector<Particle*> &particle);
+void KSTermination(Particle* ptclCM, std::vector<Particle*> &particle, double current_time, ULL current_block);
+
+
 
 Particle *FirstComputation;
 // 1. sort particles according to next irregular time
@@ -16,129 +21,279 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 {
 
 #ifdef time_trace
-		_time.irr_chain.markStart();
+	_time.irr_chain.markStart();
 #endif
-		std::cout << "Create Chain\n" << std::flush;
-		Particle *ParticleForComputation;
-    //std::cout << "Creating a computation chain ...\n";
-    if (CreateComputationChain(particle) == false) {
-        std::cout << "No irregular particle to update ...\n";
-        return true;
-    }
-		std::cout << "Create List\n" << std::flush;
-		ParticleForComputation = FirstComputation;
+	//std::cout << "Creating a computation chain ...\n";
 
-		if (CreateComputationList(ParticleForComputation) == false) {
-			std::cout << "Something's wrong\n";
+	bool first = true;
+	Particle *ParticleForComputation;
+
+	//std::cout << "Create Chain\n" << std::flush;
+	if (CreateComputationChain(particle) == false) {
+		std::cout << "No irregular particle to update ...\n";
+		return true;
+	}
+
+	/*
+	fprintf(stderr,"Entire IrrChain=");
+	Particle* next=FirstComputation;
+	while (next!= nullptr) {
+		fprintf(stderr,"%.3e (%d), ", next->CurrentTimeIrr+next->TimeStepIrr, next->PID);
+		next = next->NextParticleForComputation;
+	}
+	fprintf(stderr,"\n");
+	*/
+
+
+	//std::cout << "Calculating irregular force ...\n" << std::endl;
+#ifdef time_trace
+	_time.irr_chain.markEnd();
+	_time.irr_chain.getDuration();
+#endif
+	// Caculating irregular acceleration
+
+
+	while (CreateComputationList(FirstComputation) && ComputationList.size() != 0) {
+			
+		//std::cout << "List size=" << ComputationList.size() << std::endl;
+
+		if (AddNewBinariesToList(ComputationList, particle) && ComputationList.size() == 0) {
+			//std::cout << "No irregular particle to update afte binary formation." << std::endl;
+			fprintf(stdout, "No irregular particle to update afte binary formation.\n");
+			break;
 		}
 
-		std::cout << "List size=" << ComputationList.size() << std::endl;
+		/*
+			fprintf(stderr, "in irr, particle: ");
+			for (Particle* ptcl: particle) {
+				fprintf(stderr,"%d, ",ptcl->PID);	
+			}
+			fprintf(stderr,"\n");	
+			*/
 
-    //std::cout << "Calculating irregular force ...\n" << std::endl;
-#ifdef time_trace
-		_time.irr_chain.markEnd();
-		_time.irr_chain.getDuration();
-#endif
-		// Caculating irregular acceleration
+		if ((BinaryList.size()>0)&(binary_time_prev != binary_time)) {
+			fprintf(binout, "-------------------------------------\n");
+			fprintf(binout, "irr_time = %e \n",
+					ComputationList[0]->CurrentTimeIrr*1e10/1e6*EnzoTimeStep);
+			fprintf(binout, "binary_time = %e \n",
+					binary_time*1e10/1e6*EnzoTimeStep);
 
-		computation:
-		std::cout << "Start IRR\n" << std::flush;
+			std::cout << "Integrating Binaries ..." << std::endl;
+			fprintf(binout, "Evolve.cpp: integrating binaries\n");
+			fprintf(binout, "# of binaries = %d \n",int(BinaryList.size()));
+			BinaryAccelerationRoutine(binary_time, binary_block, particle);
+		}
+
+		//std::cout << "Start IRR\n" << std::flush;
 		//while (ParticleForComputation != nullptr) {
-		for (Particle* ParticleForComputation:ComputationList) {
+
+#ifdef chain_debug
+		fprintf(stderr,"BC,BU,IrrChain=");
+		Particle* next=FirstComputation;
+		while (next!= nullptr) {
+			fprintf(stderr,"%.3e (%d), ", next->CurrentTimeIrr+next->TimeStepIrr, next->PID);
+			next = next->NextParticleForComputation;
+		}
+		fprintf(stderr,"\n");
+		
+		std::cerr << "BU, ComputationList=" << std::flush;
+		for (Particle* ptcl:ComputationList) {
+			fprintf(stderr,"%.3e (%d), ", ptcl->CurrentTimeIrr+ptcl->TimeStepIrr, ptcl->PID);
+		}
+		std::cerr << std::endl;
+#endif
+
+		for (Particle* ptcl:ComputationList) {
+
+			if (ptcl->CurrentBlockReg > ptcl->CurrentBlockIrr || ptcl->CurrentBlockReg+ptcl->TimeBlockReg < ptcl->CurrentBlockIrr)
+				fprintf(stdout,"--------------------error--------------------------------------------------------------------\n");
 
 			fprintf(stdout, "PID=%d, NextRegTimeBlock= %llu, NextIrrBlock = %llu (%.2e Myr)\n",
-					ParticleForComputation->getPID(), NextRegTimeBlock, ParticleForComputation->CurrentBlockIrr+ParticleForComputation->TimeBlockIrr, (ParticleForComputation->CurrentTimeIrr + ParticleForComputation->TimeStepIrr)*EnzoTimeStep*1e10/1e6);
-			fprintf(stdout, "CurrentTimeIrr = %.2e Myr, TimeStepIrr = %.2e Myr, CurrentBlockReg=%llu, TimeBlockReg=%llu\n",
-					ParticleForComputation->CurrentTimeIrr*EnzoTimeStep*1e10/1e6, ParticleForComputation->TimeStepIrr*EnzoTimeStep*1e10/1e6, ParticleForComputation->CurrentBlockReg, ParticleForComputation->TimeBlockReg);
+					ptcl->getPID(), NextRegTimeBlock,
+					ptcl->CurrentBlockIrr+ptcl->TimeBlockIrr,
+					(ptcl->CurrentTimeIrr + ptcl->TimeStepIrr)*EnzoTimeStep*1e10/1e6);
+			fprintf(stdout, "CurrentTimeIrr = %.2e Myr (%llu), CurrentTimeReg = %.2e Myr (%llu), TimeStepIrr = %.2e Myr (%llu), TimeStepReg= %.2e Myr (%llu)\n",
+					ptcl->CurrentTimeIrr*EnzoTimeStep*1e10/1e6, ptcl->CurrentBlockIrr,
+					ptcl->CurrentTimeReg*EnzoTimeStep*1e10/1e6, ptcl->CurrentBlockReg,
+				 	ptcl->TimeStepIrr*EnzoTimeStep*1e10/1e6, ptcl->TimeBlockIrr, 
+					ptcl->TimeStepReg*EnzoTimeStep*1e10/1e6, ptcl->TimeBlockReg
+					); 
+
+			if (ptcl->CurrentBlockReg > ptcl->CurrentBlockIrr || ptcl->CurrentBlockReg+ptcl->TimeBlockReg < ptcl->CurrentBlockIrr)
+				fprintf(stdout,"----------------------------------------------------------------------------------------\n");
+
 
 			/*
-
 			fprintf(stdout, "a_tot = (%.2e,%.2e,%.2e), a_irr = (%.2e,%.2e,%.2e), a1_irr = (%.2e,%.2e,%.2e), a2_irr = (%.2e,%.2e,%.2e), a3_irr = (%.2e,%.2e,%.2e), n_n=%d\n",
-					ParticleForComputation->a_tot[0][0],
-					ParticleForComputation->a_tot[1][0],
-					ParticleForComputation->a_tot[2][0],
-					ParticleForComputation->a_irr[0][0],
-					ParticleForComputation->a_irr[1][0],
-					ParticleForComputation->a_irr[2][0],
-					ParticleForComputation->a_irr[0][1],
-					ParticleForComputation->a_irr[1][1],
-					ParticleForComputation->a_irr[2][1],
-					ParticleForComputation->a_irr[0][2],
-					ParticleForComputation->a_irr[1][2],
-					ParticleForComputation->a_irr[2][2],
-					ParticleForComputation->a_irr[0][3],
-					ParticleForComputation->a_irr[1][3],
-					ParticleForComputation->a_irr[2][3],
-					ParticleForComputation->NumberOfAC);
-					*/
-					
+					ptcl->a_tot[0][0],
+					ptcl->a_tot[1][0],
+					ptcl->a_tot[2][0],
+					ptcl->a_irr[0][0],
+					ptcl->a_irr[1][0],
+					ptcl->a_irr[2][0],
+					ptcl->a_irr[0][1],
+					ptcl->a_irr[1][1],
+					ptcl->a_irr[2][1],
+					ptcl->a_irr[0][2],
+					ptcl->a_irr[1][2],
+					ptcl->a_irr[2][2],
+					ptcl->a_irr[0][3],
+					ptcl->a_irr[1][3],
+					ptcl->a_irr[2][3],
+					ptcl->NumberOfAC);
+			fprintf(stdout, "x = (%.2e,%.2e,%.2e), v = (%.2e,%.2e,%.2e)\n",
+					ptcl->Position[0],ptcl->Position[1],ptcl->Position[2],
+					ptcl->Velocity[0],ptcl->Velocity[1],ptcl->Velocity[2]
+					);
+			fflush(stdout);
+			*/
+
+
+			/*
+			fprintf(stdout, "in irr, PID=%d : ", ptcl->PID);
+			for (Particle* nn:ptcl->ACList) {
+				fprintf(stdout,"%d, ",nn->PID);	
+			}
+			fprintf(stdout,"\n");	
+			*/
 
 #ifdef time_trace
-		_time.irr_force.markStart();
+			_time.irr_force.markStart();
 #endif
-			ParticleForComputation->calculateIrrForce(); // this includes particle position
-
+			ptcl->calculateIrrForce(); // this includes particle position
 
 #ifdef time_trace
-		_time.irr_force.markEnd();
-		_time.irr_force.getDuration();
+			_time.irr_force.markEnd();
+			_time.irr_force.getDuration();
 #endif
 
 
 			//ParticleForComputation = ParticleForComputation->NextParticleForComputation;// this includes time evolution.
 			//ParticleForComputation = SortComputationChain(ParticleForComputation);
+		}
 
+
+
+
+#ifdef time_trace
+		_time.irr_sort.markStart();
+#endif
+		std::cout << "Update and Sort\n" << std::flush;
+		//FirstComputation =  ComputationList.back()->NextParticleForComputation;
+		/*
+		if (FirstComputation != nullptr) {
+			fprintf(stdout, "FirstComputation: PID=%d, NextBlockIrr=%llu\n", 
+					FirstComputation->PID, FirstComputation->CurrentBlockIrr + FirstComputation->TimeBlockIrr);
+			fprintf(stderr, "FirstComputation: PID=%d, NextTimeIrr=%.3e\n", 
+					FirstComputation->PID, (FirstComputation->CurrentBlockIrr + FirstComputation->TimeBlockIrr)*time_step);
+		}
+		else
+			fprintf(stdout, "FirstComputation is nullptr\n");
+			*/
+		// see if binary should be terminated or not 
+		
+		/*
+		fprintf(stderr,"AC,BU,IrrChain=");
+		next=FirstComputation;
+		while (next!= nullptr) {
+			fprintf(stderr,"%.3e (%d), ", next->CurrentTimeIrr+next->TimeStepIrr, next->PID);
+			next = next->NextParticleForComputation;
+		}
+		fprintf(stderr,"\n");
+		*/
+
+		/*
+		for (Binary* ptclBin: BinaryList) {
+			if ((ptclBin->r>(ptclBin->r0*2.0)) || (ptclBin->TimeStep > 2.0*KSTime)) {
+				std::cout << "Terminating Binary ..." << std::endl;
+				fprintf(binout, "Terminating Binary at time : %e \n", binary_time);
+				KSTermination(ptclBin->ptclCM, particle, binary_time, binary_block);
+			}
+		}
+		*/
+
+		// update particles and chain
+		// The next particle of the particle calculated lastly should be the start of the next iteration.
+		binary_time_prev = binary_time;
+		binary_block = ComputationList[0]->CurrentBlockIrr+ComputationList[0]->TimeBlockIrr;
+		binary_time  = binary_block*time_step;
+		global_time_irr = ComputationList[0]->CurrentBlockIrr+ComputationList[0]->TimeBlockIrr;
+		//std::cout << "ComputationList of " << ComputationList.size() << " : " ;
+		int bin_termination = 0;	
+		for (Particle* ptcl:ComputationList) {
+			//std::cout << ptcl->PID << " " ;
+			ptcl->updateParticle();
+			ptcl->CurrentBlockIrr += ptcl->TimeBlockIrr;
+			ptcl->CurrentTimeIrr   = ptcl->CurrentBlockIrr*time_step;
+			//std::cout << "before TimeStepCal\n" << std::flush;
+			ptcl->calculateTimeStepIrr(ptcl->a_tot, ptcl->a_irr);
+			//std::cout << "after TimeStepCal\n" << std::flush;
+			if (ptcl->isCMptcl) {
+				if (ptcl->BinaryInfo->r > ptcl->BinaryInfo->r0*2.0
+						|| ptcl->BinaryInfo->TimeStep > 2.0*KSTime) {
+					fprintf(binout, "Terminating Binary at time : %e \n", binary_time);
+					KSTermination(ptcl, particle, binary_time, binary_block);
+					bin_termination++;
+					continue;
+				}
+			}
+			UpdateComputationChain(ptcl);
+		}
+
+		if (bin_termination > 0) 
+			CreateComputationChain(particle); // because NextRegTime might have been changed.
+
+		//std::cout << "\ndone!" << std::endl ;
+
+#ifdef chain_debug
+		std::cerr << "AU, ComputationList=" << std::flush;
+		for (Particle* ptcl:ComputationList) {
+			fprintf(stderr,"%.3e (%d), ", ptcl->CurrentTimeIrr+ptcl->TimeStepIrr, ptcl->PID);
+		}
+		fprintf(stderr,"\n");
+
+		fprintf(stderr,"AC,AU,IrrChain=");
+		next=FirstComputation;
+		while (next!= nullptr) {
+			fprintf(stderr,"%.3e (%d), ", next->CurrentTimeIrr+next->TimeStepIrr, next->PID);
+			next = next->NextParticleForComputation;
+		}
+		fprintf(stderr,"\n");
+#endif
 
 
 #define no_IRR_TEST
 #ifdef IRR_TEST
 			// create output at appropriate time intervals just for irr
-			if (outputTime <= particle[0]->CurrentTimeIrr ) {
-				writeParticle(particle, particle[0]->CurrentTimeIrr, outNum++);
+			if (outputTime <= ComputationList[0]->CurrentTimeIrr ) {
+				writeParticle(particle, ComputationList[0]->CurrentTimeIrr, outNum++);
 				outputTime += outputTimeStep;
 			}
 #endif
 
-		}
-
-		std::cout << "Update and Sort\n" << std::flush;
-		// update particles and chain
-		for (Particle* ptcl:ComputationList) {
-			ptcl->updateParticle();
-			ptcl->CurrentBlockIrr += ptcl->TimeBlockIrr;
-			ptcl->CurrentTimeIrr   = ptcl->CurrentBlockIrr*time_step;
-			ptcl->calculateTimeStepIrr(ptcl->a_tot, ptcl->a_irr);
-			ParticleForComputation = SortComputationChain(ptcl);
-		}
-#ifdef time_trace
-		_time.irr_sort.markStart();
-#endif
-		std::cout << "CreateComputationList\n" << std::flush;
-		if (CreateComputationList(ParticleForComputation) && ComputationList.size() != 0) {
-			goto computation;
-		}
 #ifdef time_trace
 		_time.irr_sort.markEnd();
 		_time.irr_sort.getDuration();
 #endif
-    std::cout << "Finishing irregular force ...\n" << std::endl;
+	}
+	std::cout << "Finishing irregular force ...\n" << std::endl;
 
 
-		/*
-		for (Particle *ptcl : ComputationChain)
-		{
-			fprintf(stdout, "PID=%d, NextRegTime= %e, NextIrrTime = %e\n",
-					ptcl->getPID(), NextRegTime, ptcl->CurrentTimeIrr + ptcl->TimeStepIrr);
-			fprintf(stdout, "CurrentTimeIrr = %e, TimeStepIrr = %e, CurrentTimeReg=%e, TimeStepReg=%e\n",
-					ptcl->CurrentTimeIrr, ptcl->TimeStepIrr, ptcl->CurrentTimeReg, ptcl->TimeStepReg);
+	/*
+		 for (Particle *ptcl : ComputationChain)
+		 {
+		 fprintf(stdout, "PID=%d, NextRegTime= %e, NextIrrTime = %e\n",
+		 ptcl->getPID(), NextRegTime, ptcl->CurrentTimeIrr + ptcl->TimeStepIrr);
+		 fprintf(stdout, "CurrentTimeIrr = %e, TimeStepIrr = %e, CurrentTimeReg=%e, TimeStepReg=%e\n",
+		 ptcl->CurrentTimeIrr, ptcl->TimeStepIrr, ptcl->CurrentTimeReg, ptcl->TimeStepReg);
 
-			ptcl->calculateIrrForce(); // this includes particle position and time evolution.
-			SortComputationChain(ComputationChain);
-		}
-		*/
+		 ptcl->calculateIrrForce(); // this includes particle position and time evolution.
+		 SortComputationChain(ComputationChain);
+		 }
+		 */
 
-    //std::cout << "Finishing irregular force ...\n" << std::endl;
-		return true;
+	//std::cout << "Finishing irregular force ...\n" << std::endl;
+	return true;
 }
 
 
