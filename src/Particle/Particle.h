@@ -149,6 +149,8 @@ class Particle
 		void updateParticle();
 		double evolveStarMass(double t1, double t2);
 		void isKSCandidate();
+		void convertBinaryCoordinatesToCartesian();
+		void polynomialPrediction(double current_time);
 		~Particle()=default;
 };
 

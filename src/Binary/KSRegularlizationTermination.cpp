@@ -17,8 +17,8 @@ void KSTermination(Particle* ptclCM, std::vector<Particle*> &particle, double cu
 	double R[Dim], Rdot[Dim];
 	double Rinv;
 	double ratioM;
-
 	double L[3][4];
+
 	int ptclCMIndex;
 	int ptclBinIndex;
 
@@ -36,74 +36,12 @@ void KSTermination(Particle* ptclCM, std::vector<Particle*> &particle, double cu
 	ptclJ = ptclCM->BinaryParticleJ;
 	ptclBin = ptclCM->BinaryInfo;
 
-	fprintf(stdout,"Converting the KS coordinates to physical coordinates of ptclI and ptclJ\n");
 
-	// update the values of positions of ptclI and ptcl J
-
-	R[0]   = ptclBin->u[0]*ptclBin->u[0] - ptclBin->u[1]*ptclBin->u[1] - ptclBin->u[2]*ptclBin->u[2] + ptclBin->u[3]*ptclBin->u[3];
-	R[1]   = 2*(ptclBin->u[0]*ptclBin->u[1] - ptclBin->u[2]*ptclBin->u[3]);
-	R[2]   = 2*(ptclBin->u[0]*ptclBin->u[2] + ptclBin->u[1]*ptclBin->u[3]);
-	ratioM = ptclJ->Mass/ptclCM->Mass;
-
-	for (int dim=0; dim<Dim; dim++) {
-		ptclI->Position[dim] = ptclCM->Position[dim] + ratioM*R[dim];
-		ptclJ->Position[dim] = ptclCM->Position[dim] - R[dim];
-	}
+	// convert partI and J's coordinates back to cartesian form KS coordinates
+	ptclCM->convertBinaryCoordinatesToCartesian();
 
 
-	// do the same thing for velocity components
-	generate_Matrix(ptclBin->u,L);
-
-	Rinv = 1/(ptclBin->u[0]*ptclBin->u[0] + ptclBin->u[1]*ptclBin->u[1] + ptclBin->u[2]*ptclBin->u[2] + ptclBin->u[3]*ptclBin->u[3]) ;
-
-
-	for (int dim=0; dim<Dim; dim++) {
-		Rdot[dim] = 0.0;
-		for (int dimu=0; dimu<4; dimu++) {
-			Rdot[dim] += 2*L[dim][dimu]*ptclBin->udot[dim]*Rinv;
-		}
-	}
-
-
-	for (int dim=0; dim<Dim; dim++) {
-		ptclI->Velocity[dim] = ptclCM->Velocity[dim] + ratioM*Rdot[dim];
-		ptclJ->Velocity[dim] = ptclI->Velocity[dim] - Rdot[dim];
-	}
-
-
-	fprintf(stdout,"END CONVERTING THE COORDINATES\n \n");
-
-
-
-	// add the original particles
-	fprintf(stdout,"add the binary components to particle list\n");
-
-	ptclI->CurrentBlockIrr = ptclCM->CurrentBlockIrr;
-	ptclI->CurrentBlockReg = ptclCM->CurrentBlockReg;
-	ptclI->CurrentTimeIrr = ptclCM->CurrentBlockIrr*time_step;
-	ptclI->CurrentTimeReg = ptclCM->CurrentBlockReg*time_step;
-
-	ptclI->TimeStepIrr     = ptclCM->TimeStepIrr;
-	ptclI->TimeBlockIrr    = ptclCM->TimeBlockIrr;
-	ptclI->TimeLevelIrr    = ptclCM->TimeLevelIrr;
-
-	ptclI->TimeStepReg     = ptclCM->TimeStepReg;
-	ptclI->TimeBlockReg    = ptclCM->TimeBlockReg;
-	ptclI->TimeLevelReg    = ptclCM->TimeLevelReg;
-
-	ptclJ->CurrentBlockIrr = ptclI->CurrentBlockIrr;
-	ptclJ->CurrentBlockReg = ptclI->CurrentBlockReg;
-	ptclJ->CurrentTimeIrr = ptclI->CurrentTimeIrr;
-	ptclJ->CurrentTimeReg = ptclI->CurrentTimeReg;
-
-	ptclJ->TimeStepIrr     = ptclCM->TimeStepIrr;
-	ptclJ->TimeBlockIrr    = ptclCM->TimeBlockIrr;
-	ptclJ->TimeLevelIrr    = ptclCM->TimeLevelIrr;
-
-	ptclJ->TimeStepReg     = ptclCM->TimeStepReg;
-	ptclJ->TimeBlockReg    = ptclCM->TimeBlockReg;
-	ptclJ->TimeLevelReg    = ptclCM->TimeLevelReg;
-
+	// Initialize Neighbor list
 	ptclI->ACList.clear();
 	ptclI->NumberOfAC = 0;
 
@@ -114,7 +52,6 @@ void KSTermination(Particle* ptclCM, std::vector<Particle*> &particle, double cu
 	ReInitializeKSParticle(ptclI, particle);
 	fprintf(stdout,"initialize particle J \n");
 	ReInitializeKSParticle(ptclJ, particle);
-
 
 
 
@@ -171,6 +108,7 @@ void KSTermination(Particle* ptclCM, std::vector<Particle*> &particle, double cu
 	}
 
 
+	fprintf(stdout,"add the binary components to particle list\n");
 	particle.push_back(ptclI);
 	particle.push_back(ptclJ);
 

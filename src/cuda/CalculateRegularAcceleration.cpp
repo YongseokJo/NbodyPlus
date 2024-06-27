@@ -113,11 +113,6 @@ void CalculateRegAccelerationOnGPU(std::vector<Particle*> RegularList, std::vect
 
 
 
-	dt *= EnzoTimeStep;  // unit conversion
-	dt2 = dt*dt;
-	dt3 = dt2*dt;
-	dt4 = dt3*dt;
-	dt5 = dt4*dt;
 
 	/*
 	DTR = dt;
@@ -193,6 +188,14 @@ void CalculateRegAccelerationOnGPU(std::vector<Particle*> RegularList, std::vect
 		/*******************************************************
 		 * Position and velocity correction due to 4th order correction
 		 ********************************************************/
+
+
+		dt  = ptcl->TimeStepReg*EnzoTimeStep;  // unit conversion
+		dt2 = dt*dt;
+		dt3 = dt2*dt;
+		dt4 = dt3*dt;
+		dt5 = dt4*dt;
+
 		for (int dim=0; dim<Dim; dim++) {
 
 			da_dt2  = (ptcl->a_reg[dim][0] - AccRegReceive[i][dim] + a_tmp[dim]   ) / dt2;
@@ -206,6 +209,9 @@ void CalculateRegAccelerationOnGPU(std::vector<Particle*> RegularList, std::vect
 			// save the values in the temporary variables
 			ptcl->NewPosition[dim] = ptcl->PredPosition[dim] + a2*dt4/24 + a3*dt5/120;
 			ptcl->NewVelocity[dim] = ptcl->PredVelocity[dim] + a2*dt3/6  + a3*dt4/24;
+
+			//ptcl->NewPosition[dim] = ptcl->Position[dim] + a2*dt4/24 + a3*dt5/120;
+			//ptcl->NewVelocity[dim] = ptcl->Velocity[dim] + a2*dt3/6  + a3*dt4/24;
 
 			//ptcl->NewPosition[dim] = ptcl->PredPosition[dim]; // + a2*dt4/24 + a3*dt5/120;
 			//ptcl->NewVelocity[dim] = ptcl->PredVelocity[dim]; // + a2*dt3/6  + a3*dt4/24;
@@ -318,6 +324,9 @@ void CalculateRegAccelerationOnGPU(std::vector<Particle*> RegularList, std::vect
 	delete[] AccRegDotReceive;
 	delete[] AccIrr;
 	delete[] AccIrrDot;
+	for (int i=0; i<ListSize; i++) {
+		delete[] ACListReceive[i];
+	}
 	delete[] ACListReceive;
 
 	//CloseDevice();
@@ -343,7 +352,7 @@ void CalculateSingleAcceleration(Particle *ptcl1, Particle *ptcl2, double (&a)[3
 	double dxdv;
 	double m_r3;
 
-	if (ptcl1 == ptcl2) {
+	if (ptcl1->PID == ptcl2->PID) {
 		return;
 	}
 

@@ -8,7 +8,7 @@
 
 //#define FixNumNeighbor 30
 //#define FixNumNeighbor 50
-#define FixNumNeighbor 1
+#define FixNumNeighbor 99
 
 void FindNeighbor(Particle* ptcl1, std::vector<Particle*> &particle);
 void CalculateAcceleration01(Particle* ptcl1, std::vector<Particle*> &particle);

@@ -78,7 +78,8 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 			fprintf(binout, "binary_time = %e \n",
 					binary_time*1e10/1e6*EnzoTimeStep);
 
-			std::cout << "Integrating Binaries ..." << std::endl;
+
+			fprintf(stdout, "Integrating Binaries ...\n");
 			fprintf(binout, "Evolve.cpp: integrating binaries\n");
 			fprintf(binout, "# of binaries = %d \n",int(BinaryList.size()));
 			BinaryAccelerationRoutine(binary_time, binary_block, particle);
@@ -275,6 +276,7 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 		_time.irr_sort.markEnd();
 		_time.irr_sort.getDuration();
 #endif
+		fflush(stdout);
 	}
 	std::cout << "Finishing irregular force ...\n" << std::endl;
 

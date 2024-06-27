@@ -20,7 +20,7 @@
 
 //#define FixNumNeighbor 30
 //#define FixNumNeighbor 50
-#define FixNumNeighbor 1
+#define FixNumNeighbor 99
 
 #define ESP2 1e-4
 #define new_size(A) ((A > 1024) ? int(pow(2,ceil(log(A)/log(2.0)))) : 1024)

@@ -78,21 +78,21 @@ void Particle::calculateIrrForce() {
 		}
 		*/
 		fprintf(stdout,"\n");	
-		//fflush(stdout);
+		fflush(stdout);
 		assert(this->Position[0] ==  this->Position[0]);
 	}
 
 	if (this->PredPosition[0] !=  this->PredPosition[0]) {
 		fprintf(stdout, "myself = %d\n", this->PID);
 		fprintf(stdout, "pred x[0] = %e\n", this->PredPosition[0]);
-		//fflush(stdout);
+		fflush(stdout);
 		assert(this->PredPosition[0] ==  this->PredPosition[0]);
 	}
 
 	if (this->a_tot[0][0] !=  this->a_tot[0][0]) {
 		fprintf(stdout, "myself = %d\n", this->PID);
 		fprintf(stdout, "a_tot[0] = %e\n", this->a_tot[0][0]);
-		//fflush(stdout);
+		fflush(stdout);
 		assert(this->a_tot[0][0] == this->a_tot[0][0]);
 	}
 	
@@ -100,7 +100,7 @@ void Particle::calculateIrrForce() {
 	for (Particle* ptcl: ACList) {
 		if (ptcl->PID == PID)  {
 			fprintf(stderr, "Myself in neighbor (%d)", PID);
-			//fflush(stderr);
+			fflush(stderr);
 			continue;
 		}
 		
@@ -212,7 +212,7 @@ void Particle::calculateIrrForce() {
 			fprintf(stdout,"%.2e (%d),  ",nn->a_tot[0][0],nn->PID);	
 		}
 		fprintf(stdout,"\n");	
-		//fflush(stdout);
+		fflush(stdout);
 		assert(this->NewPosition[0] ==  this->NewPosition[0]);
 	}
 

@@ -33,16 +33,14 @@ bool RegularAccelerationRoutine(std::vector<Particle*> &particle)
 					);
 			if (ptcl->CurrentBlockReg >= ptcl->CurrentBlockIrr || ptcl->CurrentBlockReg+ptcl->TimeBlockReg != ptcl->CurrentBlockIrr)
 				fprintf(stdout,"--------------------------------------------------------------------------------------------- \n");
-		}
-
+		//}
 			/*
 			fprintf(stderr, "In reg, PID=%d : ", ptcl->PID);
 			for (Particle* nn:ptcl->ACList) {
 				fprintf(stderr,"%d, ",nn->PID);	
 			}
-			*/
-			/*
 			fprintf(stderr,"\n");	
+			*/
 			fprintf(stdout, " a_tot = (%.2e,%.2e,%.2e), a_reg = (%.2e,%.2e,%.2e), a_irr = (%.2e,%.2e,%.2e), n_n=%d\n\
 					a1_reg = (%.2e,%.2e,%.2e), a2_reg = (%.2e,%.2e,%.2e), a3_reg = (%.2e,%.2e,%.2e)\n\
 					a1_irr = (%.2e,%.2e,%.2e), a2_irr = (%.2e,%.2e,%.2e), a3_irr = (%.2e,%.2e,%.2e)\n", 
@@ -75,8 +73,7 @@ bool RegularAccelerationRoutine(std::vector<Particle*> &particle)
 					ptcl->a_irr[1][3],
 					ptcl->a_irr[2][3]
 					);
-					*/
-		//}
+		}
 		//fflush(stdout);
 		CalculateRegAccelerationOnGPU(RegularList, particle);
 	}

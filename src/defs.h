@@ -45,8 +45,8 @@
 
 // KS regularlization related variables
 #define stumpffN 12 // the order of approximation for stumpff functions
-//#define KSDistance 0.0002  // the distance of binary particles from each other
-#define KSDistance 1e-8  // the distance of binary particles from each other
+#define KSDistance 0.0002  // the distance of binary particles from each other
+//#define KSDistance 1e-8  // the distance of binary particles from each other
 #define KSTime 2e-5  // short timestep criteria for binary search
 //#define KSTime 2e-5  // short timestep criteria for binary search
 #define PerturberDistance 0.01  // the distance of binary perturbers from the pair

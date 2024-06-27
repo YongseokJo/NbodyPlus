@@ -71,7 +71,7 @@ void Particle::calculateTimeStepIrr(double f[3][4],double df[3][4]) {
 	*/
 
 	//std::cout << "TimeStepIrrTmp=" << TimeStepIrrTmp << std::endl;
-	while (((CurrentBlockIrr < CurrentBlockReg+TimeBlockReg) && (CurrentBlockIrr+TimeBlockTmp > CurrentBlockReg+TimeBlockReg)) || (TimeLevelTmp > TimeLevelReg)) {
+	while (((CurrentBlockIrr < CurrentBlockReg+TimeBlockReg) && (CurrentBlockIrr+TimeBlockTmp > CurrentBlockReg+TimeBlockReg)) || (TimeLevelTmp >= TimeLevelReg)) {
 		/*
 		fprintf(stderr,"CurrentBlockIrr = %llu\n",
 				CurrentBlockIrr);

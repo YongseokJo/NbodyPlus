@@ -108,6 +108,11 @@ void Particle::correctParticleFourthOrder(double current_time, double next_time,
 
 
 
+void Particle::polynomialPrediction(double current_time) {
+
+}
+
+
 void Particle::updateParticle() {
 	for (int dim=0; dim<Dim; dim++) {
 		Position[dim] = NewPosition[dim];

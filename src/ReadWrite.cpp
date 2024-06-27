@@ -7,8 +7,9 @@
 #include "global.h"
 
 int getLineNumber();
+void write_out(std::ofstream& outputFile, const Particle* ptcl);
 const int NUM_COLUMNS = 7; // Define the number of columns
-
+const int width = 18;
 
 int readData(std::vector<Particle*> &particle) {
 
@@ -139,7 +140,6 @@ bool createDirectory(const std::string& path) {
 
 int writeParticle(std::vector<Particle*> &particle, double current_time, int outputNum) {
 
-		const int width = 18;
     std::string directoryPath = "output";
 
     // Create the directory or check if it already exists
@@ -184,26 +184,15 @@ int writeParticle(std::vector<Particle*> &particle, double current_time, int out
 
     // Write particle data to the file
 		for (Particle* ptcl:particle) {
-			if (current_time == ptcl->CurrentTimeIrr)
-        outputFile  << std::left 
-										<< std::setw(width) << ptcl->PID
-										<< std::setw(width) << ptcl->Mass*mass_unit 
-                    << std::setw(width) << ptcl->Position[0]*position_unit
-                    << std::setw(width) << ptcl->Position[1]*position_unit
-                    << std::setw(width) << ptcl->Position[2]*position_unit
-                    << std::setw(width) << ptcl->Velocity[0]*velocity_unit/yr*pc/1e5
-                    << std::setw(width) << ptcl->Velocity[1]*velocity_unit/yr*pc/1e5 
-                    << std::setw(width) << ptcl->Velocity[2]*velocity_unit/yr*pc/1e5 << '\n';
-			else
-        outputFile  << std::left 
-										<< std::setw(width) << ptcl->PID
-										<< std::setw(width) << ptcl->Mass*mass_unit 
-                    << std::setw(width) << ptcl->PredPosition[0]*position_unit 
-                    << std::setw(width) << ptcl->PredPosition[1]*position_unit 
-                    << std::setw(width) << ptcl->PredPosition[2]*position_unit 
-                    << std::setw(width) << ptcl->PredVelocity[0]*velocity_unit/yr*pc/1e5 
-                    << std::setw(width) << ptcl->PredVelocity[1]*velocity_unit/yr*pc/1e5
-                    << std::setw(width) << ptcl->PredVelocity[2]*velocity_unit/yr*pc/1e5 << '\n';
+			ptcl->predictParticleSecondOrderIrr(current_time);
+			if (ptcl->isCMptcl)  {
+				ptcl->convertBinaryCoordinatesToCartesian();
+				write_out(outputFile, ptcl->BinaryParticleI);
+				write_out(outputFile, ptcl->BinaryParticleJ);
+			}
+			else {
+				write_out(outputFile, ptcl);
+			}
     }
 
     // Close the file
@@ -213,6 +202,19 @@ int writeParticle(std::vector<Particle*> &particle, double current_time, int out
 
     return 0;
 
+}
+
+
+void write_out(std::ofstream& outputFile, const Particle* ptcl) {
+        outputFile  << std::left
+										<< std::setw(width) << ptcl->PID
+										<< std::setw(width) << ptcl->Mass*mass_unit
+                    << std::setw(width) << ptcl->Position[0]*position_unit
+                    << std::setw(width) << ptcl->Position[1]*position_unit
+                    << std::setw(width) << ptcl->Position[2]*position_unit
+                    << std::setw(width) << ptcl->Velocity[0]*velocity_unit/yr*pc/1e5
+                    << std::setw(width) << ptcl->Velocity[1]*velocity_unit/yr*pc/1e5
+                    << std::setw(width) << ptcl->Velocity[2]*velocity_unit/yr*pc/1e5 << '\n';
 }
 
 
