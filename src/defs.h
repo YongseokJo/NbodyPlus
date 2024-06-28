@@ -46,7 +46,7 @@
 // KS regularlization related variables
 #define stumpffN 12 // the order of approximation for stumpff functions
 #define KSDistance 0.0002  // the distance of binary particles from each other
-//#define KSDistance 1e-8  // the distance of binary particles from each other
+//#define KSDistance 1e-10  // the distance of binary particles from each other
 #define KSTime 2e-5  // short timestep criteria for binary search
 //#define KSTime 2e-5  // short timestep criteria for binary search
 #define PerturberDistance 0.01  // the distance of binary perturbers from the pair
@@ -64,6 +64,9 @@
 #define mass_unit 0.0001424198  // Msun in the unit that G = 1.
 
 #define time_trace
+
+#define mag(a) (a[0]*a[0]+a[1]*a[1]+a[2]*a[2])
+#define mag0(a) (a[0][0]*a[0][0]+a[1][0]*a[1][0]+a[2][0]*a[2][0])
 
 typedef unsigned long long ULL;
 

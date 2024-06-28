@@ -1,5 +1,6 @@
 #include <iostream>
 #include "global.h"
+#include <cassert>
 
 #define no_chain_debug
 
@@ -71,6 +72,15 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 			fprintf(stderr,"\n");	
 			*/
 
+
+		for (Particle* ptcl:particle) {
+				if (ptcl->Position[0] !=  ptcl->Position[0] || ptcl->Velocity[0] !=  ptcl->Velocity[0]) {
+					fprintf(stdout, "before, myself = %d\n", ptcl->PID);
+					fprintf(stdout, "x[0] = %e\n", ptcl->Position[0]);
+					fflush(stdout);
+					//assert(ptcl->Position[0] ==  ptcl->Position[0]);
+			}
+		}
 		if ((BinaryList.size()>0)&(binary_time_prev != binary_time)) {
 			fprintf(binout, "-------------------------------------\n");
 			fprintf(binout, "irr_time = %e \n",
@@ -83,6 +93,15 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 			fprintf(binout, "Evolve.cpp: integrating binaries\n");
 			fprintf(binout, "# of binaries = %d \n",int(BinaryList.size()));
 			BinaryAccelerationRoutine(binary_time, binary_block, particle);
+		}
+
+		for (Particle* ptcl:particle) {
+				if (ptcl->Position[0] !=  ptcl->Position[0] || ptcl->Velocity[0] !=  ptcl->Velocity[0]) {
+					fprintf(stdout, "after, myself = %d\n", ptcl->PID);
+					fprintf(stdout, "x[0] = %e\n", ptcl->Position[0]);
+					fflush(stdout);
+					//assert(ptcl->Position[0] ==  ptcl->Position[0]);
+			}
 		}
 
 		//std::cout << "Start IRR\n" << std::flush;

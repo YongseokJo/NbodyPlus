@@ -10,13 +10,14 @@ void getBlockTimeStep(double dt, int& TimeLevel, ULL &TimeBlock, double &TimeSte
 // Update TimeStepIrr
 void Particle::calculateTimeStepIrr(double f[3][4],double df[3][4]) {
 	double TimeStepTmp;
-	int TimeLevelTmp;
+	int TimeLevelTmp, TimeLevelTmp0;
 	ULL TimeBlockTmp;
 
 	if (this->NumberOfAC == 0)
 		return;
 
 	getBlockTimeStep(getNewTimeStepIrr(a_tot, a_irr), TimeLevelTmp, TimeBlockTmp, TimeStepTmp);
+	TimeLevelTmp0 = TimeLevelTmp;
 
 	/*
 	if (PID == 965) {
@@ -82,6 +83,9 @@ void Particle::calculateTimeStepIrr(double f[3][4],double df[3][4]) {
 		fprintf(stderr,"TimeBlockIrr    = %llu\n",
 				TimeBlockIrr);
 				*/
+		if (TimeLevelTmp > TimeLevelReg)
+			fprintf(stderr, "PID=%d, Irr=%d, Reg=%d\n", PID, TimeLevelTmp0, TimeLevelReg);
+
 		TimeLevelTmp--;
 		TimeBlockTmp *= 0.5;
 	}
@@ -102,11 +106,6 @@ void Particle::calculateTimeStepIrr(double f[3][4],double df[3][4]) {
 		std::cerr << std::endl;
 	}
 	*/
-	if (TimeStepIrr > TimeStepReg) {
-		fprintf(stderr, "PID=%d, TimeStepIrr=(%.2e, %d, %llu), TimeStepReg=(%.2e, %d, %llu)\n", PID,
-			 	TimeStepIrr, TimeLevelIrr, TimeBlockIrr,
-			 	TimeStepReg, TimeLevelReg, TimeBlockReg);
-	}
 }
 
 
