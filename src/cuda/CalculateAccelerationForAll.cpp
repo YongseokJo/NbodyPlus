@@ -406,9 +406,13 @@ void SendAllParticlesToGPU(double time, std::vector <Particle*> &particle) {
 		}
 	}
 
+	fprintf(stdout, "Sending particles to GPU...\n");
+	fflush(stdout);
 	// send the arrays to GPU
 	SendToDevice(&size, Mass, Position, Velocity, Mdot, &NumNeighborMax);
 
+	fprintf(stdout, "Done.\n");
+	fflush(stdout);
 	// free the temporary variables
 	delete[] Mass;
 	delete[] Mdot;

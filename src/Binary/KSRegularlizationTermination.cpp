@@ -109,7 +109,9 @@ void KSTermination(Particle* ptclCM, std::vector<Particle*> &particle, double cu
 
 
 	fprintf(stdout,"add the binary components to particle list\n");
+	ptclI->ParticleOrder = particle.size();
 	particle.push_back(ptclI);
+	ptclJ->ParticleOrder = particle.size();
 	particle.push_back(ptclJ);
 
 
@@ -182,8 +184,6 @@ void KSTermination(Particle* ptclCM, std::vector<Particle*> &particle, double cu
 
 	fprintf(stdout,"total number of particles = %lu, total number of binaries = %lu \n", particle.size(), BinaryList.size());
 	fprintf(stdout,"total number of ComputationList = %lu\n", ComputationList.size());
-	fprintf(stdout,"PID=%d\n", particle[0]->PID);
-
 
 	fprintf(stdout,"end of KS Regularlization Termination \n ");
 
@@ -235,7 +235,7 @@ void KSTermination(Particle* ptclCM, std::vector<Particle*> &particle, double cu
 	fprintf(binout, "Time Steps - irregular:%e, regular:%e \n", ptclCM->TimeStepIrr, ptclCM->TimeStepReg);
 	fprintf(binout, "Current time - irregular: %e, regular:%e \n", ptclCM->CurrentTimeIrr, ptclCM->CurrentTimeReg);
 	*/
-	//fflush(binout);
+	fflush(binout);
 
 	fprintf(stdout,"--------------------------------------\n");
 	//fflush(stdout); 

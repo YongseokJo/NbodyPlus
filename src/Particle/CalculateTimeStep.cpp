@@ -97,8 +97,15 @@ void Particle::calculateTimeStepIrr(double f[3][4],double df[3][4]) {
 		TimeLevelIrr = std::max(time_block, TimeLevelIrr);
 	}
 
+
 	TimeStepIrr = static_cast<double>(pow(2, TimeLevelIrr));
 	TimeBlockIrr = static_cast<ULL>(pow(2, TimeLevelIrr-time_block));
+
+	if (TimeStepIrr > 1) {
+		fprintf(stderr, "TimeStepIrr=%e, TimeLevelIrr=%d, TimeLevelTmp0=%d\n",TimeStepIrr, TimeLevelIrr, TimeLevelTmp0);
+		fflush(stderr);
+		throw std::runtime_error("");
+	}
 
 	/*
 	if (PID == 430) {
@@ -177,12 +184,28 @@ void Particle::calculateTimeStepReg() {
 		TimeLevelIrr = TimeLevelReg;
 	}
 
-	TimeStepReg = static_cast<double>(pow(2, TimeLevelReg));
+	TimeStepReg  = static_cast<double>(pow(2, TimeLevelReg));
 	TimeBlockReg = static_cast<ULL>(pow(2, TimeLevelReg-time_block));
+
+	if (TimeStepReg*EnzoTimeStep*1e4 < 1e-7) {
+		fprintf(stderr, "TimeStep = %.3e, TimeStepTmp0 = %.3e\n",
+			 	TimeStepReg*EnzoTimeStep*1e4, static_cast<double>(pow(2, TimeLevelTmp0))*EnzoTimeStep*1e4);
+		fflush(stderr);
+	}
 
 	if (CurrentTimeReg+TimeStepReg > 1 && CurrentTimeReg != 1.0) {
 		TimeStepReg = 1 - CurrentTimeReg;
 		TimeBlockReg = block_max-CurrentBlockReg;
+	}
+
+	if (TimeStepReg*EnzoTimeStep*1e4<1e-7) {
+		throw std::runtime_error("TimeStepReg is too small.");
+	}
+	if (TimeStepReg > 1) {
+		fprintf(stderr, "TimeStepReg=%e, TimeLevelReg=%d, TimeLevelTmp0=%d\n",TimeStepReg, TimeLevelReg, TimeLevelTmp0);
+		fprintf(stderr, "TimeStepIrr=%e, TimeLevelIrr=%d, TimeLevelTmp0=%d\n",TimeStepIrr, TimeLevelIrr, TimeLevelTmp0);
+		fflush(stderr);
+		throw std::runtime_error("");
 	}
 
 	//std::cout << "NBODY+: TimeStepReg = " << TimeStepReg << std::endl;

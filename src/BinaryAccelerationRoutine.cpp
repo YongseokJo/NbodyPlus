@@ -27,7 +27,7 @@ bool AddNewBinariesToList(std::vector<Particle*> &ComputationList, std::vector<P
 	return true;
 }
 
-void BinaryAccelerationRoutine(double next_time, ULL next_block, std::vector<Particle*> &particle) {
+void BinaryAccelerationRoutine(double next_time, std::vector<Particle*> &particle) {
 
 	int count;
 	int bincount = 0;

@@ -16,11 +16,11 @@
 
 //#define THREAD 128 // 2048 for A100
 #define THREAD 1 // 2048 for A100
-#define BLOCK 2048    // 32 for A100 
+#define BLOCK 1024    // 32 for A100 
 
 //#define FixNumNeighbor 30
 //#define FixNumNeighbor 50
-#define FixNumNeighbor 99
+#define FixNumNeighbor 30
 
 #define ESP2 1e-4
 #define new_size(A) ((A > 1024) ? int(pow(2,ceil(log(A)/log(2.0)))) : 1024)
@@ -73,7 +73,6 @@ __device__ void kernel(
 
 __global__ void OrganizeNeighbor(const Neighbor do_neighbor[], Neighbor d_neighbor[],
 		const int offset, const int NNB);
-
 __device__ void initializeResult(Result &res);
 __device__ void _addition(Result &result, const Result res);
 __device__ void _copy(Result &result, const Result res);
@@ -285,7 +284,6 @@ __device__ void kernel(
 	}
 	else {
 		if (dr2 < r_max) {
-			r_max                            = dr2;
 			r_nb[index_max]                  = dr2;
 			neighbor.NeighborList[index_max] = bg_index;
 			// update new r_max
@@ -401,6 +399,7 @@ void _ReceiveFromHost(
 	assert(NNB <= nbodymax);
 	cudaError_t cudaStatus;
 
+	printf("CUDA: receive starts\n");
 	//my_allocate(&h_background, &d_background_tmp, new_size(NNB));
 	//cudaMemcpyToSymbol(d_background, &d_background_tmp, new_size(NNB)*sizeof(BackgroundParticle));
 	if ((first) || (new_size(NNB) > variable_size )) {
@@ -422,7 +421,6 @@ void _ReceiveFromHost(
 		my_allocate_d(&do_neighbor, variable_size*THREAD);
 	}
 
-	//fprintf(stdout, "CUDA: receive starts\n");
 	//printf("CUDA: new size of NNB=%d\n", variable_size);
 	/*
 	cudaStatus = cudaMallocManaged(&background, new_size(NNB)*sizeof(BackgroundParticle)); //NNB*sizeof(BackgroundParticle));
