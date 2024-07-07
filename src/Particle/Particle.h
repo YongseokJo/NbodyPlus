@@ -21,6 +21,7 @@ class Particle
 	//
 
 	public:
+		int ParticleOrder;
 		int PID;
 		int ParticleType;
 		double Mass;
@@ -67,6 +68,7 @@ class Particle
 		// Constructor
 		Particle(void) {
 			//std::cout << "Constructor called" << std::endl;
+			ParticleOrder   = -1;
 			Mass            = 0;
 			InitialMass     = 0;
 			NumberOfAC      = 0; // number of neighbors

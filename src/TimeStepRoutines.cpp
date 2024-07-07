@@ -21,10 +21,17 @@ double getNewTimeStepReg(double v[3], double df[3][4]) {
 	double dta, dtb = -1;
   dta  = (std::sqrt(F2*F2dot2)+Fdot2)/(std::sqrt(Fdot2*F3dot2)+F2dot2);
 	dta  = std::sqrt(eta*dta);
-	if (F2 != 0)
+	if (F2 != 0) {
 		dtb = std::sqrt(eta*v2/F2);
+	}
+	//dtb = std::sqrt(eta*(F2+v2*v2)/(Fdot2+F2*v2)); // not bad
+  dtb  = (std::sqrt(v2*Fdot2)+F2)/(std::sqrt(F2*F2dot2)+Fdot2);
+	dtb  = std::sqrt(eta*dtb);
+	//dtb = std::sqrt(eta*());
 	//return std::max(dta, dtb);
-	return dta;
+	//return dta;
+	//fprintf(stderr, "dta=%.3e, dtb=%.3e\n", dta, dtb);
+	return dta; //dta;
 }
 
 

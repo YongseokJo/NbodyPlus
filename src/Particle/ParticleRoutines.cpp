@@ -131,8 +131,9 @@ void Particle::normalizeParticle() {
 
 
 void Particle::convertBinaryCoordinatesToCartesian() {
-	if (this->isCMptcl)  {
+	if (!this->isCMptcl)  {
 		fprintf(stderr,"This is NOT a CM particle!\n");
+		return;
 	}
 	fprintf(stdout,"Converting the KS coordinates to physical coordinates of ptclI and ptclJ\n");
 	Binary* ptclBin = BinaryInfo;

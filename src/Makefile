@@ -4,8 +4,10 @@ CXX = icc
 NVCC = nvcc
 
 # Compiler flags
-CXXFLAGS  = -std=c++11 -Wall -Wextra -Wuninitialized -I./Particle -I./ -g 
-NVCCFLAGS = -O2 -G -Xcompiler -rdynamic -lineinfo -g
+CXXFLAGS  = -std=c++11  -fsanitize=address -Wall -Wextra -Wuninitialized -I./Particle -I./ -g 
+NVCCFLAGS = -O2 -G -Xcompiler -rdynamic -g  --device-debug #-lineinfo --generate-line-info
+#NVCC_FLAGS_DEBUG = -g -G --device-debug
+#NVCC_FLAGS_PROFILE = -g -lineinfo
 
 # Libraries
 LDFLAGS = -L/usr/local/cuda-11.8/lib64/ -lcudart

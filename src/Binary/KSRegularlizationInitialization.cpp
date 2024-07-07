@@ -41,6 +41,9 @@ void CalculateKSAcceleration(Particle* ptclI, Particle* ptclJ, Particle* ptclCM,
 		v[dim]    = 0.;
 	}
 
+	//std::sort(particle.begin(),particle.end(),
+				//[](Particle* p1, Particle* p2) { return p1->PID > p2->PID; });
+
 	for (int i=0; i<2; i++) {
 
 		if (i==0) 
@@ -50,8 +53,10 @@ void CalculateKSAcceleration(Particle* ptclI, Particle* ptclJ, Particle* ptclCM,
 
 		// updated the predicted positions and velocities just in case
 		ptcl1->predictParticleSecondOrderIrr(current_time);
-		std::sort(ptcl1->ACList.begin(),ptcl1->ACList.end());
-		std::sort(particle.begin(),particle.end());
+		//std::sort(ptcl1->ACList.begin(),ptcl1->ACList.end());
+		std::sort(ptcl1->ACList.begin(),ptcl1->ACList.end(),
+				[](Particle* p1, Particle* p2) { return p1->ParticleOrder < p2->ParticleOrder;});
+
 
 		// initialization of relevant variables 
 		j = 0;
@@ -240,7 +245,7 @@ void Particle::isKSCandidate() {
 	// temporary calculation variables
 	double x[Dim],v[Dim];
 	double r_now2, r_next2;
-	double next_time = CurrentTimeIrr;
+	double current_time;
 	double r_min = 1e8;
 	int numberOfPairCandidate=0;
 	Particle* minPtcl;
@@ -248,7 +253,6 @@ void Particle::isKSCandidate() {
 
 	// predict the particle position to obtain more information
 	// particle regularlized if the conditions are satisfied at a future time
-	this->predictParticleSecondOrderIrr(next_time);
 
 	// need to consider case when c.m particles are the cause of the small steps
 	// need to be added later - CHECK
@@ -264,26 +268,18 @@ void Particle::isKSCandidate() {
 
 
 		// find out what the paired particle is
-		ptcl->predictParticleSecondOrderIrr(CurrentTimeIrr);
-		for (int dim=0; dim<Dim; dim++) {
+		current_time = this->CurrentTimeIrr > ptcl->CurrentTimeIrr ? \
+									 this->CurrentTimeIrr : ptcl->CurrentTimeIrr;
+		this->predictParticleSecondOrderIrr(current_time);
+		ptcl->predictParticleSecondOrderIrr(current_time);
 
-
-			// calculate position and velocity differences
-			x[dim] = ptcl->Position[dim] - this->Position[dim];
-			v[dim] = ptcl->Velocity[dim] - this->Velocity[dim];
-
-			// calculate the square of radius and inner product of r and v for each case
-			r_now2 += x[dim]*x[dim];
-		}
-
-		ptcl->predictParticleSecondOrderIrr(next_time);
 		for (int dim=0; dim<Dim; dim++) {
 			// calculate position and velocity differences
 			x[dim] = ptcl->PredPosition[dim] - this->PredPosition[dim];
 			v[dim] = ptcl->PredVelocity[dim] - this->PredVelocity[dim];
 
 			// calculate the square of radius and inner product of r and v for each case
-			r_next2 += x[dim]*x[dim];
+			r_now2 += x[dim]*x[dim];
 		}
 
 		// find out the close particles
@@ -292,14 +288,6 @@ void Particle::isKSCandidate() {
 			numberOfPairCandidate += 1;
 			if (r_now2<r_min) {
 				r_min = r_now2;
-				minPtcl = ptcl;
-			}
-		}
-
-		if (r_next2<KSDistance) {
-			numberOfPairCandidate += 1;
-			if (r_next2<r_min) {
-				r_min = r_next2;
 				minPtcl = ptcl;
 			}
 		}
@@ -388,10 +376,8 @@ void NewKSInitialization(Particle* ptclI, std::vector<Particle*> &particle, std:
 
 
 	Particle* ptcl;
-	if (ptclI->CurrentTimeIrr >= ptclJ->CurrentTimeIrr)
-		ptcl = ptclI;
-	else
-		ptcl = ptclJ;
+	ptcl =  ptclI->CurrentTimeIrr >= ptclJ->CurrentTimeIrr \
+					? ptclI : ptclJ;
 
 	fprintf(binout, "The ID of ith particle is %d of %d and %d\n",ptclCM->PID, ptclI->PID, ptclJ->PID);
 	//fflush(binout);
@@ -424,8 +410,8 @@ void NewKSInitialization(Particle* ptclI, std::vector<Particle*> &particle, std:
 		ptclCM->PredVelocity[dim] = ptclCM->Velocity[dim];
 	}
 
-	ptclBin->ptclCM = ptclCM;
-	ptclBin->CurrentTime = ptcl->CurrentTimeIrr;
+	ptclBin->ptclCM       = ptclCM;
+	ptclBin->CurrentTime  = ptcl->CurrentTimeIrr;
 	// ptclBin->CurrentTau = 0.0; // already initialized at formation, but added for safety.
 	// ptclBin->PredTau = 0.0;
 
@@ -474,6 +460,16 @@ void NewKSInitialization(Particle* ptclI, std::vector<Particle*> &particle, std:
 	//update particle vector, nextregtime, computation chain and list
 	ptclI->isErase = true;
 	ptclJ->isErase = true;
+
+	// update ParticleOrder
+	int j=0;
+	for (Particle *ptcl: particle) {
+		ptcl->ParticleOrder -= j;
+		if (ptclI == ptcl || ptclJ == ptcl)
+			j++;
+	}
+
+	// erase particle I and J
 	particle.erase(
 			std::remove_if(particle.begin(), particle.end(),
 				[](Particle* p) {
@@ -484,6 +480,10 @@ void NewKSInitialization(Particle* ptclI, std::vector<Particle*> &particle, std:
 	ptclI->isErase = false;
 	ptclJ->isErase = false;
 
+
+
+	// update particle order and add it to particle vector
+	ptclCM->ParticleOrder=particle.size();
 	particle.push_back(ptclCM);
 	UpdateNextRegTime(particle);
 

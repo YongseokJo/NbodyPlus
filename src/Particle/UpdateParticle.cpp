@@ -31,6 +31,10 @@ void Particle::predictParticleSecondOrder(double time) {
 	double dt;
 	//dt = (time - this->CurrentTimeIrr)*EnzoTimeStep;
 	dt = (time - this->CurrentTimeReg)*EnzoTimeStep;
+	if (dt < 0) {
+		fprintf(stderr, "PID=%d, dt=%e",PID, dt);
+		throw std::runtime_error("SecondOrder");
+	}
 
 	// only predict the positions if necessary
 	// how about using polynomial correction here?
@@ -59,7 +63,15 @@ void Particle::predictParticleSecondOrderIrr(double time) {
 	double dt;
 	//dt = (time - this->CurrentTimeIrr)*EnzoTimeStep;
 	dt = (time - this->CurrentTimeIrr)*EnzoTimeStep;
-
+	if (dt < 0 || this->CurrentTimeIrr>1) {
+		fprintf(stderr, "PID=%d, time=%e, timeirr=%lf, timereg=%lf, dt=%lf, dtirr=%lf, dtreg=%lf\n",
+			 	this->PID, time, this->CurrentTimeIrr, this->CurrentTimeReg, dt, this->TimeStepIrr, this->TimeStepReg);
+		fprintf(stderr, "PID=%d, time=%e, timeirr=%llu, timereg=%llu, dt=%lf, dtirr=%llu, dtreg=%llu\n",
+			 	PID, time, CurrentBlockIrr, CurrentBlockReg, dt, TimeBlockIrr, TimeBlockReg);
+		fflush(stderr);
+		fflush(stdout);
+		//throw std::runtime_error("SecondOrderIrr");
+	}
 	// only predict the positions if necessary
 	// how about using polynomial correction here?
 	for (int dim=0; dim<Dim; dim++) {
