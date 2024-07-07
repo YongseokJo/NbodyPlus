@@ -1,272 +1,455 @@
 #include <vector>
 #include <iostream>
-#include "Particle/Particle.h"
 #include <cmath>
+#include <algorithm>
+#include "global.h"
+#include "defs.h"
 
 
+//#define FixNumNeighbor 30
+//#define FixNumNeighbor 50
+#define FixNumNeighbor 99
 
+void FindNeighbor(Particle* ptcl1, std::vector<Particle*> &particle);
+void CalculateAcceleration01(Particle* ptcl1, std::vector<Particle*> &particle);
+void CalculateAcceleration23(Particle* ptcl1, std::vector<Particle*> &particle);
+void direct_sum(double *x, double *v, double r2, double vx,
+		double mass, double a[3], double adot[3]);
 
-void findNeighbor(std::vector<Particle*> &particle);
-void calculateForce1(std::vector<Particle*> &particle);
-void calculateForce2(std::vector<Particle*> &particle);
+int InitializeTimeStep(Particle* particle, int size);
+int InitializeTimeStep(std::vector<Particle*> &particle);
 
+/*
+ *  Purporse: Initialize particles
+ *
+ *  Date    : 2024.01.02  by Seoyoung Kim
+ *  Modified: 2024.01.10  by Yongseok Jo
+ *
+ */
 
+void InitializeParticle(std::vector<Particle*> &particle) {
 
-void initializeParticle(std::vector<Particle*> &particle) {
-
+	if (NNB == 0) {
+		std::cout << "Initialization skips." << std::endl;
+		return;
+	}
 	std::cout << "Initialization starts." << std::endl;
-	findNeighbor(particle);
 
-	calculateForce1(particle);
-	calculateForce2(particle);
-	std::cout << "Timestep initializing..." << std::endl;
-	for (Particle* elem:particle) {
-		elem->initializeTimeStep();
-
-		for (int dim=0; dim<Dim; dim++) {
-			elem->PredPosition[dim] =  elem->Position[dim];
-			elem->Force[dim]    *= 0.5;
-			elem->ForceDot[dim] /= 6;
-		}
+	// loop over particles to initialize their values
+	int j = 0;
+	for (Particle* ptcl:particle) {
+		//std::cout <<  j << ": ";
+		//std::cout << std::flush;
+		FindNeighbor(ptcl, particle);
+		CalculateAcceleration01(ptcl, particle);
+	}
+	for (Particle* ptcl:particle) {
+		CalculateAcceleration23(ptcl, particle);
+		std::cout << std::flush;
 	}
 
+	std::cout << "Timestep initializing..." << std::endl;
+	InitializeTimeStep(particle);
+	std::cout << "Timestep finished." << std::endl;
+	int i = 0;
+	RegularList.clear();
+	for (Particle* elem:particle) {
+		for (int dim=0; dim<Dim; dim++) {
+			elem->PredPosition[dim] =  elem->Position[dim];
+			elem->PredVelocity[dim] =  elem->Velocity[dim];
+		}
+		RegularList.push_back(elem);
+	}
 	std::cout << "Initialization finished." << std::endl;
 }
 
-void findNeighbor(std::vector<Particle*> &particle) {
 
-	if (NNB<=100) return;
-	double rs0 = 0.1 ; // I need to change this to 4 parsecs
-	double rij;
+/*
+ *  Purporse: Initialize of new particles
+ *
+ *  Date    : 2024.01.16  by Seoyoung Kim
+ *
+ */
+void InitializeParticle(Particle* newParticle, std::vector<Particle*> &particle) {
 
+	std::cout << "Initialization of " << newNNB << " New Particles starts." << std::endl;
 
-	int ACnum;
-	int j1;
+	// loop over particles to initialize acceleration
+	for (int i=0; i<newNNB; i++) {
+		FindNeighbor(&newParticle[i], particle);
+		CalculateAcceleration01(&newParticle[i], particle);
+	}
+	for (int i=0; i<newNNB; i++) {
+		CalculateAcceleration23(&newParticle[i], particle);
 
-
-	std::cout << "finding neightbors" << std::endl;
-	// initialize the guess for radius of neighbor sphere
-
-
-	for (int i1=0; i1 < NNB; i1++) {
-		particle[i1]->RadiusOfAC = rs0;
+		for (int dim=0; dim<Dim; dim++) {
+			newParticle[i].PredPosition[dim] =  newParticle[i].Position[dim];
+			newParticle[i].PredVelocity[dim] =  newParticle[i].Velocity[dim];
+		}
 	}
 
-	// search for neighbors for particle i2
+	std::cout << "Timestep initializing..." << std::endl;
+	InitializeTimeStep(newParticle, newNNB);
+	std::cout << "Timestep finished." << std::endl;
 
-	for (int i2=0; i2 < NNB; i2++) {
-		ACnum = 0;
-		j1 = 0;
-
-		// increase neighbor radius until we have at least one neighbor
-
-		while (j1 < NNB) {
-
-			rij = particle[i2]->getDistanceTo(particle[j1]);
-
-			if (rij < particle[i2]->RadiusOfAC && i2 != j1) {
-				ACnum++;
-				particle[i2]->ACList.push_back(particle[j1]);
-			}
-			j1++;
-			//if ( ACnum == 0 && j1 >= NNB ){
-				//j1 = 0;
-				//particle[i2]->RadiusOfAC *= 1.59;
-			//}
-		}
-		particle[i2]->NumberOfAC = ACnum;
-	}
-	/***
-		if (debug) {
-		std::cout << particle[2]->NumberOfAC << std::endl;
-		for (Particle* element : particle[2]->ACList)
-		std::cout << element->getPID() << " ";
-		}
-		for (int i=0; i<NNB; i++) {
-		std::cout << particle[i]->NumberOfAC << ' ';
-		}
-	 ***/
-	std::cout << "\n";
-	std::cout << "finding neightbors finished." << std::endl;
+	std::cout << "Initialization of New Particles finished." << std::endl;
 }
 
 
-void calculateForce1(std::vector<Particle*> &particle) {
+void ReInitializeKSParticle(Particle* KSParticle, std::vector<Particle*> &particle) {
 
-	// temporary variables for calculation
-	double A[6];
-	double A7,A8,A9;
-	double F1[3];
-	double F1DOT[3];
+	std::cout << "Re-Initialization of KS Pair Particle starts.\n" << std::endl;
 
-	int jAC;
+	std::cout << "Finding Neighbors... \n" << std::endl;	
+	KSParticle->ACList.clear();
+	FindNeighbor(KSParticle, particle);
+
+	std::cout << "Calculating Acceleration... \n" << std::endl;	
+
+	CalculateAcceleration01(KSParticle, particle);
+	CalculateAcceleration23(KSParticle, particle);
+
+	std::cout << "copying the position and velocities to predictions... \n" << std::endl;	
+
+	for (int dim=0; dim<Dim; dim++) {
+		KSParticle->PredPosition[dim] =  KSParticle->Position[dim];
+		KSParticle->PredVelocity[dim] =  KSParticle->Velocity[dim];
+		KSParticle->NewPosition[dim]  =  KSParticle->Position[dim];
+		KSParticle->NewVelocity[dim]  =  KSParticle->Velocity[dim];
+	}
+
+	std::cout << "Timestep calculation...\n" << std::endl;
 
 
+	// advance here because cm particle didn't advance and was removed.
+	// ComputationList.push_back(KSParticle);
 
-	std::cout << "entering calculateForce1" << std::endl;
-	for (int i=0; i < NNB; i++) {
+	std::cout << "Timestep finished.\n" << std::endl;
+	std::cout << "Initialization of KS Pair Particle finished.\n" << std::endl;
+}
 
-		jAC = 0;
 
-		// calculate the irregular and regular force components
+/*
+ *  Purporse: find neighbors
+ *
+ *  Date    : 2024.01.02  by Seoyoung Kim
+ *  Modified: 2024.01.16  by Seoyoung Kim
+ *
+ */
 
-		for (int j = 0; j<NNB; j++) {
 
-			if (i != j){
+// recieve the time we want to calculate the neighbor information, 
+// (which would be EnzoTimeMark in the case of New Particles)
+// the particle we want to find the neighbors of and the full particle list
+void FindNeighbor(Particle* ptcl1, std::vector<Particle*> &particle) {
 
-				for (int k1=0; k1<3 ; k1++) {
-					A[k1] = particle[j]->Position[k1] - particle[i]->Position[k1];
-					A[k1+3] = particle[j]->Velocity[k1] - particle[i]->Velocity[k1];
-				}
+	// No need to find neighbors if the total number of particles is less than 100
+	//if (NNB<=100) return;
 
-				A7 = 1.0/(A[0]*A[0] + A[1]*A[1] + A[2]*A[2] + EPS2);
-				A8 = (particle[j]->Mass)*A7*sqrt(A7);
-				A9 = 3.0*(A[0]*A[3] + A[1]*A[4] + A[2]*A[5])*A7;
+	double dx;
+	double r2;
+	double r_max=0;
+	double r_nb[FixNumNeighbor];
+	int nb_index[FixNumNeighbor], index_max, i=0;
 
-				for (int k2=0; k2<3 ; k2++){
-					F1[k2] = A[k2]*A8;
-					F1DOT[k2] = (A[k2+3]-A[k2]*A9)*A8;
+	//ptcl1->predictParticleSecondOrder(newTime);
+	// search for neighbors for ptcl
+	for (Particle *ptcl2:particle) {
+
+		if  (ptcl1 == ptcl2) {
+			i++;
+			continue;
+		}
+
+		r2 = 0.0;
+
+		//ptcl2->predictParticleSecondOrder(newTime);
+		for (int dim=0; dim<Dim; dim++) {
+			dx = ptcl2->Position[dim] - ptcl1->Position[dim];
+			r2 += dx*dx;
+		}
+
+		if (ptcl1->NumberOfAC < FixNumNeighbor) {
+			if (r2 > r_max) {
+				r_max     = r2;
+				//index_max = i;
+				index_max = ptcl1->NumberOfAC;
+			}
+			nb_index[ptcl1->NumberOfAC] = i;
+			r_nb[ptcl1->NumberOfAC++]   = r2;
+		}
+		else {
+			if ( r2 < r_max) {
+				r_max = r2;
+				r_nb[index_max]     = r2;
+				nb_index[index_max] = i;
+				// update new r_max
+				r_max = r2;
+				for (int k=0; k<FixNumNeighbor; k++) {
+					if (r_nb[k] > r_max) {
+						r_max     = r_nb[k];
+						index_max = k;
+					}
 				}
 			}
+		}
+		i++;
+	} // endfor
 
-			if ((particle[i]->NumberOfAC == 0) || (particle[j] != particle[i]->ACList[jAC])) {
 
-				for (int k3=0; k3<3 ; k3++){
-					particle[i]->FReg[k3] += F1[k3];
-					particle[i]->dFReg[k3][1] += F1DOT[k3];
+	for (int j:nb_index) {
+		ptcl1->ACList.push_back(particle[j]);
+		//std::cout << j << ", ";
+	}
+	//std::cout << std::endl;
+
+	std::sort(ptcl1->ACList.begin(),ptcl1->ACList.end());
+	//
+		//
+	//std::cout << "# of Neighbors = " << ptcl1->NumberOfAC << std::endl;
+	return ;
+
+}
+
+
+
+
+/*
+ *  Purporse: calculate 0th, 1st, 2nd, 3rd Derivative of Force
+ *
+ *  Date    : 2024.01.02  by Seoyoung Kim
+ *  Modified: 2024.01.10  by Yongseok Jo
+ *  Modified: 2024.01.16  by Seoyoung Kim
+ *
+ */
+
+
+// recieve the time we want to calculate the acceleration information, 
+// (which would be EnzoTimeMark in the case of New Particles)
+// the particle we want to calculate and the full particle list
+void CalculateAcceleration01(Particle* ptcl1, std::vector<Particle*> &particle) {
+
+	int j=0;
+	double x[Dim], v[Dim], a[Dim], adot[Dim];
+	double vx_r2, m_r3, v2x2_r4,v2_r2__ax_r2__v2x2_r4, a2dot, a3dot;
+	double A, B, v2;
+	double r2 = 0;
+	double vx = 0;
+
+	for (int dim=0; dim<Dim; dim++) {
+		x[dim]    = 0.;
+		v[dim]    = 0.;
+		a[dim]    = 0.;
+		adot[dim] = 0.;
+	}
+
+	//std::cout << "nbody+: Entering CalculateInitialAcceleration  ..." << std::endl;
+
+	//ptcl1->predictParticleSecondOrder(newTime);
+	for (Particle *ptcl2:particle) {
+		r2 = 0;
+		vx = 0;
+		v2 = 0;
+
+		if (ptcl1 == ptcl2) {
+			continue;
+		}
+
+		// updated the predicted positions and velocities just in case
+		// if current time = the time we need, then PredPosition and PredVelocity is same as Position and Velocity
+		//ptcl2->predictParticleSecondOrder(newTime);
+		for (int dim=0; dim<Dim; dim++) {
+			x[dim] = ptcl2->Position[dim] - ptcl1->Position[dim];
+			v[dim] = ptcl2->Velocity[dim] - ptcl1->Velocity[dim];
+			r2    += x[dim]*x[dim];
+			vx    += v[dim]*x[dim];
+			v2    += v[dim]*v[dim];
+		}
+
+		m_r3 = ptcl2->Mass/r2/sqrt(r2); 
+
+		if ((ptcl1->NumberOfAC==0) || (ptcl2 != ptcl1->ACList[j])) {
+			for (int dim=0; dim<Dim; dim++) {
+				// Calculate 0th and 1st derivatives of acceleration
+				ptcl1->a_reg[dim][0] += m_r3*x[dim];
+				ptcl1->a_reg[dim][1] += m_r3*(v[dim] - 3*x[dim]*vx/r2);
+			}
+		}
+		else {
+			for (int dim=0; dim<Dim; dim++) {
+				ptcl1->a_irr[dim][0] += m_r3*x[dim];
+				ptcl1->a_irr[dim][1] += m_r3*(v[dim] - 3*x[dim]*vx/r2);
+			}
+			j++;
+		} // endfor dim
+	} // endfor ptcl2
+		//
+	for (int dim=0; dim<Dim; dim++)	 {
+		for (int order=0; order<2; order++) {
+			ptcl1->a_tot[dim][order] = ptcl1->a_reg[dim][order] + ptcl1->a_irr[dim][order]; 
+		}
+	}
+	return;
+}
+
+
+	/*
+		// Calculate 2nd and 3rd derivatives of acceleration
+		if (restart) {
+			;
+		}
+	*/
+
+void CalculateAcceleration23(Particle* ptcl1, std::vector<Particle*> &particle) {
+
+	int j=0;
+	double x[Dim], v[Dim], a21[Dim], a21dot[Dim], a1[Dim], a2[Dim], a1dot[Dim], a2dot[Dim];
+	double a, b, c;
+	double rdf_r2, vdf_r2, rdfdot_r2, v2, r2, r3, vr, m_r3;
+	double adot2, adot3;
+
+	for (int dim=0; dim<Dim; dim++) {
+		x[dim]      = 0.;
+		v[dim]      = 0.;
+		a21[dim]    = 0.;
+		a21dot[dim] = 0.;
+		a1[dim]     = ptcl1->a_tot[dim][0];
+		a1dot[dim]  = ptcl1->a_tot[dim][1];
+	}
+
+	for (Particle *ptcl2:particle) {
+		r2 = 0;
+		r3 = 0;
+		v2 = 0;
+		vr = 0;
+		rdf_r2 = 0;
+		vdf_r2 = 0;
+		rdfdot_r2 = 0;
+
+		if (ptcl1 == ptcl2) {
+			continue;
+		}
+
+		// updated the predicted positions and velocities just in case
+		// if current time = the time we need, then PredPosition and PredVelocity is same as Position and Velocity
+		for (int dim=0; dim<Dim; dim++) {
+			a2[dim]    = ptcl2->a_tot[dim][0];
+			a2dot[dim] = ptcl2->a_tot[dim][1];
+			x[dim]     = ptcl2->Position[dim] - ptcl1->Position[dim];
+			v[dim]     = ptcl2->Velocity[dim] - ptcl1->Velocity[dim];
+			r2        += x[dim]*x[dim];
+			vr        += v[dim]*x[dim];
+			v2        += v[dim]*v[dim];
+		}
+
+		r3   = r2*sqrt(r2);
+		m_r3 = ptcl2->Mass/r3; 
+
+		for (int dim=0; dim<Dim; dim++) {
+			a21[dim]    = m_r3*x[dim];
+			a21dot[dim] = m_r3*(v[dim] - 3*x[dim]*vr/r2);
+			rdf_r2     += x[dim]*(a1[dim]-a2[dim])/r2;
+			vdf_r2     += v[dim]*(a1[dim]-a2[dim])/r2;
+			rdfdot_r2  += x[dim]*(a1dot[dim]-a2dot[dim])/r2;
+		}
+
+		a = vr/r2;
+		b = v2/r2 + rdf_r2 + a*a;
+		c = 3*vdf_r2 + rdfdot_r2 + a*(3*b-4*a*a);
+
+
+		if ((ptcl1->NumberOfAC==0) || (ptcl2 != ptcl1->ACList[j])) {
+			for (int dim=0; dim<Dim; dim++) {
+				adot2 = -ptcl2->Mass*(a1[dim]-a2[dim])/r3-6*a*a21dot[dim]-3*b*a21[dim];
+				adot3 = -ptcl2->Mass*(a1dot[dim]-a2dot[dim])/r3-9*a*adot2-9*b*a21dot[dim]-3*c*a21[dim];
+				ptcl1->a_reg[dim][2] += adot2;
+				ptcl1->a_reg[dim][3] += adot3;
+			}
+		}
+		else {
+			for (int dim=0; dim<Dim; dim++) {
+				adot2 = -ptcl2->Mass*(a1[dim]-a2[dim])/r3-6*a*a21dot[dim]-3*b*a21[dim];
+				adot3 = -ptcl2->Mass*(a1dot[dim]-a2dot[dim])/r3-9*a*adot2-9*b*a21dot[dim]-3*c*a21[dim];
+				ptcl1->a_irr[dim][2] += adot2;
+				ptcl1->a_irr[dim][3] += adot3;
+			}
+			j++;
+		} // endfor if
+	} //endfor ptcl2
+	
+	for (int dim=0; dim<Dim; dim++)	 {
+		for (int order=2; order<4; order++) {
+			ptcl1->a_tot[dim][order] = ptcl1->a_reg[dim][order] + ptcl1->a_irr[dim][order];
+		}
+	}
+
+
+
+
+
+		// if the ptcl1 is new particle and ptcl2 is old particle
+		// then we need to change the values of ptcl2 as well. 
+
+		// add the regular and irregualar forces and change the neighbor list of the other particle
+
+
+		/*
+		// needed to update
+		if ( (ptcl1->ParticleType == NewParticle+NormalStar+SingleParticle)
+			 	&& (ptcl2->ParticleType == SingleParticle+NormalStar)) {
+			if (sqrt(r2)<ptcl2->RadiusOfAC) {
+				for (int dim=0; dim<Dim; dim++) {
+					ptcl2->a_irr[dim][0] += -m_r3*x[dim];
+					ptcl2->a_irr[dim][1] += -m_r3*(v[dim] - 3*x[dim]*vx/r2);
+					ptcl2->a_irr[dim][2] += -a2dot;
+					ptcl2->a_irr[dim][3] += -a3dot;
 				}
-
+				ptcl2->ACList.push_back(ptcl2);
+				ptcl2->NumberOfAC++;
 			} else {
-
-				for (int k4=0; k4<3 ; k4++){
-					particle[i]->FIrr[k4] += F1[k4];
-					particle[i]->dFIrr[k4][1] += F1DOT[k4];
-				}
-
-				if (jAC < (particle[i]->NumberOfAC-1)){
-					jAC++;
+				for (int dim=0; dim<Dim; dim++) {
+					ptcl2->a_reg[dim][0] += - m_r3*x[dim];
+					ptcl2->a_reg[dim][1] += - m_r3*(v[dim] - 3*x[dim]*vx/r2);
+					ptcl2->a_reg[dim][2] += - a2dot;
+					ptcl2->a_reg[dim][3] += - a3dot;
 				}
 			}
 		}
+		*/
 
-		for (int dim=0; dim<3; dim++){
-			particle[i]->Force[dim] = particle[i]->FIrr[dim] + particle[i]->FReg[dim];
-			particle[i]->ForceDot[dim] = particle[i]->dFIrr[dim][1] + particle[i]->dFReg[dim][1];
-			particle[i]->dFIrr[dim][0] = particle[i]->FIrr[dim];
-			particle[i]->dFReg[dim][0] = particle[i]->FReg[dim];
-			particle[i]->FIrrDot[dim] = particle[i]->dFIrr[dim][1];
-			particle[i]->FRegDot[dim] = particle[i]->dFReg[dim][1];
+
+
+	/*
+	std::cout << "NBODY+: total acceleartion = " << std::flush;
+	for (int order=0; order<HERMITE_ORDER; order++) {
+		std::cout << "a" << order << "(";
+		for (int dim=0; dim<Dim; dim++)	 {
+			std::cout << std::scientific << std::setprecision(2) << ptcl1->a_tot[dim][order] << ", ";
 		}
+		std::cout << "), ";
+	} // endfor dim
+	std::cout << std::endl;
 
-	}
-}
+	//std::cout << "AC=" << ptcl1->ACList[0] << std::endl;
 
-
-
-void calculateForce2(std::vector<Particle*> &particle) {
-
-	// temporary variables for calculation
-	double A[12];
-	double A13,A14,A15,A16,A17,A18,A19,A20,A21,A22;
-	double F1DOTK;
-	double F2DOT[3];
-	double F3DOT[3];
-
-	double Rij2;
-	double DT,DT1,DTR,DT1R;
-
-	int jAC;
-
-
-	std::cout << "entering calculateForce2" << std::endl;
-
-	for (int i=0; i<NNB; i++){
-
-		jAC = 0;
-
-		for (int j=0; j<NNB; j++){
-
-			if (i != j){
-
-				for (int dim=0; dim<3 ; dim++){
-					A[dim] = particle[j]->Position[dim] - particle[i]->Position[dim];
-				}
-
-				Rij2 = A[0]*A[0] + A[1]*A[1] + A[2]*A[2];
-
-				if ((Rij2>(3*particle[i]->RadiusOfAC)) && ((particle[i]->NumberOfAC !=0) && (particle[j] != particle[i]->ACList[jAC])))
-					continue;
-
-				if (global_time <= 0.0){
-					for (int dim=0; dim<3 ; dim++){
-						A[dim+6] =  particle[j]->Force[dim];
-						A[dim+9] =  particle[j]->ForceDot[dim];
-					}
-				} else {
-					DT = global_time - particle[j]->CurrentTimeIrr;
-					DT1 = 0.5*DT;
-
-					DTR = global_time - particle[j]->CurrentTimeReg;
-					DT1R = 0.5*DTR;
-
-					for (int dim=0; dim<3 ; dim++){
-						A[dim+6] =  (particle[j]->dFIrr[dim][2]*DT1 + particle[j]->dFIrr[dim][1])*DT + particle[j]->FIrr[dim] \
-											 + (particle[j]->dFReg[dim][2]*DT1R + particle[j]->dFReg[dim][1])*DTR + particle[j]->FReg[dim];
-
-						A[dim+9] = particle[j]->dFIrr[dim][2]*DT + particle[j]->dFIrr[dim][1] \
-											+ particle[j]->dFReg[dim][2]*DTR + particle[j]->dFReg[dim][1];
-					}
-				}
-
-				for (int dim=0; dim<3 ; dim++){
-					A[dim+3] =  particle[j]->Velocity[dim] - particle[i]->Velocity[dim];
-					A[dim+6] -=  particle[i]->Force[dim];
-					A[dim+9] -=  particle[i]->ForceDot[dim];
-				}
-
-				A13 = 1.0/(Rij2 + EPS2);
-				A14 = particle[j]->Mass*A13*sqrt(A13);
-				A15 = (A[0]*A[3] + A[1]*A[4] + A[2]*A[5])*A13;
-				A16 = A15*A15;
-				A17 = 3.0*A15;
-				A18 = 6.0*A15;
-				A19 = 9.0*A15;
-				A20 = (A[3]*A[3] + A[4]*A[4] + A[5]*A[5] + A[0]*A[6] + \
-						A[1]*A[7] + A[2]*A[8] )*A13 + A16;
-				A21 = 9.0*A20;
-				A20 = 3.0*A20;
-				A22 = (9.0*(A[3]*A[6] + A[4]*A[7] + A[5]*A[8]) + \
-						3.0*(A[0]*A[9] + A[1]*A[10] + A[2]*A[11]))*A13 + \
-							A17*(A20 - 4.0*A16);
-
-				for (int dim=0; dim<3 ; dim++){
-					F1DOTK = A[dim+3] - A17*A[dim];
-					F2DOT[dim] = (A[dim+6] - A18*F1DOTK - A20*A[dim])*A14;
-					F3DOT[dim] = (A[dim+9] - A21*F1DOTK - A22*A[dim])*A14 - A19*F2DOT[dim];
-				}
-
-				if ((particle[i]->NumberOfAC == 0) || (particle[j] != particle[i]->ACList[jAC])){
-
-					for (int dim=0; dim<3 ; dim++){
-						particle[i]->dFReg[dim][2] += F2DOT[dim];
-						particle[i]->dFReg[dim][3] += F3DOT[dim];
-					}
-
-				} else {
-
-					for (int dim=0; dim<3 ; dim++){
-						particle[i]->dFIrr[dim][2] += F2DOT[dim];
-						particle[i]->dFIrr[dim][3] += F3DOT[dim];
-					}
-
-					if (jAC < (particle[i]->NumberOfAC-1)){
-						jAC++;
-					}
-				}
-			}
+	for (int order=0; order<HERMITE_ORDER; order++) {
+		std::cout << "a_reg" << order << "(";
+		for (int dim=0; dim<Dim; dim++)	 {
+			std::cout << std::scientific << std::setprecision(2) << ptcl1->a_reg[dim][order] << ", "; //position_unit/time_unit/time_unit  
 		}
-	}
-}
+		std::cout << "), ";
+	} // endfor dim
+	std::cout << std::endl;
 
+	for (int order=0; order<HERMITE_ORDER; order++) {
+		std::cout << "a_irr" << order << "(";
+		for (int dim=0; dim<Dim; dim++)	{
+			std::cout << std::scientific << std::setprecision(2) << ptcl1->a_irr[dim][order] << ", "; //position_unit/time_unit/time_unit  
+		}
+		std::cout << "), ";
+	} // endfor dim
+	std::cout << std::endl;
+	*/
+}
 
 

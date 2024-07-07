@@ -1,139 +1,269 @@
-#include "Particle.h"
 #include <vector>
 #include <iostream>
 #include <cmath>
+#include "../global.h"
+#include <cassert>
 
-// remeber that ACList would be a vector list
+
+void direct_sum(double *x, double *v, double r2, double vx,
+	 	        double mass, double mdot, double a[3], double adot[3]) {
+	double _r3;
+
+	/*
+	if (r2 < EPS2)
+		r2 = EPS2;  // add softening length
+	*/	
+
+	_r3 = 1/r2/sqrt(r2);
+
+	for (int dim=0; dim<Dim; dim++){
+		a[dim]    += mass*_r3*x[dim];
+		adot[dim] += mass*_r3*(v[dim] - 3*x[dim]*vx/r2)+mdot*x[dim]*_r3;
+	}
+}
+
+/*
+ *  Purporse: Calculate the and update the irregular acceleration of particles
+ *            using a_0, d(a_0)/dt, a_p, d(a_p)/dt; Nbody6++ manual Eq. 8.9 and 8.10
+ * 			  Note that a_p, d(a_p)/dt are calculated from predicted positions and velocities
+ *
+ *  Date    : 2024.01.09  by Seoyoung Kim
+ *  Modified: 2024.01.11  by Seoyoung Kim
+ *
+ */
+
 
 void Particle::calculateIrrForce() {
 
 	if (this->NumberOfAC == 0) {
-		CurrentTimeIrr += TimeStepIrr;
+		//CurrentTimeIrr += TimeStepIrr;
+		std::cout << "Error: No neighbor in Irregular force!!" << std::endl;
 		return;
 	}
-	// temporary variables for calculation
 
-	double dt,dtr;
-	double dtsq,dt6,dt2,dtsq12,dt13;
-	double irr_next_time;
+	double dt, mdot, epsilon=1e-6;
+	double new_time; // 0 for current and 1 for advanced times
 
-	double dx[3];
-	double dv[3];
-	double firr[3],firrdot[3],fdum[3];
+	double x[Dim], v[Dim]; // 0 for current and 1 for predicted positions and velocities
+	double r2, vx; // 0 for current and 1 for predicted values
+	double a_tmp[Dim], adot_tmp[Dim]; // 0 for current and 1 for predicted accelerations
 
-	double rij2;
-	double dr2i,dr3i,drdv,drdp;
-
-	double df,fid,sum,at3,bt2;
-
-	// predict poistion and velocity of ith particle
-
-	dt = TimeStepIrr; // interval of time step
-	irr_next_time = CurrentTimeIrr + TimeStepIrr; // the time to be advanced to
+	double m_r3;
+	new_time = CurrentTimeIrr + TimeStepIrr; // the time to be advanced to
+	dt       = TimeStepIrr*EnzoTimeStep; // interval of time step
 
 
-	// only predict when regular block doesn't come
-	// b/c full prediction would be performed at regular block
-
-
-	predictPosAndVel(irr_next_time);
-
-
-	// initialize irregular force terms for ith particle
+	// initialize irregular force terms for ith particle just in case
 	for (int dim=0; dim<Dim; dim++){
-		firr[dim] = 0.0;
-		firrdot[dim] = 0.0;
+		a_tmp[dim]    = 0.0;
+		adot_tmp[dim] = 0.0;
 	}
 
-	// add the contribution of jth particle to irregular force
-	for (Particle* element:ACList) {
-
-		rij2 = 0;
-		drdv = 0;
-
-		// only predict when regular block doesn't come
-		// b/c full prediction would be performed at regular block
-
-		element->predictPosAndVel(irr_next_time);
 
 
-		for (int dim=0; dim<Dim; dim++) {
+	/*******************************************************
+	 * Irregular Acceleartion Calculation
+	 ********************************************************/
+	this->predictParticleSecondOrderIrr(new_time);
 
-			dx[dim] = element->PredPosition[dim] - PredPosition[dim];
-			dv[dim] = element->PredVelocity[dim] - PredVelocity[dim];
-
-			rij2 += dx[dim]*dx[dim];
-			drdv += dx[dim]*dv[dim];
+	if (this->Position[0] !=  this->Position[0]) {
+		fprintf(stdout, "myself = %d\n", this->PID);
+		fprintf(stdout, "x[0] = %e\n", this->Position[0]);
+		fprintf(stdout, "a_irr[0] = %e\n", this->a_irr[0][0]);
+		fprintf(stdout, "a_reg[0] = %e\n", this->a_reg[0][0]);
+		fprintf(stdout, "a_tot[0] = %e\n", this->a_tot[0][0]);
+		/*
+		for (Particle* nn:particle) {
+			fprintf(stdout,"%.2e (%d),  ",nn->a_tot[0][0],nn->PID);	
 		}
-
-		dr2i = 1.0/rij2;
-		dr3i = element->Mass*dr2i*sqrt(dr2i);
-		drdp = 3.0*drdv*dr2i;
-
-		for (int dim=0; dim<Dim; dim++) {
-			firr[dim] += dx[dim]*dr3i;  // to SY is it correct? there was 3 in the indicies.
-			firrdot[dim] += (dv[dim] - dx[dim]*drdp)*dr3i;
-		}
+		*/
+		fprintf(stdout,"\n");	
+		fflush(stdout);
+		assert(this->Position[0] ==  this->Position[0]);
 	}
-	fprintf(stdout, "PID=%d\n", this->getPID());
-	fprintf(stdout, "%lf, %lf, %lf, %lf, %lf, %lf\n",
-			FIrr[0], FIrr[1], FIrr[2], FIrrDot[0], FIrrDot[1], FIrrDot[2]);
-	fprintf(stdout, "%lf, %lf, %lf, %lf, %lf, %lf\n",
-			firr[0], firr[1], firr[2], firrdot[0], firrdot[1], firrdot[2]);
-	fprintf(stdout, "%lf, %lf, %lf, %lf, %lf, %lf\n\n",
-			PredPosition[0], PredPosition[1], PredPosition[2], PredVelocity[0], PredVelocity[1], PredVelocity[2]);
-	fprintf(stdout, "%lf, %lf, %lf, %lf, %lf, %lf\n\n",
-			Position[0], Position[1], Position[2], Velocity[0], Velocity[1], Velocity[2]);
-	// correct the force using the 4th order hermite method
 
-	dtsq = dt*dt;
-	dt6 = 6.0/(dt*dtsq); // to SY is it dtsq? it was dts1.
-	dt2 = 2.0/dtsq;
-	dtsq12 = dtsq/12.0;
-	dt13 = dt/3.0;
+	if (this->PredPosition[0] !=  this->PredPosition[0]) {
+		fprintf(stdout, "myself = %d\n", this->PID);
+		fprintf(stdout, "pred x[0] = %e\n", this->PredPosition[0]);
+		fflush(stdout);
+		assert(this->PredPosition[0] ==  this->PredPosition[0]);
+	}
 
+	if (this->a_tot[0][0] !=  this->a_tot[0][0]) {
+		fprintf(stdout, "myself = %d\n", this->PID);
+		fprintf(stdout, "a_tot[0] = %e\n", this->a_tot[0][0]);
+		fflush(stdout);
+		assert(this->a_tot[0][0] == this->a_tot[0][0]);
+	}
+	
+
+	for (Particle* ptcl: ACList) {
+		if (ptcl->PID == PID)  {
+			fprintf(stderr, "Myself in neighbor (%d)", PID);
+			fflush(stderr);
+			continue;
+		}
+		
+		// reset temporary variables at the start of a new calculation
+		r2 = 0.0;
+		vx = 0.0;
+
+		ptcl->predictParticleSecondOrderIrr(new_time);
+
+		if (ptcl->PredPosition[0] !=  ptcl->PredPosition[0]) {
+			fprintf(stdout, "target = %d, neighborhood = %d\n", this->PID, ptcl->PID);
+			fprintf(stdout, "x[0] = %e\n", ptcl->PredPosition[0]);
+			//fflush(stdout);
+			assert(ptcl->PredPosition[0] ==  ptcl->PredPosition[0]);
+		}
+		for (int dim=0; dim<Dim; dim++) {
+			// calculate position and velocity differences for current time
+			x[dim] = ptcl->PredPosition[dim] - this->PredPosition[dim];
+			v[dim] = ptcl->PredVelocity[dim] - this->PredVelocity[dim];
+
+			// calculate the square of radius and inner product of r and v for each case
+			r2 += x[dim]*x[dim];
+			vx += v[dim]*x[dim];
+		}
+		if (r2 == 0)  {
+			fprintf(stderr, "r2 is zero (%d and %d)",PID, ptcl->PID);
+			//fflush(stderr);
+			continue;
+		}
+
+		mdot = ptcl->evolveStarMass(CurrentTimeIrr,
+				CurrentTimeIrr+TimeStepIrr*1.01)/TimeStepIrr*1e-2; // derivative can be improved
+																													 //
+																													 // add the contribution of jth particle to acceleration of current and predicted times
+
+		/*
+		if (r2 < EPS2)
+			r2 = EPS2;  // add softening length
+		*/
+
+
+		m_r3 = ptcl->Mass/r2/sqrt(r2);
+
+		for (int dim=0; dim<Dim; dim++){
+			a_tmp[dim]    += m_r3*x[dim];
+			adot_tmp[dim] += m_r3*(v[dim] - 3*x[dim]*vx/r2);
+		}
+
+		//direct_sum(x ,v, r2, vx, ptcl->Mass, mdot, a_tmp, adot_tmp);
+	} // endfor ptcl
+
+
+	double a2, a3, da_dt2, adot_dt, dt2, dt3, dt4, dt5;
+	double dt_ex = (new_time - this->CurrentTimeReg)*EnzoTimeStep;
+
+	dt2 = dt*dt;
+	dt3 = dt2*dt;
+	dt4 = dt3*dt;
+	dt5 = dt4*dt;
+
+	/*******************************************************
+	 * Position and velocity correction due to 4th order correction
+	 ********************************************************/
 	for (int dim=0; dim<Dim; dim++) {
 
-		df  = FIrr[dim] - firr[dim];
-		fid = FIrrDot[dim];
-		sum = FIrrDot[dim] + firrdot[dim];
-		at3 = 2.0*df + dt*sum;
-		bt2 = -3.0*df - dt*(sum + fid);
 
-		FIrr[dim] = firr[dim];
-		FIrrDot[dim] = firrdot[dim];
+		// do the higher order correcteion
+		da_dt2  = (a_irr[dim][0] - a_tmp[dim]) / dt2; //  - a_reg[dim][1]*dt_ex
+		adot_dt = (a_irr[dim][1] + adot_tmp[dim]) / dt;
+		a2 =  -6*da_dt2  - 2*adot_dt - 2*a_irr[dim][1]/dt;
+		a3 =  (12*da_dt2 + 6*adot_dt)/dt;
 
-		fdum[dim] = FIrr[dim] + FReg[dim];
+		//fprintf(stderr, "da_dt2=%.2e, adot_dt=%.2e, a2=%.2e, a3=%.2e\n", da_dt2, adot_dt, a2, a3);
 
-		// save the newly calculated values to variables in particle class
+		// 4th order correction
+		// save the values in the temporary variables
+		NewPosition[dim] = PredPosition[dim] + a2*dt4/24 + a3*dt5/120;
+		NewVelocity[dim] = PredVelocity[dim] + a2*dt3/6  + a3*dt4/24;
 
-		Position[dim] = PredPosition[dim] + (0.6*at3 + bt2)*dtsq12;
-		Velocity[dim] = PredVelocity[dim] + (0.75*at3 + bt2)*dt13;
+		//NewPosition[dim] = PredPosition[dim];// + a2*dt4/24 + a3*dt5/120;
+		//NewVelocity[dim] = PredVelocity[dim];// + a2*dt3/6  + a3*dt4/24;
 
-		dFIrr[dim][0] = FIrr[dim];
-		dFIrr[dim][1] = FIrrDot[dim];
-		dFIrr[dim][2] = (3.0*at3 + bt2)*dt2;
-		dFIrr[dim][3] = at3*dt6;
-
-		fdum[dim] = FIrr[dim] + FReg[dim];
+		// note that these higher order terms and lowers have different neighbors
+		a_irr[dim][0] = a_tmp[dim];
+		a_irr[dim][1] = adot_tmp[dim];
+		a_irr[dim][2] = a2;
+		a_irr[dim][3] = a3;
 	}
 
-	// save the current and next time steps
-	CurrentTimeIrr = irr_next_time;
 
-	// calculate the new time step
-	this->calculateTimeStepIrr(fdum, dFIrr);
 
-	// if regular force is not updated, update the total force
-	// with the regular force that the particle holds now
-	if (CurrentTimeIrr < (CurrentTimeReg + TimeStepReg)){
-		dtr = CurrentTimeIrr - CurrentTimeReg;
-		for (int dim=0; dim<Dim; dim++){
-			Force[dim] = 0.5*(FRegDot[dim]*dtr + FReg[dim] + FIrr[dim]);
-			ForceDot[dim] = (FRegDot[dim]+FIrrDot[dim]) / 6.0 ;
+	for (int dim=0; dim<Dim; dim++) {
+		a_tot[dim][0] = a_reg[dim][0] + a_irr[dim][0] + a_reg[dim][1]*dt_ex; // affect the next
+		a_tot[dim][1] = a_reg[dim][1] + a_irr[dim][1];
+		a_tot[dim][2] = a_reg[dim][2] + a_irr[dim][2];
+		a_tot[dim][3] = a_reg[dim][3] + a_irr[dim][3];
+	}
+
+	if (this->NewPosition[0] !=  this->NewPosition[0]) {
+		fprintf(stdout, "it breaks after calculation, myself = %d\n", this->PID);
+		fprintf(stdout, "x[0] = %e\n", this->NewPosition[0]);
+
+		fprintf(stdout, "neighbors: ");
+		for (Particle* nn:ACList) {
+			fprintf(stdout,"%.2e (%d),  ",nn->Position[0],nn->PID);	
 		}
+		fprintf(stdout,"\n");	
+		for (Particle* nn:ACList) {
+			fprintf(stdout,"%.2e (%d),  ",nn->a_tot[0][0],nn->PID);	
+		}
+		fprintf(stdout,"\n");	
+		fflush(stdout);
+		assert(this->NewPosition[0] ==  this->NewPosition[0]);
 	}
 
+
+	/*
+	std::cout << "\ntotal acceleartion\n" << std::flush;
+	for (int order=0; order<HERMITE_ORDER; order++) {
+		for (int dim=0; dim<Dim; dim++)	 {
+			std::cout << a_tot[dim][order] << " ";
+		}
+		std::cout << std::endl;
+	} // endfor dim
+		//
+	std::cout << "\nreg acceleartion\n" << std::flush;
+	for (int order=0; order<HERMITE_ORDER; order++) {
+		for (int dim=0; dim<Dim; dim++)	 {
+			std::cout << a_reg[dim][order] << " ";
+		}
+		std::cout << std::endl;
+	} // endfor dim
+	std::cout << std::endl;
+
+	std::cout << "\nirr acceleartion\n" << std::flush;
+	for (int order=0; order<HERMITE_ORDER; order++) {
+		for (int dim=0; dim<Dim; dim++)	 {
+			std::cout << a_irr[dim][order] << " ";
+		}
+		std::cout << std::endl;
+	} // endfor dim
+	std::cout << std::endl;
+
+	*/
+	// *position_unit/time_unit/time_unit
+
+		 //std::cout << "\nIrregular Calculation\n" << std::flush;
+		 //std::cout <<  "3. a_irr= "<< a_irr[0][0]<< ',' << a_irr[1][0]\
+		 //<< ',' << a_irr[2][0] << std::endl;
+		 //std::cout <<  "4. a_irr= "<< a_irr[0][0]<< ',' << a_irr[1][0]\
+		 << ',' << a_irr[2][0] << std::endl;
+		 //std::cout <<  "5. a_irr= "<< a_irr[0][0]<< ',' << a_irr[1][0]\
+		 << ',' << a_irr[2][0] << std::endl;
+
+	// update the current irregular time and irregular time steps
+	//this->updateParticle((CurrentTimeIrr+TimeStepIrr)*EnzoTimeStep, a_irr);
+	//this->updateParticle(CurrentTimeIrr, CurrentTimeIrr+TimeStepIrr, a_tot);
+	//this->correctParticleFourthOrder(CurrentTimeIrr, CurrentTimeIrr+TimeStepIrr, a_irr);
+
+
+	//this->updateParticle();
+	//CurrentTimeIrr += TimeStepIrr; // in sorting
+	//this->calculateTimeStepIrr(a_tot, a_irr); // calculate irregular time step based on total force
 }
 
 

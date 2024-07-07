@@ -1,44 +1,90 @@
 #include <iostream>
 //#include "defs.h"
 #include "global.h"
-#include "main.h"
+#include "nbody.h"
+#include "cuda/cuda_functions.h"
 
 
 using namespace std;
 
 //Global Variables
-int NNB; double global_time; bool debug;
-double dt_min=1e-20;
+int NNB; double global_time; //bool debug;
 std::vector<int> LevelList;
+//MPI_Comm  comm, inter_comm, nbody_comm;
+double EnzoTimeStep;
+/*
+const double dt_min = 0.00012207031;
+const int dt_level_min = -13;
+
+
+const double dt_min = 0.00001525878;
+const int dt_level_min = -16;
+
+const double dt_min = 9.53674316e-7*0.00012207031;
+const int dt_level_min = -33;
+*/
+
+
+const double dt_min = 0.00001525878/16;
+const int dt_level_min = -20;
+
+int newNNB = 0;
+std::vector<Particle*> RegularList;
+std::vector<Binary*> BinaryList;
+FILE* binout;
+
+int NumNeighborMax = 100;
+
+
 
 int main(int argc, char *argv[]) {
-	cout << "This Nbody+." << endl;
+	cout << "Staring Nbody+ ..." << endl;
+        binout = fopen("binary_output.txt", "w");                                                                          
+        fprintf(binout, "Starting nbody - Binary OUTPUT\n"); 
 	std::vector<Particle*> particle{};
-	//particle = new std::vector<Particle*>();
-	global_time = 0.;
-	debug = true;
+	int irank=0;
+	std::ios::sync_with_stdio(false);
+	//comm        = com;
+	//inter_comm  = inter_com;
+	//nbody_comm  = nbody_com;
 
+	global_time = 0.;
+	//debug = true;
+
+	//InitialCommunication(particle);
 	Parser(argc, argv);
 
-	if (readData(particle) == FAIL) 
+	EnzoTimeStep   = endTime/1e10; // endTime should be Myr
+	outputTimeStep = outputTimeStep/endTime; // endTime should be Myr
+
+	cout << "EnzoTimeStep = "   << EnzoTimeStep   << endl;
+	cout << "outputTimeStep = " << outputTimeStep << endl;
+
+	if (readData(particle) == FAIL)
 		fprintf(stderr, "Read Data Failed!\n");
 
-	cout << "Particle Loaded." << endl;
 	/***
-	for (Particle* elem: particle) {
+		for (Particle* elem: particle) {
 		std::cout << elem->Position[0] <<" ";
-	}
+		}
 		std::cout << std::endl;
-		***/
-	initializeParticle(particle);
+	 ***/
+
+	fprintf(stderr, "Initializing Device!\n");
+	InitializeDevice(&irank);
+	fprintf(stderr, "Initializing Particles!\n");
+	InitializeParticle(particle);
 
 
-	createComputationChain(particle);
+	//createComputationChain(particle);
 
+	/*
 	for (Particle* elem: particle) {
 		std::cout << elem->TimeStepIrr <<" ";
 	}
+	*/
 
+	/*
 	for (Particle* elem: particle) {
 		fprintf(stdout, "PID=%d, TReg=%e, TIrr=%e\n", elem->getPID(),elem->TimeStepReg, elem->TimeStepIrr);
 		fprintf(stdout, "%e, %e, %e, %e, %e, %e\n",
@@ -50,12 +96,14 @@ int main(int argc, char *argv[]) {
 
 	}
 	std::cout << std::endl;
+	*/
 
 
 
 	Evolve(particle);
 
 	// Particle should be deleted at some point
+	fclose(binout);
 
 	return 0;
 }
