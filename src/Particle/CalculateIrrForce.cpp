@@ -100,7 +100,13 @@ void Particle::calculateIrrForce() {
 		fprintf(stderr, "PID=%d, CurrentTimeIrr=%e\n", this->PID, this->CurrentTimeIrr);
 
 	for (Particle* ptcl: ACList) {
-		if (ptcl->PID == PID)  {
+		/*
+		if (ptcl->isCMptcl) {
+			fprintf(stderr, "my = %d , pid of cm = %d\n", this->PID, ptcl->PID);
+			fflush(stderr);
+		}
+		*/
+		if (ptcl->PID == this->PID)  {
 			fprintf(stderr, "Myself in neighbor (%d)", PID);
 			fflush(stderr);
 			continue;

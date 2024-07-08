@@ -157,8 +157,8 @@ void FindNeighbor(Particle* ptcl1, std::vector<Particle*> &particle) {
 
 	//ptcl1->predictParticleSecondOrder(newTime);
 	// search for neighbors for ptcl
+	ptcl1->NumberOfAC = 0;
 	for (Particle *ptcl2:particle) {
-
 		if  (ptcl1 == ptcl2) {
 			i++;
 			continue;
@@ -272,7 +272,7 @@ void CalculateAcceleration01(Particle* ptcl1, std::vector<Particle*> &particle) 
 
 		m_r3 = ptcl2->Mass/r2/sqrt(r2); 
 
-		if ((ptcl1->NumberOfAC==0) || (ptcl2 != ptcl1->ACList[j])) {
+		if ((ptcl1->NumberOfAC==0) || (j >= ptcl1->NumberOfAC) || (ptcl2 != ptcl1->ACList[j])) {
 			for (int dim=0; dim<Dim; dim++) {
 				// Calculate 0th and 1st derivatives of acceleration
 				ptcl1->a_reg[dim][0] += m_r3*x[dim];
@@ -362,7 +362,7 @@ void CalculateAcceleration23(Particle* ptcl1, std::vector<Particle*> &particle) 
 		c = 3*vdf_r2 + rdfdot_r2 + a*(3*b-4*a*a);
 
 
-		if ((ptcl1->NumberOfAC==0) || (ptcl2 != ptcl1->ACList[j])) {
+		if ((ptcl1->NumberOfAC==0) || (j >= ptcl1->NumberOfAC) || (ptcl2 != ptcl1->ACList[j])) {
 			for (int dim=0; dim<Dim; dim++) {
 				adot2 = -ptcl2->Mass*(a1[dim]-a2[dim])/r3-6*a*a21dot[dim]-3*b*a21[dim];
 				adot3 = -ptcl2->Mass*(a1dot[dim]-a2dot[dim])/r3-9*a*adot2-9*b*a21dot[dim]-3*c*a21[dim];
@@ -380,7 +380,7 @@ void CalculateAcceleration23(Particle* ptcl1, std::vector<Particle*> &particle) 
 			j++;
 		} // endfor if
 	} //endfor ptcl2
-	
+
 	for (int dim=0; dim<Dim; dim++)	 {
 		for (int order=2; order<4; order++) {
 			ptcl1->a_tot[dim][order] = ptcl1->a_reg[dim][order] + ptcl1->a_irr[dim][order];

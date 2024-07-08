@@ -286,7 +286,7 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 		binary_time  = binary_block*time_step;
 		global_time_irr = ComputationList[0]->CurrentBlockIrr+ComputationList[0]->TimeBlockIrr;
 		//std::cout << "ComputationList of " << ComputationList.size() << " : " ;
-		int bin_termination = 0;	
+		bool bin_termination=false;	
 #endif
 		for (Particle* ptcl:ComputationList) {
 
@@ -306,7 +306,7 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 					fprintf(binout, "Terminating Binary at time : %e \n", binary_time);
 					fprintf(stdout, "Terminating Binary at time : %e \n", binary_time);
 					KSTermination(ptcl, particle, binary_time, binary_block);
-					bin_termination++;
+					bin_termination=true;
 					continue;
 				}
 			}
@@ -328,9 +328,19 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 			}
 		}
 #ifdef binary
-		if (bin_termination > 0) 
+		if (bin_termination)  {
 			CreateComputationChain(particle); // because NextRegTime might have been changed.
+			/* 
+				 fprintf(stderr, "in irr, particle: ");
+				 for (Particle* ptcl: particle) {
+				 fprintf(stderr,"%d, ",ptcl->PID);	
+				 }
+				 fprintf(stderr,"\n");	
+				 */
+		}
 #endif
+
+
 
 		//std::cout << "\ndone!" << std::endl ;
 
@@ -367,6 +377,7 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 		fflush(stdout);
 	}
 	std::cout << "Finishing irregular force ..." << std::endl;
+	std::cerr << "Finishing irregular force ..." << std::endl;
 	fflush(stderr);
 
 

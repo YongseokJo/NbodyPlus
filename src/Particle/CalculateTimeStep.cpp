@@ -83,8 +83,8 @@ void Particle::calculateTimeStepIrr(double f[3][4],double df[3][4]) {
 		fprintf(stderr,"TimeBlockIrr    = %llu\n",
 				TimeBlockIrr);
 				*/
-		if (TimeLevelTmp > TimeLevelReg)
-			fprintf(stderr, "PID=%d, Irr=%d, Reg=%d\n", PID, TimeLevelTmp0, TimeLevelReg);
+		//if (TimeLevelTmp > TimeLevelReg)
+			//fprintf(stderr, "PID=%d, Irr=%d, Reg=%d\n", PID, TimeLevelTmp0, TimeLevelReg);
 
 		TimeLevelTmp--;
 		TimeBlockTmp *= 0.5;
@@ -198,7 +198,7 @@ void Particle::calculateTimeStepReg() {
 		TimeBlockReg = block_max-CurrentBlockReg;
 	}
 
-	if (TimeStepReg*EnzoTimeStep*1e4<1e-7) {
+	if (TimeStepReg*EnzoTimeStep*1e4<1e-9) {
 		throw std::runtime_error("TimeStepReg is too small.");
 	}
 	if (TimeStepReg > 1) {

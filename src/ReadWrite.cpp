@@ -28,8 +28,8 @@ int readData(std::vector<Particle*> &particle) {
 	NNB = NumParticle;
 
 	// Declaration
-	Particle *particle_temp;	
-	particle_temp = new Particle[NumParticle];
+	//Particle *particle_temp;	
+	//particle_temp = new Particle[NumParticle];
 	double** data = new double*[NumParticle];
 
 	for (int i = 0; i < NumParticle; ++i) {
@@ -56,8 +56,9 @@ int readData(std::vector<Particle*> &particle) {
 			data[row][col] = value;
 			++col;
 		}
-		particle_temp[row].setParticleInfo(data[row], row);
-		particle.push_back(&particle_temp[row]);
+		//particle_temp[row].setParticleInfo(data[row], row);
+		//particle.push_back(new Particle()particle_temp[row]);
+		particle.push_back(new Particle(data[row],row));
 		++row;
 	}
 
@@ -192,6 +193,7 @@ int writeParticle(std::vector<Particle*> &particle, double current_time, int out
     // Write particle data to the file
 		for (Particle* ptcl:particle) {
 			ptcl->predictParticleSecondOrderIrr(current_time);
+			/*
 			if (ptcl->isCMptcl)  {
 				ptcl->convertBinaryCoordinatesToCartesian();
 				write_out(outputFile, ptcl->BinaryParticleI);
@@ -203,6 +205,8 @@ int writeParticle(std::vector<Particle*> &particle, double current_time, int out
 				write_out(outputFile, ptcl);
 				//write_neighbor(output_nn, ptcl);
 			}
+			*/
+			write_out(outputFile, ptcl);
     }
 
     // Close the file
@@ -233,7 +237,6 @@ void write_neighbor(std::ofstream& outputFile, const Particle* ptcl) {
 			<< std::setw(width) << ptcl->PID << " = [" ;
 	for (Particle* nn:ptcl->ACList) {
 			outputFile << nn->PID << ", ";
-	
 	}
 	outputFile << "]\n";
 

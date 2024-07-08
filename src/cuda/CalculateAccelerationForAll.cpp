@@ -383,13 +383,14 @@ void SendAllParticlesToGPU(double time, std::vector <Particle*> &particle) {
 	double * Mdot;
 	double(*Position)[Dim];
 	double(*Velocity)[Dim];
-	int size = particle.size();
+	int size = (int) particle.size();
 
 	// allocate memory to the temporary variables
 	Mass     = new double[size];
 	Mdot     = new double[size];
 	Position = new double[size][Dim];
 	Velocity = new double[size][Dim];
+
 
 	// copy the data of particles to the arrays to be sent
 	for (int i=0; i<size; i++) {
@@ -406,8 +407,8 @@ void SendAllParticlesToGPU(double time, std::vector <Particle*> &particle) {
 		}
 	}
 
-	fprintf(stdout, "Sending particles to GPU...\n");
-	fflush(stdout);
+	//fprintf(stdout, "Sending particles to GPU...\n");
+	//fflush(stdout);
 	// send the arrays to GPU
 	SendToDevice(&size, Mass, Position, Velocity, Mdot, &NumNeighborMax);
 

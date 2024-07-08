@@ -7,7 +7,7 @@ void CalculateRegAccelerationOnGPU(std::vector<Particle*> RegularList, std::vect
 
 bool RegularAccelerationRoutine(std::vector<Particle*> &particle)
 {
-	fprintf(stdout, "Calculating regular force ...\n");
+	fprintf(stdout, "Calculating regular force ... particle size=%lu, regular size=%lu\n", particle.size(), RegularList.size());
 	fflush(stdout);
 	// Calulating regular acceleration of the particles
 	if (RegularList.size() > 0) {
@@ -36,13 +36,11 @@ bool RegularAccelerationRoutine(std::vector<Particle*> &particle)
 				fprintf(stdout,"--------------------------------------------------------------------------------------------- \n");
 			}
 			//}
-			/*
-				 fprintf(stderr, "In reg, PID=%d : ", ptcl->PID);
-				 for (Particle* nn:ptcl->ACList) {
-				 fprintf(stderr,"%d, ",nn->PID);	
-				 }
-				 fprintf(stderr,"\n");	
-				 */
+			fprintf(stdout, "In reg, PID=%d : ", ptcl->PID);
+			for (Particle* nn:ptcl->ACList) {
+				fprintf(stdout,"%d, ",nn->PID);	
+			}
+			fprintf(stdout,"\n");	
 			fprintf(stdout, " a_tot = (%.2e,%.2e,%.2e), a_reg = (%.2e,%.2e,%.2e), a_irr = (%.2e,%.2e,%.2e), n_n=%d\n\
 					a1_reg = (%.2e,%.2e,%.2e), a2_reg = (%.2e,%.2e,%.2e), a3_reg = (%.2e,%.2e,%.2e)\n\
 					a1_irr = (%.2e,%.2e,%.2e), a2_irr = (%.2e,%.2e,%.2e), a3_irr = (%.2e,%.2e,%.2e)\n", 

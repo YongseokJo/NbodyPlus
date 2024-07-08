@@ -22,11 +22,11 @@ const int dt_level_min = -16;
 
 const double dt_min = 9.53674316e-7*0.00012207031;
 const int dt_level_min = -33;
-*/
 
 
 const double dt_min = 0.00001525878/16;
 const int dt_level_min = -20;
+*/
 
 int newNNB = 0;
 std::vector<Particle*> RegularList;

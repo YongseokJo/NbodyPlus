@@ -48,6 +48,16 @@ void KSTermination(Particle* ptclCM, std::vector<Particle*> &particle, double cu
 	ptclJ->ACList.clear();
 	ptclJ->NumberOfAC = 0;
 
+	ptclCM->isErase = true;
+	particle.erase(
+			std::remove_if(particle.begin(), particle.end(),
+				[](Particle* p) {
+				bool to_remove = p->isErase;
+				//if (to_remove) delete p;
+				return to_remove;
+				}),
+			particle.end());
+
 	fprintf(stdout,"initialize particle I \n");
 	ReInitializeKSParticle(ptclI, particle);
 	fprintf(stdout,"initialize particle J \n");
@@ -91,8 +101,37 @@ void KSTermination(Particle* ptclCM, std::vector<Particle*> &particle, double cu
 	// assuming that all the neighbors are bidirectional
 	// may need to update later if the radius for neighbor differs depending on the particle
 	fprintf(stdout,"replacing CM particle in neighbor list to component particles \n");
-	ptclCM->isErase = true;
+
+	int index = 0;
+	fprintf(stderr, "neighbor of %d, ", ptclCM->PID);
 	for (Particle* ptcl: particle) {
+		if (ptcl->PID == ptclI->PID || ptcl->PID == ptclJ->PID) {
+			fprintf(stderr, "what? %d", ptcl->PID);
+			throw std::runtime_error("");
+		}
+		index = 0;
+		/*
+		for (Particle* neighbor: ptcl->ACList) {
+			fprintf(stderr, "%d, ", neighbor->PID);
+		}
+		fprintf(stderr, "\n");
+		*/
+		for (Particle* neighbor: ptcl->ACList) {
+			if (neighbor->PID == ptclCM->PID) {
+				ptcl->ACList.push_back(ptclI);
+				ptcl->ACList.push_back(ptclJ);
+				ptcl->ACList.erase(ptcl->ACList.begin() + index);
+				break;
+			}
+			index++;
+		}
+		/*
+		for (Particle* neighbor: ptcl->ACList) {
+			fprintf(stderr, "%d, ", neighbor->PID);
+		}
+		fprintf(stderr, "\n");
+		*/
+		/*
 		auto it = ptcl->ACList.erase(
 				std::remove_if(ptcl->ACList.begin(), ptcl->ACList.end(),
 					[](Particle* p) {
@@ -105,15 +144,26 @@ void KSTermination(Particle* ptclCM, std::vector<Particle*> &particle, double cu
 			ptcl->ACList.push_back(ptclI);
 			ptcl->ACList.push_back(ptclJ);
 		}
+		*/
 	}
 
 
-	fprintf(stdout,"add the binary components to particle list\n");
-	ptclI->ParticleOrder = particle.size();
-	particle.push_back(ptclI);
-	ptclJ->ParticleOrder = particle.size();
-	particle.push_back(ptclJ);
+	/*
+	if (ptclI == ptclJ) {
+		fprintf(stderr, "\nthere are the same!\n");
+	}
+	fprintf(stderr, "neighbor%d:",ptclI->PID);
+	for (Particle* ptcl:ptclI->ACList) {
+		fprintf(stderr, "%d, ", ptcl->PID);
+	}
+	fprintf(stderr, "\n");
 
+	fprintf(stderr, "neighbor%d:",ptclJ->PID);
+	for (Particle* ptcl:ptclJ->ACList) {
+		fprintf(stderr, "%d, ", ptcl->PID);
+	}
+	fprintf(stderr, "\n");
+	*/
 
 	// delete the original components from the list
 	fprintf(stdout,"deleting CM particle from the particle list\n");
@@ -138,14 +188,6 @@ void KSTermination(Particle* ptclCM, std::vector<Particle*> &particle, double cu
 		}
 		NextParticle = NextParticle->NextParticleForComputation;
 	}
-	particle.erase(
-			std::remove_if(particle.begin(), particle.end(),
-				[](Particle* p) {
-				bool to_remove = p->isErase;
-				if (to_remove) delete p;
-				return to_remove;
-				}),
-			particle.end());
 
 	// we also need to delete it from the binary list
 	fprintf(stdout,"deleting binary information from the BinaryList \n");
@@ -154,26 +196,40 @@ void KSTermination(Particle* ptclCM, std::vector<Particle*> &particle, double cu
 			std::remove_if(BinaryList.begin(), BinaryList.end(),
 				[](Binary* p) {
 				bool to_remove = p->isErase;
-				if (to_remove) delete p;
+				//if (to_remove) delete p;
 				return to_remove;
 				}),
 			BinaryList.end());
 
+	delete ptclBin;
+	delete ptclCM;
+	ptclBin = nullptr;
+	ptclCM  = nullptr;
 
 	//re-do UpdateNextRegTime
 	UpdateNextRegTime(particle); //
 
+	fprintf(stdout,"add the binary components to particle list (to be included neighbor search)\n");
+	ptclI->ParticleOrder = particle.size();
+	particle.push_back(ptclI);
+	ptclJ->ParticleOrder = particle.size();
+	particle.push_back(ptclJ);
+
+
+	/*
 	fprintf(stderr, "particle:");
 	for (Particle* ptcl:particle) {
 		fprintf(stderr, "%d, ", ptcl->PID);
 	}
 	fprintf(stderr, "\n");
-
+	*/
+	/*
 	fprintf(stderr, "ComputationList:");
 	for (Particle* ptcl:ComputationList) {
 		fprintf(stderr, "%d, ", ptcl->PID);
 	}
 	fprintf(stderr, "\n");
+	*/
 
 	// change the booleans and pointers for binary
 	ptclI->isBinary = false;
