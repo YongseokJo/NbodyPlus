@@ -13,8 +13,12 @@ void Particle::calculateTimeStepIrr(double f[3][4],double df[3][4]) {
 	int TimeLevelTmp, TimeLevelTmp0;
 	ULL TimeBlockTmp;
 
-	if (this->NumberOfAC == 0)
+	if (this->NumberOfAC == 0) {
+		TimeLevelIrr = TimeLevelReg;
+		TimeStepIrr = static_cast<double>(pow(2, TimeLevelIrr));
+		TimeBlockIrr = static_cast<ULL>(pow(2, TimeLevelIrr-time_block));
 		return;
+	}
 
 	getBlockTimeStep(getNewTimeStepIrr(a_tot, a_irr), TimeLevelTmp, TimeBlockTmp, TimeStepTmp);
 	TimeLevelTmp0 = TimeLevelTmp;

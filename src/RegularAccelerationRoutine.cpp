@@ -36,12 +36,14 @@ bool RegularAccelerationRoutine(std::vector<Particle*> &particle)
 				fprintf(stdout,"--------------------------------------------------------------------------------------------- \n");
 			}
 			//}
+			/*
 			fprintf(stdout, "In reg, PID=%d : ", ptcl->PID);
 			for (Particle* nn:ptcl->ACList) {
 				fprintf(stdout,"%d, ",nn->PID);	
 			}
 			fprintf(stdout,"\n");	
-			fprintf(stdout, " a_tot = (%.2e,%.2e,%.2e), a_reg = (%.2e,%.2e,%.2e), a_irr = (%.2e,%.2e,%.2e), n_n=%d\n\
+			*/
+			fprintf(stdout, " a_tot = (%.2e,%.2e,%.2e), a_reg = (%.2e,%.2e,%.2e), a_irr = (%.2e,%.2e,%.2e), n_n=%d, R=%.3e\n\
 					a1_reg = (%.2e,%.2e,%.2e), a2_reg = (%.2e,%.2e,%.2e), a3_reg = (%.2e,%.2e,%.2e)\n\
 					a1_irr = (%.2e,%.2e,%.2e), a2_irr = (%.2e,%.2e,%.2e), a3_irr = (%.2e,%.2e,%.2e)\n", 
 					ptcl->a_tot[0][0],
@@ -54,6 +56,7 @@ bool RegularAccelerationRoutine(std::vector<Particle*> &particle)
 					ptcl->a_irr[1][0],
 					ptcl->a_irr[2][0],
 					ptcl->NumberOfAC,
+					ptcl->RadiusOfAC,
 					ptcl->a_reg[0][1],
 					ptcl->a_reg[1][1],
 					ptcl->a_reg[2][1],
@@ -91,7 +94,7 @@ bool RegularAccelerationRoutine(std::vector<Particle*> &particle)
 	global_time = NextRegTimeBlock*time_step;
 	// update the next regular time step
 	fprintf(stdout, "NextRegTimeBlock=%llu\n", NextRegTimeBlock);
-	//std::cout << "Finishing regular force ...\n" << std::flush;
+	std::cerr << "Finishing regular force ...\n" << std::flush;
 	//fprintf(stderr, "Finishing regular force.. NextRegTime=%.3e\n", NextRegTimeBlock*time_step);
 	fprintf(stdout, "Finishing regular force.. NextRegTime=%.3e\n", NextRegTimeBlock*time_step);
 	return true;

@@ -5,6 +5,7 @@
 #include <cassert>
 #include <cuda_runtime.h>
 #include "cuda_types.h"
+#include "../defs.h"
 //#include "cuda_global.h"
 //#include "cuda_functions.h"
 //#include "cuda_routines.h"
@@ -18,16 +19,13 @@
 #define THREAD 1 // 2048 for A100
 #define BLOCK 1024    // 32 for A100 
 
-//#define FixNumNeighbor 30
-//#define FixNumNeighbor 50
-#define FixNumNeighbor 30
 
 #define ESP2 1e-4
 #define new_size(A) ((A > 1024) ? int(pow(2,ceil(log(A)/log(2.0)))) : 1024)
 
 
 static int NNB;
-static int NumNeighborMax;
+//static int NumNeighborMax;
 static double time_send, time_grav, time_out, time_nb;
 static long long numInter;
 static int icall,ini,isend;
@@ -138,7 +136,8 @@ void GetAcceleration(
 
 	for (int tg_offset = 0; tg_offset < NumTarget; tg_offset += BLOCK) {
 		CalculateAcceleration <<< block_size, thread_size >>>
-			(NNB, NumTarget, tg_offset, d_target, d_background, d_result, do_neighbor);
+			(NNB, NumTarget, tg_offset, d_target, d_background, d_result, d_neighbor);
+			//(NNB, NumTarget, tg_offset, d_target, d_background, d_result, do_neighbor);
 	} // endfor i, target particles
 
 	cudaDeviceSynchronize();
@@ -147,10 +146,12 @@ void GetAcceleration(
 		std::cerr << "CUDA error after calacc: " << cudaGetErrorString(cudaStatus) << std::endl;
 	}
 
+	/*
 	for (int nn_offset=0; (nn_offset)*BLOCK*THREAD<NumTarget; nn_offset++) {
 		OrganizeNeighbor <<< block_size, thread_size >>>
 			(do_neighbor, d_neighbor, nn_offset, NumTarget);
 	}
+	*/
 
 	cudaDeviceSynchronize();
 	cudaStatus = cudaGetLastError();
@@ -183,6 +184,8 @@ void GetAcceleration(
 	}
 
 	for (int i=0;i<NumTarget;i++) {
+		//printf("num neighbor = %d\n", h_neighbor[i].NumNeighbor);
+		//fprintf(stderr, "num neighbor = %d\n", h_neighbor[i].NumNeighbor);
 		for (int j=0;j<h_neighbor[i].NumNeighbor;j++) {
 			NeighborList[i][j] = h_neighbor[i].NeighborList[j];
 		}
@@ -258,7 +261,7 @@ __global__ void CalculateAcceleration(
 #if FixNumNeighbor == 0
 	double r_nb[FixNumNeighbor+1];
 #else
-	double r_nb[FixNumNeighbor];
+	double r_nb[NumNeighborMax];
 #endif
 	int index_max;
 	int bg_index;
@@ -351,7 +354,41 @@ __device__ void kernel(
 	}
 
 	// neighbor
-	//if(min(dr2, dr2p) < j.mass * i.r2) {
+#define Radius
+#ifdef Radius
+	//if( dr2 < j.mass * i.r2 || dr2p < j.mass * i.r2 ) {
+	if( dr2 < j.mass * i.r2 && neighbor.NumNeighbor < NumNeighborMax) {
+
+		/*
+		if (neighbor.NumNeighbor == FixNumNeighbor) {
+			r_nb[index_max]                  = dr2;
+			neighbor.NeighborList[index_max] = bg_index;
+			// update new r_max
+			r_max = dr2;
+			for (int k=0; k<FixNumNeighbor; k++) {
+				if (r_nb[k] > r_max) {
+					r_max     = r_nb[k];
+					index_max = k;
+				}
+			}
+		}
+		else {
+		*/
+		/*if (dr2 > r_max) {
+			r_max     = dr2;
+			index_max = neighbor.NumNeighbor;
+		}
+		*/
+		neighbor.NeighborList[neighbor.NumNeighbor] = bg_index;
+		//r_nb[neighbor.NumNeighbor]     = dr2;
+		neighbor.NumNeighbor++;
+		//}
+		return;
+	}
+#endif
+
+#define no_NN
+#ifdef NN
 	if (neighbor.NumNeighbor < FixNumNeighbor) {
 		if (dr2 > r_max) {
 			r_max     = dr2;
@@ -374,6 +411,7 @@ __device__ void kernel(
 			}
 		}
 	}
+#endif
 
 	//}
 
@@ -473,7 +511,7 @@ void _ReceiveFromHost(
 	//time_send -= get_wtime();
 	nbodymax       = 100000000;
 	NNB            = _NNB;
-	NumNeighborMax = _NumNeighborMax;
+	//NumNeighborMax = _NumNeighborMax;
 	isend++;
 	assert(NNB <= nbodymax);
 	cudaError_t cudaStatus;
@@ -534,7 +572,7 @@ void _ReceiveFromHost(
 		std::cerr << "CUDA error after all neighbor: " << cudaGetErrorString(cudaStatus) << std::endl;
 	}
 
-	printf("CUDA: new size of NNB=%d of %d\n", NNB,variable_size);
+	//printf("CUDA: new size of NNB=%d of %d\n", NNB,variable_size);
 	/*
 	cudaStatus = cudaMallocManaged(&background, new_size(NNB)*sizeof(BackgroundParticle)); //NNB*sizeof(BackgroundParticle));
 

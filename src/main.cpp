@@ -33,7 +33,7 @@ std::vector<Particle*> RegularList;
 std::vector<Binary*> BinaryList;
 FILE* binout;
 
-int NumNeighborMax = 100;
+//int NumNeighborMax = 100;
 
 
 

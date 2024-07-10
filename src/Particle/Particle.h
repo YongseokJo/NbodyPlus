@@ -51,6 +51,7 @@ class Particle
 		double a_reg[Dim][HERMITE_ORDER];
 		double a_irr[Dim][HERMITE_ORDER];
 		double BackgroundAcceleration[Dim];
+		double LocalDensity;
 		Particle* NextParticleInEnzo;
 		Particle* NextParticleForComputation;
 		Particle* BinaryPairParticle;
@@ -75,7 +76,7 @@ class Particle
 			Mass            = 0;
 			InitialMass     = 0;
 			NumberOfAC      = 0; // number of neighbors
-			RadiusOfAC      = InitialRadiusOfAC;
+			RadiusOfAC      = -1;
 			ParticleType    = -9999;
 			CurrentTimeIrr  = 0.; // consistent with actual current time
 			CurrentTimeReg  = 0.;
@@ -89,6 +90,7 @@ class Particle
 			TimeLevelReg    = 0;
 			TimeBlockIrr    = 0;
 			TimeBlockReg    = 0;
+			LocalDensity    = 0;
 			isStarEvolution = true;
 			isBinary        = false;
 			isCMptcl        = false;
@@ -157,6 +159,8 @@ class Particle
 		void isKSCandidate();
 		void convertBinaryCoordinatesToCartesian();
 		void polynomialPrediction(double current_time);
+		void UpdateRadius();
+		void UpdateNeighbor(std::vector<Particle*> &particle);
 		~Particle() {
 			ACList.clear();
 			// Deallocate memory

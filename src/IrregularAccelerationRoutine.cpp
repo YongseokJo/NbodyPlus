@@ -76,7 +76,7 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 			*/
 
 
-		fflush(stdout);
+		//fflush(stdout);
 		for (Particle* ptcl:particle) {
 				if (ptcl->Position[0] !=  ptcl->Position[0] || ptcl->Velocity[0] !=  ptcl->Velocity[0] 
 						|| ptcl->a_tot[0][0] !=  ptcl->a_tot[0][0]) {
@@ -135,23 +135,25 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 		//while (ParticleForComputation != nullptr) {
 
 #ifdef chain_debug
-		fprintf(stderr,"BC,BU,IrrChain=");
+		std::cerr << "BU, ComputationList=" << std::flush;
+		for (Particle* ptcl:ComputationList) {
+			fprintf(stderr,"%.3e (%d), ", ptcl->CurrentTimeIrr+ptcl->TimeStepIrr, ptcl->PID);
+		}
+		std::cerr << std::endl;
+
+		fprintf(stderr,"BU,IrrChain=");
 		Particle* next=FirstComputation;
 		while (next!= nullptr) {
 			fprintf(stderr,"%.3e (%d), ", next->CurrentTimeIrr+next->TimeStepIrr, next->PID);
 			next = next->NextParticleForComputation;
 		}
 		fprintf(stderr,"\n");
-		
-		std::cerr << "BU, ComputationList=" << std::flush;
-		for (Particle* ptcl:ComputationList) {
-			fprintf(stderr,"%.3e (%d), ", ptcl->CurrentTimeIrr+ptcl->TimeStepIrr, ptcl->PID);
-		}
-		std::cerr << std::endl;
+
 #endif
 
 		for (Particle* ptcl:ComputationList) {
 
+			/*
 			//if(ptcl->TimeStepReg*EnzoTimeStep*1e10/1e6 < 1e-7) {
 			if (ptcl->CurrentBlockReg > ptcl->CurrentBlockIrr || ptcl->CurrentBlockReg+ptcl->TimeBlockReg < ptcl->CurrentBlockIrr)
 				fprintf(stdout,"--------------------error--------------------------------------------------------------------\n");
@@ -170,13 +172,15 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 			if (ptcl->CurrentBlockReg > ptcl->CurrentBlockIrr || ptcl->CurrentBlockReg+ptcl->TimeBlockReg < ptcl->CurrentBlockIrr)
 				fprintf(stdout,"----------------------------------------------------------------------------------------\n");
 			//}
-
+			*/
+			/*
 			for (Particle* ptcl:particle) {
 				if (ptcl->CurrentTimeIrr > 1) {
 					fprintf(stderr, "inside, PID=%d, CurrentTimeIrr=%e\n", ptcl->PID, ptcl->CurrentTimeIrr);
 					fflush(stderr);
 				}
 			}
+			*/
 			/*
 				 fprintf(stdout, "a_tot = (%.2e,%.2e,%.2e), a_irr = (%.2e,%.2e,%.2e), a1_irr = (%.2e,%.2e,%.2e), a2_irr = (%.2e,%.2e,%.2e), a3_irr = (%.2e,%.2e,%.2e), n_n=%d\n",
 				 ptcl->a_tot[0][0],
@@ -267,14 +271,14 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 		*/
 
 
-		fflush(stdout);
+		//fflush(stdout);
 		for (Particle* ptcl:particle) {
-				if (ptcl->Position[0] !=  ptcl->Position[0] || ptcl->Velocity[0] !=  ptcl->Velocity[0] 
-						|| ptcl->a_tot[0][0] !=  ptcl->a_tot[0][0]) {
-					fprintf(stdout, "before term, myself = %d\n", ptcl->PID);
-					fprintf(stdout, "x[0] = %e\n", ptcl->Position[0]);
-					fflush(stdout);
-					//assert(ptcl->Position[0] ==  ptcl->Position[0]);
+			if (ptcl->Position[0] !=  ptcl->Position[0] || ptcl->Velocity[0] !=  ptcl->Velocity[0] 
+					|| ptcl->a_tot[0][0] !=  ptcl->a_tot[0][0]) {
+				fprintf(stdout, "before term, myself = %d\n", ptcl->PID);
+				fprintf(stdout, "x[0] = %e\n", ptcl->Position[0]);
+				fflush(stdout);
+				//assert(ptcl->Position[0] ==  ptcl->Position[0]);
 			}
 		}
 
@@ -302,7 +306,7 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 #ifdef binary
 			if (ptcl->isCMptcl) {
 				if (ptcl->BinaryInfo->r > ptcl->BinaryInfo->r0*2.0
-						|| ptcl->BinaryInfo->TimeStep > 2.0*KSTime) {
+						|| ptcl->BinaryInfo->TimeStep*EnzoTimeStep*1e4 > 4.0*KSTime) {
 					fprintf(binout, "Terminating Binary at time : %e \n", binary_time);
 					fprintf(stdout, "Terminating Binary at time : %e \n", binary_time);
 					KSTermination(ptcl, particle, binary_time, binary_block);
@@ -319,16 +323,17 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 		}
 
 		for (Particle* ptcl:particle) {
-				if (ptcl->Position[0] !=  ptcl->Position[0] || ptcl->Velocity[0] !=  ptcl->Velocity[0] 
-						|| ptcl->a_tot[0][0] !=  ptcl->a_tot[0][0]) {
-					fprintf(stdout, "after term, myself = %d\n", ptcl->PID);
-					fprintf(stdout, "x[0] = %e\n", ptcl->Position[0]);
-					fflush(stdout);
-					//assert(ptcl->Position[0] ==  ptcl->Position[0]);
+			if (ptcl->Position[0] !=  ptcl->Position[0] || ptcl->Velocity[0] !=  ptcl->Velocity[0] 
+					|| ptcl->a_tot[0][0] !=  ptcl->a_tot[0][0]) {
+				fprintf(stdout, "after term, myself = %d\n", ptcl->PID);
+				fprintf(stdout, "x[0] = %e\n", ptcl->Position[0]);
+				fflush(stdout);
+				//assert(ptcl->Position[0] ==  ptcl->Position[0]);
 			}
 		}
 #ifdef binary
 		if (bin_termination)  {
+			//std::cerr << "After termination, NextRegTimeBlock=" << NextRegTimeBlock << std::endl; 
 			CreateComputationChain(particle); // because NextRegTime might have been changed.
 			/* 
 				 fprintf(stderr, "in irr, particle: ");
@@ -374,11 +379,11 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 		_time.irr_sort.markEnd();
 		_time.irr_sort.getDuration();
 #endif
-		fflush(stdout);
+		//fflush(stdout);
 	}
-	std::cout << "Finishing irregular force ..." << std::endl;
-	std::cerr << "Finishing irregular force ..." << std::endl;
-	fflush(stderr);
+	//std::cout << "Finishing irregular force ..." << std::endl;
+	//kstd::cerr << "Finishing irregular force ..." << std::endl;
+	//fflush(stderr);
 
 
 	/*

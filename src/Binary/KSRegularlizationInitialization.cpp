@@ -475,11 +475,13 @@ void NewKSInitialization(Particle* ptclI, std::vector<Particle*> &particle, std:
 			j++;
 	}
 
+	/*
 	fprintf(stderr, "particle:");
 	for (Particle* ptcl:particle) {
 		fprintf(stderr, "%d, ", ptcl->PID);
 	}
 	fprintf(stderr, "\n");
+	*/
 
 	// erase particle I and J
 	particle.erase(
@@ -492,11 +494,13 @@ void NewKSInitialization(Particle* ptclI, std::vector<Particle*> &particle, std:
 	ptclI->isErase = false;
 	ptclJ->isErase = false;
 
+	/*
 	fprintf(stderr, "particle (%d, %d):", ptclI->PID, ptclJ->PID);
 	for (Particle* ptcl:particle) {
 		fprintf(stderr, "%d, ", ptcl->PID);
 	}
 	fprintf(stderr, "\n");
+	*/
 
 
 	// update particle order and add it to particle vector
@@ -566,6 +570,7 @@ void NewKSInitialization(Particle* ptclI, std::vector<Particle*> &particle, std:
 
 		if (size != ptcl->NumberOfAC) {
 			ptcl->ACList.push_back(ptclCM);
+			ptcl->NumberOfAC++;
 		}
 		//fflush(stderr);
 	}

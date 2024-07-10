@@ -207,6 +207,7 @@ int writeParticle(std::vector<Particle*> &particle, double current_time, int out
 			}
 			*/
 			write_out(outputFile, ptcl);
+			write_neighbor(output_nn, ptcl);
     }
 
     // Close the file
@@ -234,9 +235,9 @@ void write_out(std::ofstream& outputFile, const Particle* ptcl) {
 
 void write_neighbor(std::ofstream& outputFile, const Particle* ptcl) {
 	outputFile  << std::left\
-			<< std::setw(width) << ptcl->PID << " = [" ;
+			<< std::setw(width) << ptcl->PID << " = [ " ;
 	for (Particle* nn:ptcl->ACList) {
-			outputFile << nn->PID << ", ";
+			outputFile << nn->PID << "  ";
 	}
 	outputFile << "]\n";
 

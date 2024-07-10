@@ -16,7 +16,7 @@ extern TimeTracer _time;
 extern std::vector<int> LevelList;
 extern int NNB;
 extern int newNNB;
-extern int NumNeighborMax;
+//extern int NumNeighborMax;
 
 // Time
 extern double global_time;

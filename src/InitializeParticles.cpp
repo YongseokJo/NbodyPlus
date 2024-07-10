@@ -6,10 +6,6 @@
 #include "defs.h"
 
 
-//#define FixNumNeighbor 30
-//#define FixNumNeighbor 50
-//#define FixNumNeighbor 50
-#define FixNumNeighbor 30
 
 void FindNeighbor(Particle* ptcl1, std::vector<Particle*> &particle);
 void CalculateAcceleration01(Particle* ptcl1, std::vector<Particle*> &particle);
@@ -155,8 +151,7 @@ void FindNeighbor(Particle* ptcl1, std::vector<Particle*> &particle) {
 	int  index_max, i=0; //nb_index[FixNumNeighbor],
 	std::vector<int> nb_index(FixNumNeighbor); 
 
-	//ptcl1->predictParticleSecondOrder(newTime);
-	// search for neighbors for ptcl
+	// first search for neighbors for ptcl
 	ptcl1->NumberOfAC = 0;
 	for (Particle *ptcl2:particle) {
 		if  (ptcl1 == ptcl2) {
@@ -166,7 +161,6 @@ void FindNeighbor(Particle* ptcl1, std::vector<Particle*> &particle) {
 
 		r2 = 0.0;
 
-		//ptcl2->predictParticleSecondOrder(newTime);
 		for (int dim=0; dim<Dim; dim++) {
 			dx = ptcl2->Position[dim] - ptcl1->Position[dim];
 			r2 += dx*dx;
@@ -199,12 +193,29 @@ void FindNeighbor(Particle* ptcl1, std::vector<Particle*> &particle) {
 		i++;
 	} // endfor
 
+	for (int j:nb_index) {
+		ptcl1->ACList.push_back(particle[j]);
+	}
 
+	// update 
+	ptcl1->UpdateRadius();
+	ptcl1->UpdateNeighbor(particle);
+
+
+	std::cout << ptcl1->PID << "("<< ptcl1->NumberOfAC <<")" << "=" <<std::flush;
+	for (Particle * nn:ptcl1->ACList) {
+		std::cout << nn->PID << ", ";
+	}
+	std::cout << std::endl;
+	/*
 	std::sort(nb_index.begin(), nb_index.end());
 	for (int j:nb_index) {
 		ptcl1->ACList.push_back(particle[j]);
 		//std::cout << j << ", ";
 	}
+	*/
+
+
 	//std::cout << std::endl;
 
 	//std::sort(ptcl1->ACList.begin(),ptcl1->ACList.end());
@@ -214,6 +225,7 @@ void FindNeighbor(Particle* ptcl1, std::vector<Particle*> &particle) {
 	return ;
 
 }
+
 
 
 

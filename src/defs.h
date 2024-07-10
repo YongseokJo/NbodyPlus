@@ -1,5 +1,6 @@
 
 
+#define FixNumNeighbor 30
 #define HERMITE_ORDER 4
 #define Dim 3
 
@@ -45,10 +46,11 @@
 
 // KS regularlization related variables
 
+#define NumNeighborMax 100
 #define stumpffN 12 // the order of approximation for stumpff functions
-#define KSDistance 0.0002  // the distance of binary particles from each other
+#define KSDistance 0.00002  // the distance of binary particles from each other
 //#define KSDistance 1e-10  // the distance of binary particles from each other
-#define KSTime 2e-5  // short timestep criteria for binary search
+#define KSTime 4e-7  // short timestep criteria for binary search
 //#define KSTime 1e-10  // short timestep criteria for binary search
 #define PerturberDistance 0.01  // the distance of binary perturbers from the pair
 
@@ -68,6 +70,8 @@
 
 #define mag(a) (a[0]*a[0]+a[1]*a[1]+a[2]*a[2])
 #define mag0(a) (a[0][0]*a[0][0]+a[1][0]*a[1][0]+a[2][0]*a[2][0])
+#define dist(a,b) std::sqrt((a[0]-b[0])*(a[0]-b[0])+(a[1]-b[1])*(a[1]-b[1])+(a[2]-b[2])*(a[2]-b[2]))
+
 
 typedef unsigned long long ULL;
 

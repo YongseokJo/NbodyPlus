@@ -1,4 +1,5 @@
 #pragma once
+#include "../defs.h"
 #include <stdio.h>
 #include <iostream>
 #include <assert.h>
@@ -204,20 +205,20 @@ struct Result{
 
 struct  Neighbor{
 	int NumNeighbor;
-	int NeighborList[100]; // this needs to be modified.
+	int NeighborList[NumNeighborMax]; // this needs to be modified.
 
 
 	__device__ void clear() {
 		NumNeighbor = 0;
 #pragma unroll
-		for (int i=0; i<100; i++) {
+		for (int i=0; i<NumNeighborMax; i++) {
 			NeighborList[i] = 0;
 		}
 	}
 	void clear_h() {
 		NumNeighbor = 0;
 #pragma unroll
-		for (int i=0; i<100; i++) {
+		for (int i=0; i<NumNeighborMax; i++) {
 			NeighborList[i] = 0;
 		}
 	}

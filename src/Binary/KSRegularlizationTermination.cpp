@@ -103,11 +103,11 @@ void KSTermination(Particle* ptclCM, std::vector<Particle*> &particle, double cu
 	fprintf(stdout,"replacing CM particle in neighbor list to component particles \n");
 
 	int index = 0;
-	fprintf(stderr, "neighbor of %d, ", ptclCM->PID);
+	//fprintf(stderr, "neighbor of %d, ", ptclCM->PID);
 	for (Particle* ptcl: particle) {
 		if (ptcl->PID == ptclI->PID || ptcl->PID == ptclJ->PID) {
 			fprintf(stderr, "what? %d", ptcl->PID);
-			throw std::runtime_error("");
+			throw std::runtime_error("KSRegularizationTermination.cpp");
 		}
 		index = 0;
 		/*
@@ -118,9 +118,10 @@ void KSTermination(Particle* ptclCM, std::vector<Particle*> &particle, double cu
 		*/
 		for (Particle* neighbor: ptcl->ACList) {
 			if (neighbor->PID == ptclCM->PID) {
+				ptcl->ACList.erase(ptcl->ACList.begin() + index);
 				ptcl->ACList.push_back(ptclI);
 				ptcl->ACList.push_back(ptclJ);
-				ptcl->ACList.erase(ptcl->ACList.begin() + index);
+				ptcl->NumberOfAC = ptcl->ACList.size();
 				break;
 			}
 			index++;
@@ -169,7 +170,7 @@ void KSTermination(Particle* ptclCM, std::vector<Particle*> &particle, double cu
 	fprintf(stdout,"deleting CM particle from the particle list\n");
 
 
-	fprintf(stderr,"PID of (CM, I, J) = (%d,%d,%d)\n",ptclCM->PID, ptclI->PID, ptclJ->PID);
+	//fprintf(stderr,"PID of (CM, I, J) = (%d,%d,%d)\n",ptclCM->PID, ptclI->PID, ptclJ->PID);
 	/*
 	ComputationList.erase(
 			std::remove_if(ComputationList.begin(), ComputationList.end(),
@@ -180,7 +181,10 @@ void KSTermination(Particle* ptclCM, std::vector<Particle*> &particle, double cu
 				}),
 			ComputationList.end());
 			*/
-	// delete ptclCM from ComputationChain
+
+	// delete ptclCM from ComputationChain, we no longer need it since the whole chain will be re-generated.
+	// by Jo July 10 2024
+	/*
 	Particle* NextParticle=FirstComputation;
 	while (NextParticle != nullptr) {
 		if (NextParticle->NextParticleForComputation == ptclCM) {
@@ -188,6 +192,7 @@ void KSTermination(Particle* ptclCM, std::vector<Particle*> &particle, double cu
 		}
 		NextParticle = NextParticle->NextParticleForComputation;
 	}
+	*/
 
 	// we also need to delete it from the binary list
 	fprintf(stdout,"deleting binary information from the BinaryList \n");
