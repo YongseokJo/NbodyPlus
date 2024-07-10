@@ -8,6 +8,7 @@
 
 int getLineNumber();
 void write_out(std::ofstream& outputFile, const Particle* ptcl);
+void write_neighbor(std::ofstream& outputFile, const Particle* ptcl); 
 const int NUM_COLUMNS = 7; // Define the number of columns
 const int width = 18;
 
@@ -27,8 +28,8 @@ int readData(std::vector<Particle*> &particle) {
 	NNB = NumParticle;
 
 	// Declaration
-	Particle *particle_temp;	
-	particle_temp = new Particle[NumParticle];
+	//Particle *particle_temp;	
+	//particle_temp = new Particle[NumParticle];
 	double** data = new double*[NumParticle];
 
 	for (int i = 0; i < NumParticle; ++i) {
@@ -55,8 +56,9 @@ int readData(std::vector<Particle*> &particle) {
 			data[row][col] = value;
 			++col;
 		}
-		particle_temp[row].setParticleInfo(data[row], row);
-		particle.push_back(&particle_temp[row]);
+		//particle_temp[row].setParticleInfo(data[row], row);
+		//particle.push_back(new Particle()particle_temp[row]);
+		particle.push_back(new Particle(data[row],row));
 		++row;
 	}
 
@@ -69,7 +71,7 @@ int readData(std::vector<Particle*> &particle) {
 		std::cout << std::endl;
 	}
 	*/
-	
+
 
 	// Normalize particles
 	std::cout << "Particle normalizing." << std::endl;
@@ -78,10 +80,13 @@ int readData(std::vector<Particle*> &particle) {
 	}
 	inputFile.close();
 
+	for (int i=0; i<particle.size(); i++) {
+		particle[i]->ParticleOrder = i;
+	}
 
 
 
-	// Deallocate memory 
+	// Deallocate memory
 	for (int i = 0; i < NumParticle; ++i) {
 		delete[] data[i];
 	}
@@ -140,6 +145,7 @@ bool createDirectory(const std::string& path) {
 
 int writeParticle(std::vector<Particle*> &particle, double current_time, int outputNum) {
 
+    std::cout << "Data is being written..." << std::endl;
     std::string directoryPath = "output";
 
     // Create the directory or check if it already exists
@@ -153,9 +159,11 @@ int writeParticle(std::vector<Particle*> &particle, double current_time, int out
 
     // Construct the filename with the timestamp
     std::string filename = directoryPath + "/" + foutput + "_" + std::to_string(outputNum) + ".txt";
+    std::string nn_fname = directoryPath + "/neighbor/nn_" + std::to_string(outputNum) + ".txt";
 
     // Open a file for writing
     std::ofstream outputFile(filename);
+    std::ofstream output_nn(nn_fname);
 
 
     // Check if the file is opened successfully
@@ -165,7 +173,7 @@ int writeParticle(std::vector<Particle*> &particle, double current_time, int out
     }
 
 		outputFile << current_time*EnzoTimeStep*1e10/1e6 << " Myr, "; //
-		outputFile << global_time*EnzoTimeStep*1e10/1e6 << " Myr"; //
+		//outputFile << global_time*EnzoTimeStep*1e10/1e6 << " Myr"; //
 		outputFile << "\n";
 		outputFile << outputTime << ", "; //
 		outputFile << outputTimeStep << ", "; //
@@ -185,18 +193,26 @@ int writeParticle(std::vector<Particle*> &particle, double current_time, int out
     // Write particle data to the file
 		for (Particle* ptcl:particle) {
 			ptcl->predictParticleSecondOrderIrr(current_time);
+			/*
 			if (ptcl->isCMptcl)  {
 				ptcl->convertBinaryCoordinatesToCartesian();
 				write_out(outputFile, ptcl->BinaryParticleI);
+				//write_neighbor(output_nn, ptcl->BinaryParticleI);
 				write_out(outputFile, ptcl->BinaryParticleJ);
+				//write_neighbor(output_nn, ptcl->BinaryParticleJ);
 			}
 			else {
 				write_out(outputFile, ptcl);
+				//write_neighbor(output_nn, ptcl);
 			}
+			*/
+			write_out(outputFile, ptcl);
+			write_neighbor(output_nn, ptcl);
     }
 
     // Close the file
     outputFile.close();
+    output_nn.close();
 
     std::cout << "Data written to output.txt successfully!" << std::endl;
 
@@ -209,12 +225,22 @@ void write_out(std::ofstream& outputFile, const Particle* ptcl) {
         outputFile  << std::left
 										<< std::setw(width) << ptcl->PID
 										<< std::setw(width) << ptcl->Mass*mass_unit
-                    << std::setw(width) << ptcl->Position[0]*position_unit
-                    << std::setw(width) << ptcl->Position[1]*position_unit
-                    << std::setw(width) << ptcl->Position[2]*position_unit
-                    << std::setw(width) << ptcl->Velocity[0]*velocity_unit/yr*pc/1e5
-                    << std::setw(width) << ptcl->Velocity[1]*velocity_unit/yr*pc/1e5
-                    << std::setw(width) << ptcl->Velocity[2]*velocity_unit/yr*pc/1e5 << '\n';
+                    << std::setw(width) << ptcl->PredPosition[0]*position_unit
+                    << std::setw(width) << ptcl->PredPosition[1]*position_unit
+                    << std::setw(width) << ptcl->PredPosition[2]*position_unit
+                    << std::setw(width) << ptcl->PredVelocity[0]*velocity_unit/yr*pc/1e5
+                    << std::setw(width) << ptcl->PredVelocity[1]*velocity_unit/yr*pc/1e5
+                    << std::setw(width) << ptcl->PredVelocity[2]*velocity_unit/yr*pc/1e5 << '\n';
+}
+
+void write_neighbor(std::ofstream& outputFile, const Particle* ptcl) {
+	outputFile  << std::left\
+			<< std::setw(width) << ptcl->PID << " = [ " ;
+	for (Particle* nn:ptcl->ACList) {
+			outputFile << nn->PID << "  ";
+	}
+	outputFile << "]\n";
+
 }
 
 

@@ -145,19 +145,19 @@ bool CreateComputationChain(std::vector<Particle*> &particle) {
 	ULL NextIrrBlock = 0;
 
 	int i=0;
-	//std::cout << "NextIrrTime:\n" << std::endl;
+	//std::cerr << "NextIrrTime:\n" << std::endl;
 	for (Particle *ptcl : particle)
 	{
 		// advance irregular time without irregular routine
 		NextIrrBlock = ptcl->CurrentBlockIrr + ptcl->TimeBlockIrr;
-		//std::cout << NextIrrBlock << "(" << ptcl->PID << ")" <<  " ";
+		//std::cerr << NextIrrBlock << "(" << ptcl->PID << ","<< ptcl->NumberOfAC << ")" <<  " ";
 		if ((ptcl->NumberOfAC != 0) && (NextIrrBlock <= NextRegTimeBlock)) {
 			index.push_back(i);
 			time.push_back(NextIrrBlock);
 		}
 		i++;
 	}
-	//std::cout << std::endl;
+	//std::cerr << std::endl;
 	
 	if (index.size() == 0) {
 		return false;
@@ -225,9 +225,9 @@ bool CreateComputationChain(std::vector<Particle*> &particle) {
 		particle[ind]->NextParticleForComputation = NextParticle;
 		NextParticle = particle[ind];
 	}
-	//std::cout<<std::endl;
-
 	FirstComputation = NextParticle;
+
+	//std::cout<<std::endl;
 	while (NextParticle != nullptr) {
 		NextIrrBlock = NextParticle->CurrentBlockIrr + NextParticle->TimeBlockIrr;
 		//std::cerr << NextIrrBlock*time_step << "(" << NextParticle->PID << ")" <<  " ";

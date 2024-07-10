@@ -22,25 +22,25 @@ const int dt_level_min = -16;
 
 const double dt_min = 9.53674316e-7*0.00012207031;
 const int dt_level_min = -33;
-*/
 
 
 const double dt_min = 0.00001525878/16;
 const int dt_level_min = -20;
+*/
 
 int newNNB = 0;
 std::vector<Particle*> RegularList;
 std::vector<Binary*> BinaryList;
 FILE* binout;
 
-int NumNeighborMax = 100;
+//int NumNeighborMax = 100;
 
 
 
 int main(int argc, char *argv[]) {
 	cout << "Staring Nbody+ ..." << endl;
-        binout = fopen("binary_output.txt", "w");                                                                          
-        fprintf(binout, "Starting nbody - Binary OUTPUT\n"); 
+	binout = fopen("binary_output.txt", "w");                                                                          
+	fprintf(binout, "Starting nbody - Binary OUTPUT\n"); 
 	std::vector<Particle*> particle{};
 	int irank=0;
 	std::ios::sync_with_stdio(false);

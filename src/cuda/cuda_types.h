@@ -1,4 +1,5 @@
 #pragma once
+#include "../defs.h"
 #include <stdio.h>
 #include <iostream>
 #include <assert.h>
@@ -31,7 +32,7 @@ void my_allocate(T **host, T **device, const int size) {
 }
 
 template <typename T>
-void my_free(T *host, T *device) {
+void my_free(T &host, T &device) {
 	cudaError_t cudaStatus;
 	cudaStatus = cudaFree(device);
 	if (cudaStatus != cudaSuccess) {
@@ -56,7 +57,7 @@ void my_allocate_d(T **device, const int size) {
 }
 
 template <typename T>
-void my_free_d(T *device) {
+void my_free_d(T &device) {
 	cudaError_t cudaStatus;
 	cudaStatus = cudaFree(device);
 	if (cudaStatus != cudaSuccess) {
@@ -91,11 +92,11 @@ void toHost(T *host, T *device, const int size) {
 
 
 struct TargetParticle{
-	float3 pos;
-	float  mdot;
-	float3 vel;
-	float  r2; // for AC neighbor
-	float  dt;
+	double3 pos;
+	double  mdot;
+	double3 vel;
+	double  r2; // for AC neighbor
+	double  dt;
 
 	void setParticle(double _mdot, double x[3], double v[3], double _r2, double _dt){
 		mdot   = _mdot;
@@ -123,10 +124,10 @@ struct TargetParticle{
 
 
 struct BackgroundParticle{
-  float3 pos;
-  float  mass;
-  float3 vel;
-	float  mdot;
+  double3 pos;
+  double3 vel;
+  double  mass;
+	double  mdot;
 
 	//BackgroundParticle(int) {}
 	BackgroundParticle(double m, double x[3], double v[3], double _mdot){
@@ -174,8 +175,8 @@ struct BackgroundParticle{
 
 
 struct Result{
-	float3 acc;
-	float3 adot;
+	double3 acc;
+	double3 adot;
 	//unsigned short num_ac;          //  8 words
 	//unsigned short ac_list[MaxNeighbor];
 
@@ -204,20 +205,20 @@ struct Result{
 
 struct  Neighbor{
 	int NumNeighbor;
-	int NeighborList[100]; // this needs to be modified.
+	int NeighborList[NumNeighborMax]; // this needs to be modified.
 
 
 	__device__ void clear() {
 		NumNeighbor = 0;
 #pragma unroll
-		for (int i=0; i<100; i++) {
+		for (int i=0; i<NumNeighborMax; i++) {
 			NeighborList[i] = 0;
 		}
 	}
 	void clear_h() {
 		NumNeighbor = 0;
 #pragma unroll
-		for (int i=0; i<100; i++) {
+		for (int i=0; i<NumNeighborMax; i++) {
 			NeighborList[i] = 0;
 		}
 	}

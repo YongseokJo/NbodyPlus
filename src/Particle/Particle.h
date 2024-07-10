@@ -21,6 +21,7 @@ class Particle
 	//
 
 	public:
+		int ParticleOrder;
 		int PID;
 		int ParticleType;
 		double Mass;
@@ -50,6 +51,7 @@ class Particle
 		double a_reg[Dim][HERMITE_ORDER];
 		double a_irr[Dim][HERMITE_ORDER];
 		double BackgroundAcceleration[Dim];
+		double LocalDensity;
 		Particle* NextParticleInEnzo;
 		Particle* NextParticleForComputation;
 		Particle* BinaryPairParticle;
@@ -65,12 +67,16 @@ class Particle
 		bool isErase;
 
 		// Constructor
-		Particle(void) {
+		Particle(void) {__initializer__();};
+		Particle(double *data, int PID);
+		void __initializer__(void) {
 			//std::cout << "Constructor called" << std::endl;
+			PID             = -1;
+			ParticleOrder   = -1;
 			Mass            = 0;
 			InitialMass     = 0;
 			NumberOfAC      = 0; // number of neighbors
-			RadiusOfAC      = InitialRadiusOfAC;
+			RadiusOfAC      = -1;
 			ParticleType    = -9999;
 			CurrentTimeIrr  = 0.; // consistent with actual current time
 			CurrentTimeReg  = 0.;
@@ -84,6 +90,7 @@ class Particle
 			TimeLevelReg    = 0;
 			TimeBlockIrr    = 0;
 			TimeBlockReg    = 0;
+			LocalDensity    = 0;
 			isStarEvolution = true;
 			isBinary        = false;
 			isCMptcl        = false;
@@ -100,13 +107,14 @@ class Particle
 					a_irr[i][j] = 0.;
 				}
 			}
-			NextParticleInEnzo = nullptr;
+			NextParticleInEnzo         = nullptr;
 			NextParticleForComputation = nullptr;
-			BinaryPairParticle = nullptr;
-			BinaryParticleI = nullptr;
-			BinaryParticleJ = nullptr;
-			BinaryInfo      = nullptr;
-		}
+			BinaryPairParticle         = nullptr;
+			BinaryParticleI            = nullptr;
+			BinaryParticleJ            = nullptr;
+			BinaryInfo                 = nullptr;
+			ACList.clear();
+		};
 
 		void updateParticle(double mass, double *vel, double pos[], int particletype) {
 
@@ -117,7 +125,7 @@ class Particle
 				Velocity[i] = vel[i];
 				Position[i] = pos[i];
 			}
-		}
+		};
 		double getDistanceTo(Particle *particle);
 		void setParticleInfo(double *data, int PID);
 		void setParticleInfo(double *data, int PID, Particle* NextParticleInEnzo);
@@ -151,7 +159,20 @@ class Particle
 		void isKSCandidate();
 		void convertBinaryCoordinatesToCartesian();
 		void polynomialPrediction(double current_time);
-		~Particle()=default;
+		void UpdateRadius();
+		void UpdateNeighbor(std::vector<Particle*> &particle);
+		~Particle() {
+			ACList.clear();
+			// Deallocate memory
+			ACList.shrink_to_fit();
+			NextParticleInEnzo         = nullptr;
+			NextParticleForComputation = nullptr;
+			BinaryPairParticle         = nullptr;
+			BinaryParticleI            = nullptr;
+			BinaryParticleJ            = nullptr;
+			BinaryInfo                 = nullptr;
+			fprintf(stderr, "deleting particle, pid=%d\n", PID);
+		};
 };
 
 

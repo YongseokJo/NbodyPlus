@@ -16,7 +16,7 @@ extern TimeTracer _time;
 extern std::vector<int> LevelList;
 extern int NNB;
 extern int newNNB;
-extern int NumNeighborMax;
+//extern int NumNeighborMax;
 
 // Time
 extern double global_time;
@@ -36,7 +36,7 @@ extern std::vector<Particle*> ComputationChain;
 extern Particle* FirstComputation;
 extern std::vector<Particle*> ComputationList;
 extern int ComputationTimeMarker;
-extern std::vector<Particle*> RegularList; // how about changing this to particle list
+extern std::vector<Particle*> RegularList;
 extern std::vector<Binary*> BinaryList; // List of binaries to calculate
 
 //extern bool debug;
@@ -61,12 +61,5 @@ extern double outputTimeStep;
 extern int outNum;
 //
 //
-
-
-// MPI variables
-//extern MPI_Comm inter_comm;
-//extern MPI_Comm nbody_comm;
-
-// for outputs for binary debugging
 
 extern FILE* binout;

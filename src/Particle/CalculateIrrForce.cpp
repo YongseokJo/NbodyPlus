@@ -96,9 +96,17 @@ void Particle::calculateIrrForce() {
 		assert(this->a_tot[0][0] == this->a_tot[0][0]);
 	}
 	
+	if (this->CurrentTimeIrr > 1) 
+		fprintf(stderr, "PID=%d, CurrentTimeIrr=%e\n", this->PID, this->CurrentTimeIrr);
 
 	for (Particle* ptcl: ACList) {
-		if (ptcl->PID == PID)  {
+		/*
+		if (ptcl->isCMptcl) {
+			fprintf(stderr, "my = %d , pid of cm = %d\n", this->PID, ptcl->PID);
+			fflush(stderr);
+		}
+		*/
+		if (ptcl->PID == this->PID)  {
 			fprintf(stderr, "Myself in neighbor (%d)", PID);
 			fflush(stderr);
 			continue;
@@ -109,6 +117,9 @@ void Particle::calculateIrrForce() {
 		vx = 0.0;
 
 		ptcl->predictParticleSecondOrderIrr(new_time);
+
+		if (ptcl->CurrentTimeIrr > 1) 
+			fprintf(stderr, "PID=%d, CurrentTimeIrr=%e\n", ptcl->PID, ptcl->CurrentTimeIrr);
 
 		if (ptcl->PredPosition[0] !=  ptcl->PredPosition[0]) {
 			fprintf(stdout, "target = %d, neighborhood = %d\n", this->PID, ptcl->PID);

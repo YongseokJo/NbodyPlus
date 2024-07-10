@@ -1,4 +1,6 @@
 #include "../global.h"
+#include "../defs.h"
+#include <algorithm>
 #include <vector>
 #include <iostream>
 #include <cmath>
@@ -31,6 +33,10 @@ void Particle::predictParticleSecondOrder(double time) {
 	double dt;
 	//dt = (time - this->CurrentTimeIrr)*EnzoTimeStep;
 	dt = (time - this->CurrentTimeReg)*EnzoTimeStep;
+	if (dt < 0) {
+		fprintf(stderr, "PID=%d, dt=%e",PID, dt);
+		throw std::runtime_error("SecondOrder");
+	}
 
 	// only predict the positions if necessary
 	// how about using polynomial correction here?
@@ -59,7 +65,17 @@ void Particle::predictParticleSecondOrderIrr(double time) {
 	double dt;
 	//dt = (time - this->CurrentTimeIrr)*EnzoTimeStep;
 	dt = (time - this->CurrentTimeIrr)*EnzoTimeStep;
-
+	/*
+	if (dt < 0 || this->CurrentTimeIrr>1) {
+		fprintf(stderr, "PID=%d, time=%e, timeirr=%lf, timereg=%lf, dt=%lf, dtirr=%lf, dtreg=%lf\n",
+			 	this->PID, time, this->CurrentTimeIrr, this->CurrentTimeReg, dt, this->TimeStepIrr, this->TimeStepReg);
+		fprintf(stderr, "PID=%d, time=%e, timeirr=%llu, timereg=%llu, dt=%lf, dtirr=%llu, dtreg=%llu\n",
+			 	PID, time, CurrentBlockIrr, CurrentBlockReg, dt, TimeBlockIrr, TimeBlockReg);
+		fflush(stderr);
+		fflush(stdout);
+		//throw std::runtime_error("SecondOrderIrr");
+	}
+	*/
 	// only predict the positions if necessary
 	// how about using polynomial correction here?
 	for (int dim=0; dim<Dim; dim++) {
@@ -134,6 +150,94 @@ void Particle::updateParticle(double current_time, double next_time, double a[3]
 	correctParticleFourthOrder(current_time, next_time, a);
 	Mass += evolveStarMass(current_time, next_time); // CurrentTimeIrr
 }*/
+
+
+
+void Particle::UpdateRadius() {
+	if (LocalDensity == 0) {
+		RadiusOfAC = 0.11;
+		LocalDensity = 10;
+	}
+
+	if (NumberOfAC > FixNumNeighbor) {
+		if (NumberOfAC > 2*FixNumNeighbor) {
+			RadiusOfAC *= 0.90;
+		}
+		else if (NumberOfAC > 3*FixNumNeighbor) {
+			RadiusOfAC *= 0.80;
+		}
+		else {
+			RadiusOfAC *= 0.95;
+		}
+	}
+	if (NumberOfAC < FixNumNeighbor)
+		RadiusOfAC *= 1.05;
+
+	/*
+	double MeanRadius=0, TotalMass=0, LocalDensity0=0;
+	for (Particle *neighbor:ACList) {
+		MeanRadius += neighbor->Mass*dist(Position,neighbor->Position);
+		TotalMass  += neighbor->Mass;
+	}
+	MeanRadius        /= TotalMass/1.2;  // this is the mean radius with some factor
+	LocalDensity0      = TotalMass/std::pow(MeanRadius,3.0);
+
+	if (LocalDensity == 0) {
+		this->RadiusOfAC   = std::pow(LocalDensity0/(this->Mass*FixNumNeighbor), -1.0/3.0); 
+
+		if (LocalDensity0 > 1.3*LocalDensity) 
+			this->RadiusOfAC *= 0.9;
+		else if (LocalDensity0 < 0.7*LocalDensity) 
+			this->RadiusOfAC *= 1.1;
+
+		if (NumberOfAC < FixNumNeighbor/2)
+			this->RadiusOfAC *= 1.2;
+
+		if (NumberOfAC > FixNumNeighbor*2)
+			this->RadiusOfAC *= 0.8;
+	}
+	*/
+
+
+	//this->LocalDensity = LocalDensity0;
+
+	//this->RadiusOfAC   = std::pow(LocalDensity0/(this->Mass*FixNumNeighbor), -1.0/3.0); 
+	//fprintf(stdout, "PID %d : TWR = %.3e, TM=%.3e, LD0=%.3e, RAC=%.3e, mass=%.3e\n", 
+			//PID, MeanRadius, TotalMass, LocalDensity0, RadiusOfAC, Mass);
+	//fflush(stdout); 
+}
+
+
+void Particle::UpdateNeighbor(std::vector<Particle*> &particle) {
+	bool isExcess=false;
+	ACList.clear();
+	NumberOfAC = 0;
+	for (Particle* ptcl:particle) {
+
+		if (ptcl->PID==PID)
+			continue;
+
+		if (dist(Position, ptcl->Position)<this->RadiusOfAC) {
+			ACList.push_back(ptcl);	
+			NumberOfAC++;
+			if (NumberOfAC >= NumNeighborMax) {
+				isExcess = true; 
+				break;
+			}
+		}
+	}
+
+	if (isExcess) {
+		std::cerr << "Number of neighbors exceeded." << std::endl;
+		this->RadiusOfAC *= 0.1;
+		UpdateNeighbor(particle);	
+	}
+	else {
+		std::sort(ACList.begin(),ACList.end(),
+				[](Particle* p1, Particle* p2) { return p1->ParticleOrder < p2->ParticleOrder;});
+	}
+}
+
 
 
 

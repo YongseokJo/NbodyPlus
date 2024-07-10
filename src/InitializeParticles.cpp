@@ -6,9 +6,6 @@
 #include "defs.h"
 
 
-//#define FixNumNeighbor 30
-//#define FixNumNeighbor 50
-#define FixNumNeighbor 99
 
 void FindNeighbor(Particle* ptcl1, std::vector<Particle*> &particle);
 void CalculateAcceleration01(Particle* ptcl1, std::vector<Particle*> &particle);
@@ -24,6 +21,7 @@ int InitializeTimeStep(std::vector<Particle*> &particle);
  *
  *  Date    : 2024.01.02  by Seoyoung Kim
  *  Modified: 2024.01.10  by Yongseok Jo
+ *  Modified: 2024.06.28  by Yongseok Jo
  *
  */
 
@@ -150,12 +148,12 @@ void FindNeighbor(Particle* ptcl1, std::vector<Particle*> &particle) {
 	double r2;
 	double r_max=0;
 	double r_nb[FixNumNeighbor];
-	int nb_index[FixNumNeighbor], index_max, i=0;
+	int  index_max, i=0; //nb_index[FixNumNeighbor],
+	std::vector<int> nb_index(FixNumNeighbor); 
 
-	//ptcl1->predictParticleSecondOrder(newTime);
-	// search for neighbors for ptcl
+	// first search for neighbors for ptcl
+	ptcl1->NumberOfAC = 0;
 	for (Particle *ptcl2:particle) {
-
 		if  (ptcl1 == ptcl2) {
 			i++;
 			continue;
@@ -163,7 +161,6 @@ void FindNeighbor(Particle* ptcl1, std::vector<Particle*> &particle) {
 
 		r2 = 0.0;
 
-		//ptcl2->predictParticleSecondOrder(newTime);
 		for (int dim=0; dim<Dim; dim++) {
 			dx = ptcl2->Position[dim] - ptcl1->Position[dim];
 			r2 += dx*dx;
@@ -196,20 +193,39 @@ void FindNeighbor(Particle* ptcl1, std::vector<Particle*> &particle) {
 		i++;
 	} // endfor
 
+	for (int j:nb_index) {
+		ptcl1->ACList.push_back(particle[j]);
+	}
 
+	// update 
+	ptcl1->UpdateRadius();
+	ptcl1->UpdateNeighbor(particle);
+
+
+	std::cout << ptcl1->PID << "("<< ptcl1->NumberOfAC <<")" << "=" <<std::flush;
+	for (Particle * nn:ptcl1->ACList) {
+		std::cout << nn->PID << ", ";
+	}
+	std::cout << std::endl;
+	/*
+	std::sort(nb_index.begin(), nb_index.end());
 	for (int j:nb_index) {
 		ptcl1->ACList.push_back(particle[j]);
 		//std::cout << j << ", ";
 	}
+	*/
+
+
 	//std::cout << std::endl;
 
-	std::sort(ptcl1->ACList.begin(),ptcl1->ACList.end());
+	//std::sort(ptcl1->ACList.begin(),ptcl1->ACList.end());
 	//
 		//
 	//std::cout << "# of Neighbors = " << ptcl1->NumberOfAC << std::endl;
 	return ;
 
 }
+
 
 
 
@@ -268,7 +284,7 @@ void CalculateAcceleration01(Particle* ptcl1, std::vector<Particle*> &particle) 
 
 		m_r3 = ptcl2->Mass/r2/sqrt(r2); 
 
-		if ((ptcl1->NumberOfAC==0) || (ptcl2 != ptcl1->ACList[j])) {
+		if ((ptcl1->NumberOfAC==0) || (j >= ptcl1->NumberOfAC) || (ptcl2 != ptcl1->ACList[j])) {
 			for (int dim=0; dim<Dim; dim++) {
 				// Calculate 0th and 1st derivatives of acceleration
 				ptcl1->a_reg[dim][0] += m_r3*x[dim];
@@ -358,7 +374,7 @@ void CalculateAcceleration23(Particle* ptcl1, std::vector<Particle*> &particle) 
 		c = 3*vdf_r2 + rdfdot_r2 + a*(3*b-4*a*a);
 
 
-		if ((ptcl1->NumberOfAC==0) || (ptcl2 != ptcl1->ACList[j])) {
+		if ((ptcl1->NumberOfAC==0) || (j >= ptcl1->NumberOfAC) || (ptcl2 != ptcl1->ACList[j])) {
 			for (int dim=0; dim<Dim; dim++) {
 				adot2 = -ptcl2->Mass*(a1[dim]-a2[dim])/r3-6*a*a21dot[dim]-3*b*a21[dim];
 				adot3 = -ptcl2->Mass*(a1dot[dim]-a2dot[dim])/r3-9*a*adot2-9*b*a21dot[dim]-3*c*a21[dim];
@@ -376,7 +392,7 @@ void CalculateAcceleration23(Particle* ptcl1, std::vector<Particle*> &particle) 
 			j++;
 		} // endfor if
 	} //endfor ptcl2
-	
+
 	for (int dim=0; dim<Dim; dim++)	 {
 		for (int order=2; order<4; order++) {
 			ptcl1->a_tot[dim][order] = ptcl1->a_reg[dim][order] + ptcl1->a_irr[dim][order];
@@ -453,3 +469,75 @@ void CalculateAcceleration23(Particle* ptcl1, std::vector<Particle*> &particle) 
 }
 
 
+
+// this is more closer to what nbody6 does
+void CalculateAcceleration23_new(Particle* ptcl1, std::vector<Particle*> &particle) {
+
+	int j=0;
+	double a2dot[Dim], a3dot[Dim], r2, a1dotk;
+	double a[12];
+	double a13, a14, a15, a16, a17, a18, a19, a20, a21, a22;
+
+	for (Particle *ptcl2:particle) {
+		r2 = 0;
+
+		if (ptcl1 == ptcl2) {
+			continue;
+		}
+
+		for (int dim=0; dim<Dim; dim++) {
+			a[dim]   = ptcl2->Position[dim] - ptcl1->Position[dim];
+			a[3+dim] = ptcl2->Velocity[dim] - ptcl1->Velocity[dim];
+			a[6+dim] = ptcl2->a_tot[dim][0] - ptcl1->a_tot[dim][0];
+			a[9+dim] = ptcl2->a_tot[dim][1] - ptcl1->a_tot[dim][1];
+			r2 += a[dim]*a[dim];
+		}
+		/*
+		if (r2 > 0.2 || (ptcl2 != ptcl1->ACList[j]))
+			continue;
+			*/
+
+		a13 = 1/r2;
+		a14 = ptcl2->Mass*a13*sqrt(a13);
+		a15 = (a[0]*a[3]+a[1]*a[4]+a[2]*a[5])*a13;
+		a16 = a15*a15;
+		a17 = 3*a15;
+		a18 = 6*a15;
+		a19 = 9*a15;
+		a20 = (a[3]*a[3]+a[4]*a[4]+a[5]*a[5]+a[0]*a[6]+a[1]*a[7]+a[2]*a[8])*a13 + a16;
+		a21 = 9.0*a20;
+		a20 = 3.0*a20;
+		a22 = (9.0*(a[3]*a[6] + a[4]*a[7] + a[5]*a[8]) +\
+				3.0*(a[0]*a[9] + a[1]*a[10] + a[2]*a[11]))*a13 +\
+					a17*(a20 - 4.0*a16);
+
+
+		for (int dim=0; dim<Dim; dim++) {
+			a1dotk     = a[dim+3] - a17*a[dim];
+			a2dot[dim] = (a[dim+6] - a18*a1dotk - a20*a[dim])*a14;
+			a3dot[dim] = (a[dim+9] - a21*a1dotk - a22*a[dim])*a14\
+									 - a19*a2dot[dim];
+		
+		}
+
+		if ((ptcl1->NumberOfAC==0) || (ptcl2 != ptcl1->ACList[j])) {
+			for (int dim=0; dim<Dim; dim++) {
+				ptcl1->a_reg[dim][2] += a2dot[dim];
+				ptcl1->a_reg[dim][3] += a3dot[dim];
+			}
+		}
+		else {
+			for (int dim=0; dim<Dim; dim++) {
+				ptcl1->a_irr[dim][2] += a2dot[dim];
+				ptcl1->a_irr[dim][3] += a3dot[dim];
+			}
+			j++;
+		} // endfor if
+	} //endfor ptcl2
+	
+	for (int dim=0; dim<Dim; dim++)	 {
+		for (int order=2; order<4; order++) {
+			ptcl1->a_tot[dim][order] = ptcl1->a_reg[dim][order] + ptcl1->a_irr[dim][order]; 
+		}
+	}
+}
