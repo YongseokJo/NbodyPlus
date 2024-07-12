@@ -37,6 +37,7 @@ extern Particle* FirstComputation;
 extern std::vector<Particle*> ComputationList;
 extern int ComputationTimeMarker;
 extern std::vector<Particle*> RegularList;
+extern std::vector<Particle*> BinaryCandidateList;
 extern std::vector<Binary*> BinaryList; // List of binaries to calculate
 
 //extern bool debug;

@@ -5,15 +5,16 @@
 void NewKSInitialization(Particle* ptclI, std::vector<Particle*> &particle, std::vector<Particle*> &ComputationList);
 void KSTermination(Particle* ptclCM, std::vector<Particle*> &particle, double current_time, ULL current_block);
 
-bool AddNewBinariesToList(std::vector<Particle*> &ComputationList, std::vector<Particle*> &particle) {
+bool AddNewBinariesToList(std::vector<Particle*> &particle) {
 
 	fprintf(stdout, "Finding new binaries ...\n");
 	// add new binaries
-	for (Particle *ptcl : ComputationList) {
+	for (Particle *ptcl : BinaryCandidateList) {
 		// if the irregular time step is too short, check if it is binary
 		if ((ptcl->TimeStepIrr*EnzoTimeStep*1e4<KSTime) && ( (ptcl->isBinary == false) && (ptcl->isCMptcl == false) )) {
-			fprintf(binout, "BinaryAccelerationRoutine.cpp: new binary particle found! timestep=%e\n",
-					ptcl->TimeStepIrr*EnzoTimeStep*1e4);
+
+			//fprintf(binout, "BinaryAccelerationRoutine.cpp: new binary particle found! timestep=%e\n",
+					//ptcl->TimeStepIrr*EnzoTimeStep*1e4);
 			ptcl->isKSCandidate();
 			if (ptcl->isBinary) {
 				std::cout << "AddNewBinaries ... new binary pair found" << std::endl;
@@ -25,6 +26,7 @@ bool AddNewBinariesToList(std::vector<Particle*> &ComputationList, std::vector<P
 			}
 		}
 	}
+	BinaryCandidateList.clear();
 	//fprintf(binout,"\n After binary addition, the number of particles are... %d \n",int(particle.size()));
 	return true;
 }

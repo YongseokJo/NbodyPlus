@@ -9,7 +9,7 @@ int writeParticle(std::vector<Particle*> &particle, double MinRegTime, int outpu
 bool CreateComputationChain(std::vector<Particle*> &particle);
 bool UpdateComputationChain(Particle* ptcl);
 bool CreateComputationList(Particle* ptcl);
-bool AddNewBinariesToList(std::vector<Particle*> &ComputationList, std::vector<Particle*> &particle);
+bool AddNewBinariesToList(std::vector<Particle*> &particle);
 void BinaryAccelerationRoutine(double next_time, std::vector<Particle*> &particle);
 void KSTermination(Particle* ptclCM, std::vector<Particle*> &particle, double current_time, ULL current_block);
 
@@ -21,7 +21,7 @@ Particle *FirstComputation;
 bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 {
 
-	fprintf(binout, "Starting irregular force\n");
+	//fprintf(binout, "Starting irregular force\n");
 #ifdef time_trace
 	_time.irr_chain.markStart();
 #endif
@@ -59,15 +59,15 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 			
 		//std::cout << "List size=" << ComputationList.size() << std::endl;
 
-#define no_binary
+#define binary
 #ifdef binary
 		//if (AddNewBinariesToList(ComputationList, particle) && ComputationList.size() == 0) {
-		if (AddNewBinariesToList(particle, particle) && ComputationList.size() == 0) {
+		if (AddNewBinariesToList(particle) && ComputationList.size() == 0) {
 			//std::cout << "No irregular particle to update afte binary formation." << std::endl;
 			fprintf(stdout, "No irregular particle to update afte binary formation.\n");
 			break;
 		}
-		fprintf(binout, "in the irregular force\n");
+		//fprintf(binout, "in the irregular force\n");
 
 		/*
 			fprintf(stderr, "in irr, particle: ");

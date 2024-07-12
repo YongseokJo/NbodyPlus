@@ -50,7 +50,7 @@
 #define stumpffN 12 // the order of approximation for stumpff functions
 #define KSDistance 0.000002  // the distance of binary particles from each other
 //#define KSDistance 1e-10  // the distance of binary particles from each other
-#define KSTime 2e-9  // short timestep criteria for binary search
+#define KSTime 2e-7  // short timestep criteria for binary search
 //#define KSTime 1e-10  // short timestep criteria for binary search
 #define PerturberDistance 0.01  // the distance of binary perturbers from the pair
 

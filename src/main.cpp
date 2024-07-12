@@ -10,26 +10,10 @@ using namespace std;
 //Global Variables
 int NNB; double global_time; //bool debug;
 std::vector<int> LevelList;
-//MPI_Comm  comm, inter_comm, nbody_comm;
 double EnzoTimeStep;
-/*
-const double dt_min = 0.00012207031;
-const int dt_level_min = -13;
-
-
-const double dt_min = 0.00001525878;
-const int dt_level_min = -16;
-
-const double dt_min = 9.53674316e-7*0.00012207031;
-const int dt_level_min = -33;
-
-
-const double dt_min = 0.00001525878/16;
-const int dt_level_min = -20;
-*/
-
 int newNNB = 0;
 std::vector<Particle*> RegularList;
+std::vector<Particle*> BinaryCandidateList;
 std::vector<Binary*> BinaryList;
 FILE* binout;
 
