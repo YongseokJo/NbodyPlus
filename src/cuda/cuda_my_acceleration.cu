@@ -231,12 +231,7 @@ void GetAcceleration(
 		if (cudaStatus != cudaSuccess) {
 			std::cerr << "CUDA error after neigh: " << cudaGetErrorString(cudaStatus) << std::endl;
 		}
-	my_free_d(do_neighbor);
-		cudaDeviceSynchronize();
-		cudaStatus = cudaGetLastError();
-		if (cudaStatus != cudaSuccess) {
-			std::cerr << "CUDA error after do_neighbor: " << cudaGetErrorString(cudaStatus) << std::endl;
-		}
+	//my_free_d(do_neighbor);
 	//printf("CUDA: done?\n");
 }
 

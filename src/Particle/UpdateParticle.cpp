@@ -229,7 +229,7 @@ void Particle::UpdateNeighbor(std::vector<Particle*> &particle) {
 
 	if (isExcess) {
 		std::cerr << "Number of neighbors exceeded." << std::endl;
-		this->RadiusOfAC *= 0.1;
+		this->RadiusOfAC *= 0.8;
 		UpdateNeighbor(particle);	
 	}
 	else {

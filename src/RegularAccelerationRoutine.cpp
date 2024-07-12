@@ -94,6 +94,7 @@ bool RegularAccelerationRoutine(std::vector<Particle*> &particle)
 	global_time = NextRegTimeBlock*time_step;
 	// update the next regular time step
 	fprintf(stdout, "NextRegTimeBlock=%llu\n", NextRegTimeBlock);
+	fprintf(binout, "Finishing regular force\n");
 	std::cerr << "Finishing regular force ...\n" << std::flush;
 	//fprintf(stderr, "Finishing regular force.. NextRegTime=%.3e\n", NextRegTimeBlock*time_step);
 	fprintf(stdout, "Finishing regular force.. NextRegTime=%.3e\n", NextRegTimeBlock*time_step);

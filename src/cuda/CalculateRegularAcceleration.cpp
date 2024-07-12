@@ -102,11 +102,7 @@ void CalculateRegAccelerationOnGPU(std::vector<Particle*> RegularList, std::vect
 
 	NumNeighborReceive  = new int[ListSize];
 
-	//ACListReceive      = new int[ListSize][NumNeighborMax];
-	//ACListReceive      = new int*[ListSize];
 	ACListReceive      = new int*[ListSize];
-
-
 	for (int i=0; i<ListSize; i++) {
 		ACListReceive[i] = new int[NumNeighborMax];
 		for (int dim=0; dim<Dim; dim++) {
@@ -419,11 +415,9 @@ void CalculateRegAccelerationOnGPU(std::vector<Particle*> RegularList, std::vect
 	delete[] AccRegDotReceive;
 	delete[] AccIrr;
 	delete[] AccIrrDot;
-	/*
 	for (int i=0; i<ListSize; i++) {
 		delete[] ACListReceive[i];
 	}
-	*/
 	delete[] ACListReceive;
 
 	//CloseDevice();

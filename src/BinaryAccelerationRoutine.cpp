@@ -12,6 +12,8 @@ bool AddNewBinariesToList(std::vector<Particle*> &ComputationList, std::vector<P
 	for (Particle *ptcl : ComputationList) {
 		// if the irregular time step is too short, check if it is binary
 		if ((ptcl->TimeStepIrr*EnzoTimeStep*1e4<KSTime) && ( (ptcl->isBinary == false) && (ptcl->isCMptcl == false) )) {
+			fprintf(binout, "BinaryAccelerationRoutine.cpp: new binary particle found! timestep=%e\n",
+					ptcl->TimeStepIrr*EnzoTimeStep*1e4);
 			ptcl->isKSCandidate();
 			if (ptcl->isBinary) {
 				std::cout << "AddNewBinaries ... new binary pair found" << std::endl;

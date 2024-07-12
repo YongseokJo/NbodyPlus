@@ -21,6 +21,7 @@ Particle *FirstComputation;
 bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 {
 
+	fprintf(binout, "Starting irregular force\n");
 #ifdef time_trace
 	_time.irr_chain.markStart();
 #endif
@@ -58,7 +59,7 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 			
 		//std::cout << "List size=" << ComputationList.size() << std::endl;
 
-#define binary
+#define no_binary
 #ifdef binary
 		//if (AddNewBinariesToList(ComputationList, particle) && ComputationList.size() == 0) {
 		if (AddNewBinariesToList(particle, particle) && ComputationList.size() == 0) {
@@ -66,6 +67,7 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 			fprintf(stdout, "No irregular particle to update afte binary formation.\n");
 			break;
 		}
+		fprintf(binout, "in the irregular force\n");
 
 		/*
 			fprintf(stderr, "in irr, particle: ");
@@ -153,7 +155,6 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 
 		for (Particle* ptcl:ComputationList) {
 
-			/*
 			//if(ptcl->TimeStepReg*EnzoTimeStep*1e10/1e6 < 1e-7) {
 			if (ptcl->CurrentBlockReg > ptcl->CurrentBlockIrr || ptcl->CurrentBlockReg+ptcl->TimeBlockReg < ptcl->CurrentBlockIrr)
 				fprintf(stdout,"--------------------error--------------------------------------------------------------------\n");
@@ -172,7 +173,6 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 			if (ptcl->CurrentBlockReg > ptcl->CurrentBlockIrr || ptcl->CurrentBlockReg+ptcl->TimeBlockReg < ptcl->CurrentBlockIrr)
 				fprintf(stdout,"----------------------------------------------------------------------------------------\n");
 			//}
-			*/
 			/*
 			for (Particle* ptcl:particle) {
 				if (ptcl->CurrentTimeIrr > 1) {
@@ -306,7 +306,7 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 #ifdef binary
 			if (ptcl->isCMptcl) {
 				if (ptcl->BinaryInfo->r > ptcl->BinaryInfo->r0*2.0
-						|| ptcl->BinaryInfo->TimeStep*EnzoTimeStep*1e4 > 4.0*KSTime) {
+						|| ptcl->BinaryInfo->TimeStep*EnzoTimeStep*1e4 > 2.0*KSTime) {
 					fprintf(binout, "Terminating Binary at time : %e \n", binary_time);
 					fprintf(stdout, "Terminating Binary at time : %e \n", binary_time);
 					KSTermination(ptcl, particle, binary_time, binary_block);
