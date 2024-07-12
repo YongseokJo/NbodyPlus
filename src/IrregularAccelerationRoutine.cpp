@@ -58,7 +58,7 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 			
 		//std::cout << "List size=" << ComputationList.size() << std::endl;
 
-#define binary
+#define no_binary
 #ifdef binary
 		//if (AddNewBinariesToList(ComputationList, particle) && ComputationList.size() == 0) {
 		if (AddNewBinariesToList(particle, particle) && ComputationList.size() == 0) {
