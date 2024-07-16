@@ -321,7 +321,7 @@ void Particle::isKSCandidate() {
 	const double alpha = 0.04;
 	double dt_min;
 	dt_min = alpha*sqrt(pow(r_min,3.)/(this->Mass+minPtcl->Mass)*2)/EnzoTimeStep;
-	//fprintf(stderr, "r_min=%e pc, dt_min = %e Myr, TimeStepIrr = %e Myr\n", r_min*position_unit, dt_min*EnzoTimeStep*1e4, TimeStepIrr*EnzoTimeStep*1e4);
+	fprintf(stderr, "r_min=%e pc, dt_min = %e Myr, TimeStepIrr = %e Myr\n", r_min*position_unit, dt_min*EnzoTimeStep*1e4, TimeStepIrr*EnzoTimeStep*1e4);
 	//fflush(stderr);
 	if (TimeStepIrr > dt_min)
 		return;
@@ -333,14 +333,14 @@ void Particle::isKSCandidate() {
 		RV += (Position[dim] - minPtcl->Position[dim])*(Velocity[dim]-minPtcl->Position[dim]);
 		a_pert[dim] += a_reg[dim][0];  // for later use
 	}
-	//fprintf(stderr, "RV=%e, RHS = %e\n", RV, 0.1*sqrt((this->Mass+minPtcl->Mass)*r_min));
+	fprintf(stderr, "RV=%e, RHS = %e\n", RV, 0.1*sqrt((this->Mass+minPtcl->Mass)*r_min));
 	//fflush(stderr);
 	if (RV <= 0.1*sqrt((this->Mass+minPtcl->Mass)*r_min))
 		return;
 
 	// 3. Their binding force should be greater than the perturbing force.
 	// a_pert*R^2/(G(m1+m2)) < 0.25
-	//fprintf(stderr, "pert force=%e, binding force = %e\n", sqrt(mag(a_pert)), (this->Mass+minPtcl->Mass)/r_min/r_min);
+	fprintf(stderr, "pert force=%e, binding force = %e\n", sqrt(mag(a_pert)), (this->Mass+minPtcl->Mass)/r_min/r_min);
 	//fflush(stderr);
 	if (sqrt(mag(a_pert))*r_min*r_min/(this->Mass+minPtcl->Mass)>=0.25)
 		return;

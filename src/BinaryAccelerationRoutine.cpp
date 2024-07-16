@@ -7,7 +7,7 @@ void KSTermination(Particle* ptclCM, std::vector<Particle*> &particle, double cu
 
 bool AddNewBinariesToList(std::vector<Particle*> &particle) {
 
-	fprintf(stdout, "Finding new binaries ...\n");
+	// fprintf(stdout, "Finding new binaries ...\n");
 	// add new binaries
 	for (Particle *ptcl : BinaryCandidateList) {
 		// if the irregular time step is too short, check if it is binary
@@ -48,9 +48,9 @@ void BinaryAccelerationRoutine(double next_time, std::vector<Particle*> &particl
 
 		count += 1;
 
-		fprintf(binout, "\nBinaryAccelerationRoutine.cpp: After KS Integration of %dth binary....\n", count);
-		fprintf(binout, "The ID of ith particle is %d \n",ptclBin->ptclCM->BinaryParticleI->PID);
-		fprintf(binout, "The ID of jth particle is %d \n",ptclBin->ptclCM->BinaryParticleJ->PID);
+		//fprintf(binout, "\nBinaryAccelerationRoutine.cpp: After KS Integration of %dth binary....\n", count);
+		//fprintf(binout, "The ID of ith particle is %d \n",ptclBin->ptclCM->BinaryParticleI->PID);
+		//fprintf(binout, "The ID of jth particle is %d \n",ptclBin->ptclCM->BinaryParticleJ->PID);
 		//fflush(binout);	
 
 		//if (bincount>0) {

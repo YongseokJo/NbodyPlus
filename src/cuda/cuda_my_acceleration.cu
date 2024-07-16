@@ -560,12 +560,14 @@ void _ReceiveFromHost(
 	if (cudaStatus != cudaSuccess) {
 		std::cerr << "CUDA error after all neigh both: " << cudaGetErrorString(cudaStatus) << std::endl;
 	}
+	/*
 	my_allocate_d(&do_neighbor, variable_size*THREAD);
 	cudaDeviceSynchronize();
 	cudaStatus = cudaGetLastError();
 	if (cudaStatus != cudaSuccess) {
 		std::cerr << "CUDA error after all neighbor: " << cudaGetErrorString(cudaStatus) << std::endl;
 	}
+	*/
 
 	//printf("CUDA: new size of NNB=%d of %d\n", NNB,variable_size);
 	/*

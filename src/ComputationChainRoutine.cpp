@@ -15,6 +15,9 @@ bool CreateComputationList(Particle* ptcl) {
 		return false;
 	}
 
+#ifdef time_trace
+		_time.irr_sort.markStart();
+#endif
 	Particle *NextParticle=ptcl->NextParticleForComputation;
 	ULL ThisParticleNextIrrBlock = 0;
 	ULL NextParticleNextIrrBlock = 0;
@@ -61,11 +64,16 @@ bool CreateComputationList(Particle* ptcl) {
 		FirstComputation = nullptr;
 	}
 
+#ifdef time_trace
+		_time.irr_sort.markEnd();
+		_time.irr_sort.getDuration();
+#endif
 	return true;
 }
 
 // Function to perform argsort on a vector
 bool UpdateComputationChain(Particle* ptcl) {
+
 
 	Particle *ThisParticle, *NextParticle, *PreviousParticle;
 	ULL ThisParticleNextIrrBlock= 0, NextParticleNextIrrBlock =0;

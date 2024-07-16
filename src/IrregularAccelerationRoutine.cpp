@@ -61,6 +61,9 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 
 #define binary
 #ifdef binary
+#ifdef time_trace
+	_time.irr_bin.markStart();
+#endif
 		//if (AddNewBinariesToList(ComputationList, particle) && ComputationList.size() == 0) {
 		if (AddNewBinariesToList(particle) && ComputationList.size() == 0) {
 			//std::cout << "No irregular particle to update afte binary formation." << std::endl;
@@ -94,25 +97,25 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 		}
 
 		if ((BinaryList.size()>0)) { //&(binary_time_prev != binary_time)) {
-			fprintf(binout, "-------------------------------------\n");
-			fprintf(binout, "irr_time = %e \n",
-					ComputationList[0]->CurrentTimeIrr*1e10/1e6*EnzoTimeStep);
-			fprintf(binout, "binary_time = %e \n",
-					binary_time*1e10/1e6*EnzoTimeStep);
+			//fprintf(binout, "-------------------------------------\n");
+			//fprintf(binout, "irr_time = %e \n", ComputationList[0]->CurrentTimeIrr*1e10/1e6*EnzoTimeStep);
+					
+			//fprintf(binout, "binary_time = %e \n", binary_time*1e10/1e6*EnzoTimeStep);
+					
 
 
-			fprintf(stdout, "Integrating Binaries ...\n");
-			fprintf(binout, "Evolve.cpp: integrating binaries\n");
-			fprintf(binout, "# of binaries = %d \n",int(BinaryList.size()));
-			fflush(stdout);
-			fflush(stderr);
-			fflush(binout);
+			//fprintf(stdout, "Integrating Binaries ...\n");
+			//fprintf(binout, "Evolve.cpp: integrating binaries\n");
+			//fprintf(binout, "# of binaries = %d \n",int(BinaryList.size()));
+			//fflush(stdout);
+			//fflush(stderr);
+			//fflush(binout);
 			BinaryAccelerationRoutine(
 					ComputationList[0]->CurrentTimeIrr+ComputationList[0]->TimeStepIrr,
 				 	particle);
-			fprintf(stdout, "Finishing Binaries ...\n");
-			fflush(stdout);
-			fflush(binout);
+			//fprintf(stdout, "Finishing Binaries ...\n");
+			//fflush(stdout);
+			//fflush(binout);
 
 		}
 		for (Particle* ptcl:particle) {
@@ -131,6 +134,11 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 					//assert(ptcl->Position[0] ==  ptcl->Position[0]);
 			}
 		}
+
+#ifdef time_trace
+	_time.irr_bin.markEnd();
+	_time.irr_bin.getDuration();
+#endif
 #endif
 
 		//std::cout << "Start IRR\n" << std::flush;
@@ -155,6 +163,7 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 
 		for (Particle* ptcl:ComputationList) {
 
+			/*
 			//if(ptcl->TimeStepReg*EnzoTimeStep*1e10/1e6 < 1e-7) {
 			if (ptcl->CurrentBlockReg > ptcl->CurrentBlockIrr || ptcl->CurrentBlockReg+ptcl->TimeBlockReg < ptcl->CurrentBlockIrr)
 				fprintf(stdout,"--------------------error--------------------------------------------------------------------\n");
@@ -173,6 +182,7 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 			if (ptcl->CurrentBlockReg > ptcl->CurrentBlockIrr || ptcl->CurrentBlockReg+ptcl->TimeBlockReg < ptcl->CurrentBlockIrr)
 				fprintf(stdout,"----------------------------------------------------------------------------------------\n");
 			//}
+			*/
 			/*
 			for (Particle* ptcl:particle) {
 				if (ptcl->CurrentTimeIrr > 1) {
@@ -233,9 +243,6 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 
 
 
-#ifdef time_trace
-		_time.irr_sort.markStart();
-#endif
 		//std::cout << "Update and Sort\n" << std::flush;
 		//FirstComputation =  ComputationList.back()->NextParticleForComputation;
 		/*
@@ -315,7 +322,15 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 				}
 			}
 #endif
+
+#ifdef time_trace
+		_time.irr_sort.markStart();
+#endif
 			UpdateComputationChain(ptcl);
+#ifdef time_trace
+		_time.irr_sort.markEnd();
+		_time.irr_sort.getDuration();
+#endif
 			if (ptcl->CurrentTimeIrr > 1) {
 				fprintf(stderr, "outside after, PID=%d, CurrentTimeIrr=%e\n", ptcl->PID, ptcl->CurrentTimeIrr);
 				fflush(stderr);
@@ -375,10 +390,6 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 		}
 #endif
 
-#ifdef time_trace
-		_time.irr_sort.markEnd();
-		_time.irr_sort.getDuration();
-#endif
 		//fflush(stdout);
 	}
 	//std::cout << "Finishing irregular force ..." << std::endl;
