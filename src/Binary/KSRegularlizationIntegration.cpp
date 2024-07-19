@@ -165,17 +165,17 @@ void Binary::predictBinary(double next_time) {
         ptclJ->PredVelocity[dim] = ptclI->PredVelocity[dim] - Rdot[dim];
     }
 
-    //fprintf(binout, "CM particle: x = %e, y = %e, z = %e", ptclCM->PredPosition[0], ptclCM->PredPosition[1], ptclCM->PredPosition[2]);
-    //fprintf(binout, "CM particle: vx = %e, vy = %e, vz = %e", ptclCM->PredVelocity[0], ptclCM->PredVelocity[1], ptclCM->PredVelocity[2]);
-    //fflush(binout);
+    fprintf(binout, "CM particle: x = %e, y = %e, z = %e", ptclCM->PredPosition[0], ptclCM->PredPosition[1], ptclCM->PredPosition[2]);
+    fprintf(binout, "CM particle: vx = %e, vy = %e, vz = %e", ptclCM->PredVelocity[0], ptclCM->PredVelocity[1], ptclCM->PredVelocity[2]);
+    fflush(binout);
 
-    //fprintf(binout, "Ith particle: x = %e, y = %e, z = %e", ptclI->PredPosition[0], ptclI->PredPosition[1], ptclI->PredPosition[2]);
-    //fprintf(binout, "Ith particle: vx = %e, vy = %e, vz = %e", ptclI->PredVelocity[0], ptclI->PredVelocity[1], ptclI->PredVelocity[2]);
-    //fflush(binout);
+    fprintf(binout, "Ith particle: x = %e, y = %e, z = %e", ptclI->PredPosition[0], ptclI->PredPosition[1], ptclI->PredPosition[2]);
+    fprintf(binout, "Ith particle: vx = %e, vy = %e, vz = %e", ptclI->PredVelocity[0], ptclI->PredVelocity[1], ptclI->PredVelocity[2]);
+    fflush(binout);
 
-    //fprintf(binout, "Jth particle: x = %e, y = %e, z = %e", ptclJ->PredPosition[0], ptclJ->PredPosition[1], ptclJ->PredPosition[2]);
-    //fprintf(binout, "Jth particle: vx = %e, vy = %e, vz = %e", ptclJ->PredVelocity[0], ptclJ->PredVelocity[1], ptclJ->PredVelocity[2]);
-    //fflush(binout);
+    fprintf(binout, "Jth particle: x = %e, y = %e, z = %e", ptclJ->PredPosition[0], ptclJ->PredPosition[1], ptclJ->PredPosition[2]);
+    fprintf(binout, "Jth particle: vx = %e, vy = %e, vz = %e", ptclJ->PredVelocity[0], ptclJ->PredVelocity[1], ptclJ->PredVelocity[2]);
+    fflush(binout);
 
 }
 
@@ -541,15 +541,15 @@ void Binary::IntegrateBinary(double next_time) {
     //fprintf(binout, "derivatives of h: h0 = %e h1 = %e h2 = %e h3 = %e h4 = %e \n", h, hdot, h2dot, h3dot, h4dot);
     //fflush(binout);
     
-    //fprintf(binout, "derivatives of u[0]: u0 = %e u1 = %e u2 = %e u3 = %e u4 = %e u5 = %e \n", u[0], udot[0], u2dot[0], u3dot[0], u4dot[0], u5dot[0]);
+    fprintf(binout, "derivatives of u[0]: u0 = %e u1 = %e u2 = %e u3 = %e u4 = %e u5 = %e \n", u[0], udot[0], u2dot[0], u3dot[0], u4dot[0], u5dot[0]);
     //fprintf(binout, "derivatives of u[1]: u0 = %e u1 = %e u2 = %e u3 = %e u4 = %e u5 = %e \n", u[1], udot[1], u2dot[1], u3dot[1], u4dot[1], u5dot[1]);
     //fprintf(binout, "derivatives of u[2]: u0 = %e u1 = %e u2 = %e u3 = %e u4 = %e u5 = %e \n", u[2], udot[2], u2dot[2], u3dot[2], u4dot[2], u5dot[2]);
     //fprintf(binout, "derivatives of u[3]: u0 = %e u1 = %e u2 = %e u3 = %e u4 = %e u5 = %e \n", u[3], udot[3], u2dot[3], u3dot[3], u4dot[3], u5dot[3]);
     //fflush(binout);
 
     //fprintf(binout,"Stumpff Coefficinets : c1 = %e c2 = %e c3 = %e c4 = %e c5 = %e \n \n ", cn[1], cn[2], cn[3], cn[4], cn[5]);
-    //fprintf(binout,"dTau = %e, TimeStep = %e, gamma = %e\n\n", dTau, TimeStep, gamma);
-    //fflush(binout);
+    fprintf(binout,"dTau = %e, TimeStep = %e, gamma = %e\n\n", dTau, TimeStep, gamma);
+    fflush(binout);
     
 
 }
