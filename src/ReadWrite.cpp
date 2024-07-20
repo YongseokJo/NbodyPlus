@@ -193,7 +193,6 @@ int writeParticle(std::vector<Particle*> &particle, double current_time, int out
     // Write particle data to the file
 		for (Particle* ptcl:particle) {
 			ptcl->predictParticleSecondOrderIrr(current_time);
-			/*
 			if (ptcl->isCMptcl)  {
 				ptcl->convertBinaryCoordinatesToCartesian();
 				write_out(outputFile, ptcl->BinaryParticleI);
@@ -205,9 +204,8 @@ int writeParticle(std::vector<Particle*> &particle, double current_time, int out
 				write_out(outputFile, ptcl);
 				//write_neighbor(output_nn, ptcl);
 			}
-			*/
-			write_out(outputFile, ptcl);
-			write_neighbor(output_nn, ptcl);
+			//write_out(outputFile, ptcl);
+			//write_neighbor(output_nn, ptcl);
     }
 
     // Close the file

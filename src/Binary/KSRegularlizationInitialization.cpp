@@ -321,7 +321,7 @@ void Particle::isKSCandidate() {
 	const double alpha = 0.04;
 	double dt_min;
 	dt_min = alpha*sqrt(pow(r_min,3.)/(this->Mass+minPtcl->Mass)*2)/EnzoTimeStep;
-	fprintf(stderr, "r_min=%e pc, dt_min = %e Myr, TimeStepIrr = %e Myr\n", r_min*position_unit, dt_min*EnzoTimeStep*1e4, TimeStepIrr*EnzoTimeStep*1e4);
+	//fprintf(stderr, "r_min=%e pc, dt_min = %e Myr, TimeStepIrr = %e Myr\n", r_min*position_unit, dt_min*EnzoTimeStep*1e4, TimeStepIrr*EnzoTimeStep*1e4);
 	//fflush(stderr);
 	if (TimeStepIrr > dt_min)
 		return;
@@ -331,16 +331,22 @@ void Particle::isKSCandidate() {
 	double RV=0.;
 	for (int dim=0; dim<Dim; dim++) {
 		RV += (Position[dim] - minPtcl->Position[dim])*(Velocity[dim]-minPtcl->Position[dim]);
-		a_pert[dim] += a_reg[dim][0];  // for later use
 	}
-	fprintf(stderr, "RV=%e, RHS = %e\n", RV, 0.1*sqrt((this->Mass+minPtcl->Mass)*r_min));
+	//fprintf(stderr, "RV=%e, RHS = %e\n", RV, 0.1*sqrt((this->Mass+minPtcl->Mass)*r_min));
 	//fflush(stderr);
-	if (RV <= 0.1*sqrt((this->Mass+minPtcl->Mass)*r_min))
+	if (RV <= 0.02*sqrt((this->Mass+minPtcl->Mass)*r_min))
 		return;
 
 	// 3. Their binding force should be greater than the perturbing force.
 	// a_pert*R^2/(G(m1+m2)) < 0.25
-	fprintf(stderr, "pert force=%e, binding force = %e\n", sqrt(mag(a_pert)), (this->Mass+minPtcl->Mass)/r_min/r_min);
+
+	m_r3 = minPtcl->Mass/pow(r_min,3);
+	for (int dim=0; dim<Dim; dim++) {
+		x[dim] = minPtcl->PredPosition[dim] - this->PredPosition[dim];
+		a_pert[dim] -= m_r3*x[dim];
+		a_pert[dim] += a_reg[dim][0];  // for later use
+	}
+	//fprintf(stderr, "pert force=%e, binding force = %e\n", sqrt(mag(a_pert)), (this->Mass+minPtcl->Mass)/r_min/r_min);
 	//fflush(stderr);
 	if (sqrt(mag(a_pert))*r_min*r_min/(this->Mass+minPtcl->Mass)>=0.25)
 		return;
@@ -634,6 +640,6 @@ void NewKSInitialization(Particle* ptclI, std::vector<Particle*> &particle, std:
 	ptclJ->isErase = false;
 
 	fprintf(binout, "\n---------------------END-OF-NEW-BINARY---------------------\n\n");
-	//fflush(binout);
+	fflush(binout);
 }
 

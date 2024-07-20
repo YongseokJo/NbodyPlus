@@ -59,7 +59,7 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 			
 		//std::cout << "List size=" << ComputationList.size() << std::endl;
 
-#define binary
+#define no_binary
 #ifdef binary
 #ifdef time_trace
 	_time.irr_bin.markStart();
@@ -70,7 +70,7 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 			fprintf(stdout, "No irregular particle to update afte binary formation.\n");
 			break;
 		}
-		//fprintf(binout, "in the irregular force\n");
+
 
 		/*
 			fprintf(stderr, "in irr, particle: ");
@@ -91,6 +91,7 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 					//assert(ptcl->Position[0] ==  ptcl->Position[0]);
 			}
 		}
+
 		for (Particle* ptcl:particle) {
 			if (ptcl->CurrentTimeIrr > 1) 
 				fprintf(stderr, "outside before bin, PID=%d, CurrentTimeIrr=%e\n", ptcl->PID, ptcl->CurrentTimeIrr);
@@ -105,7 +106,7 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 
 
 			//fprintf(stdout, "Integrating Binaries ...\n");
-			//fprintf(binout, "Evolve.cpp: integrating binaries\n");
+			//fprintf(binout, "integrating binaries\n");
 			//fprintf(binout, "# of binaries = %d \n",int(BinaryList.size()));
 			//fflush(stdout);
 			//fflush(stderr);
@@ -115,7 +116,7 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 				 	particle);
 			//fprintf(stdout, "Finishing Binaries ...\n");
 			//fflush(stdout);
-			//fflush(binout);
+			fflush(binout);
 
 		}
 		for (Particle* ptcl:particle) {
@@ -163,7 +164,6 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 
 		for (Particle* ptcl:ComputationList) {
 
-			/*
 			//if(ptcl->TimeStepReg*EnzoTimeStep*1e10/1e6 < 1e-7) {
 			if (ptcl->CurrentBlockReg > ptcl->CurrentBlockIrr || ptcl->CurrentBlockReg+ptcl->TimeBlockReg < ptcl->CurrentBlockIrr)
 				fprintf(stdout,"--------------------error--------------------------------------------------------------------\n");
@@ -182,7 +182,6 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 			if (ptcl->CurrentBlockReg > ptcl->CurrentBlockIrr || ptcl->CurrentBlockReg+ptcl->TimeBlockReg < ptcl->CurrentBlockIrr)
 				fprintf(stdout,"----------------------------------------------------------------------------------------\n");
 			//}
-			*/
 			/*
 			for (Particle* ptcl:particle) {
 				if (ptcl->CurrentTimeIrr > 1) {

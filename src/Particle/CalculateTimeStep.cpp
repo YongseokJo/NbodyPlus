@@ -112,7 +112,7 @@ void Particle::calculateTimeStepIrr(double f[3][4],double df[3][4]) {
 	}
 
 
-	if (TimeStepIrr*EnzoTimeStep*1e4 < KSTime)
+	if (TimeStepIrr*EnzoTimeStep*1e4 < KSTime && (this->isCMptcl == false))
 		BinaryCandidateList.push_back(this);
 	/*
 	if (PID == 430) {

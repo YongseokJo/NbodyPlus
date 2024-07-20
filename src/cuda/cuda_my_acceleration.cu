@@ -103,7 +103,9 @@ void GetAcceleration(
 	cudaError_t error;
 	int NumTarget_local = 0;
 
+	cudaStream_t stream;
 
+	cudaStreamCreate(&stream);
 
 	for(int i=0; i<NumTarget; i++) {
 		//printf("CUDA: x=%.3e, y=%.3e, r=%.3e\n", x[offset+i][0], x[offset+i][1], r2[offset+i]);
@@ -113,20 +115,17 @@ void GetAcceleration(
 		//printf("CUDA: res acc x=%.3e, y=%.3e\n", h_result[i].acc.x, h_result[i].acc.y);
 	}
 
+	/*
 	cudaDeviceSynchronize();
 	cudaStatus = cudaGetLastError();
 	if (cudaStatus != cudaSuccess) {
 		std::cerr << "CUDA error before toDevice: " << cudaGetErrorString(cudaStatus) << std::endl;
 	}
+	*/
 	// actually all the data is on the memory already we can just pass the indices
 	toDevice(h_target  , d_target  , variable_size); 
 	////printf("CUDA: transfer done\n");
 
-	cudaDeviceSynchronize();
-	cudaStatus = cudaGetLastError();
-	if (cudaStatus != cudaSuccess) {
-		std::cerr << "CUDA error after toDevice: " << cudaGetErrorString(cudaStatus) << std::endl;
-	}
 
 	dim3 thread_size(THREAD, 1, 1);
 	dim3 block_size(BLOCK,1,1);
@@ -140,11 +139,6 @@ void GetAcceleration(
 			//(NNB, NumTarget, tg_offset, d_target, d_background, d_result, do_neighbor);
 	} // endfor i, target particles
 
-	cudaDeviceSynchronize();
-	cudaStatus = cudaGetLastError();
-	if (cudaStatus != cudaSuccess) {
-		std::cerr << "CUDA error after calacc: " << cudaGetErrorString(cudaStatus) << std::endl;
-	}
 
 	/*
 	for (int nn_offset=0; (nn_offset)*BLOCK*THREAD<NumTarget; nn_offset++) {
@@ -153,31 +147,19 @@ void GetAcceleration(
 	}
 	*/
 
-	cudaDeviceSynchronize();
-	cudaStatus = cudaGetLastError();
-	if (cudaStatus != cudaSuccess) {
-		std::cerr << "CUDA error after ornei: " << cudaGetErrorString(cudaStatus) << std::endl;
-	}
+
 		//printf("CUDA: calculation done\n");
 	//} // endfor offset
 
 
-
-	cudaDeviceSynchronize();
-	cudaStatus = cudaGetLastError();
-	if (cudaStatus != cudaSuccess) {
-		std::cerr << "CUDA error before toHost: " << cudaGetErrorString(cudaStatus) << std::endl;
-	}
 	//printf("CUDA: neighbor post processing done\n");
 
 	toHost(h_result  , d_result  , variable_size);
 	toHost(h_target  , d_target  , variable_size);
 	toHost(h_neighbor, d_neighbor, variable_size);
-	cudaDeviceSynchronize();
 	//printf("CUDA: transfer to host done\n");
 
 
-	cudaDeviceSynchronize();
 	cudaStatus = cudaGetLastError();
 	if (cudaStatus != cudaSuccess) {
 		std::cerr << "CUDA error before neighbor: " << cudaGetErrorString(cudaStatus) << std::endl;
@@ -192,11 +174,6 @@ void GetAcceleration(
 		NumNeighbor[i] = h_neighbor[i].NumNeighbor;
 	}
 
-	cudaDeviceSynchronize();
-	cudaStatus = cudaGetLastError();
-	if (cudaStatus != cudaSuccess) {
-		std::cerr << "CUDA error before out data: " << cudaGetErrorString(cudaStatus) << std::endl;
-	}
 	// out data
 	for (int i=0; i<NumTarget; i++) {
 		acc[i][0]  = h_result[i].acc.x;
@@ -208,29 +185,9 @@ void GetAcceleration(
 	}
 
 	my_free(h_background , d_background);
-	cudaDeviceSynchronize();
-	cudaStatus = cudaGetLastError();
-	if (cudaStatus != cudaSuccess) {
-		std::cerr << "CUDA error after back: " << cudaGetErrorString(cudaStatus) << std::endl;
-	}
 	my_free(h_result     , d_result);
-		cudaDeviceSynchronize();
-		cudaStatus = cudaGetLastError();
-		if (cudaStatus != cudaSuccess) {
-			std::cerr << "CUDA error after result: " << cudaGetErrorString(cudaStatus) << std::endl;
-		}
 	my_free(h_target     , d_target);
-		cudaDeviceSynchronize();
-		cudaStatus = cudaGetLastError();
-		if (cudaStatus != cudaSuccess) {
-			std::cerr << "CUDA error after target: " << cudaGetErrorString(cudaStatus) << std::endl;
-		}
 	my_free(h_neighbor   , d_neighbor);
-		cudaDeviceSynchronize();
-		cudaStatus = cudaGetLastError();
-		if (cudaStatus != cudaSuccess) {
-			std::cerr << "CUDA error after neigh: " << cudaGetErrorString(cudaStatus) << std::endl;
-		}
 	//my_free_d(do_neighbor);
 	//printf("CUDA: done?\n");
 }
@@ -537,36 +494,11 @@ void _ReceiveFromHost(
 	variable_size = new_size(NNB);
 
 	my_allocate(&h_background , &d_background, variable_size);
-	cudaDeviceSynchronize();
-	cudaStatus = cudaGetLastError();
-	if (cudaStatus != cudaSuccess) {
-		std::cerr << "CUDA error all background: " << cudaGetErrorString(cudaStatus) << std::endl;
-	}
 	my_allocate(&h_result     , &d_result    , variable_size);
-	cudaDeviceSynchronize();
-	cudaStatus = cudaGetLastError();
-	if (cudaStatus != cudaSuccess) {
-		std::cerr << "CUDA error all result: " << cudaGetErrorString(cudaStatus) << std::endl;
-	}
 	my_allocate(&h_target     , &d_target    , variable_size);
-	cudaDeviceSynchronize();
-	cudaStatus = cudaGetLastError();
-	if (cudaStatus != cudaSuccess) {
-		std::cerr << "CUDA error all target: " << cudaGetErrorString(cudaStatus) << std::endl;
-	}
 	my_allocate(&h_neighbor   , &d_neighbor  , variable_size);
-	cudaDeviceSynchronize();
-	cudaStatus = cudaGetLastError();
-	if (cudaStatus != cudaSuccess) {
-		std::cerr << "CUDA error after all neigh both: " << cudaGetErrorString(cudaStatus) << std::endl;
-	}
 	/*
 	my_allocate_d(&do_neighbor, variable_size*THREAD);
-	cudaDeviceSynchronize();
-	cudaStatus = cudaGetLastError();
-	if (cudaStatus != cudaSuccess) {
-		std::cerr << "CUDA error after all neighbor: " << cudaGetErrorString(cudaStatus) << std::endl;
-	}
 	*/
 
 	//printf("CUDA: new size of NNB=%d of %d\n", NNB,variable_size);
@@ -578,18 +510,9 @@ void _ReceiveFromHost(
 	for (int j=0; j<NNB; j++) {
 		h_background[j].setParticle(m[j], x[j], v[j], mdot[j]);
 	}
-	cudaDeviceSynchronize();
-	cudaStatus = cudaGetLastError();
-	if (cudaStatus != cudaSuccess) {
-		std::cerr << "CUDA error after h_ground: " << cudaGetErrorString(cudaStatus) << std::endl;
-	}
+
 	//toDevice(h_background,d_background,variable_size);
 	toDevice(h_background,d_background, NNB);
-	cudaDeviceSynchronize();
-	cudaStatus = cudaGetLastError();
-	if (cudaStatus != cudaSuccess) {
-		std::cerr << "CUDA error after todevice in receiv: " << cudaGetErrorString(cudaStatus) << std::endl;
-	}
 	//fprintf(stdout, "CUDA: receive done\n");
 }
 
@@ -603,12 +526,6 @@ void _InitializeDevice(int irank){
 	int deviceCount;
 	cudaGetDeviceCount(&deviceCount);
 
-	cudaDeviceSynchronize();
-	cudaError_t cudaStatus = cudaGetLastError();
-	if (cudaStatus != cudaSuccess) {
-		std::cerr << "CUDA error after cudaGetDeviceCount: " << cudaGetErrorString(cudaStatus) << std::endl;
-	}
-
 	std::cout << "There are " << deviceCount << " GPUs." << std::endl;
 	if (device < 0 || device >= deviceCount) {
 		    // Handle invalid device index
@@ -618,32 +535,17 @@ void _InitializeDevice(int irank){
 	cudaGetDeviceProperties(&prop, devid);
 	//  char *hostname = getenv("HOSTNAME");
 
-	cudaDeviceSynchronize();
-	cudaStatus = cudaGetLastError();
-	if (cudaStatus != cudaSuccess) {
-		std::cerr << "CUDA error after cudaGetDeviceProperties: " << cudaGetErrorString(cudaStatus) << std::endl;
-	}
 
 	char hostname[150];
 	memset(hostname,0,150);
 	gethostname(hostname,150);
 	
-		cudaDeviceSynchronize();
-	cudaStatus = cudaGetLastError();
-	if (cudaStatus != cudaSuccess) {
-		std::cerr << "CUDA error after gethostname: " << cudaGetErrorString(cudaStatus) << std::endl;
-	}
 
 	fprintf(stderr, "# GPU initialization - rank: %d; HOST %s; NGPU %d; device: %d %s\n", irank, hostname,numGPU, devid, prop.name);
 
 
 	cudaSetDevice(device);
 
-	cudaDeviceSynchronize();
-	cudaStatus = cudaGetLastError();
-	if (cudaStatus != cudaSuccess) {
-		std::cerr << "CUDA error after cudaSetDevice: " << cudaGetErrorString(cudaStatus) << std::endl;
-	}
 	// Initialize CUDA context
 	/*
 	cudaError_t cudaStatus = cudaFree(0);
