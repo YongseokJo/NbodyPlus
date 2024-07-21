@@ -154,24 +154,44 @@ void Particle::updateParticle(double current_time, double next_time, double a[3]
 
 
 void Particle::UpdateRadius() {
+
 	if (LocalDensity == 0) {
 		RadiusOfAC = 0.11;
+		//RadiusOfAC = InitialRadiusOfAC;
+		//RadiusOfAC = 1.00;
 		LocalDensity = 10;
 	}
+	else {
+		/* exponential (aggressive) */
+		/*
+			 const double c = 0.5;
+			 const double b = std::log(2) / (NumNeighborMax);  // ln(2) / 40
+			 double exp = a * (std::exp(b * NumberOfAC) - 1);
+			 */
 
-	if (NumberOfAC > FixNumNeighbor) {
-		if (NumberOfAC > 2*FixNumNeighbor) {
-			RadiusOfAC *= 0.90;
+		/* n=2 polynomial (mild) as n increases it grows mild */
+		
+		if (NumberOfAC > FixNumNeighbor) {
+			const int n = 2;
+			const double c = (NumNeighborMax-FixNumNeighbor);
+			const double b = 0.9 / std::pow(c,n);  // ln(2) / 40
+			double x = NumberOfAC-FixNumNeighbor;
+			double a = n%2==0 ? b*std::abs(x)*std::pow(x,n-1) : b*std::pow(x,n);
+			//fprintf(stdout, "PID=%d, NumberOfAC=%d, 1-a=%e, R0=%e(%e), R=%e(%e)\n",
+				 	//PID,NumberOfAC, 1.-a, RadiusOfAC, RadiusOfAC*RadiusOfAC, RadiusOfAC*(1-a),RadiusOfAC*(1-a)*RadiusOfAC*(1-a));
+			RadiusOfAC *= (1.-a);
 		}
-		else if (NumberOfAC > 3*FixNumNeighbor) {
-			RadiusOfAC *= 0.80;
-		}
-		else {
-			RadiusOfAC *= 0.95;
+		else if (NumberOfAC < FixNumNeighbor) {
+			const int n = 3;
+			const double c = (NumNeighborMax-FixNumNeighbor);
+			const double b = 0.5 / std::pow(c,n);  // ln(2) / 40
+			double x = NumberOfAC-FixNumNeighbor;
+			double a = n%2==0 ? b*std::abs(x)*std::pow(x,n-1) : b*std::pow(x,n);
+			//fprintf(stdout, "PID=%d, NumberOfAC=%d, 1-a=%e, R0=%e(%e), R=%e(%e)\n",
+				 	//PID,NumberOfAC, 1.-a, RadiusOfAC, RadiusOfAC*RadiusOfAC, RadiusOfAC*(1-a),RadiusOfAC*(1-a)*RadiusOfAC*(1-a));
+			RadiusOfAC *= (1.-a);
 		}
 	}
-	if (NumberOfAC < FixNumNeighbor)
-		RadiusOfAC *= 1.05;
 
 	/*
 	double MeanRadius=0, TotalMass=0, LocalDensity0=0;

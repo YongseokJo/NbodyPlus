@@ -164,6 +164,7 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 
 		for (Particle* ptcl:ComputationList) {
 
+			/*
 			//if(ptcl->TimeStepReg*EnzoTimeStep*1e10/1e6 < 1e-7) {
 			if (ptcl->CurrentBlockReg > ptcl->CurrentBlockIrr || ptcl->CurrentBlockReg+ptcl->TimeBlockReg < ptcl->CurrentBlockIrr)
 				fprintf(stdout,"--------------------error--------------------------------------------------------------------\n");
@@ -182,6 +183,7 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 			if (ptcl->CurrentBlockReg > ptcl->CurrentBlockIrr || ptcl->CurrentBlockReg+ptcl->TimeBlockReg < ptcl->CurrentBlockIrr)
 				fprintf(stdout,"----------------------------------------------------------------------------------------\n");
 			//}
+			*/
 			/*
 			for (Particle* ptcl:particle) {
 				if (ptcl->CurrentTimeIrr > 1) {

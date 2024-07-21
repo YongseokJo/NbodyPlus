@@ -3,25 +3,27 @@
 #include "defs.h"
 #include "global.h"
 
-int writeParticle(std::vector<Particle*> &particle, double MinRegTime, int outputNum);
+int writeParticle(std::vector<Particle*> &particle, REAL MinRegTime, int outputNum);
 // int ReceiveFromEzno(std::vector<Particle*> &particle);
 // int SendToEzno(std::vector<Particle*> &particle);
 bool CreateComputationChain(std::vector<Particle*> &particle);
 bool RegularAccelerationRoutine(std::vector<Particle*> &particle);
 bool IrregularAccelerationRoutine(std::vector<Particle*> &particle);
 void AddNewBinariesToList(std::vector<Particle*> &particle);                                                               
-void BinaryAccelerationRoutine(double next_time, ULL next_block, std::vector<Particle*> &particle);
+void BinaryAccelerationRoutine(REAL next_time, ULL next_block, std::vector<Particle*> &particle);
 
 bool IsOutput           = false;
-double binary_time      = 0;
-double binary_time_prev = 0;
+REAL binary_time      = 0;
+REAL binary_time_prev = 0;
 ULL binary_block        = 0;
-double outputTime       = 0;
+REAL outputTime       = 0;
 ULL NextRegTimeBlock    = 0;
 int outNum              = 0;
-double global_time_irr  = 0;
+REAL global_time_irr  = 0;
 std::vector<Particle*> ComputationChain{};
+#ifdef time_trace
 TimeTracer _time;
+#endif
 
 void Evolve(std::vector<Particle*> &particle) {
 
@@ -52,6 +54,7 @@ void Evolve(std::vector<Particle*> &particle) {
 
 #ifdef time_trace
 		_time.reg.markEnd();
+		_time.reg.getDuration();
 		_time.irr.markStart();
 #endif
 
@@ -60,7 +63,6 @@ void Evolve(std::vector<Particle*> &particle) {
 #ifdef time_trace
 		_time.irr.markEnd();
 
-		_time.reg.getDuration();
 		_time.irr.getDuration();
 		_time.output();
 #endif

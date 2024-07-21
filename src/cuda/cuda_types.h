@@ -69,6 +69,25 @@ void my_free_d(T &device) {
 
 
 template <typename T>
+void toDevice(T *host, T *device, const int size, cudaStream_t &stream) {
+	cudaError_t cudaStatus;
+	cudaStatus = cudaMemcpyAsync(device, host, size * sizeof(T), cudaMemcpyHostToDevice, stream);
+	if (cudaStatus != cudaSuccess) {
+		fprintf(stderr, "cudaMemcpyHostToDevice failed: %s\n", cudaGetErrorString(cudaStatus));
+	}
+}
+
+template <typename T>
+void toHost(T *host, T *device, const int size, cudaStream_t &stream) {
+	cudaError_t cudaStatus;
+	cudaStatus = cudaMemcpyAsync(host, device, size * sizeof(T), cudaMemcpyDeviceToHost, stream);
+	if (cudaStatus != cudaSuccess) {
+		fprintf(stderr, "cudaMemcpyDeviceToHost failed: %s\n", cudaGetErrorString(cudaStatus));
+	}
+}
+
+
+template <typename T>
 void toDevice(T *host, T *device, const int size) {
 	cudaError_t cudaStatus;
 	cudaStatus = cudaMemcpy(device, host, size * sizeof(T), cudaMemcpyHostToDevice);
@@ -90,47 +109,15 @@ void toHost(T *host, T *device, const int size) {
 
 
 
-
-struct TargetParticle{
-	double3 pos;
-	double  mdot;
-	double3 vel;
-	double  r2; // for AC neighbor
-	double  dt;
-
-	void setParticle(double _mdot, double x[3], double v[3], double _r2, double _dt){
-		mdot   = _mdot;
-		pos.x  = x[0];
-		pos.y  = x[1];
-		pos.z  = x[2];
-		vel.x  = v[0];
-		vel.y  = v[1];
-		vel.z  = v[2];
-		r2 = _r2;
-		dt = _dt;
-
-		NAN_CHECK(x[0]);
-		NAN_CHECK(x[1]);
-		NAN_CHECK(x[2]);
-		NAN_CHECK(_mdot);
-		NAN_CHECK(v[0]);
-		NAN_CHECK(v[1]);
-		NAN_CHECK(v[2]);
-		NAN_CHECK(_r2);
-		NAN_CHECK(_dt);
-  }
-};
-
-
-
-struct BackgroundParticle{
-  double3 pos;
-  double3 vel;
-  double  mass;
-	double  mdot;
+struct CudaParticle{
+  float3 pos;
+  float3 vel;
+  float  mass;
+	float  r2; // for AC neighbor
+	float  mdot;
 
 	//BackgroundParticle(int) {}
-	BackgroundParticle(double m, double x[3], double v[3], double _mdot){
+	CudaParticle(float m, float x[3], float v[3], float _r2, float _mdot){
 		mass  = m;
 		pos.x = x[0];
     pos.y = x[1];
@@ -139,6 +126,7 @@ struct BackgroundParticle{
     vel.y = v[1];
     vel.z = v[2];
 		mdot  = _mdot;
+		r2  = _r2;
 
     NAN_CHECK(x[0]);
     NAN_CHECK(x[1]);
@@ -148,9 +136,10 @@ struct BackgroundParticle{
     NAN_CHECK(v[1]);
     NAN_CHECK(v[2]);
     NAN_CHECK(_mdot);
+    NAN_CHECK(_r2);
   }
 
-  void setParticle(double m, double x[3], double v[3], double _mdot){
+  void setParticle(float m, float x[3], float v[3], float _r2, float _mdot){
 		mass  = m;
 		pos.x = x[0];
 		pos.y = x[1];
@@ -159,6 +148,7 @@ struct BackgroundParticle{
 		vel.y = v[1];
 		vel.z = v[2];
 		mdot  = _mdot;
+		r2  = _r2;
 
 		NAN_CHECK(x[0]);
 		NAN_CHECK(x[1]);
@@ -168,6 +158,7 @@ struct BackgroundParticle{
 		NAN_CHECK(v[1]);
 		NAN_CHECK(v[2]);
 		NAN_CHECK(_mdot);
+    NAN_CHECK(_r2);
 	}
   //__device__ BackgroundParticle() {}
 };
@@ -175,8 +166,8 @@ struct BackgroundParticle{
 
 
 struct Result{
-	double3 acc;
-	double3 adot;
+	float3 acc;
+	float3 adot;
 	//unsigned short num_ac;          //  8 words
 	//unsigned short ac_list[MaxNeighbor];
 

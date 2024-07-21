@@ -24,32 +24,32 @@ void CalculateAllAccelerationOnGPU(std::vector<Particle*> &particle){
 	int mpi_rank = 0;
 
 	// variables for saving variables to send to GPU
-	double* MassSend;
-	double* MdotSend;
-	double(*PositionSend)[Dim];
-	double(*VelocitySend)[Dim];
+	REAL* MassSend;
+	REAL* MdotSend;
+	REAL(*PositionSend)[Dim];
+	REAL(*VelocitySend)[Dim];
 
-	double* r2OfACSend;
-	double  TimeStepRegTmp, ri2;
-	double* TimeStepRegSend;
+	REAL* r2OfACSend;
+	REAL  TimeStepRegTmp, ri2;
+	REAL* TimeStepRegSend;
 
-	double(*AccSend)[Dim];
-	double(*AccDotSend)[Dim];
-	//double *PotSend;
+	REAL(*AccSend)[Dim];
+	REAL(*AccDotSend)[Dim];
+	//REAL *PotSend;
 
 	int **ACListReceive;
 	int *NumNeighborReceive;
 
 	// temporary variables for calculating the irregular force
-	double dx[Dim];
-	double dv[Dim];
-	double rij2,dr2i,dr3i,drdv;
+	REAL dx[Dim];
+	REAL dv[Dim];
+	REAL rij2,dr2i,dr3i,drdv;
 
 	// extra variables
 	bool neighborOK;
 	int ACnumi2;
 	int ACjid;
-	double dt = particle[0]->TimeStepReg*EnzoTimeStep;
+	REAL dt = particle[0]->TimeStepReg*EnzoTimeStep;
 
 
 
@@ -59,16 +59,16 @@ void CalculateAllAccelerationOnGPU(std::vector<Particle*> &particle){
 
 	// need to make array to send to GPU
 	// allocate memory to the temporary variables
-	MassSend        = new double[NNB];
-	MdotSend        = new double[NNB];
-	PositionSend    = new double[NNB][Dim];
-	VelocitySend    = new double[NNB][Dim];
+	MassSend        = new REAL[NNB];
+	MdotSend        = new REAL[NNB];
+	PositionSend    = new REAL[NNB][Dim];
+	VelocitySend    = new REAL[NNB][Dim];
 
-	r2OfACSend      = new double[NNB];
-	TimeStepRegSend = new double[NNB];
+	r2OfACSend      = new REAL[NNB];
+	TimeStepRegSend = new REAL[NNB];
 
-	AccSend         = new double[NNB][Dim];
-	AccDotSend      = new double[NNB][Dim];
+	AccSend         = new REAL[NNB][Dim];
+	AccDotSend      = new REAL[NNB][Dim];
 
 	NumNeighborReceive = new int[NNB];
 	ACListReceive      = new int*[NNB];
@@ -102,8 +102,8 @@ void CalculateAllAccelerationOnGPU(std::vector<Particle*> &particle){
 	for (int i=0; i<NNB; i+=numGpuSend) {
 		numGpuCal = std::min(1024,(NNB-i));
 
-		CalculateAccelerationOnDevice(&NNB, PositionSend, VelocitySend,
-					AccSend, AccDotSend, MdotSend, r2OfACSend, NumNeighborReceive, ACListReceive, dt);
+		//CalculateAccelerationOnDevice(&NNB, PositionSend, VelocitySend,
+					//AccSend, AccDotSend, MdotSend, r2OfACSend, NumNeighborReceive, ACListReceive, dt);
 
 		// copy the values of regular forces and neighbors obtained in GPU to particles
 		// and also calculate the irregular forces in the process
@@ -183,6 +183,7 @@ void CalculateAllAccelerationOnGPU(std::vector<Particle*> &particle){
  *  Date    : 2024.01.17  by Seoyoung Kim
  *
  */
+
 void CalculateListAccelerationOnGPU(std::vector<int> &IndexList, std::vector<Particle*> &particle){
 
 	// variables for opening GPU
@@ -192,24 +193,24 @@ void CalculateListAccelerationOnGPU(std::vector<int> &IndexList, std::vector<Par
 	int numGpuCal;
 
 	// variables for GPU
-	double *MassSend;
-	double *MdotSend;
-	double(*PositionSend)[Dim];
-	double(*VelocitySend)[Dim];
+	REAL *MassSend;
+	REAL *MdotSend;
+	REAL(*PositionSend)[Dim];
+	REAL(*VelocitySend)[Dim];
 
-	double *r2OfACSend;
-	double *TimeStepRegSend;
+	REAL *r2OfACSend;
+	REAL *TimeStepRegSend;
 
-	double(*AccSend)[Dim];
-	double(*AccDotSend)[Dim];
-	double *PotSend;
+	REAL(*AccSend)[Dim];
+	REAL(*AccDotSend)[Dim];
+	REAL *PotSend;
 	int **AClistGpu;
 	int massFlag;
 
 	// temporary variables for calculating the irregular force
 
-	double dx[Dim], dv[Dim];
-	double rij2, dr2i, dr3i, drdv;
+	REAL dx[Dim], dv[Dim];
+	REAL rij2, dr2i, dr3i, drdv;
 
 	// extra variables
 	int ACnumi2, ACjid, i2reg;
@@ -217,17 +218,17 @@ void CalculateListAccelerationOnGPU(std::vector<int> &IndexList, std::vector<Par
 
 	// need to make array to send to GPU
 	// allocate memory to the temporary variables
-	MassSend     = new double[ListSize];
-	MdotSend     = new double[ListSize];
-	PositionSend = new double[ListSize][Dim];
-	VelocitySend = new double[ListSize][Dim];
+	MassSend     = new REAL[ListSize];
+	MdotSend     = new REAL[ListSize];
+	PositionSend = new REAL[ListSize][Dim];
+	VelocitySend = new REAL[ListSize][Dim];
 
-	r2OfACSend   = new double[ListSize];
-	TimeStepRegSend  = new double[ListSize];
+	r2OfACSend   = new REAL[ListSize];
+	TimeStepRegSend  = new REAL[ListSize];
 
-	AccSend       = new double[ListSize][Dim];
-	AccDotSend    = new double[ListSize][Dim];
-	PotSend       = new double[ListSize];
+	AccSend       = new REAL[ListSize][Dim];
+	AccDotSend    = new REAL[ListSize][Dim];
+	PotSend       = new REAL[ListSize];
 
 	AClistGpu = new int*[ListSize];
 	for (int i=0; i<(NNB); i++) {
@@ -343,16 +344,16 @@ void CalculateListAccelerationOnGPU(std::vector<int> &IndexList, std::vector<Par
 void SendAllParticlesToGPU(std::vector <Particle*> &particle) {
 
 	// variables for saving variables to send to GPU
-	double * Mass;
-	double * Mdot;
-	double(*Position)[Dim];
-	double(*Velocity)[Dim];
+	REAL * Mass;
+	REAL * Mdot;
+	REAL(*Position)[Dim];
+	REAL(*Velocity)[Dim];
 
 	// allocate memory to the temporary variables
-	Mass     = new double[NNB];
-	Mdot     = new double[NNB];
-	Position = new double[NNB][Dim];
-	Velocity = new double[NNB][Dim];
+	Mass     = new REAL[NNB];
+	Mdot     = new REAL[NNB];
+	Position = new REAL[NNB][Dim];
+	Velocity = new REAL[NNB][Dim];
 
 	// copy the data of particles to the arrays to be sent
 	for (int i=0; i<NNB; i++) {
@@ -376,28 +377,30 @@ void SendAllParticlesToGPU(std::vector <Particle*> &particle) {
 }
 
 
-void SendAllParticlesToGPU(double time, std::vector <Particle*> &particle) {
+void SendAllParticlesToGPU(REAL time, std::vector <Particle*> &particle) {
 
 	// variables for saving variables to send to GPU
-	double * Mass;
-	double * Mdot;
-	double(*Position)[Dim];
-	double(*Velocity)[Dim];
+	REAL * Mass;
+	REAL * Mdot;
+	REAL * Radius2;
+	REAL(*Position)[Dim];
+	REAL(*Velocity)[Dim];
 	int size = (int) particle.size();
-	int num=100;
 
 	// allocate memory to the temporary variables
-	Mass     = new double[size];
-	Mdot     = new double[size];
-	Position = new double[size][Dim];
-	Velocity = new double[size][Dim];
+	Mass     = new REAL[size];
+	Mdot     = new REAL[size];
+	Radius2  = new REAL[size];
+	Position = new REAL[size][Dim];
+	Velocity = new REAL[size][Dim];
 
 
 	// copy the data of particles to the arrays to be sent
 	for (int i=0; i<size; i++) {
-		Mass[i] = particle[i]->Mass;
-		Mdot[i] = 0; //particle[i]->Mass;
-		if (particle[i]->NumberOfAC == 0)	
+		Mass[i]    = particle[i]->Mass;
+		Mdot[i]    = 0; //particle[i]->Mass;
+		Radius2[i] = particle[i]->RadiusOfAC*particle[i]->RadiusOfAC; // mass wieght?
+		if (particle[i]->NumberOfAC == 0)
 			particle[i]->predictParticleSecondOrder(time);
 		else
 			particle[i]->predictParticleSecondOrderIrr(time);
@@ -411,13 +414,14 @@ void SendAllParticlesToGPU(double time, std::vector <Particle*> &particle) {
 	//fprintf(stdout, "Sending particles to GPU...\n");
 	//fflush(stdout);
 	// send the arrays to GPU
-	SendToDevice(&size, Mass, Position, Velocity, Mdot, &num);
+	SendToDevice(&size, Mass, Position, Velocity, Radius2, Mdot);
 
 	fprintf(stdout, "Done.\n");
 	fflush(stdout);
 	// free the temporary variables
 	delete[] Mass;
 	delete[] Mdot;
+	delete[] Radius2;
 	delete[] Position;
 	delete[] Velocity;
 }

@@ -1,6 +1,6 @@
 
 
-#define FixNumNeighbor 20
+#define FixNumNeighbor 30
 #define HERMITE_ORDER 4
 #define Dim 3
 
@@ -66,7 +66,7 @@
 //#define mass_unit 256e-20  // 256e-20 Msun in the unit that G = 1.
 #define mass_unit 0.0001424198  // Msun in the unit that G = 1.
 
-#define time_trace
+#define no_time_trace
 
 #define mag(a) (a[0]*a[0]+a[1]*a[1]+a[2]*a[2])
 #define mag0(a) (a[0][0]*a[0][0]+a[1][0]*a[1][0]+a[2][0]*a[2][0])
@@ -74,6 +74,8 @@
 
 
 typedef unsigned long long ULL;
+typedef float REAL;
+//typedef double REAL;
 
 
 
