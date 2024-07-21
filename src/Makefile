@@ -11,7 +11,7 @@ NVCCFLAGS = -O2 -G -Xcompiler -rdynamic -g -lineinfo -Xptxas=-v -lcudart -lcompu
 #NVCC_FLAGS_PROFILE = -g -lineinfo
 
 # Libraries
-LDFLAGS = -L/usr/local/cuda-11.8/lib64/ -lcudart
+LDFLAGS = -L/usr/local/cuda-11.8/lib64/ -lcudart -lcublas
 #LDFLAGS = -L/mnt/sw/nix/store/zi2wc26znf75csf5hhz77p0d2bbz53ih-cuda-11.8.0/lib64/ -lcudart
 
 # Source files

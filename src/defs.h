@@ -48,9 +48,9 @@
 
 #define NumNeighborMax 100
 #define stumpffN 12 // the order of approximation for stumpff functions
-#define KSDistance 0.00002  // the distance of binary particles from each other
+#define KSDistance 0.000002  // the distance of binary particles from each other
 //#define KSDistance 1e-10  // the distance of binary particles from each other
-#define KSTime 4e-7  // short timestep criteria for binary search
+#define KSTime 2e-7  // short timestep criteria for binary search
 //#define KSTime 1e-10  // short timestep criteria for binary search
 #define PerturberDistance 0.01  // the distance of binary perturbers from the pair
 
@@ -66,7 +66,7 @@
 //#define mass_unit 256e-20  // 256e-20 Msun in the unit that G = 1.
 #define mass_unit 0.0001424198  // Msun in the unit that G = 1.
 
-#define time_trace
+#define no_time_trace
 
 #define mag(a) (a[0]*a[0]+a[1]*a[1]+a[2]*a[2])
 #define mag0(a) (a[0][0]*a[0][0]+a[1][0]*a[1][0]+a[2][0]*a[2][0])
@@ -74,6 +74,8 @@
 
 
 typedef unsigned long long ULL;
+typedef float REAL;
+//typedef double REAL;
 
 
 

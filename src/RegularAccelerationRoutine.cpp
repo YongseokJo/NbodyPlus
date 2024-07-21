@@ -11,6 +11,8 @@ bool RegularAccelerationRoutine(std::vector<Particle*> &particle)
 	fflush(stdout);
 	// Calulating regular acceleration of the particles
 	if (RegularList.size() > 0) {
+
+	/*
 		for (Particle* ptcl: RegularList) {
 			//if(ptcl->TimeStepReg*EnzoTimeStep*1e10/1e6 < 1e-6) {
 			if (ptcl->CurrentBlockReg >= ptcl->CurrentBlockIrr || ptcl->CurrentBlockReg+ptcl->TimeBlockReg != ptcl->CurrentBlockIrr) {
@@ -35,17 +37,19 @@ bool RegularAccelerationRoutine(std::vector<Particle*> &particle)
 			if (ptcl->CurrentBlockReg >= ptcl->CurrentBlockIrr || ptcl->CurrentBlockReg+ptcl->TimeBlockReg != ptcl->CurrentBlockIrr) {
 				fprintf(stdout,"--------------------------------------------------------------------------------------------- \n");
 			}
-			//}
-			/*
+		//}
+		*/	
+		/*
 			fprintf(stdout, "In reg, PID=%d : ", ptcl->PID);
 			for (Particle* nn:ptcl->ACList) {
 				fprintf(stdout,"%d, ",nn->PID);	
 			}
 			fprintf(stdout,"\n");	
 			*/
-			fprintf(stdout, " a_tot = (%.2e,%.2e,%.2e), a_reg = (%.2e,%.2e,%.2e), a_irr = (%.2e,%.2e,%.2e), n_n=%d, R=%.3e\n\
-					a1_reg = (%.2e,%.2e,%.2e), a2_reg = (%.2e,%.2e,%.2e), a3_reg = (%.2e,%.2e,%.2e)\n\
-					a1_irr = (%.2e,%.2e,%.2e), a2_irr = (%.2e,%.2e,%.2e), a3_irr = (%.2e,%.2e,%.2e)\n", 
+	/*
+			fprintf(stdout, " a_tot = (%.4e,%.4e,%.4e), a_reg = (%.4e,%.4e,%.4e), a_irr = (%.4e,%.4e,%.4e), n_n=%d, R=%.3e\n\
+					a1_reg = (%.4e,%.4e,%.4e), a2_reg = (%.4e,%.4e,%.4e), a3_reg = (%.4e,%.4e,%.4e)\n\
+					a1_irr = (%.4e,%.4e,%.4e), a2_irr = (%.4e,%.4e,%.4e), a3_irr = (%.4e,%.4e,%.4e)\n", 
 					ptcl->a_tot[0][0],
 					ptcl->a_tot[1][0],
 					ptcl->a_tot[2][0],
@@ -77,9 +81,10 @@ bool RegularAccelerationRoutine(std::vector<Particle*> &particle)
 					ptcl->a_irr[2][3]
 						);
 		}
-		fflush(stdout);
+	*/
+		//fflush(stdout);
 		CalculateRegAccelerationOnGPU(RegularList, particle);
-		fflush(stdout);
+		//fflush(stdout);
 	}
 
 	/*
@@ -93,10 +98,11 @@ bool RegularAccelerationRoutine(std::vector<Particle*> &particle)
 
 	global_time = NextRegTimeBlock*time_step;
 	// update the next regular time step
-	fprintf(stdout, "NextRegTimeBlock=%llu\n", NextRegTimeBlock);
-	std::cerr << "Finishing regular force ...\n" << std::flush;
+	//fprintf(stdout, "NextRegTimeBlock=%llu\n", NextRegTimeBlock);
+	//fprintf(binout, "Finishing regular force\n");
+	//std::cerr << "Finishing regular force ...\n" << std::flush;
 	//fprintf(stderr, "Finishing regular force.. NextRegTime=%.3e\n", NextRegTimeBlock*time_step);
-	fprintf(stdout, "Finishing regular force.. NextRegTime=%.3e\n", NextRegTimeBlock*time_step);
+	//fprintf(stdout, "Finishing regular force.. NextRegTime=%.3e\n", NextRegTimeBlock*time_step);
 	return true;
 }
 

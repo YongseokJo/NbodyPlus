@@ -6,6 +6,7 @@ module add modules/2.2-20230808
 module add intel-oneapi-compilers
 module add intel-oneapi-mpi
 module add cuda
+module add cuda
 
 make clean
 make -j8
