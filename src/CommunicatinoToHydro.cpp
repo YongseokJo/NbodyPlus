@@ -4,7 +4,7 @@
 #include "defs.h"
 
 Particle* FirstParticleInEnzo = nullptr;
-double EnzoLength, EnzoMass, EnzoVelocity, EnzoTime, EnzoForce, EnzoAcceleration;
+REAL EnzoLength, EnzoMass, EnzoVelocity, EnzoTime, EnzoForce, EnzoAcceleration;
 
 void InitializeParticle(Particle* newParticle, std::vector<Particle*> &particle);
 int CommunicationInterBarrier();
@@ -13,8 +13,8 @@ int CommunicationInterBarrier();
 int InitialCommunication(std::vector<Particle*> &particle) {
 
 	int *PID;
-	double *Mass, *Position[Dim], *Velocity[Dim], *BackgroundAcceleration[Dim];
-	double TimeStep, TimeUnits, LengthUnits, VelocityUnits, MassUnits;
+	REAL *Mass, *Position[Dim], *Velocity[Dim], *BackgroundAcceleration[Dim];
+	REAL TimeStep, TimeUnits, LengthUnits, VelocityUnits, MassUnits;
 
 
 	MPI_Request request;
@@ -29,18 +29,18 @@ int InitialCommunication(std::vector<Particle*> &particle) {
 	if (NNB != 0) {
 		PID = new int[NNB];
 		MPI_Recv(PID, NNB, MPI_INT, 0, 250, inter_comm, &status);
-		Mass = new double[NNB];
+		Mass = new REAL[NNB];
 		MPI_Recv(Mass, NNB, MPI_DOUBLE, 0, 200, inter_comm, &status);
 
 		for (int dim=0; dim<Dim; dim++) {
-			Position[dim] = new double[NNB];
-			Velocity[dim] = new double[NNB];
+			Position[dim] = new REAL[NNB];
+			Velocity[dim] = new REAL[NNB];
 			MPI_Recv(Position[dim], NNB, MPI_DOUBLE, 0, 300, inter_comm, &status);
 			MPI_Recv(Velocity[dim], NNB, MPI_DOUBLE, 0, 400, inter_comm, &status);
 		}
 
 		for (int dim=0; dim<Dim; dim++) {
-			BackgroundAcceleration[dim] = new double[NNB];
+			BackgroundAcceleration[dim] = new REAL[NNB];
 			MPI_Recv(BackgroundAcceleration[dim], NNB, MPI_DOUBLE, 0, 500, inter_comm, &status);
 		}
 	}
@@ -102,9 +102,9 @@ int InitialCommunication(std::vector<Particle*> &particle) {
 int ReceiveFromEzno(std::vector<Particle*> &particle) {
 
 	int *PID, *newPID;
-	double *BackgroundAcceleration[Dim];
-	double *newMass, *newPosition[Dim], *newVelocity[Dim], *newBackgroundAcceleration[Dim];
-	double TimeStep;
+	REAL *BackgroundAcceleration[Dim];
+	REAL *newMass, *newPosition[Dim], *newVelocity[Dim], *newBackgroundAcceleration[Dim];
+	REAL TimeStep;
 
 	MPI_Request request;
 	MPI_Status status;
@@ -118,7 +118,7 @@ int ReceiveFromEzno(std::vector<Particle*> &particle) {
 		PID = new int[NNB];
 		MPI_Recv(PID, NNB, MPI_INT, 0, 25, inter_comm, &status);
 		for (int dim=0; dim<Dim; dim++) {
-			BackgroundAcceleration[dim] = new double[NNB];
+			BackgroundAcceleration[dim] = new REAL[NNB];
 			MPI_Recv(BackgroundAcceleration[dim], NNB, MPI_DOUBLE, 0, 50, inter_comm, &status);
 		}
 	}
@@ -130,13 +130,13 @@ int ReceiveFromEzno(std::vector<Particle*> &particle) {
 	{
 		newPID = new int[newNNB];
 		MPI_Recv(newPID, newNNB, MPI_INT, 0, 250, inter_comm, &status);
-		newMass = new double[newNNB];
+		newMass = new REAL[newNNB];
 		MPI_Recv(newMass, newNNB, MPI_DOUBLE, 0, 200, inter_comm, &status);
 
 		for (int dim=0; dim<Dim; dim++) {
-			newPosition[dim] = new double[newNNB];
-			newVelocity[dim] = new double[newNNB];
-			newBackgroundAcceleration[dim] = new double[newNNB];
+			newPosition[dim] = new REAL[newNNB];
+			newVelocity[dim] = new REAL[newNNB];
+			newBackgroundAcceleration[dim] = new REAL[newNNB];
 			MPI_Recv(newPosition[dim], newNNB, MPI_DOUBLE, 0, 300, inter_comm, &status);
 			MPI_Recv(newVelocity[dim], newNNB, MPI_DOUBLE, 0, 400, inter_comm, &status);
 			MPI_Recv(newBackgroundAcceleration[dim], newNNB, MPI_DOUBLE, 0, 500, inter_comm, &status);
@@ -259,18 +259,18 @@ int SendToEzno(std::vector<Particle*> &particle) {
 	MPI_Request request;
 	MPI_Status status;
 
-	double TimeStep;
-	double *Position[Dim], *Velocity[Dim], *newPosition[Dim], *newVelocity[Dim];
+	REAL TimeStep;
+	REAL *Position[Dim], *Velocity[Dim], *newPosition[Dim], *newVelocity[Dim];
 
 	Particle *ptcl;
 	
 	for (int dim=0; dim<Dim; dim++) {
-		Position[dim]    = new double[NNB-newNNB];
-		Velocity[dim]    = new double[NNB-newNNB];
+		Position[dim]    = new REAL[NNB-newNNB];
+		Velocity[dim]    = new REAL[NNB-newNNB];
 
 		if (newNNB > 0) {
-			newPosition[dim] = new double[newNNB];
-			newVelocity[dim] = new double[newNNB];
+			newPosition[dim] = new REAL[newNNB];
+			newVelocity[dim] = new REAL[newNNB];
 		}
 	}
 

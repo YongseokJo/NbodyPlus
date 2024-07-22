@@ -3,9 +3,9 @@
 
 char* fname;
 char* foutput;
-double inputTime = 0.0;
-double endTime = 0.0;
-double outputTimeStep = 0.;
+REAL inputTime = 0.0;
+REAL endTime = 0.0;
+REAL outputTimeStep = 0.;
 
 int Parser(int argc, char *argv[]) {
 	for (int i = 1; i < argc; ++i) {
@@ -33,7 +33,7 @@ int Parser(int argc, char *argv[]) {
 				std::cout << "Double value: " << outputTimeStep << std::endl;
 				i++; // Skip the next argument as it's already processed
 			} else {
-				std::cerr << "Error: Missing argument for -t/--double option" << std::endl;
+				std::cerr << "Error: Missing argument for -t/--REAL option" << std::endl;
 				return -2; // Error: Missing argument
 			}
 
@@ -43,7 +43,7 @@ int Parser(int argc, char *argv[]) {
 				std::cout << "Double value: " << endTime << std::endl;
 				i++; // Skip the next argument as it's already processed
 			} else {
-				std::cerr << "Error: Missing argument for -tend/--double option" << std::endl;
+				std::cerr << "Error: Missing argument for -tend/--REAL option" << std::endl;
 				return -2; // Error: Missing argument
 			}
 		} else if (arg == "-d" || arg == "--dir") {

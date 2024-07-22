@@ -5,13 +5,13 @@
 #define no_chain_debug
 
 std::vector<Particle*> ComputationList{};
-int writeParticle(std::vector<Particle*> &particle, double MinRegTime, int outputNum);
+int writeParticle(std::vector<Particle*> &particle, REAL MinRegTime, int outputNum);
 bool CreateComputationChain(std::vector<Particle*> &particle);
 bool UpdateComputationChain(Particle* ptcl);
 bool CreateComputationList(Particle* ptcl);
 bool AddNewBinariesToList(std::vector<Particle*> &particle);
-void BinaryAccelerationRoutine(double next_time, std::vector<Particle*> &particle);
-void KSTermination(Particle* ptclCM, std::vector<Particle*> &particle, double current_time, ULL current_block);
+void BinaryAccelerationRoutine(REAL next_time, std::vector<Particle*> &particle);
+void KSTermination(Particle* ptclCM, std::vector<Particle*> &particle, REAL current_time, ULL current_block);
 
 
 

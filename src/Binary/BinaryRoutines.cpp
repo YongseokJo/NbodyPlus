@@ -5,12 +5,12 @@
 #include <cmath>
 #include <algorithm>
 
-//void getBlockTimeStep(double dt, int& TimeLevel, double &TimeStep);
-void direct_sum(double *x, double *v, double r2, double vx,
-                double mass, double mdot, double (&a)[3], double (&adot)[3]);
+//void getBlockTimeStep(REAL dt, int& TimeLevel, REAL &TimeStep);
+void direct_sum(REAL *x, REAL *v, REAL r2, REAL vx,
+                REAL mass, REAL mdot, REAL (&a)[3], REAL (&adot)[3]);
 
 
-void generate_Matrix(double a[4], double (&A)[3][4]) {
+void generate_Matrix(REAL a[4], REAL (&A)[3][4]) {
  
     A[0][0] =  a[0];
     A[0][1] = -a[1];
@@ -30,10 +30,10 @@ void generate_Matrix(double a[4], double (&A)[3][4]) {
 }
 
 
-void Binary::getStumpffCoefficients(double z){
+void Binary::getStumpffCoefficients(REAL z){
 
 
-    double z4; // 4*z, used for calculation of time polynomial approximations 
+    REAL z4; // 4*z, used for calculation of time polynomial approximations 
 
     
     // note that the coefficient converges to 1
@@ -77,36 +77,36 @@ void Binary::getStumpffCoefficients(double z){
 
 
 
-void Binary::InitializeBinary(double current_time) {
+void Binary::InitializeBinary(REAL current_time) {
 
     
-    double x[Dim],xdot[Dim];
-    double r2;
+    REAL x[Dim],xdot[Dim];
+    REAL r2;
 
-    double dxi[Dim],dvi[Dim],dxj[Dim],dvj[Dim];
-    double dr2i, _dr3i, dr2j, _dr3j, dxdvi, dxdvj;
+    REAL dxi[Dim],dvi[Dim],dxj[Dim],dvj[Dim];
+    REAL dr2i, _dr3i, dr2j, _dr3j, dxdvi, dxdvj;
 
-    double Q2dot[4];
-    double L[3][4], Ldot[3][4], L2dot[3][4];  // Levi-civita transformation matrix
+    REAL Q2dot[4];
+    REAL L[3][4], Ldot[3][4], L2dot[3][4];  // Levi-civita transformation matrix
 
-    double P[Dim], Pdot[Dim]; // perturbed acceleration in cartesian coordinates
-    double Ptot; // total perturbed force
+    REAL P[Dim], Pdot[Dim]; // perturbed acceleration in cartesian coordinates
+    REAL Ptot; // total perturbed force
 
     int TimeLevelTmp;
-    double TimeStepTmp;
+    REAL TimeStepTmp;
 
 
     // variables related with time step and stumpff coefficients
 
-    double dtau_temp=0., dtau=0.; // time in u-coordinate system
-    double dtau2, dtau3, dtau4, dtau5, dtau6;
-    double dt_ks; // ks time in physical units
-    double z;
+    REAL dtau_temp=0., dtau=0.; // time in u-coordinate system
+    REAL dtau2, dtau3, dtau4, dtau5, dtau6;
+    REAL dt_ks; // ks time in physical units
+    REAL z;
 
-    double dt, dt2, dt3;
-    double rinv, rinv2, rinv3, rinv4, rinv5;
+    REAL dt, dt2, dt3;
+    REAL rinv, rinv2, rinv3, rinv4, rinv5;
 
-    double mdot = 0.0;
+    REAL mdot = 0.0;
 
     Particle* ptclI;
     Particle* ptclJ;
@@ -163,7 +163,7 @@ void Binary::InitializeBinary(double current_time) {
     // and also the binding energy per unit reduced mass, represented as h
 
     h     = 0.; //binding energy per unit reduced mass
-		double tdot2 = 0.;
+		REAL tdot2 = 0.;
 		for (int dim=0; dim<4; dim++) {
         udot[dim]      = 0.5*(L[0][dim]*xdot[0] + L[1][dim]*xdot[1] + L[2][dim]*xdot[2]);
         u_pred[dim]    = u[dim];
@@ -174,7 +174,7 @@ void Binary::InitializeBinary(double current_time) {
     }
 
     h -= ptclCM->Mass/r;
-		double eb = h*ptclI->Mass*ptclJ->Mass/ptclCM->Mass;
+		REAL eb = h*ptclI->Mass*ptclJ->Mass/ptclCM->Mass;
 
     a = -0.5*ptclCM->Mass/h;
 
@@ -339,7 +339,7 @@ void Binary::InitializeBinary(double current_time) {
 
 
     // obtain the apropriate time step for binary
-    dtau_temp = std::min(r/ptclCM->Mass, 0.5*std::abs(h));
+    dtau_temp = std::min(r/ptclCM->Mass, RCAST(0.5*std::abs(h)));
 		
 		//fprintf(stderr, "InitializeBinary: r=%lf, h=%lf, std::abs(h)=%lf, abs(h)=%d, 0.5*abs(h)=%d\n", 
 				//ptclCM->Mass/r, h, std::abs(h), abs(h), 0.5*abs(h));    

@@ -30,10 +30,10 @@ int readData(std::vector<Particle*> &particle) {
 	// Declaration
 	//Particle *particle_temp;	
 	//particle_temp = new Particle[NumParticle];
-	double** data = new double*[NumParticle];
+	REAL** data = new REAL*[NumParticle];
 
 	for (int i = 0; i < NumParticle; ++i) {
-		data[i] = new double[NUM_COLUMNS];
+		data[i] = new REAL[NUM_COLUMNS];
 	}
 
 	// Initialization
@@ -50,7 +50,7 @@ int readData(std::vector<Particle*> &particle) {
 	while (std::getline(inputFile, line) && row < NumParticle) { // Read lines from the file
 		std::istringstream iss(line); // Create a stringstream for each line
 
-		double value;
+		REAL value;
 		int col = 0;
 		while (iss >> value && col < NUM_COLUMNS) { // Read values from the stringstream
 			data[row][col] = value;
@@ -143,7 +143,7 @@ bool createDirectory(const std::string& path) {
 
 
 
-int writeParticle(std::vector<Particle*> &particle, double current_time, int outputNum) {
+int writeParticle(std::vector<Particle*> &particle, REAL current_time, int outputNum) {
 
     std::cout << "Data is being written..." << std::endl;
     std::string directoryPath = "output";

@@ -5,8 +5,8 @@
 #include "../global.h"
 #include "../defs.h"
 
-void direct_sum(double *x, double *v, double r2, double vx,
-		        double mass, double (&a)[3], double (&adot)[3]);
+void direct_sum(REAL *x, REAL *v, REAL r2, REAL vx,
+		        REAL mass, REAL (&a)[3], REAL (&adot)[3]);
 
 
 
@@ -17,16 +17,16 @@ void direct_sum(double *x, double *v, double r2, double vx,
 //       /////////////////////        //
 
 
-void CalculateKSAcceleration(Particle* ptclI, Particle* ptclJ, Particle* ptclCM, std::vector<Particle*> &particle, double current_time) {
+void CalculateKSAcceleration(Particle* ptclI, Particle* ptclJ, Particle* ptclCM, std::vector<Particle*> &particle, REAL current_time) {
 
 	int j=0;
 	Particle* ptcl1;
-	double x[Dim], v[Dim], a[Dim], adot[Dim];
-	double r2 = 0;
-	double vx = 0;
-	double v2 = 0;
-	double m_r3, vx_r2, v2x2_r4,v2_r2__ax_r2__v2x2_r4, a2dot, a3dot;
-	double A,B;
+	REAL x[Dim], v[Dim], a[Dim], adot[Dim];
+	REAL r2 = 0;
+	REAL vx = 0;
+	REAL v2 = 0;
+	REAL m_r3, vx_r2, v2x2_r4,v2_r2__ax_r2__v2x2_r4, a2dot, a3dot;
+	REAL A,B;
 
 	for (int dim=0; dim<Dim; dim++) {
 		x[dim]    = 0.;
@@ -201,14 +201,14 @@ void CalculateKSAcceleration(Particle* ptclI, Particle* ptclJ, Particle* ptclCM,
 // see if they meet the KS regularlization conditions
 // reference - search.f
 
-void Particle::isKSCandidate(double next_time) {
+void Particle::isKSCandidate(REAL next_time) {
 
     // temporary calculation variables
 
-    double x[Dim],v[Dim];
-    double r2;
+    REAL x[Dim],v[Dim];
+    REAL r2;
 
-    double rmin;
+    REAL rmin;
     Particle* minPtcl;
 
     // t
@@ -308,7 +308,7 @@ void Particle::isKSCandidate(double next_time) {
 // initialize conditions for new KS regularlization
 // reference: ksinit.F
 
-void NewKSInitialization(Particle* ptclI, std::vector<Particle*> &particle, double current_time) {
+void NewKSInitialization(Particle* ptclI, std::vector<Particle*> &particle, REAL current_time) {
 
     // basic variables for calculation
 

@@ -10,8 +10,8 @@
 void FindNeighbor(Particle* ptcl1, std::vector<Particle*> &particle);
 void CalculateAcceleration01(Particle* ptcl1, std::vector<Particle*> &particle);
 void CalculateAcceleration23(Particle* ptcl1, std::vector<Particle*> &particle);
-void direct_sum(double *x, double *v, double r2, double vx,
-		double mass, double a[3], double adot[3]);
+void direct_sum(REAL *x, REAL *v, REAL r2, REAL vx,
+		REAL mass, REAL a[3], REAL adot[3]);
 
 int InitializeTimeStep(Particle* particle, int size);
 int InitializeTimeStep(std::vector<Particle*> &particle);
@@ -144,10 +144,10 @@ void FindNeighbor(Particle* ptcl1, std::vector<Particle*> &particle) {
 	// No need to find neighbors if the total number of particles is less than 100
 	//if (NNB<=100) return;
 
-	double dx;
-	double r2;
-	double r_max=0;
-	double r_nb[FixNumNeighbor];
+	REAL dx;
+	REAL r2;
+	REAL r_max=0;
+	REAL r_nb[FixNumNeighbor];
 	int  index_max, i=0; //nb_index[FixNumNeighbor],
 	std::vector<int> nb_index(FixNumNeighbor); 
 
@@ -246,11 +246,11 @@ void FindNeighbor(Particle* ptcl1, std::vector<Particle*> &particle) {
 void CalculateAcceleration01(Particle* ptcl1, std::vector<Particle*> &particle) {
 
 	int j=0;
-	double x[Dim], v[Dim], a[Dim], adot[Dim];
-	double vx_r2, m_r3, v2x2_r4,v2_r2__ax_r2__v2x2_r4, a2dot, a3dot;
-	double A, B, v2;
-	double r2 = 0;
-	double vx = 0;
+	REAL x[Dim], v[Dim], a[Dim], adot[Dim];
+	REAL vx_r2, m_r3, v2x2_r4,v2_r2__ax_r2__v2x2_r4, a2dot, a3dot;
+	REAL A, B, v2;
+	REAL r2 = 0;
+	REAL vx = 0;
 
 	for (int dim=0; dim<Dim; dim++) {
 		x[dim]    = 0.;
@@ -319,10 +319,10 @@ void CalculateAcceleration01(Particle* ptcl1, std::vector<Particle*> &particle) 
 void CalculateAcceleration23(Particle* ptcl1, std::vector<Particle*> &particle) {
 
 	int j=0;
-	double x[Dim], v[Dim], a21[Dim], a21dot[Dim], a1[Dim], a2[Dim], a1dot[Dim], a2dot[Dim];
-	double a, b, c;
-	double rdf_r2, vdf_r2, rdfdot_r2, v2, r2, r3, vr, m_r3;
-	double adot2, adot3;
+	REAL x[Dim], v[Dim], a21[Dim], a21dot[Dim], a1[Dim], a2[Dim], a1dot[Dim], a2dot[Dim];
+	REAL a, b, c;
+	REAL rdf_r2, vdf_r2, rdfdot_r2, v2, r2, r3, vr, m_r3;
+	REAL adot2, adot3;
 
 	for (int dim=0; dim<Dim; dim++) {
 		x[dim]      = 0.;
@@ -474,9 +474,9 @@ void CalculateAcceleration23(Particle* ptcl1, std::vector<Particle*> &particle) 
 void CalculateAcceleration23_new(Particle* ptcl1, std::vector<Particle*> &particle) {
 
 	int j=0;
-	double a2dot[Dim], a3dot[Dim], r2, a1dotk;
-	double a[12];
-	double a13, a14, a15, a16, a17, a18, a19, a20, a21, a22;
+	REAL a2dot[Dim], a3dot[Dim], r2, a1dotk;
+	REAL a[12];
+	REAL a13, a14, a15, a16, a17, a18, a19, a20, a21, a22;
 
 	for (Particle *ptcl2:particle) {
 		r2 = 0;

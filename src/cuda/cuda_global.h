@@ -9,7 +9,7 @@
 //#define NB_BUF_SIZE (1<<21)
 
 /*
-extern double time_send, time_grav, time_out, time_nb;
+extern CUDA_REAL time_send, time_grav, time_out, time_nb;
 extern long long numInter;
 extern int icall,ini,isend;
 
@@ -28,7 +28,7 @@ extern bool devinit;
 */
 
 extern int NNB;
-extern double time_send, time_grav, time_out, time_nb;
+extern CUDA_REAL time_send, time_grav, time_out, time_nb;
 extern long long numInter;
 extern int icall,ini,isend;
 extern int nbodymax;

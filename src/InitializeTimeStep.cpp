@@ -5,10 +5,10 @@
 
 int time_block = -30;
 ULL block_max = static_cast<ULL>(pow(2, -time_block));
-double time_step = std::pow(2,time_block);
+REAL time_step = std::pow(2,time_block);
 
-double getNewTimeStep(double f[3][4], double df[3][4]);
-void getBlockTimeStep(double dt, int& TimeLevel, ULL &TimeBlock, double &TimeStep);
+REAL getNewTimeStep(REAL f[3][4], REAL df[3][4]);
+void getBlockTimeStep(REAL dt, int& TimeLevel, ULL &TimeBlock, REAL &TimeStep);
 
 /*
  *  Purporse: Initialize timsteps 
@@ -22,7 +22,7 @@ int InitializeTimeStep(std::vector<Particle*> &particle) {
 	std::cout << "Initializing timesteps ..." << std::endl;
 
 	int min_time_level=0;
-	double dtIrr, dtReg;
+	REAL dtIrr, dtReg;
 
 	for (Particle* ptcl: particle) {
 		dtReg = getNewTimeStep(ptcl->a_reg, ptcl->a_reg);
@@ -39,7 +39,7 @@ int InitializeTimeStep(std::vector<Particle*> &particle) {
 			ptcl->TimeStepIrr  = ptcl->TimeStepReg;
 		}
 
-		ptcl->TimeStepReg  = std::min(1.,ptcl->TimeStepReg);
+		ptcl->TimeStepReg  = MIN(1,ptcl->TimeStepReg);
 		ptcl->TimeBlockReg = std::min(block_max, ptcl->TimeBlockReg);
 		ptcl->TimeLevelReg = std::min(0, ptcl->TimeLevelReg);
 
@@ -97,7 +97,7 @@ int InitializeTimeStep(std::vector<Particle*> &particle) {
 
 int InitializeTimeStep(Particle* particle, int size) {
 	std::cout << "Initializing timesteps ..." << std::endl;
-	double dtIrr, dtReg;
+	REAL dtIrr, dtReg;
 	Particle *ptcl;
 
 	for (int i=0; i<size; i++){
@@ -115,7 +115,7 @@ int InitializeTimeStep(Particle* particle, int size) {
 			ptcl->TimeStepIrr  = ptcl->TimeStepReg;
 		}
 
-		ptcl->TimeStepReg  = std::min(1.,ptcl->TimeStepReg);
+		ptcl->TimeStepReg  = MIN(1,ptcl->TimeStepReg);
 		ptcl->TimeBlockReg = std::min(block_max, ptcl->TimeBlockReg);
 		ptcl->TimeLevelReg = std::min(0, ptcl->TimeLevelReg);
 

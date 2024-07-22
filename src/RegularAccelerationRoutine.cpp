@@ -12,7 +12,6 @@ bool RegularAccelerationRoutine(std::vector<Particle*> &particle)
 	// Calulating regular acceleration of the particles
 	if (RegularList.size() > 0) {
 
-	/*
 		for (Particle* ptcl: RegularList) {
 			//if(ptcl->TimeStepReg*EnzoTimeStep*1e10/1e6 < 1e-6) {
 			if (ptcl->CurrentBlockReg >= ptcl->CurrentBlockIrr || ptcl->CurrentBlockReg+ptcl->TimeBlockReg != ptcl->CurrentBlockIrr) {
@@ -37,16 +36,6 @@ bool RegularAccelerationRoutine(std::vector<Particle*> &particle)
 			if (ptcl->CurrentBlockReg >= ptcl->CurrentBlockIrr || ptcl->CurrentBlockReg+ptcl->TimeBlockReg != ptcl->CurrentBlockIrr) {
 				fprintf(stdout,"--------------------------------------------------------------------------------------------- \n");
 			}
-		//}
-		*/	
-		/*
-			fprintf(stdout, "In reg, PID=%d : ", ptcl->PID);
-			for (Particle* nn:ptcl->ACList) {
-				fprintf(stdout,"%d, ",nn->PID);	
-			}
-			fprintf(stdout,"\n");	
-			*/
-	/*
 			fprintf(stdout, " a_tot = (%.4e,%.4e,%.4e), a_reg = (%.4e,%.4e,%.4e), a_irr = (%.4e,%.4e,%.4e), n_n=%d, R=%.3e\n\
 					a1_reg = (%.4e,%.4e,%.4e), a2_reg = (%.4e,%.4e,%.4e), a3_reg = (%.4e,%.4e,%.4e)\n\
 					a1_irr = (%.4e,%.4e,%.4e), a2_irr = (%.4e,%.4e,%.4e), a3_irr = (%.4e,%.4e,%.4e)\n", 
@@ -81,7 +70,6 @@ bool RegularAccelerationRoutine(std::vector<Particle*> &particle)
 					ptcl->a_irr[2][3]
 						);
 		}
-	*/
 		//fflush(stdout);
 		CalculateRegAccelerationOnGPU(RegularList, particle);
 		//fflush(stdout);
