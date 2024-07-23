@@ -82,8 +82,8 @@ void GetAcceleration(
 	*/
 
 
+	//toDevice(h_target_list, d_target, NumTarget, stream);
 	toDevice(h_target_list, d_target, NumTarget, stream);
-	//toDevice(h_target_list, d_target, NumTarget);
 
 	// Kernel launch parameters
 	//dim3 blockSize(variable_size);
@@ -92,14 +92,13 @@ void GetAcceleration(
 
 	// Compute pairwise differences for the subset
 
-	blockSize = NNB;
-	gridSize = NumTarget;
+	//blockSize = variable_size;
+	//gridSize = NumTarget;
+	int total_data_num = new_size(NNB*NumTarget);
 	/******* Initialize *********/
-	/*
 	checkCudaError(cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize,
 			 	initialize, 0, 0));	
-	gridSize = (NNB*NumTarget + blockSize - 1) / blockSize;
-	*/
+	gridSize = (total_data_num + blockSize - 1) / blockSize;
 
 	initialize<<<gridSize, blockSize, 0, stream>>>\
 		(d_result, d_neighbor, d_num_neighbor, d_diff, d_magnitudes, NNB, NumTarget, d_target);
@@ -107,58 +106,61 @@ void GetAcceleration(
 
 
 	/******* Differencese *********/
-	/*
 	checkCudaError(cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize,
 			 	compute_pairwise_diff_subset, 0, 0));	
-	gridSize = (NNB*NumTarget + blockSize - 1) / blockSize;
-	*/
+	gridSize = (total_data_num + blockSize - 1) / blockSize;
 
 	compute_pairwise_diff_subset<<<gridSize, blockSize, 0, stream>>>\
 		(d_ptcl, d_diff, NNB, NumTarget, d_target);
 	cudaDeviceSynchronize();
 
 	/******* Magnitudes *********/
-	/*
 	checkCudaError(cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize,
 			 	compute_magnitudes_subset, 0, 0));	
-	gridSize = (NNB*NumTarget + blockSize - 1) / blockSize;
-	*/
+	gridSize = (total_data_num + blockSize - 1) / blockSize;
+
 	compute_magnitudes_subset<<<gridSize, blockSize, 0, stream>>>\
 		(d_r2, d_diff, d_magnitudes, NNB, NumTarget, d_target);
 	cudaDeviceSynchronize();
 
 	/******* Force *********/
-	/*
 	checkCudaError(cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize,
 			 	compute_forces_subset, 0, 0));
-	gridSize = (NNB*NumTarget + blockSize - 1) / blockSize;
-	*/
+	gridSize = (total_data_num + blockSize - 1) / blockSize;
 
 	compute_forces_subset<<<gridSize, blockSize, 0, stream>>>\
 		(d_ptcl, d_diff, d_magnitudes, NNB, NumTarget, d_target);
 
 	/******* Neighborhood *********/
-	/*
 	checkCudaError(cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize,
 				assign_neighbor, 0, 0));
-	gridSize = (NNB * NumTarget + blockSize - 1) / blockSize;
-	*/
-	//gridSize = 2;
+	gridSize = (total_data_num + blockSize - 1) / blockSize;
 
-	//blockSize = 512; //256;
+	
+	//blockSize = std::min(blockSize, 512);
 	//gridSize = (NNB * NumTarget + blockSize - 1) / blockSize;
-	sharedMemSize = (blockSize+100) * sizeof(int);
+
+	//blockSize = variable_size;
+	//gridSize = NumTarget;
+
+#define MAX_SIZE 9
+	sharedMemSize = ((MAX_SIZE+1)*blockSize) * sizeof(int);
 	assign_neighbor<<<gridSize, blockSize, sharedMemSize, stream>>>\
 		(d_neighbor, d_num_neighbor, d_r2, d_magnitudes, NNB, NumTarget, d_target);
 	cudaDeviceSynchronize();
 
 	/******* Reduction *********/
-	//checkCudaError(cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize,
-			 	//reduce_forces, 0, 0));
-	//gridSize = (NNB*NumTarget + blockSize - 1) / blockSize;
-	blockSize = NNB;
-	gridSize  = NumTarget;
+	checkCudaError(cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize,
+			 	reduce_forces, 0, 0));
+	gridSize = (total_data_num + blockSize - 1) / blockSize;
+	//blockSize = NNB;
+	//gridSize  = NumTarget;
+	//blockSize = 128;
+	//blockSize = variable_size;
+	//gridSize = NumTarget;
 
+
+	//	sharedMemSize = 256 * sizeof(double);
 	reduce_forces<<<gridSize, blockSize, 0, stream>>>\
 		(d_diff, d_result, NNB, NumTarget);
 	cudaDeviceSynchronize();
@@ -223,6 +225,7 @@ void GetAcceleration(
 				);
 				*/
 	}
+	//fprintf(stderr, "\n");
 
 	// out data
 	for (int i=0; i<NumTarget; i++) {

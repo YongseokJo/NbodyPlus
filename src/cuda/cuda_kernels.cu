@@ -174,6 +174,90 @@ __inline__ __device__ CUDA_REAL warpReduce(CUDA_REAL val)
 }
 
 
+#define NEW_FORCE
+#ifdef NEW_FORCE
+__global__ void reduce_forces(const CUDA_REAL *diff, CUDA_REAL *result, int n, int m) {
+
+	__shared__ CUDA_REAL warpSum[64]; // Assumes max 32 warps per block
+	__shared__ CUDA_REAL res[_six]; //  this is for storing the results
+	int lane = threadIdx.x % warpSize;
+	int wid = threadIdx.x / warpSize;
+	int bdim = blockDim.x;
+	CUDA_REAL sum;
+	int six_idx;
+	int k,l, i = blockIdx.x, j;
+	int a = (n+bdim-1)/(bdim);
+
+	if (threadIdx.x < _six) 
+		res[threadIdx.x] = 0.;
+	__syncthreads();
+
+
+	for (l=0;l<a*bdim;l+=bdim) {
+		j = threadIdx.x + l;
+		//printf("(%d,%d,%d)\n", i, j, l);
+		six_idx = _six*(i*n+j);
+		warpSum[wid] = 0.;
+		__syncthreads();
+#pragma unroll 
+		for (k=0;k<_six;k++) { // ax ay az adotx adoty adotz
+
+			sum = (i < m && j < n) ? diff[six_idx+k] : 0;
+
+			/*
+			if (k == 0)
+				if (i < m && j < n)
+					printf("(%d,%d) = %e, %e\n", i, j, sum, diff[six_idx+k]);
+					*/
+
+			// Warp reduce
+			sum = warpReduce(sum);
+			/*
+			if (k == 0)
+				if (i < m && j < n)
+					printf("first reduction (%d,%d) = %e\n", i, j, sum);
+					*/
+
+			// Block reduce
+			if (lane == 0) warpSum[wid] = sum;
+			__syncthreads();
+
+			if (wid == 0)
+			{
+				sum = (threadIdx.x < blockDim.x / warpSize) ? warpSum[lane] : 0;
+				/*
+				if (k == 0)
+					if (i < m && j < n)
+						printf("before second reduction (%d,%d) = %e\n", i, j, sum);
+						*/
+
+				sum = warpReduce(sum);
+
+				/*
+				if (k == 0)
+					if (i < m && j < n)
+						printf("second reduction (%d,%d) = %e\n", i, j, sum);
+						*/
+
+				if (lane == 0 && i < m) {
+					res[k] += sum;
+					//printf("%d = (%e,%e)\n", i, sum, res[k]);
+				}
+			}
+			__syncthreads();
+		} // reduce across threads
+	}
+	if (wid == 0 && lane == 0 && i < m) {
+#pragma unroll
+		for (k=0; k<_six;k++) {
+			//printf("%d = (%e)\n", threadIdx.x, res[k]);
+			result[_six*i+k] = res[k];
+		}
+	}
+	__syncthreads();
+}
+
+#else
 __global__ void reduce_forces(const CUDA_REAL *diff, CUDA_REAL *result, int n, int m) {
 	int idx = blockIdx.x * n + threadIdx.x;
 	__shared__ CUDA_REAL warpSum[64]; // Assumes max 32 warps per block
@@ -185,6 +269,7 @@ __global__ void reduce_forces(const CUDA_REAL *diff, CUDA_REAL *result, int n, i
 	int six_idx = _six*(i*n+j);
 	int k;
 
+	//printf("old version\n");
 #pragma unroll 
 	for (k=0;k<_six;k++) {
 		sum = (i < m && j < n) ? diff[six_idx+k] : 0;
@@ -209,20 +294,129 @@ __global__ void reduce_forces(const CUDA_REAL *diff, CUDA_REAL *result, int n, i
 		}
 	}
 }
+#endif
 
 
 
 
-
-#define _NEW
-#ifdef NEW
-#define MAX_SIZE 2 // maximum size of int array  blockDim.x*MaxSize = total size of int array 
+#define MAX_SIZE 9 // maximum size of int array  blockDim.x*MaxSize = total size of int array 
+#define NEW_V2 
+#ifdef NEW_V2 // this works fine as :)
 __global__ void assign_neighbor(int *neighbor, int* num_neighbor, const CUDA_REAL* r2, const CUDA_REAL* magnitudes, int n, int m, const int *subset) {
 
 	//int tid = blockIdx.x * blockDim.x + threadIdx.x;
 	int tid = threadIdx.x;
 	int bid = blockIdx.x;
 
+		//printf("%d's bdim=%d, n=%d, blockdim=%d\n", tid,bid,n,blockDim.x);
+	if (tid < n && bid < m) {
+		extern __shared__ int sdata[];
+		__shared__ int offset;
+
+		sdata[tid+1]=0;
+		if (tid==0)  {
+			sdata[tid]=0;
+			offset = 0;
+		}
+		__syncthreads();
+
+		int gdim = min(m,gridDim.x);
+		int bdim = min(n,blockDim.x);
+		int list[MAX_SIZE];
+		int n_num;
+		int a = (n+bdim*MAX_SIZE-1)/(bdim*MAX_SIZE);
+		int start, end;
+		int i = subset[bid]; //target particle id
+		int j, k;
+		int idx = 0;
+
+
+		//printf("assign_neighbor: %d\n",l);
+
+		// background particles I
+		for (k=0; k<a; k++) {
+
+			start = tid+(k*MAX_SIZE*bdim);
+			end   = min((k+1)*MAX_SIZE*bdim, n);
+			sdata[tid+1] = 0;
+			n_num = 0;
+
+			//printf("tid=%d: (start, end) =(%d, %d)\n", tid, start, end);
+
+			// background particles II
+			for (j=start; j<end; j+=bdim) {
+				if (i != j) {
+					//printf("(l,j)=(%d,%d)\n",l,j);
+					idx = _two*(n*bid+j);
+					//printf("(%d, %d,%d) = %d, %e, %e\n", l, i, j, num_neighbor[l], magnitudes[idx], r2[l]);
+					if (magnitudes[idx] < 0) {
+						list[n_num] = j;
+						n_num++;
+						//printf("(%d,%d,%d) = %d, %e, %e\n", l, i, j, n_num, magnitudes[idx], r2[l]);
+					}
+				}
+			} // endfor bk ptcl II
+			sdata[tid+1] = n_num;
+
+			__syncthreads();
+
+			if (tid == 0) {
+
+				for (j=2; j<=bdim; j++)
+					sdata[j] += sdata[j-1];
+
+				if ((offset+sdata[bdim]) > NumNeighborMax) {
+					printf("blockid=%d, Too many neighbors (%d, %d)\n", bid, offset, sdata[bdim]);
+					assert(offset+sdata[bdim] < NumNeighborMax);
+				}
+
+				/*
+					 if (l == 11) {
+					 printf("\n(%d, %d) = sdata[bdim]=%d\n", l, i, sdata[bdim]);
+				//for (j=0; j<=bdim; j++) 
+				//printf("%d, ",sdata[j]);
+				//printf("\n");
+				}
+				 */
+			}
+			__syncthreads();
+
+			/*
+				 if (l==0)
+				 printf("(%d,%d), (num, sdata) =%d, %d\n", l, tid, n_num, sdata[tid]);
+			 */
+
+			for (j=0;j<n_num;j++) {
+				neighbor[NumNeighborMax*bid+offset+sdata[tid]+j] = list[j];
+				//printf("(%d,%d), j=%d\n", l, tid, list[j]);
+			}
+			__syncthreads();
+
+			if (tid == 0) {
+				//printf("(%d, %d), offset=%d, sdata[bdim]=%d\n", l, i, offset, sdata[bdim]);
+				offset += sdata[bdim];
+				//printf("(%d, %d), offset=%d, sdata[bdim]=%d\n", l, i, offset, sdata[bdim]);
+			}
+			__syncthreads();
+		} //endfor bk ptcl I
+
+		if (tid == 0) {
+			num_neighbor[bid] = offset; // bid shoud be modified
+			offset = 0;
+			sdata[0] = 0;
+		}
+	} // m*n stuff
+}
+
+#elif defined(NEW_V1) // works well
+
+__global__ void assign_neighbor(int *neighbor, int* num_neighbor, const CUDA_REAL* r2, const CUDA_REAL* magnitudes, int n, int m, const int *subset) {
+
+	//int tid = blockIdx.x * blockDim.x + threadIdx.x;
+	int tid = threadIdx.x;
+	int bid = blockIdx.x;
+
+		//printf("%d's bdim=%d, n=%d, blockdim=%d\n", tid,bid,n,blockDim.x);
 	if (tid < n && bid < m) {
 		extern __shared__ int sdata[];
 		__shared__ int offset;

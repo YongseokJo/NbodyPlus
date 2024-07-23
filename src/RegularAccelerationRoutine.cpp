@@ -12,6 +12,7 @@ bool RegularAccelerationRoutine(std::vector<Particle*> &particle)
 	// Calulating regular acceleration of the particles
 	if (RegularList.size() > 0) {
 
+			/*
 		for (Particle* ptcl: RegularList) {
 			//if(ptcl->TimeStepReg*EnzoTimeStep*1e10/1e6 < 1e-6) {
 			if (ptcl->CurrentBlockReg >= ptcl->CurrentBlockIrr || ptcl->CurrentBlockReg+ptcl->TimeBlockReg != ptcl->CurrentBlockIrr) {
@@ -70,6 +71,7 @@ bool RegularAccelerationRoutine(std::vector<Particle*> &particle)
 					ptcl->a_irr[2][3]
 						);
 		}
+		*/
 		//fflush(stdout);
 		CalculateRegAccelerationOnGPU(RegularList, particle);
 		//fflush(stdout);
