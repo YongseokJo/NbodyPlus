@@ -8,14 +8,14 @@
 void CalculateIrrgularAcceleration(std::vector<Particle*> ComputationList) {
 
 
-	double dt, mdot, epsilon=1e-6;
-	double new_time; // 0 for current and 1 for advanced times
+	REAL dt, mdot, epsilon=1e-6;
+	REAL new_time; // 0 for current and 1 for advanced times
 
-	double x[Dim], v[Dim]; // 0 for current and 1 for predicted positions and velocities
-	double r2, vx; // 0 for current and 1 for predicted values
-	double a_tmp[Dim], adot_tmp[Dim]; // 0 for current and 1 for predicted accelerations
+	REAL x[Dim], v[Dim]; // 0 for current and 1 for predicted positions and velocities
+	REAL r2, vx; // 0 for current and 1 for predicted values
+	REAL a_tmp[Dim], adot_tmp[Dim]; // 0 for current and 1 for predicted accelerations
 
-	double m_r3;
+	REAL m_r3;
 
 
 	// one more check whether every particle is on the same page

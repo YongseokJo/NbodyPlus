@@ -8,8 +8,8 @@
 
 
 void UpdateNextRegTime(std::vector<Particle*> &particle);
-void SendAllParticlesToGPU(REAL time, std::vector <Particle*> &particle);
-void CalculateSingleAcceleration(Particle *ptcl1, Particle *ptcl2, REAL (&a)[3], REAL (&adot)[3], int sign);
+void SendAllParticlesToGPU(CUDA_REAL time, std::vector <Particle*> &particle);
+void CalculateSingleAcceleration(Particle *ptcl1, Particle *ptcl2, CUDA_REAL (&a)[3], CUDA_REAL (&adot)[3], int sign);
 
 
 /*
@@ -37,31 +37,31 @@ void CalculateRegAccelerationOnGPU(std::vector<Particle*> RegularList, std::vect
 
 	// variables for saving variables to send to GPU
 	// only regular particle informations are stored here
-	REAL (*AccRegReceive)[Dim];
-	REAL (*AccRegDotReceive)[Dim];
-	REAL (*AccIrr)[Dim];
-	REAL (*AccIrrDot)[Dim];
+	CUDA_REAL (*AccRegReceive)[Dim];
+	CUDA_REAL (*AccRegDotReceive)[Dim];
+	CUDA_REAL (*AccIrr)[Dim];
+	CUDA_REAL (*AccIrrDot)[Dim];
 	//int (*ACListReceive)[NumNeighborMax];
 
-	//REAL* PotSend;
+	//CUDA_REAL* PotSend;
 	int **ACListReceive;
 	int *NumNeighborReceive;
 	int MassFlag;
 
 
-	REAL a_tmp[Dim]{0}, adot_tmp[Dim]{0};
-	REAL da, dadot;
-	REAL a2, a3, da_dt2, adot_dt, dt2, dt3, dt4, dt5;
+	CUDA_REAL a_tmp[Dim]{0}, adot_tmp[Dim]{0};
+	CUDA_REAL da, dadot;
+	CUDA_REAL a2, a3, da_dt2, adot_dt, dt2, dt3, dt4, dt5;
 
 
-	REAL DFR, FRD, SUM, AT3, BT2;
-	REAL DTR, DTSQ, DT2, DT6,DTSQ12, DTR13;
+	CUDA_REAL DFR, FRD, SUM, AT3, BT2;
+	CUDA_REAL DTR, DTSQ, DT2, DT6,DTSQ12, DTR13;
 
 	Particle *ptcl;
 
 
-	REAL dt       = RegularList[0]->TimeStepReg;
-	REAL new_time = RegularList[0]->CurrentTimeReg + dt;  // next regular time
+	CUDA_REAL dt       = RegularList[0]->TimeStepReg;
+	CUDA_REAL new_time = RegularList[0]->CurrentTimeReg + dt;  // next regular time
 	ULL new_block = RegularList[0]->CurrentBlockReg + RegularList[0]->TimeBlockReg;  // next regular time
 	
 	if (new_block != NextRegTimeBlock) {
@@ -79,12 +79,12 @@ void CalculateRegAccelerationOnGPU(std::vector<Particle*> RegularList, std::vect
 
 	// need to make array to send to GPU
 	// allocate memory to the temporary variables
-	//PotSend         = new REAL[ListSize];
+	//PotSend         = new CUDA_REAL[ListSize];
 
-	AccRegReceive    = new REAL[ListSize][Dim];
-	AccRegDotReceive = new REAL[ListSize][Dim];
-	AccIrr           = new REAL[ListSize][Dim];
-	AccIrrDot        = new REAL[ListSize][Dim];
+	AccRegReceive    = new CUDA_REAL[ListSize][Dim];
+	AccRegDotReceive = new CUDA_REAL[ListSize][Dim];
+	AccIrr           = new CUDA_REAL[ListSize][Dim];
+	AccIrrDot        = new CUDA_REAL[ListSize][Dim];
 
 	NumNeighborReceive  = new int[ListSize];
 
@@ -429,11 +429,11 @@ void CalculateRegAccelerationOnGPU(std::vector<Particle*> RegularList, std::vect
  *
  */
 
-void CalculateSingleAcceleration(Particle *ptcl1, Particle *ptcl2, REAL (&a)[3], REAL (&adot)[3], int sign) {
-	REAL dx[Dim], dv[Dim];
-	REAL dr2;
-	REAL dxdv;
-	REAL m_r3;
+void CalculateSingleAcceleration(Particle *ptcl1, Particle *ptcl2, CUDA_REAL (&a)[3], CUDA_REAL (&adot)[3], int sign) {
+	CUDA_REAL dx[Dim], dv[Dim];
+	CUDA_REAL dr2;
+	CUDA_REAL dxdv;
+	CUDA_REAL m_r3;
 
 	if (ptcl1->PID == ptcl2->PID) {
 		return;

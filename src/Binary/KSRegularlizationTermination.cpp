@@ -8,16 +8,16 @@
 
 bool CreateComputationList(Particle* ptcl);
 bool CreateComputationChain(std::vector<Particle*> &particle);
-void generate_Matrix(double a[3], double (&A)[3][4]);
+void generate_Matrix(REAL a[3], REAL (&A)[3][4]);
 void ReInitializeKSParticle(Particle* KSParticle, std::vector<Particle*> &particle);
 void UpdateNextRegTime(std::vector<Particle*> &particle);
 
-void KSTermination(Particle* ptclCM, std::vector<Particle*> &particle, double current_time, ULL current_block){
+void KSTermination(Particle* ptclCM, std::vector<Particle*> &particle, REAL current_time, ULL current_block){
 
-	double R[Dim], Rdot[Dim];
-	double Rinv;
-	double ratioM;
-	double L[3][4];
+	REAL R[Dim], Rdot[Dim];
+	REAL Rinv;
+	REAL ratioM;
+	REAL L[3][4];
 
 	int ptclCMIndex;
 	int ptclBinIndex;
@@ -77,7 +77,7 @@ void KSTermination(Particle* ptclCM, std::vector<Particle*> &particle, double cu
 	else 
 		ptclI->TimeLevelReg = ptclCM->TimeLevelReg;
 
-	ptclI->TimeStepReg  = static_cast<double>(pow(2, ptclI->TimeLevelReg));
+	ptclI->TimeStepReg  = static_cast<REAL>(pow(2, ptclI->TimeLevelReg));
 	ptclI->TimeBlockReg = static_cast<ULL>(pow(2, ptclI->TimeLevelReg-time_block));
 	ptclI->calculateTimeStepIrr(ptclI->a_tot, ptclI->a_irr);
 
@@ -91,7 +91,7 @@ void KSTermination(Particle* ptclCM, std::vector<Particle*> &particle, double cu
 	}
 	else 
 		ptclJ->TimeLevelReg = ptclCM->TimeLevelReg;
-	ptclJ->TimeStepReg  = static_cast<double>(pow(2, ptclJ->TimeLevelReg));
+	ptclJ->TimeStepReg  = static_cast<REAL>(pow(2, ptclJ->TimeLevelReg));
 	ptclJ->TimeBlockReg = static_cast<ULL>(pow(2, ptclJ->TimeLevelReg-time_block));
 	ptclJ->calculateTimeStepIrr(ptclJ->a_tot, ptclJ->a_irr);
 

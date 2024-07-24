@@ -24,32 +24,32 @@ void CalculateAllAccelerationOnGPU(std::vector<Particle*> &particle){
 	int mpi_rank = 0;
 
 	// variables for saving variables to send to GPU
-	REAL* MassSend;
-	REAL* MdotSend;
-	REAL(*PositionSend)[Dim];
-	REAL(*VelocitySend)[Dim];
+	CUDA_REAL* MassSend;
+	CUDA_REAL* MdotSend;
+	CUDA_REAL(*PositionSend)[Dim];
+	CUDA_REAL(*VelocitySend)[Dim];
 
-	REAL* r2OfACSend;
-	REAL  TimeStepRegTmp, ri2;
-	REAL* TimeStepRegSend;
+	CUDA_REAL* r2OfACSend;
+	CUDA_REAL  TimeStepRegTmp, ri2;
+	CUDA_REAL* TimeStepRegSend;
 
-	REAL(*AccSend)[Dim];
-	REAL(*AccDotSend)[Dim];
-	//REAL *PotSend;
+	CUDA_REAL(*AccSend)[Dim];
+	CUDA_REAL(*AccDotSend)[Dim];
+	//CUDA_REAL *PotSend;
 
 	int **ACListReceive;
 	int *NumNeighborReceive;
 
 	// temporary variables for calculating the irregular force
-	REAL dx[Dim];
-	REAL dv[Dim];
-	REAL rij2,dr2i,dr3i,drdv;
+	CUDA_REAL dx[Dim];
+	CUDA_REAL dv[Dim];
+	CUDA_REAL rij2,dr2i,dr3i,drdv;
 
 	// extra variables
 	bool neighborOK;
 	int ACnumi2;
 	int ACjid;
-	REAL dt = particle[0]->TimeStepReg*EnzoTimeStep;
+	CUDA_REAL dt = particle[0]->TimeStepReg*EnzoTimeStep;
 
 
 
@@ -59,16 +59,16 @@ void CalculateAllAccelerationOnGPU(std::vector<Particle*> &particle){
 
 	// need to make array to send to GPU
 	// allocate memory to the temporary variables
-	MassSend        = new REAL[NNB];
-	MdotSend        = new REAL[NNB];
-	PositionSend    = new REAL[NNB][Dim];
-	VelocitySend    = new REAL[NNB][Dim];
+	MassSend        = new CUDA_REAL[NNB];
+	MdotSend        = new CUDA_REAL[NNB];
+	PositionSend    = new CUDA_REAL[NNB][Dim];
+	VelocitySend    = new CUDA_REAL[NNB][Dim];
 
-	r2OfACSend      = new REAL[NNB];
-	TimeStepRegSend = new REAL[NNB];
+	r2OfACSend      = new CUDA_REAL[NNB];
+	TimeStepRegSend = new CUDA_REAL[NNB];
 
-	AccSend         = new REAL[NNB][Dim];
-	AccDotSend      = new REAL[NNB][Dim];
+	AccSend         = new CUDA_REAL[NNB][Dim];
+	AccDotSend      = new CUDA_REAL[NNB][Dim];
 
 	NumNeighborReceive = new int[NNB];
 	ACListReceive      = new int*[NNB];
@@ -91,7 +91,7 @@ void CalculateAllAccelerationOnGPU(std::vector<Particle*> &particle){
 		}
 
 		TimeStepRegTmp     = 1.0/8.0*sqrt(1.0 + ri2);
-		TimeStepRegSend[i] = std::min(TimeStepRegTmp,1.0);
+		TimeStepRegSend[i] = MIN(TimeStepRegTmp,1.0);
 	}
 
 	// send the arrays to GPU
@@ -193,24 +193,24 @@ void CalculateListAccelerationOnGPU(std::vector<int> &IndexList, std::vector<Par
 	int numGpuCal;
 
 	// variables for GPU
-	REAL *MassSend;
-	REAL *MdotSend;
-	REAL(*PositionSend)[Dim];
-	REAL(*VelocitySend)[Dim];
+	CUDA_REAL *MassSend;
+	CUDA_REAL *MdotSend;
+	CUDA_REAL(*PositionSend)[Dim];
+	CUDA_REAL(*VelocitySend)[Dim];
 
-	REAL *r2OfACSend;
-	REAL *TimeStepRegSend;
+	CUDA_REAL *r2OfACSend;
+	CUDA_REAL *TimeStepRegSend;
 
-	REAL(*AccSend)[Dim];
-	REAL(*AccDotSend)[Dim];
-	REAL *PotSend;
+	CUDA_REAL(*AccSend)[Dim];
+	CUDA_REAL(*AccDotSend)[Dim];
+	CUDA_REAL *PotSend;
 	int **AClistGpu;
 	int massFlag;
 
 	// temporary variables for calculating the irregular force
 
-	REAL dx[Dim], dv[Dim];
-	REAL rij2, dr2i, dr3i, drdv;
+	CUDA_REAL dx[Dim], dv[Dim];
+	CUDA_REAL rij2, dr2i, dr3i, drdv;
 
 	// extra variables
 	int ACnumi2, ACjid, i2reg;
@@ -218,17 +218,17 @@ void CalculateListAccelerationOnGPU(std::vector<int> &IndexList, std::vector<Par
 
 	// need to make array to send to GPU
 	// allocate memory to the temporary variables
-	MassSend     = new REAL[ListSize];
-	MdotSend     = new REAL[ListSize];
-	PositionSend = new REAL[ListSize][Dim];
-	VelocitySend = new REAL[ListSize][Dim];
+	MassSend     = new CUDA_REAL[ListSize];
+	MdotSend     = new CUDA_REAL[ListSize];
+	PositionSend = new CUDA_REAL[ListSize][Dim];
+	VelocitySend = new CUDA_REAL[ListSize][Dim];
 
-	r2OfACSend   = new REAL[ListSize];
-	TimeStepRegSend  = new REAL[ListSize];
+	r2OfACSend   = new CUDA_REAL[ListSize];
+	TimeStepRegSend  = new CUDA_REAL[ListSize];
 
-	AccSend       = new REAL[ListSize][Dim];
-	AccDotSend    = new REAL[ListSize][Dim];
-	PotSend       = new REAL[ListSize];
+	AccSend       = new CUDA_REAL[ListSize][Dim];
+	AccDotSend    = new CUDA_REAL[ListSize][Dim];
+	PotSend       = new CUDA_REAL[ListSize];
 
 	AClistGpu = new int*[ListSize];
 	for (int i=0; i<(NNB); i++) {
@@ -344,16 +344,16 @@ void CalculateListAccelerationOnGPU(std::vector<int> &IndexList, std::vector<Par
 void SendAllParticlesToGPU(std::vector <Particle*> &particle) {
 
 	// variables for saving variables to send to GPU
-	REAL * Mass;
-	REAL * Mdot;
-	REAL(*Position)[Dim];
-	REAL(*Velocity)[Dim];
+	CUDA_REAL * Mass;
+	CUDA_REAL * Mdot;
+	CUDA_REAL(*Position)[Dim];
+	CUDA_REAL(*Velocity)[Dim];
 
 	// allocate memory to the temporary variables
-	Mass     = new REAL[NNB];
-	Mdot     = new REAL[NNB];
-	Position = new REAL[NNB][Dim];
-	Velocity = new REAL[NNB][Dim];
+	Mass     = new CUDA_REAL[NNB];
+	Mdot     = new CUDA_REAL[NNB];
+	Position = new CUDA_REAL[NNB][Dim];
+	Velocity = new CUDA_REAL[NNB][Dim];
 
 	// copy the data of particles to the arrays to be sent
 	for (int i=0; i<NNB; i++) {
@@ -377,22 +377,22 @@ void SendAllParticlesToGPU(std::vector <Particle*> &particle) {
 }
 
 
-void SendAllParticlesToGPU(REAL time, std::vector <Particle*> &particle) {
+void SendAllParticlesToGPU(CUDA_REAL time, std::vector <Particle*> &particle) {
 
 	// variables for saving variables to send to GPU
-	REAL * Mass;
-	REAL * Mdot;
-	REAL * Radius2;
-	REAL(*Position)[Dim];
-	REAL(*Velocity)[Dim];
+	CUDA_REAL * Mass;
+	CUDA_REAL * Mdot;
+	CUDA_REAL * Radius2;
+	CUDA_REAL(*Position)[Dim];
+	CUDA_REAL(*Velocity)[Dim];
 	int size = (int) particle.size();
 
 	// allocate memory to the temporary variables
-	Mass     = new REAL[size];
-	Mdot     = new REAL[size];
-	Radius2  = new REAL[size];
-	Position = new REAL[size][Dim];
-	Velocity = new REAL[size][Dim];
+	Mass     = new CUDA_REAL[size];
+	Mdot     = new CUDA_REAL[size];
+	Radius2  = new CUDA_REAL[size];
+	Position = new CUDA_REAL[size][Dim];
+	Velocity = new CUDA_REAL[size][Dim];
 
 
 	// copy the data of particles to the arrays to be sent

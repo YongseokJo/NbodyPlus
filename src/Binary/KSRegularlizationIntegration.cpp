@@ -6,17 +6,17 @@
 #include "../defs.h"
 
 
-void generate_Matrix(double a[3], double (&A)[3][4]);
-void direct_sum(double *x, double *v, double r2, double vx,
-                double mass, double mdot, double (&a)[3], double (&adot)[3]);
-//void getBlockTimeStep(double dt, int& TimeLevel, double &TimeStep);
+void generate_Matrix(REAL a[3], REAL (&A)[3][4]);
+void direct_sum(REAL *x, REAL *v, REAL r2, REAL vx,
+                REAL mass, REAL mdot, REAL (&a)[3], REAL (&adot)[3]);
+//void getBlockTimeStep(REAL dt, int& TimeLevel, REAL &TimeStep);
 
 
 // refer to ksint.f
 
-void Binary::KSIntegration(double next_time, int &calnum){
+void Binary::KSIntegration(REAL next_time, int &calnum){
 
-    double binaryCalTime;
+    REAL binaryCalTime;
 
     calnum = 0;
     //while ((CurrentTime + TimeStep) <= next_time) {
@@ -55,18 +55,18 @@ void Binary::KSIntegration(double next_time, int &calnum){
 
 
 
-void Binary::predictBinary(double next_time) {
+void Binary::predictBinary(REAL next_time) {
 
-    double dt, dt2, dt3;
-    double dtCM, dt2CM, dt3CM;
-    double dtau, dtau2, dtau3, dtau4;
-    double rinv, rinv2, rinv3, rinv4, rinv5;
+    REAL dt, dt2, dt3;
+    REAL dtCM, dt2CM, dt3CM;
+    REAL dtau, dtau2, dtau3, dtau4;
+    REAL rinv, rinv2, rinv3, rinv4, rinv5;
 
-    double R[Dim], Rdot[Dim];
-    double Rinv;
-    double ratioM;
+    REAL R[Dim], Rdot[Dim];
+    REAL Rinv;
+    REAL ratioM;
 
-    double L[3][4];
+    REAL L[3][4];
 
     Particle* ptclI;
     Particle* ptclJ;
@@ -195,50 +195,50 @@ void Binary::predictBinary(double next_time) {
 
 
 
-void Binary::IntegrateBinary(double next_time) {
+void Binary::IntegrateBinary(REAL next_time) {
 
     // variables for position, velocity prediction
 
-    double dt, dt2, dt3;
-    double rinv, rinv2, rinv3, rinv4, rinv5;
+    REAL dt, dt2, dt3;
+    REAL rinv, rinv2, rinv3, rinv4, rinv5;
 
-    double R[Dim], Rdot[Dim];
-    double Rinv;
-    double ratioM;
+    REAL R[Dim], Rdot[Dim];
+    REAL Rinv;
+    REAL ratioM;
 
-    double dtau, dtau2, dtau3, dtau4, dtau5, dtau6;
-    double dtau_temp;
+    REAL dtau, dtau2, dtau3, dtau4, dtau5, dtau6;
+    REAL dtau_temp;
 
 
     // variables for perturbing acceleration calculation
 
-    double P[Dim], Pdot[Dim];  // perturbing acceleration and jerk
-    double dxi[Dim],dvi[Dim],dxj[Dim],dvj[Dim];
-    double dr2i, _dr3i, dr2j, _dr3j, dxdvi, dxdvj;
+    REAL P[Dim], Pdot[Dim];  // perturbing acceleration and jerk
+    REAL dxi[Dim],dvi[Dim],dxj[Dim],dvj[Dim];
+    REAL dr2i, _dr3i, dr2j, _dr3j, dxdvi, dxdvj;
 
 
     // variables for calculating correction factors
 
-    double dh0, dh;
-    double h3dot_hermite, h4dot_hermite; 
+    REAL dh0, dh;
+    REAL h3dot_hermite, h4dot_hermite; 
 
-    double Q_pred[4], Qdot_pred[4], Q2dot_pred[4];
-    double L[3][4], Ldot[3][4], L2dot[3][4]; 
+    REAL Q_pred[4], Qdot_pred[4], Q2dot_pred[4];
+    REAL L[3][4], Ldot[3][4], L2dot[3][4]; 
 
-    double r_pred, rdot_pred, hdot_pred, h2dot_pred;
-    double u2dot_pred[4], u3dot_pred[4];
-    double u4dot_hermite[4], u5dot_hermite[4];
+    REAL r_pred, rdot_pred, hdot_pred, h2dot_pred;
+    REAL u2dot_pred[4], u3dot_pred[4];
+    REAL u4dot_hermite[4], u5dot_hermite[4];
 
-    double z;
+    REAL z;
 
-    double mdot = 0.0;
+    REAL mdot = 0.0;
 
     Particle* ptclI;
     Particle* ptclJ;
 
     // variables for updating time step
     int TimeLevelTmp;
-    double TimeStepTmp;
+    REAL TimeStepTmp;
 
     //fprintf(binout, "\nIn KSRegularlizationIntegration.cpp, IntegrateBinary\n");
 
@@ -513,7 +513,7 @@ void Binary::IntegrateBinary(double next_time) {
     CurrentTime = next_time;
     CurrentTau += dtau;
 
-    dtau_temp = std::min(r/ptclCM->Mass,0.5*std::abs(h));
+    dtau_temp = std::min(r/ptclCM->Mass,RCAST(0.5*std::abs(h)));
     //dtau_temp = std::min(ptclCM->Mass/r,0.5*std::abs(h));
     dtau = 0.8*eta*std::sqrt(dtau_temp)/std::pow((1. + 1000.0 * gamma), 1.0/3.0);
 

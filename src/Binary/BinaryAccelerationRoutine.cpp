@@ -3,7 +3,7 @@
 #include "defs.h"
 
 void NewKSInitialization(Particle* ptclI, std::vector<Particle*> &particle, std::vector<Particle*> &ComputationList);
-void KSTermination(Particle* ptclCM, std::vector<Particle*> &particle, double current_time, ULL current_block);
+void KSTermination(Particle* ptclCM, std::vector<Particle*> &particle, REAL current_time, ULL current_block);
 
 bool AddNewBinariesToList(std::vector<Particle*> &particle) {
 
@@ -31,7 +31,7 @@ bool AddNewBinariesToList(std::vector<Particle*> &particle) {
 	return true;
 }
 
-void BinaryAccelerationRoutine(double next_time, std::vector<Particle*> &particle) {
+void BinaryAccelerationRoutine(REAL next_time, std::vector<Particle*> &particle) {
 
 	int count;
 	int bincount = 0;

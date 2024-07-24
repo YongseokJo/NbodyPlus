@@ -1,110 +1,59 @@
-#pragma once
-#include "../defs.h"
-#include <stdio.h>
-#include <iostream>
-#include <assert.h>
-#include <cuda_runtime.h>
-
-//#define MaxNeighbor 100
-#define NAN_CHECK(val) assert((val) == (val));
-//#define CUDA_SAFE_CALL checkCudaErrors
 
 
-template <typename T>
-void my_allocate(T **host, T **device, const int size) {
-	cudaError_t cudaStatus;
-	cudaStatus = cudaMalloc(device, size*sizeof(T));
-	if (cudaStatus != cudaSuccess) {
-		fprintf(stderr, "cudaMalloc failed: %s\n", cudaGetErrorString(cudaStatus));
+
+/*
+__global__ void compute_forces_subset(CUDA_REAL* result, const CUDA_REAL* ptcl, const CUDA_REAL *diff, const CUDA_REAL* magnitudes, int n, int m, const int* subset) {
+	int idx = blockIdx.x * blockDim.x + threadIdx.x;
+
+	//if (idx < m * n) {
+	int i = subset[idx / n];
+	int j = idx % n;
+	int six_idx = idx*_six;
+	CUDA_REAL scale;
+	idx *= _two;
+	__shared__ CUDA_REAL res[_six];
+
+	if (threadIdx.x == 0) { 
+		res[0]=0;
+		res[1]=0;
+		res[2]=0;
+		res[3]=0;
+		res[4]=0;
+		res[5]=0;
 	}
-	//*host = (T*)calloc(size, sizeof(T));
-	//*host = (T*)malloc(size*sizeof(T));
-	/*
-	if (host == NULL) {
-		fprintf(stderr, "Memory allocation failed\n");
-	}
-	*/
-	//host = new T[size]();
-	cudaStatus = cudaMallocHost(host, size*sizeof(T));
-	if (cudaStatus != cudaSuccess) {
-		fprintf(stderr, "cudaMallocHost failed: %s\n", cudaGetErrorString(cudaStatus));
-	}
-}
 
-template <typename T>
-void my_free(T &host, T &device) {
-	cudaError_t cudaStatus;
-	cudaStatus = cudaFree(device);
-	if (cudaStatus != cudaSuccess) {
-		fprintf(stderr, "cudaFree failed: %s\n", cudaGetErrorString(cudaStatus));
+	if (idx >= m * n || i == j || magnitudes[idx] <= 0.) {
+		atomicAdd(&res[0], 0.);
+		atomicAdd(&res[1], 0.);
+		atomicAdd(&res[2], 0.);
+
+		atomicAdd(&res[3], 0.);
+		atomicAdd(&res[4], 0.);
+		atomicAdd(&res[5], 0.);
 	}
-	cudaStatus = cudaFreeHost(host);
-	if (cudaStatus != cudaSuccess) {
-		fprintf(stderr, "cudaFree failed: %s\n", cudaGetErrorString(cudaStatus));
+	else  {
+		scale = ptcl[_seven*j+6] / (magnitudes[idx] *sqrtf(magnitudes[idx]));
+		i *= _six;
+		atomicAdd(&res[0], scale * diff[six_idx]);
+		atomicAdd(&res[1], scale * diff[six_idx + 1]);
+		atomicAdd(&res[2], scale * diff[six_idx + 2]);
+
+		atomicAdd(&res[3], scale * (diff[six_idx + 3] - magnitudes[idx+1]*diff[six_idx    ]/magnitudes[idx]));
+		atomicAdd(&res[4], scale * (diff[six_idx + 4] - magnitudes[idx+1]*diff[six_idx + 1]/magnitudes[idx]));
+		atomicAdd(&res[5], scale * (diff[six_idx + 5] - magnitudes[idx+1]*diff[six_idx + 2]/magnitudes[idx]));
 	}
-	//free(host);
-}
+	__syncthreads();
 
-
-
-template <typename T>
-void my_allocate_d(T **device, const int size) {
-	cudaError_t cudaStatus;
-	cudaStatus = cudaMalloc(device, size*sizeof(T));
-	if (cudaStatus != cudaSuccess) {
-		fprintf(stderr, "cudaMalloc failed: %s\n", cudaGetErrorString(cudaStatus));
+	if (threadIdx.x == 0) { 
+		result[i]   = res[0];
+		result[i+1] = res[1];
+		result[i+2] = res[2];
+		result[i+3] = res[3];
+		result[i+4] = res[4];
+		result[i+5] = res[5];
 	}
 }
-
-template <typename T>
-void my_free_d(T &device) {
-	cudaError_t cudaStatus;
-	cudaStatus = cudaFree(device);
-	if (cudaStatus != cudaSuccess) {
-		fprintf(stderr, "cudaFree failed: %s\n", cudaGetErrorString(cudaStatus));
-	}
-}
-
-
-
-
-template <typename T>
-void toDevice(T *host, T *device, const int size, cudaStream_t &stream) {
-	cudaError_t cudaStatus;
-	cudaStatus = cudaMemcpyAsync(device, host, size * sizeof(T), cudaMemcpyHostToDevice, stream);
-	if (cudaStatus != cudaSuccess) {
-		fprintf(stderr, "cudaMemcpyHostToDevice failed: %s\n", cudaGetErrorString(cudaStatus));
-	}
-}
-
-template <typename T>
-void toHost(T *host, T *device, const int size, cudaStream_t &stream) {
-	cudaError_t cudaStatus;
-	cudaStatus = cudaMemcpyAsync(host, device, size * sizeof(T), cudaMemcpyDeviceToHost, stream);
-	if (cudaStatus != cudaSuccess) {
-		fprintf(stderr, "cudaMemcpyDeviceToHost failed: %s\n", cudaGetErrorString(cudaStatus));
-	}
-}
-
-
-template <typename T>
-void toDevice(T *host, T *device, const int size) {
-	cudaError_t cudaStatus;
-	cudaStatus = cudaMemcpy(device, host, size * sizeof(T), cudaMemcpyHostToDevice);
-	if (cudaStatus != cudaSuccess) {
-		fprintf(stderr, "cudaMemcpyHostToDevice failed: %s\n", cudaGetErrorString(cudaStatus));
-	}
-}
-
-template <typename T>
-void toHost(T *host, T *device, const int size) {
-	cudaError_t cudaStatus;
-	cudaStatus = cudaMemcpy(host, device, size * sizeof(T), cudaMemcpyDeviceToHost);
-	if (cudaStatus != cudaSuccess) {
-		fprintf(stderr, "cudaMemcpyDeviceToHost failed: %s\n", cudaGetErrorString(cudaStatus));
-	}
-}
-
+*/
 
 
 
@@ -292,4 +241,7 @@ struct  Neighbor{
 		}
 	}
 };
-*/
+*
+
+
+

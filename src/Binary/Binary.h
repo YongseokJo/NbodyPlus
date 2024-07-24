@@ -13,7 +13,7 @@ class Binary
 		// corresponding single particles and neighbor particles
 		// overlapping variables with ptclCM are deleted. 
 		// int NumberOfAC;     // number of neighbors - not currently in use
-		// double RadiusOfAC;
+		// REAL RadiusOfAC;
 		// std::vector<Particle*> ACList;     // list of AC neighbor - not currently in use
 
 		Particle* ptclCM;
@@ -21,85 +21,85 @@ class Binary
 		bool isErase;
 
 		// information of binary particles in cartesian coordinates
-		double Mass;
+		REAL Mass;
 
-		// double Position[Dim];
-		// double Velocity[Dim];
-		// double PredPosition[Dim];
-		// double PredVelocity[Dim];
-		double PredTime;
-		double CurrentTime;  // this show how much the binary system has evolved
-		double TimeStep;
+		// REAL Position[Dim];
+		// REAL Velocity[Dim];
+		// REAL PredPosition[Dim];
+		// REAL PredVelocity[Dim];
+		REAL PredTime;
+		REAL CurrentTime;  // this show how much the binary system has evolved
+		REAL TimeStep;
 		int TimeLevel;
 
-		// double a_tot[Dim][HERMITE_ORDER];
-		// double a_reg[Dim][HERMITE_ORDER];
-		// double a_irr[Dim][HERMITE_ORDER];
-		// double BackgroundAcceleration[Dim];
+		// REAL a_tot[Dim][HERMITE_ORDER];
+		// REAL a_reg[Dim][HERMITE_ORDER];
+		// REAL a_irr[Dim][HERMITE_ORDER];
+		// REAL BackgroundAcceleration[Dim];
 
 
 		// information of binary particles after Levi-civita transformation
-		double u[4];
-		double udot[4];
-		double u_pred[4];
-		double udot_pred[4];
-		double u2dot[4];
-		double u3dot[4];
-		double u4dot[4];
-		double u5dot[4];
+		REAL u[4];
+		REAL udot[4];
+		REAL u_pred[4];
+		REAL udot_pred[4];
+		REAL u2dot[4];
+		REAL u3dot[4];
+		REAL u4dot[4];
+		REAL u5dot[4];
 
 		// Q = (L^T)F_perturb : Levi-civita transformation of perturbing force
 
-		double Q[4];
-		double Qdot[4];
+		REAL Q[4];
+		REAL Qdot[4];
 
 		// r: distance between two binaries
 
-		double r;
-		double r0; // initial separation between binaries
-		double rdot;
-		double r2dot;
-		double r3dot;
-		double r4dot;
-		double r5dot;
+		REAL r;
+		REAL r0; // initial separation between binaries
+		REAL rdot;
+		REAL r2dot;
+		REAL r3dot;
+		REAL r4dot;
+		REAL r5dot;
 
 		// t: physical time. time derivatives with respect to tau
 		// tdot = r, t2dot = rdot and so on
 
-		double tdot;
-		double t2dot;
-		double t3dot;
-		double t4dot;
-		double t5dot;
-		double t6dot;
+		REAL tdot;
+		REAL t2dot;
+		REAL t3dot;
+		REAL t4dot;
+		REAL t5dot;
+		REAL t6dot;
 
 
 
 		// h: energy of binary
 
-		double h;
-		double hdot;
-		double h2dot;
-		double h3dot;
-		double h4dot;
+		REAL h;
+		REAL hdot;
+		REAL h2dot;
+		REAL h3dot;
+		REAL h4dot;
 
 
 		// tau: time unit for new coordinate system, tau = r*t
 
-		double PredTau;
-		double CurrentTau;
-		double dTau;
-		// double TauStep;
+		REAL PredTau;
+		REAL CurrentTau;
+		REAL dTau;
+		// REAL TauStep;
 
 		// other variables
 
-		double gamma;       // gamma: relative energy ratio of binary
-		double a;       // semi-major axis of orbit
+		REAL gamma;       // gamma: relative energy ratio of binary
+		REAL a;       // semi-major axis of orbit
 
 		// stumpff coefficient related variables
 
-		double cn[stumpffN+1];
-		double cn_4z[stumpffN+1];
+		REAL cn[stumpffN+1];
+		REAL cn_4z[stumpffN+1];
 
 
 		// Constructor
@@ -185,11 +185,11 @@ class Binary
 			}
 		}
 
-		void InitializeBinary(double current_time);
-		void getStumpffCoefficients(double z);
-		void KSIntegration(double next_time, int &calnum);
-		void predictBinary(double next_time);
-		void IntegrateBinary(double next_time);
+		void InitializeBinary(REAL current_time);
+		void getStumpffCoefficients(REAL z);
+		void KSIntegration(REAL next_time, int &calnum);
+		void predictBinary(REAL next_time);
+		void IntegrateBinary(REAL next_time);
 
 		~Binary() {};
 

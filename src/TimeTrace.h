@@ -6,10 +6,10 @@
 #include <sys/stat.h>
 #include <sstream>
 
-extern double global_time, EnzoTimeStep;
+extern REAL global_time, EnzoTimeStep;
 
 using TimePoint = std::chrono::high_resolution_clock::time_point;
-using Duration  = std::chrono::duration<double>;
+using Duration  = std::chrono::duration<REAL>;
 
 struct TimeEntity {
 		TimePoint start;
@@ -55,7 +55,7 @@ class TimeTracer {
 	void output() {
 
 		const int width = 25;
-		double current_time = global_time*EnzoTimeStep*1e10/1e6;
+		REAL current_time = global_time*EnzoTimeStep*1e10/1e6;
     std::string fname = "performance.out";
 
 

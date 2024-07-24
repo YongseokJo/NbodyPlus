@@ -74,8 +74,26 @@
 
 
 typedef unsigned long long ULL;
+
+//#define FLOAT
+#define DOUBLE
+#ifdef FLOAT
 typedef float REAL;
-//typedef double REAL;
+#define RN f
+#define RCAST(a)  static_cast<float>(a)
+#define ABS(a) static_cast<float>(std::abs(a))
+#define MIN(a,b) std::min(RCAST(a),RCAST(b))
+#else 
+typedef double REAL;
+#define RN d
+#define RCAST(a)  static_cast<double>(a)
+#define ABS(a) static_cast<double>(std::abs(a))
+#define MIN(a,b) std::min(RCAST(a),RCAST(b))
+#endif
+
+//typedef float CUDA_REAL;
+typedef double CUDA_REAL;
 
 
 
+#define NAN_CHECK(val) assert((val) == (val));

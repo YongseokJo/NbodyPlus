@@ -4,8 +4,8 @@
 #include "global.h"
 #define debug
 
-void Merge(std::vector<int> index, std::vector<double> timesteps, int left, int mid, int right);
-void MergeSort(std::vector<int> index, std::vector<double> timesteps, int left, int right);
+void Merge(std::vector<int> index, std::vector<REAL> timesteps, int left, int mid, int right);
+void MergeSort(std::vector<int> index, std::vector<REAL> timesteps, int left, int right);
 
 
 // Function to perform argsort on a vector
@@ -149,7 +149,7 @@ bool CreateComputationChain(std::vector<Particle*> &particle) {
 
 	std::vector<int> index{};
 	std::vector<int> sorted_index{};
-	std::vector<double> time{};
+	std::vector<REAL> time{};
 	ULL NextIrrBlock = 0;
 
 	int i=0;
@@ -262,8 +262,8 @@ bool CreateComputationChain(std::vector<Particle*> &particle) {
 bool CreateComputationChain(std::vector<Particle*> &particle, std::vector<Particle*> &ComputationChainTmp) {
 	// This stores the first particle of each level in the particle chain
 
-	double NextIrrTime = 0.0;
-	std::vector<double >timesteps{};
+	REAL NextIrrTime = 0.0;
+	std::vector<REAL >timesteps{};
 	std::vector<int> index{};
 
 	for (int i=0; i<NNB; i++) {
@@ -331,13 +331,13 @@ bool CreateComputationChain(std::vector<Particle*> &particle, std::vector<Partic
 */
 
 
-void Merge(std::vector<int> index, std::vector<double> timesteps, int left, int mid, int right) {
+void Merge(std::vector<int> index, std::vector<REAL> timesteps, int left, int mid, int right) {
 	int n1 = mid - left + 1;
 	int n2 = right - mid;
 
 	//Create temporary arrays
 	std::vector<int> L1(n1), R1(n2);
-	std::vector<double> L2(n1), R2(n2);
+	std::vector<REAL> L2(n1), R2(n2);
 
 	// Copy data to temp arrays L[] and R[]
 	for (int i = 0; i < n1; ++i) {
@@ -381,7 +381,7 @@ void Merge(std::vector<int> index, std::vector<double> timesteps, int left, int 
 	}
 }
 
-void MergeSort(std::vector<int> index, std::vector<double> timesteps, int left, int right) {
+void MergeSort(std::vector<int> index, std::vector<REAL> timesteps, int left, int right) {
 	if (left < right) {
 		int mid = left + (right - left) / 2;
 

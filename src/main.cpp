@@ -8,9 +8,9 @@
 using namespace std;
 
 //Global Variables
-int NNB; double global_time; //bool debug;
+int NNB; REAL global_time; //bool debug;
 std::vector<int> LevelList;
-double EnzoTimeStep;
+REAL EnzoTimeStep;
 int newNNB = 0;
 std::vector<Particle*> RegularList;
 std::vector<Particle*> BinaryCandidateList;

@@ -5,11 +5,11 @@
 #include "../global.h"
 #include "../defs.h"
 
-void direct_sum(double *x, double *v, double r2, double vx,
-		double mass, double (&a)[3], double (&adot)[3]);
+void direct_sum(REAL *x, REAL *v, REAL r2, REAL vx,
+		REAL mass, REAL (&a)[3], REAL (&adot)[3]);
 
-double getNewTimeStepIrr(double f[3][4], double df[3][4]);
-void getBlockTimeStep(double dt, int& TimeLevel, ULL &TimeBlock, double &TimeStep);
+REAL getNewTimeStepIrr(REAL f[3][4], REAL df[3][4]);
+void getBlockTimeStep(REAL dt, int& TimeLevel, ULL &TimeBlock, REAL &TimeStep);
 bool UpdateComputationChain(Particle* ptcl);
 void UpdateNextRegTime(std::vector<Particle*> &particle);
 bool CreateComputationList(Particle* ptcl);
@@ -27,12 +27,12 @@ void CalculateKSAcceleration(Particle* ptclI, Particle* ptclJ, Particle* ptclCM,
 
 	int j=0;
 	Particle* ptcl1;
-	double x[Dim], v[Dim];
-	double a21[Dim], a21dot[Dim], a1[Dim], a2[Dim], a1dot[Dim], a2dot[Dim];
-	double rdf_r2, vdf_r2, rdfdot_r2, v2, r2, r3, vr, m_r3;
-	double adot2, adot3;
-	double a,b,c;
-	double current_time = ptclCM->CurrentTimeIrr;
+	REAL x[Dim], v[Dim];
+	REAL a21[Dim], a21dot[Dim], a1[Dim], a2[Dim], a1dot[Dim], a2dot[Dim];
+	REAL rdf_r2, vdf_r2, rdfdot_r2, v2, r2, r3, vr, m_r3;
+	REAL adot2, adot3;
+	REAL a,b,c;
+	REAL current_time = ptclCM->CurrentTimeIrr;
 
 	// Initialize relevant variables
 
@@ -243,12 +243,12 @@ void CalculateKSAcceleration(Particle* ptclI, Particle* ptclJ, Particle* ptclCM,
 void Particle::isKSCandidate() {
 
 	// temporary calculation variables
-	double x[Dim];
-	double r2, m_r3;
-	double current_time;
-	double r_min = 1e8;
+	REAL x[Dim];
+	REAL r2, m_r3;
+	REAL current_time;
+	REAL r_min = 1e8;
 	int numberOfPairCandidate=0;
-	double a_pert[Dim];
+	REAL a_pert[Dim];
 	Particle* minPtcl;
 
 	for (int dim=0; dim<Dim; dim++)
@@ -318,8 +318,8 @@ void Particle::isKSCandidate() {
 
 
 	// 1. Timestep is smallr than dt_min defined by r_min;
-	const double alpha = 0.04;
-	double dt_min;
+	const REAL alpha = 0.04;
+	REAL dt_min;
 	dt_min = alpha*sqrt(pow(r_min,3.)/(this->Mass+minPtcl->Mass)*2)/EnzoTimeStep;
 	//fprintf(stderr, "r_min=%e pc, dt_min = %e Myr, TimeStepIrr = %e Myr\n", r_min*position_unit, dt_min*EnzoTimeStep*1e4, TimeStepIrr*EnzoTimeStep*1e4);
 	//fflush(stderr);
@@ -328,7 +328,7 @@ void Particle::isKSCandidate() {
 
 	// 2. The particles should approaching to each other;
 	// R*V > 0.1*(G*(m1+m2)*R)^1/2
-	double RV=0.;
+	REAL RV=0.;
 	for (int dim=0; dim<Dim; dim++) {
 		RV += (Position[dim] - minPtcl->Position[dim])*(Velocity[dim]-minPtcl->Position[dim]);
 	}
@@ -396,7 +396,7 @@ void NewKSInitialization(Particle* ptclI, std::vector<Particle*> &particle, std:
 	int ptclIIndex;
 	int ptclJIndex;
 
-	double dtReg, dtIrr;
+	REAL dtReg, dtIrr;
 
 
 	std::cout <<"Starting Routine NewKSInitialization" << std::endl;
@@ -507,14 +507,14 @@ void NewKSInitialization(Particle* ptclI, std::vector<Particle*> &particle, std:
 		ptclCM->TimeLevelReg = ptcl->TimeLevelReg;
 
 
-	ptclCM->TimeStepReg  = static_cast<double>(pow(2, ptclCM->TimeLevelReg));
+	ptclCM->TimeStepReg  = static_cast<REAL>(pow(2, ptclCM->TimeLevelReg));
 	ptclCM->TimeBlockReg = static_cast<ULL>(pow(2, ptclCM->TimeLevelReg-time_block));
 
 	ptclCM->calculateTimeStepIrr(ptclCM->a_tot, ptclCM->a_irr);
 	while (ptclCM->CurrentBlockIrr+ptclCM->TimeBlockIrr <= global_time_irr 
 			&& ptclCM->TimeLevelIrr <= ptcl->TimeLevelIrr) { //first condition guarantees that ptclcm is small than ptcl
 		ptclCM->TimeLevelIrr++;
-		ptclCM->TimeStepIrr  = static_cast<double>(pow(2, ptclCM->TimeLevelIrr));
+		ptclCM->TimeStepIrr  = static_cast<REAL>(pow(2, ptclCM->TimeLevelIrr));
 		ptclCM->TimeBlockIrr = static_cast<ULL>(pow(2, ptclCM->TimeLevelIrr-time_block));
 	}
 
