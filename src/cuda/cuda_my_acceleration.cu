@@ -5,10 +5,21 @@
 #include <cassert>
 #include <cuda_runtime.h>
 #include <cublas_v2.h>
+#include <thrust/device_vector.h>
+#include <thrust/device_ptr.h>
+#include <thrust/find.h>
 #include "../defs.h"
 #include "cuda_defs.h"
 #include "cuda_kernels.h"
 #include "cuda_routines.h"
+
+struct less_than_zero
+{
+    __host__ __device__ bool operator()(const float x) const
+    {
+        return x < 0;
+    }
+};
 
 
 static int NNB;
@@ -41,6 +52,109 @@ cudaStream_t stream;
 
 extern CUDA_REAL *h_diff, *h_magnitudes;
 CUDA_REAL *h_diff, *h_magnitudes;
+
+
+void reduce_forces_cublas(cublasHandle_t handle, const CUDA_REAL *diff, CUDA_REAL *result, int n, int m) {
+
+	CUDA_REAL *d_matrix;
+    cudaMalloc(&d_matrix, m * n * sizeof(CUDA_REAL));
+
+    // Create a vector of ones for the summation
+    double *ones;
+    cudaMalloc(&ones, n * sizeof(double));
+    double *h_ones = new double[n];
+    for (int i = 0; i < n; ++i) {
+        h_ones[i] = 1.0;
+    }
+    cudaMemcpy(ones, h_ones, n * sizeof(double), cudaMemcpyHostToDevice);
+
+    // Initialize result array to zero
+    cudaMemset(result, 0, m * 6 * sizeof(double));
+
+    const double alpha = 1.0;
+    const double beta = 0.0;
+
+    // Sum over the second axis (n) for each of the 6 elements
+    for (int i = 0; i < _six; ++i) {
+
+		cublasDcopy(handle, m * n, diff + i, _six, d_matrix, 1);
+        cublasDgemv(
+            handle,
+            CUBLAS_OP_T,  // Transpose
+            n,            // Number of rows of the matrix A
+            m,            // Number of columns of the matrix A
+            &alpha,       // Scalar alpha
+            d_matrix, // Pointer to the first element of the i-th sub-matrix
+            n,     // Leading dimension of the sub-matrix
+            ones,         // Pointer to the vector x
+            1,            // Increment between elements of x
+            &beta,        // Scalar beta
+            result + i, // Pointer to the first element of the result vector
+            _six             // Increment between elements of the result vector
+        );
+    }
+    // Cleanup
+    delete[] h_ones;
+    cudaFree(ones);
+	cudaFree(d_matrix);
+}
+
+void reduce_forces_thrust(const CUDA_REAL *diff, CUDA_REAL *result, int n, int m) {
+    // Wrap raw pointers with Thrust device pointers
+    thrust::device_ptr<const CUDA_REAL> d_diff(diff);
+    thrust::device_ptr<CUDA_REAL> d_result(result);
+
+    // Initialize result array to zero
+    thrust::fill(d_result, d_result + m * 6, 0);
+
+    // Sum over the second axis (n) for each of the 6 elements
+    for (int i = 0; i < 6; ++i) {
+        for (int j = 0; j < m; ++j) {
+            // Calculate the start and end pointers for the current sub-matrix
+            thrust::device_ptr<const CUDA_REAL> start = d_diff + i + j * n * 6;
+            thrust::device_ptr<const CUDA_REAL> end = start + n * 6;
+
+            // Create a thrust device vector from start to end
+            thrust::device_vector<CUDA_REAL> sub_matrix(start, end);
+
+            // Reduce the sub-matrix and store the result
+            d_result[i + j * 6] = thrust::reduce(sub_matrix.begin(), sub_matrix.end());
+        }
+    }
+}
+
+void reduce_neighbors(int *neighbor, int* num_neighbor, const CUDA_REAL *magnitudes, int n, int m, const int *subset){
+	// d_neighbor, d_num_neighbor, d_magnitudes, NNB, NumTarget
+
+	// Wrap the raw pointer with a thrust::device_ptr
+	thrust::device_ptr<const CUDA_REAL> d_ptr = thrust::device_pointer_cast(magnitudes);
+
+	// Create a thrust::device_vector from the thrust::device_ptr
+	thrust::device_vector<CUDA_REAL> d_vector(d_ptr, d_ptr + n * m);
+    thrust::device_vector<int> d_indices(m * NumNeighborMax);
+
+    // Output indices for each row
+    for (int row = 0; row < m; ++row)
+    {
+        // Define the start and end of the row in the matrix
+        auto row_start = d_vector.begin() + row * n;
+        auto row_end = row_start + n;
+        
+        // Use thrust::counting_iterator to generate a sequence of indices for the row
+        thrust::counting_iterator<int> index_sequence(0);
+        
+        // Copy indices where the condition (less than zero) is satisfied
+        auto end = thrust::copy_if(index_sequence, index_sequence + n, row_start, d_indices.begin() + row * NumNeighborMax, less_than_zero());
+        
+        // Calculate the number of elements that satisfy the condition
+        int num_neg_elements = end - (d_indices.begin() + row * NumNeighborMax);
+        
+        // Copy indices back to the host for output (optional, for debugging)
+        std::vector<int> h_indices(num_neg_elements);
+        thrust::copy(d_indices.begin() + row * NumNeighborMax, d_indices.begin() + row * NumNeighborMax + num_neg_elements, h_indices.begin());
+        
+    }
+}
 
 /*************************************************************************
  *	 Computing Acceleration
@@ -131,6 +245,7 @@ void GetAcceleration(
 	compute_forces_subset<<<gridSize, blockSize, 0, stream>>>\
 		(d_ptcl, d_diff, d_magnitudes, NNB, NumTarget, d_target);
 
+
 	/******* Neighborhood *********/
 	checkCudaError(cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize,
 				assign_neighbor, 0, 0));
@@ -143,11 +258,14 @@ void GetAcceleration(
 	//blockSize = variable_size;
 	//gridSize = NumTarget;
 
-#define MAX_SIZE 9
+	#define MAX_SIZE 9
 	sharedMemSize = ((MAX_SIZE+1)*blockSize) * sizeof(int);
 	assign_neighbor<<<gridSize, blockSize, sharedMemSize, stream>>>\
 		(d_neighbor, d_num_neighbor, d_r2, d_magnitudes, NNB, NumTarget, d_target);
 	cudaDeviceSynchronize();
+
+	#define TEST_CUBLAS
+	#ifndef TEST_CUBLAS
 
 	/******* Reduction *********/
 	checkCudaError(cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize,
@@ -164,15 +282,19 @@ void GetAcceleration(
 	reduce_forces<<<gridSize, blockSize, 0, stream>>>\
 		(d_diff, d_result, NNB, NumTarget);
 	cudaDeviceSynchronize();
-
-	/*
-	print_forces_subset<<<gridSize, blockSize>>>\
+	//print_forces_subset<<<gridSize, blockSize>>>\
 		(d_result, NumTarget);
-		*/
+	#else
+	/******* Neighborhood (new) *********/
+	//reduce_neighbors(d_neighbor, d_num_neighbor, d_magnitudes, NNB, NumTarget, d_target);
 
-
-
-
+	// added by wispedia
+	reduce_forces_cublas(handle, d_diff, d_result, NNB, NumTarget); //test by wispedia
+	//reduce_forces_thrust(d_diff, d_result, NNB, NumTarget);
+	cudaDeviceSynchronize();
+	//print_forces_subset<<<gridSize, blockSize>>>\
+		(d_result, NumTarget);	
+	#endif
 	/*
 	toHost(h_diff, d_diff, _six*NumTarget*NNB);
 	for (int i = 0; i < NumTarget; ++i) {
@@ -248,9 +370,6 @@ void GetAcceleration(
 	//my_free_d(do_neighbor);
 	//printf("CUDA: done?\n");
 }
-
-
-
 
 
 

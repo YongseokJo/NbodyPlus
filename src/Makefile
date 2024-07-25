@@ -5,7 +5,7 @@ NVCC = nvcc
 
 # Compiler flags
 CXXFLAGS  = -O3 -std=c++11  -Wall -Wextra -Wuninitialized -I./Particle -I./ -g 
-NVCCFLAGS = -O2 -G -Xcompiler -rdynamic -g -lineinfo -Xptxas=-v -lcudart -lcompute-sanitizer
+NVCCFLAGS = -O2 --std=c++11 -G -Xcompiler -rdynamic -g -lineinfo -Xptxas=-v -lcudart -lcompute-sanitizer
 #-lineinfo --generate-line-info --device-debug 
 #NVCC_FLAGS_DEBUG = -g -G --device-debug
 #NVCC_FLAGS_PROFILE = -g -lineinfo

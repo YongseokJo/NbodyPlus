@@ -15,7 +15,12 @@ __global__ void print_forces_subset(CUDA_REAL* result, int m) {
 	int idx = blockIdx.x * blockDim.x + threadIdx.x;
 
 	if (idx < m) {
-		printf("acc: (%d) = %e\n", idx, result[_six*idx]);
+		printf("acc_x: (%d) = %e\n", idx, result[_six*idx]);
+		printf("acc_y: (%d) = %e\n", idx, result[_six*idx+1]);
+		printf("acc_z: (%d) = %e\n", idx, result[_six*idx+2]);
+		printf("adot_x: (%d) = %e\n", idx, result[_six*idx+3]);
+		printf("adot_y: (%d) = %e\n", idx, result[_six*idx+4]);
+		printf("adot_z: (%d) = %e\n", idx, result[_six*idx+5]);
 				/*
 				atomicAdd(&result[i+1], scale * diff[six_idx + 1]);
 				atomicAdd(&result[i+2], scale * diff[six_idx + 2]);
@@ -329,7 +334,6 @@ __global__ void assign_neighbor(int *neighbor, int* num_neighbor, const CUDA_REA
 		int i = subset[bid]; //target particle id
 		int j, k;
 		int idx = 0;
-
 
 		//printf("assign_neighbor: %d\n",l);
 
