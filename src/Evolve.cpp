@@ -2,6 +2,9 @@
 #include <iostream>
 #include "defs.h"
 #include "global.h"
+#ifdef NSIGHT
+#include <nvToolsExt.h>
+#endif
 
 int writeParticle(std::vector<Particle*> &particle, REAL MinRegTime, int outputNum);
 // int ReceiveFromEzno(std::vector<Particle*> &particle);
@@ -47,18 +50,31 @@ void Evolve(std::vector<Particle*> &particle) {
 #ifdef time_trace
 		_time.reg.markStart();
 #endif
-
-
+#ifdef NSIGHT
+nvtxRangePushA("RegularAccelerationRoutine");
+#endif
 		RegularAccelerationRoutine(particle); // do not update particles unless NNB=0
 		
+#ifdef NSIGHT
+nvtxRangePop();
+#endif
+
 
 #ifdef time_trace
 		_time.reg.markEnd();
 		_time.reg.getDuration();
 		_time.irr.markStart();
 #endif
+		
+#ifdef NSIGHT
+nvtxRangePushA("IrregularAccelerationRoutine");
+#endif
 
 		IrregularAccelerationRoutine(particle);
+
+#ifdef NSIGHT
+nvtxRangePop();
+#endif
 
 #ifdef time_trace
 		_time.irr.markEnd();

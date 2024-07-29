@@ -6,12 +6,12 @@ NVCC = nvcc
 # Compiler flags
 CXXFLAGS  = -O3 -std=c++11  -Wall -Wextra -Wuninitialized -I./Particle -I./ -g 
 NVCCFLAGS = -O2 --std=c++11 -G -Xcompiler -rdynamic -g -lineinfo -Xptxas=-v -lcudart -lcompute-sanitizer
-#-lineinfo --generate-line-info --device-debug 
 #NVCC_FLAGS_DEBUG = -g -G --device-debug
 #NVCC_FLAGS_PROFILE = -g -lineinfo
 
 # Libraries
 LDFLAGS = -L/usr/local/cuda-11.8/lib64/ -lcudart -lcublas
+#add -lnvToolsExt for <nvToolsExt.h>
 #LDFLAGS = -L/mnt/sw/nix/store/zi2wc26znf75csf5hhz77p0d2bbz53ih-cuda-11.8.0/lib64/ -lcudart
 
 # Source files

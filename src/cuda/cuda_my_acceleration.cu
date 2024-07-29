@@ -5,26 +5,20 @@
 #include <cassert>
 #include <cuda_runtime.h>
 #include <cublas_v2.h>
-#include <thrust/device_vector.h>
-#include <thrust/device_ptr.h>
-#include <thrust/find.h>
 #include "../defs.h"
 #include "cuda_defs.h"
 #include "cuda_kernels.h"
 #include "cuda_routines.h"
 
-// #define NSIGHT
 #ifdef NSIGHT
 #include <nvToolsExt.h>
 #endif
 
-struct less_than_zero
-{
-    __host__ __device__ bool operator()(const float x) const
-    {
-        return x < 0;
-    }
-};
+#ifdef THRUST
+#include <thrust/device_vector.h>
+#include <thrust/device_ptr.h>
+#include <thrust/find.h>
+#endif
 
 
 static int NNB;
@@ -112,6 +106,17 @@ void reduce_forces_cublas(cublasHandle_t handle, const CUDA_REAL *diff, CUDA_REA
 	cudaFree(d_matrix);
 }
 
+#ifdef THRUST
+
+struct less_than_zero
+{
+    __host__ __device__ bool operator()(const float x) const
+    {
+        return x < 0;
+    }
+};
+
+
 void reduce_forces_thrust(const CUDA_REAL *diff, CUDA_REAL *result, int n, int m) {
     // Wrap raw pointers with Thrust device pointers
     thrust::device_ptr<const CUDA_REAL> d_diff(diff);
@@ -135,6 +140,7 @@ void reduce_forces_thrust(const CUDA_REAL *diff, CUDA_REAL *result, int n, int m
         }
     }
 }
+
 
 void reduce_neighbors(cublasHandle_t handle, int *neighbor, int* num_neighbor, CUDA_REAL *magnitudes, int n, int m, int* subset) {
 
@@ -176,7 +182,7 @@ void reduce_neighbors(cublasHandle_t handle, int *neighbor, int* num_neighbor, C
 
     cudaFree(d_matrix);
 }
-
+#endif
 /*************************************************************************
  *	 Computing Acceleration
  *************************************************************************/
@@ -356,7 +362,9 @@ void GetAcceleration(
 
 		for (int j=0;j<NNB;j++) {
 			if (h_neighbor[i * NNB + j] && (target != j)) {
-				targetNeighborList[k] = j;
+				if (k<NumNeighborMax){
+					targetNeighborList[k] = j;
+					}
 				k++;
 			}
 		}
@@ -404,7 +412,9 @@ void GetAcceleration(
 	#endif
 
 	//fprintf(stderr, "\n");
-
+	#ifdef NSIGHT
+	nvtxRangePushA("Move h_result to acc and adot");
+	#endif
 	// out data
 	for (int i=0; i<NumTarget; i++) {
 		acc[i][0]  = h_result[_six*i];
@@ -414,6 +424,9 @@ void GetAcceleration(
 		adot[i][1] = h_result[_six*i+4];
 		adot[i][2] = h_result[_six*i+5];
 	}
+	#ifdef NSIGHT
+	nvtxRangePop();
+	#endif
 
 	cublasDestroy(handle);
 	/*
