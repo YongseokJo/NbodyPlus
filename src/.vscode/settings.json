@@ -47,7 +47,9 @@
         "typeinfo": "cpp",
         "cassert": "cpp",
         "*.ipp": "cpp",
-        "random": "cpp"
+        "random": "cpp",
+        "string": "cpp",
+        "iterator": "cpp"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }

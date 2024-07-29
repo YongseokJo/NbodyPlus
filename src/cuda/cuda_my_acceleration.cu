@@ -13,6 +13,11 @@
 #include "cuda_kernels.h"
 #include "cuda_routines.h"
 
+// #define NSIGHT
+#ifdef NSIGHT
+#include <nvToolsExt.h>
+#endif
+
 struct less_than_zero
 {
     __host__ __device__ bool operator()(const float x) const
@@ -37,15 +42,24 @@ static int variable_size;
 extern CUDA_REAL *h_ptcl, *d_ptcl; //, *background;
 extern CUDA_REAL *h_result, *d_result;
 extern CUDA_REAL *d_diff, *d_magnitudes, *d_r2;
-extern int *h_neighbor, *d_neighbor, *h_num_neighbor, *d_num_neighbor;
 extern int *d_target;
 
 CUDA_REAL *h_ptcl=nullptr, *d_ptcl=nullptr;; //, *background;
 CUDA_REAL *h_result=nullptr, *d_result=nullptr;
 CUDA_REAL *d_diff=nullptr,*d_magnitudes=nullptr, *d_r2=nullptr;
-int *h_neighbor=nullptr, *d_neighbor=nullptr, *d_num_neighbor=nullptr, *h_num_neighbor=nullptr;
 int *d_target=nullptr;
 
+#define TEST_CUBLAS
+#ifndef TEST_CUBLAS
+extern int *h_neighbor, *d_neighbor, *h_num_neighbor, *d_num_neighbor;
+int *h_neighbor=nullptr, *d_neighbor=nullptr, *d_num_neighbor=nullptr, *h_num_neighbor=nullptr;
+
+#else
+extern bool *h_neighbor, *d_neighbor;
+extern int *h_num_neighbor;
+bool *h_neighbor=nullptr, *d_neighbor=nullptr;
+int *h_num_neighbor=nullptr; // added by wispedia
+#endif
 
 extern cudaStream_t stream;
 cudaStream_t stream;
@@ -67,7 +81,6 @@ void reduce_forces_cublas(cublasHandle_t handle, const CUDA_REAL *diff, CUDA_REA
         h_ones[i] = 1.0;
     }
     cudaMemcpy(ones, h_ones, n * sizeof(double), cudaMemcpyHostToDevice);
-
     // Initialize result array to zero
     cudaMemset(result, 0, m * 6 * sizeof(double));
 
@@ -123,37 +136,45 @@ void reduce_forces_thrust(const CUDA_REAL *diff, CUDA_REAL *result, int n, int m
     }
 }
 
-void reduce_neighbors(int *neighbor, int* num_neighbor, const CUDA_REAL *magnitudes, int n, int m, const int *subset){
-	// d_neighbor, d_num_neighbor, d_magnitudes, NNB, NumTarget
+void reduce_neighbors(cublasHandle_t handle, int *neighbor, int* num_neighbor, CUDA_REAL *magnitudes, int n, int m, int* subset) {
 
-	// Wrap the raw pointer with a thrust::device_ptr
-	thrust::device_ptr<const CUDA_REAL> d_ptr = thrust::device_pointer_cast(magnitudes);
+	CUDA_REAL *d_matrix;
+    cudaMalloc(&d_matrix, m * n * sizeof(CUDA_REAL));
+    cublasDcopy(handle, m * n, magnitudes, _two, d_matrix, 1);
 
-	// Create a thrust::device_vector from the thrust::device_ptr
-	thrust::device_vector<CUDA_REAL> d_vector(d_ptr, d_ptr + n * m);
-    thrust::device_vector<int> d_indices(m * NumNeighborMax);
 
-    // Output indices for each row
-    for (int row = 0; row < m; ++row)
-    {
-        // Define the start and end of the row in the matrix
-        auto row_start = d_vector.begin() + row * n;
+	for (int row = 0; row < m; ++row){
+		CUDA_REAL val = 1.0;
+        cudaMemcpy(d_matrix + row * n + subset[row], &val, sizeof(CUDA_REAL), cudaMemcpyHostToDevice);
+	}
+
+    // Wrap raw device pointers with thrust device pointers
+    thrust::device_ptr<const CUDA_REAL> d_ptr(d_matrix);
+    thrust::device_ptr<int> d_neighbor(neighbor);
+    thrust::device_ptr<int> d_num_neighbor(num_neighbor);
+
+    // Process each row
+    for (int row = 0; row < m; ++row) {
+        auto row_start = d_ptr + row * n;
         auto row_end = row_start + n;
-        
-        // Use thrust::counting_iterator to generate a sequence of indices for the row
+
         thrust::counting_iterator<int> index_sequence(0);
-        
-        // Copy indices where the condition (less than zero) is satisfied
-        auto end = thrust::copy_if(index_sequence, index_sequence + n, row_start, d_indices.begin() + row * NumNeighborMax, less_than_zero());
-        
-        // Calculate the number of elements that satisfy the condition
-        int num_neg_elements = end - (d_indices.begin() + row * NumNeighborMax);
-        
-        // Copy indices back to the host for output (optional, for debugging)
-        std::vector<int> h_indices(num_neg_elements);
-        thrust::copy(d_indices.begin() + row * NumNeighborMax, d_indices.begin() + row * NumNeighborMax + num_neg_elements, h_indices.begin());
-        
+
+        // Use thrust::copy_if to select indices where elements are less than zero
+        auto end = thrust::copy_if(index_sequence, index_sequence + n, row_start, d_neighbor + row * NumNeighborMax, less_than_zero());
+
+        // Calculate the number of negative elements in the current row
+        int num_neg_elements = thrust::distance(d_neighbor + row * NumNeighborMax, end);
+
+        if (num_neg_elements > NumNeighborMax) {
+            cudaFree(d_matrix);
+            throw std::runtime_error("Number of negative elements exceeds NumNeighborMax");
+        }
+
+        d_num_neighbor[row] = num_neg_elements;
     }
+
+    cudaFree(d_matrix);
 }
 
 /*************************************************************************
@@ -215,7 +236,7 @@ void GetAcceleration(
 	gridSize = (total_data_num + blockSize - 1) / blockSize;
 
 	initialize<<<gridSize, blockSize, 0, stream>>>\
-		(d_result, d_neighbor, d_num_neighbor, d_diff, d_magnitudes, NNB, NumTarget, d_target);
+		(d_result, d_diff, d_magnitudes, NNB, NumTarget, d_target);
 	cudaDeviceSynchronize();
 
 
@@ -234,7 +255,7 @@ void GetAcceleration(
 	gridSize = (total_data_num + blockSize - 1) / blockSize;
 
 	compute_magnitudes_subset<<<gridSize, blockSize, 0, stream>>>\
-		(d_r2, d_diff, d_magnitudes, NNB, NumTarget, d_target);
+		(d_r2, d_diff, d_magnitudes, NNB, NumTarget, d_target, d_neighbor); // changed by wispedia
 	cudaDeviceSynchronize();
 
 	/******* Force *********/
@@ -246,6 +267,9 @@ void GetAcceleration(
 		(d_ptcl, d_diff, d_magnitudes, NNB, NumTarget, d_target);
 
 
+
+
+	#ifndef TEST_CUBLAS
 	/******* Neighborhood *********/
 	checkCudaError(cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize,
 				assign_neighbor, 0, 0));
@@ -263,9 +287,6 @@ void GetAcceleration(
 	assign_neighbor<<<gridSize, blockSize, sharedMemSize, stream>>>\
 		(d_neighbor, d_num_neighbor, d_r2, d_magnitudes, NNB, NumTarget, d_target);
 	cudaDeviceSynchronize();
-
-	#define TEST_CUBLAS
-	#ifndef TEST_CUBLAS
 
 	/******* Reduction *********/
 	checkCudaError(cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize,
@@ -286,12 +307,20 @@ void GetAcceleration(
 		(d_result, NumTarget);
 	#else
 	/******* Neighborhood (new) *********/
-	//reduce_neighbors(d_neighbor, d_num_neighbor, d_magnitudes, NNB, NumTarget, d_target);
+	// reduce_neighbors(handle, d_neighbor, d_num_neighbor, d_magnitudes, NNB, NumTarget, h_target_list);
+	cudaDeviceSynchronize();
 
-	// added by wispedia
+	#ifdef NSIGHT
+    nvtxRangePushA("Reduction");
+	#endif
+	/******* Reduction *********/
 	reduce_forces_cublas(handle, d_diff, d_result, NNB, NumTarget); //test by wispedia
 	//reduce_forces_thrust(d_diff, d_result, NNB, NumTarget);
 	cudaDeviceSynchronize();
+
+	#ifdef NSIGHT
+	nvtxRangePop();
+	#endif
 	//print_forces_subset<<<gridSize, blockSize>>>\
 		(d_result, NumTarget);	
 	#endif
@@ -313,13 +342,38 @@ void GetAcceleration(
 	cudaStreamSynchronize(stream); // Wait for all operations to finish
 
 	toHost(h_result      , d_result      ,           _six*NumTarget);
+
+	#ifdef TEST_CUBLAS
+	#ifdef NSIGHT
+    nvtxRangePushA("Neighbor in CPU");
+	#endif
+
+	toHost(h_neighbor, d_neighbor, NNB * NumTarget);
+	for (int i=0;i<NumTarget;i++) {
+		int k = 0;
+	    int* targetNeighborList = NeighborList[i]; // Cache the row pointer
+	    int target = h_target_list[i]; // Cache the target value
+
+		for (int j=0;j<NNB;j++) {
+			if (h_neighbor[i * NNB + j] && (target != j)) {
+				targetNeighborList[k] = j;
+				k++;
+			}
+		}
+		NumNeighbor[i] = k; // h_num_neighbor[i];
+	}
+	#ifdef NSIGHT
+	nvtxRangePop();
+	#endif
+	
+	#else
 	toHost(h_neighbor    , d_neighbor    , NumNeighborMax*NumTarget);
 	toHost(h_num_neighbor, d_num_neighbor,                NumTarget);
+
 	//printf("CUDA: transfer to host done\n");
 
 
 	//cudaStreamSynchronize(stream); // Wait for all operations to finish
-
 
 	for (int i=0;i<NumTarget;i++) {
 		for (int j=0;j<h_num_neighbor[i];j++) {
@@ -347,6 +401,8 @@ void GetAcceleration(
 				);
 				*/
 	}
+	#endif
+
 	//fprintf(stderr, "\n");
 
 	// out data
@@ -406,18 +462,21 @@ void _ReceiveFromHost(
 			my_free(h_ptcl				 , d_ptcl);
 			my_free(h_result       , d_result);
 			my_free(h_neighbor     , d_neighbor);
-			my_free(h_num_neighbor , d_num_neighbor);
+			// my_free(h_num_neighbor , d_num_neighbor);
+			cudaFreeHost(h_num_neighbor);
 			cudaFree(d_target);
 			cudaFree(d_r2);
 			cudaFree(d_diff);
 			cudaFree(d_magnitudes);
+
 		}
 		else {
 			first = false;
 		}
 		my_allocate(&h_ptcl         , &d_ptcl        ,         _seven*variable_size); // x,v,m
 		my_allocate(&h_result       , &d_result      ,           _six*variable_size);
-		my_allocate(&h_num_neighbor , &d_num_neighbor,                variable_size);
+		// my_allocate(&h_num_neighbor , &d_num_neighbor,                variable_size);
+		// my_allocate(&h_neighbor     , &d_neighbor    , NumNeighborMax*variable_size);
 		my_allocate(&h_neighbor     , &d_neighbor    , NumNeighborMax*variable_size);
 		cudaMalloc((void**)&d_r2        ,        variable_size * sizeof(CUDA_REAL));
 		cudaMalloc((void**)&d_target    ,        variable_size * sizeof(int));
@@ -425,6 +484,11 @@ void _ReceiveFromHost(
 		cudaMalloc((void**)&d_magnitudes, _two * variable_size * variable_size * sizeof(CUDA_REAL));
 		//cudaMallocHost((void**)&h_diff          , _six * variable_size * variable_size * sizeof(CUDA_REAL));
 		//cudaMallocHost((void**)&h_magnitudes    , _two * variable_size * variable_size * sizeof(CUDA_REAL));
+		#ifdef TEST_CUBLAS
+		my_allocate(&h_neighbor     , &d_neighbor    , variable_size * variable_size);
+		cudaMallocHost((void**)&h_num_neighbor, variable_size * sizeof(int));
+		#endif
+		
 	}
 
 
