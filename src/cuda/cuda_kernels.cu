@@ -15,7 +15,12 @@ __global__ void print_forces_subset(CUDA_REAL* result, int m) {
 	int idx = blockIdx.x * blockDim.x + threadIdx.x;
 
 	if (idx < m) {
-		printf("acc: (%d) = %e\n", idx, result[_six*idx]);
+		printf("acc_x: (%d) = %e\n", idx, result[_six*idx]);
+		printf("acc_y: (%d) = %e\n", idx, result[_six*idx+1]);
+		printf("acc_z: (%d) = %e\n", idx, result[_six*idx+2]);
+		printf("adot_x: (%d) = %e\n", idx, result[_six*idx+3]);
+		printf("adot_y: (%d) = %e\n", idx, result[_six*idx+4]);
+		printf("adot_z: (%d) = %e\n", idx, result[_six*idx+5]);
 				/*
 				atomicAdd(&result[i+1], scale * diff[six_idx + 1]);
 				atomicAdd(&result[i+2], scale * diff[six_idx + 2]);
@@ -29,7 +34,7 @@ __global__ void print_forces_subset(CUDA_REAL* result, int m) {
 
 
 
-__global__	void initialize(CUDA_REAL* result, int* neighbor, int* num_neighbor, CUDA_REAL* diff, CUDA_REAL *magnitudes, int n, int m, int* subset) {
+__global__	void initialize(CUDA_REAL* result, CUDA_REAL* diff, CUDA_REAL *magnitudes, int n, int m, int* subset) {
 	int idx = blockIdx.x * blockDim.x + threadIdx.x;
 
 	diff[_six*idx    ] = 0.;
@@ -53,7 +58,7 @@ __global__	void initialize(CUDA_REAL* result, int* neighbor, int* num_neighbor, 
 			result[_six*i + 3] = 0.;
 			result[_six*i + 4] = 0.;
 			result[_six*i + 5] = 0.;
-			num_neighbor[i] = 0;
+			// num_neighbor[i] = 0;
 			/*
 			for (j=0; j<NumNeighborMax; j++)
 				neighbor[NumNeighborMax*i+j] = 0;
@@ -85,7 +90,7 @@ __global__ void compute_pairwise_diff_subset(const CUDA_REAL* ptcl, CUDA_REAL* d
 }
 
 
-__global__ void compute_magnitudes_subset(const CUDA_REAL *r2, const CUDA_REAL* diff, CUDA_REAL* magnitudes, int n, int m, int* subset) {
+__global__ void compute_magnitudes_subset(const CUDA_REAL *r2, const CUDA_REAL* diff, CUDA_REAL* magnitudes, int n, int m, int* subset, bool* neighbor2) {
 	int idx = blockIdx.x * blockDim.x + threadIdx.x;
 	if (idx < n * m) {
 		int i = subset[idx / n];
@@ -106,6 +111,10 @@ __global__ void compute_magnitudes_subset(const CUDA_REAL *r2, const CUDA_REAL* 
 		if (magnitudes[two_idx] <= r2[i]) {
 			//printf("(%d, %d): %e, %e\n",subset[i], j, magnitudes[two_idx], r2[i]);
 			magnitudes[two_idx]   = -magnitudes[two_idx];
+			neighbor2[idx] = true;
+		}
+		else {
+			neighbor2[idx] = false;
 		}
 	}
 }
@@ -329,7 +338,6 @@ __global__ void assign_neighbor(int *neighbor, int* num_neighbor, const CUDA_REA
 		int i = subset[bid]; //target particle id
 		int j, k;
 		int idx = 0;
-
 
 		//printf("assign_neighbor: %d\n",l);
 
