@@ -3,11 +3,16 @@
 #include <cmath>
 #include <cassert>
 #include <cuda_runtime.h>
-//#include <cublas_v2.h>
+#include <cublas_v2.h>
 #include "cuda_defs.h"
 #include "../defs.h"
 #include "cuda_kernels.h"
 
+#ifdef THRUST
+#include <thrust/device_vector.h>
+#include <thrust/device_ptr.h>
+#include <thrust/find.h>
+#endif
 
 
 // CUDA kernel to compute the forces for a subset of particles
@@ -560,4 +565,126 @@ __global__ void assign_neighbor(int *neighbor, int* num_neighbor, const REAL* r2
 	}
 }
 
+#endif
+
+void reduce_forces_cublas(cublasHandle_t handle, const CUDA_REAL *diff, CUDA_REAL *result, int n, int m) {
+
+	CUDA_REAL *d_matrix;
+    cudaMalloc(&d_matrix, m * n * sizeof(CUDA_REAL));
+
+    // Create a vector of ones for the summation
+    double *ones;
+    cudaMalloc(&ones, n * sizeof(double));
+    double *h_ones = new double[n];
+    for (int i = 0; i < n; ++i) {
+        h_ones[i] = 1.0;
+    }
+    cudaMemcpy(ones, h_ones, n * sizeof(double), cudaMemcpyHostToDevice);
+    // Initialize result array to zero
+    cudaMemset(result, 0, m * 6 * sizeof(double));
+
+    const double alpha = 1.0;
+    const double beta = 0.0;
+
+    // Sum over the second axis (n) for each of the 6 elements
+    for (int i = 0; i < _six; ++i) {
+
+		cublasDcopy(handle, m * n, diff + i, _six, d_matrix, 1);
+        cublasDgemv(
+            handle,
+            CUBLAS_OP_T,  // Transpose
+            n,            // Number of rows of the matrix A
+            m,            // Number of columns of the matrix A
+            &alpha,       // Scalar alpha
+            d_matrix, // Pointer to the first element of the i-th sub-matrix
+            n,     // Leading dimension of the sub-matrix
+            ones,         // Pointer to the vector x
+            1,            // Increment between elements of x
+            &beta,        // Scalar beta
+            result + i, // Pointer to the first element of the result vector
+            _six             // Increment between elements of the result vector
+        );
+    }
+    // Cleanup
+    delete[] h_ones;
+    cudaFree(ones);
+	cudaFree(d_matrix);
+}
+
+#ifdef THRUST
+
+struct less_than_zero
+{
+    __host__ __device__ bool operator()(const float x) const
+    {
+        return x < 0;
+    }
+};
+
+
+void reduce_forces_thrust(const CUDA_REAL *diff, CUDA_REAL *result, int n, int m) {
+    // Wrap raw pointers with Thrust device pointers
+    thrust::device_ptr<const CUDA_REAL> d_diff(diff);
+    thrust::device_ptr<CUDA_REAL> d_result(result);
+
+    // Initialize result array to zero
+    thrust::fill(d_result, d_result + m * 6, 0);
+
+    // Sum over the second axis (n) for each of the 6 elements
+    for (int i = 0; i < 6; ++i) {
+        for (int j = 0; j < m; ++j) {
+            // Calculate the start and end pointers for the current sub-matrix
+            thrust::device_ptr<const CUDA_REAL> start = d_diff + i + j * n * 6;
+            thrust::device_ptr<const CUDA_REAL> end = start + n * 6;
+
+            // Create a thrust device vector from start to end
+            thrust::device_vector<CUDA_REAL> sub_matrix(start, end);
+
+            // Reduce the sub-matrix and store the result
+            d_result[i + j * 6] = thrust::reduce(sub_matrix.begin(), sub_matrix.end());
+        }
+    }
+}
+
+
+void reduce_neighbors(cublasHandle_t handle, int *neighbor, int* num_neighbor, CUDA_REAL *magnitudes, int n, int m, int* subset) {
+
+	CUDA_REAL *d_matrix;
+    cudaMalloc(&d_matrix, m * n * sizeof(CUDA_REAL));
+    cublasDcopy(handle, m * n, magnitudes, _two, d_matrix, 1);
+
+
+	for (int row = 0; row < m; ++row){
+		CUDA_REAL val = 1.0;
+        cudaMemcpy(d_matrix + row * n + subset[row], &val, sizeof(CUDA_REAL), cudaMemcpyHostToDevice);
+	}
+
+    // Wrap raw device pointers with thrust device pointers
+    thrust::device_ptr<const CUDA_REAL> d_ptr(d_matrix);
+    thrust::device_ptr<int> d_neighbor(neighbor);
+    thrust::device_ptr<int> d_num_neighbor(num_neighbor);
+
+    // Process each row
+    for (int row = 0; row < m; ++row) {
+        auto row_start = d_ptr + row * n;
+        auto row_end = row_start + n;
+
+        thrust::counting_iterator<int> index_sequence(0);
+
+        // Use thrust::copy_if to select indices where elements are less than zero
+        auto end = thrust::copy_if(index_sequence, index_sequence + n, row_start, d_neighbor + row * NumNeighborMax, less_than_zero());
+
+        // Calculate the number of negative elements in the current row
+        int num_neg_elements = thrust::distance(d_neighbor + row * NumNeighborMax, end);
+
+        if (num_neg_elements > NumNeighborMax) {
+            cudaFree(d_matrix);
+            throw std::runtime_error("Number of negative elements exceeds NumNeighborMax");
+        }
+
+        d_num_neighbor[row] = num_neg_elements;
+    }
+
+    cudaFree(d_matrix);
+}
 #endif
