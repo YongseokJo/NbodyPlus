@@ -103,10 +103,9 @@ void GetAcceleration(
 
 	for (int TargetStart=0; TargetStart < NumTargetTotal; TargetStart+=target_size){
 		NumTarget = std::min(target_size, NumTargetTotal-TargetStart);
-		fprintf(stderr, "TargetStart=%d, NumTargetTotal=%d, NumTarget=%d\n", TargetStart, NumTargetTotal, NumTarget);
+		fprintf(stdout, "TargetStart=%d, NumTargetTotal=%d, NumTarget=%d\n", TargetStart, NumTargetTotal, NumTarget);
 
-		toDevice(h_target_list+TargetStart, d_target, NumTarget, stream);
-
+		toDevice(h_target_list + TargetStart, d_target, NumTarget, stream);
 
 		// Compute pairwise differences for the subset
 		//blockSize = variable_size;
@@ -128,7 +127,7 @@ void GetAcceleration(
 		gridSize = (total_data_num + blockSize - 1) / blockSize;
 
 		compute_pairwise_diff_subset<<<gridSize, blockSize, 0, stream>>>\
-			(d_ptcl, d_diff, NNB, NumTarget, d_target);
+			(d_ptcl, d_diff, NNB, NumTarget, d_target, TargetStart);
 		cudaDeviceSynchronize();
 
 		/******* Magnitudes *********/
@@ -137,7 +136,7 @@ void GetAcceleration(
 		gridSize = (total_data_num + blockSize - 1) / blockSize;
 
 		compute_magnitudes_subset<<<gridSize, blockSize, 0, stream>>>\
-			(d_r2, d_diff, d_magnitudes, NNB, NumTarget, d_target, d_neighbor); // changed by wispedia
+			(d_r2, d_diff, d_magnitudes, NNB, NumTarget, d_target, d_neighbor, TargetStart);
 		cudaDeviceSynchronize();
 
 		/******* Force *********/
@@ -188,12 +187,16 @@ void GetAcceleration(
 			for (int j=0;j<NNB;j++) {
 				if (h_neighbor[i * NNB + j] && (target != j)) {
 					if (k<NumNeighborMax){
-						targetNeighborList[k] = j;
+						targetNeighborList[k++] = j;
 						}
-					k++;
+					else {
+						fprintf(stderr, "Number of neighbors exceeds the maximum number of neighbors %d\n", k);
+						exit(1);
+						}
 				}
 			}
 			NumNeighbor[i + TargetStart] = k; // h_num_neighbor[i];
+
 		}
 		#ifdef NSIGHT
 		nvtxRangePop();
@@ -209,6 +212,13 @@ void GetAcceleration(
 		adot[i][0] = h_result[_six*i+3];
 		adot[i][1] = h_result[_six*i+4];
 		adot[i][2] = h_result[_six*i+5];
+
+		fprintf(stderr, "%d (%d) neighbors of %d = ", i, h_target_list[i], NumNeighbor[i]);
+		for (int j=0;j<NumNeighbor[i];j++) {
+			fprintf(stderr, "%d, ", NeighborList[i][j]);
+		}
+		fprintf(stderr, "\n");
+
 	}
 
 
