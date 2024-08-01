@@ -114,7 +114,7 @@ __global__ void compute_magnitudes_subset(const CUDA_REAL *r2, const CUDA_REAL* 
 		//printf("(%d,%d) = %e, %e\n", i, j,  magnitudes[two_idx], r2[i]);
 
 		if (magnitudes[two_idx] <= r2[i]) {
-			// printf("(%d, %d, %d): %e, %e\n", idx/n, i, j, magnitudes[two_idx], r2[i]);
+			//printf("(%d, %d, %d): %e, %e\n", idx/n, i, j, magnitudes[two_idx], r2[i]);
 			magnitudes[two_idx]   = -magnitudes[two_idx];
 			neighbor2[idx] = true;
 		}

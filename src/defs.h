@@ -98,4 +98,4 @@ typedef double CUDA_REAL;
 
 #define NAN_CHECK(val) assert((val) == (val));
 
-// #define NSIGHT // for nsight debugging
+#define NSIGHT // for nsight debugging

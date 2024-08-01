@@ -100,12 +100,12 @@ void GetAcceleration(
 	*/
 	int total_data_num;
 	int NumTarget;
+	toDevice(h_target_list, d_target, NumTargetTotal, stream);
 
 	for (int TargetStart=0; TargetStart < NumTargetTotal; TargetStart+=target_size){
 		NumTarget = std::min(target_size, NumTargetTotal-TargetStart);
 		fprintf(stdout, "TargetStart=%d, NumTargetTotal=%d, NumTarget=%d\n", TargetStart, NumTargetTotal, NumTarget);
 
-		toDevice(h_target_list + TargetStart, d_target, NumTarget, stream);
 
 		// Compute pairwise differences for the subset
 		//blockSize = variable_size;
@@ -213,12 +213,13 @@ void GetAcceleration(
 		adot[i][1] = h_result[_six*i+4];
 		adot[i][2] = h_result[_six*i+5];
 
+		/*
 		fprintf(stderr, "%d (%d) neighbors of %d = ", i, h_target_list[i], NumNeighbor[i]);
 		for (int j=0;j<NumNeighbor[i];j++) {
 			fprintf(stderr, "%d, ", NeighborList[i][j]);
 		}
 		fprintf(stderr, "\n");
-
+		*/
 	}
 
 
