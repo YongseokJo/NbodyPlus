@@ -73,11 +73,11 @@ __global__	void initialize(CUDA_REAL* result, CUDA_REAL* diff, CUDA_REAL *magnit
 }
 
 // CUDA kernel to compute pairwise differences for a subset of particles
-__global__ void compute_pairwise_diff_subset(const CUDA_REAL* ptcl, CUDA_REAL* diff, int n, int m, const int* subset) {
+__global__ void compute_pairwise_diff_subset(const CUDA_REAL* ptcl, CUDA_REAL* diff, int n, int m, const int* subset, int start) {
 	int idx = blockIdx.x * blockDim.x + threadIdx.x;
 
 	if (idx < m * n) {
-		int i = subset[idx / n];
+		int i = subset[idx / n + start];
 		int j = idx % n;
 		idx *= _six;
 		i *= _seven;
@@ -94,11 +94,11 @@ __global__ void compute_pairwise_diff_subset(const CUDA_REAL* ptcl, CUDA_REAL* d
 	}
 }
 
-
-__global__ void compute_magnitudes_subset(const CUDA_REAL *r2, const CUDA_REAL* diff, CUDA_REAL* magnitudes, int n, int m, int* subset, bool* neighbor2) {
+// n: NNB, m: NumTarget
+__global__ void compute_magnitudes_subset(const CUDA_REAL *r2, const CUDA_REAL* diff, CUDA_REAL* magnitudes, int n, int m, int* subset, bool* neighbor2, int start) {
 	int idx = blockIdx.x * blockDim.x + threadIdx.x;
 	if (idx < n * m) {
-		int i = subset[idx / n];
+		int i = subset[idx / n + start];
 		int j = idx % n;
 		int six_idx = _six*idx;
 		int two_idx = _two*idx;
@@ -114,7 +114,7 @@ __global__ void compute_magnitudes_subset(const CUDA_REAL *r2, const CUDA_REAL* 
 		//printf("(%d,%d) = %e, %e\n", i, j,  magnitudes[two_idx], r2[i]);
 
 		if (magnitudes[two_idx] <= r2[i]) {
-			//printf("(%d, %d): %e, %e\n",subset[i], j, magnitudes[two_idx], r2[i]);
+			//printf("(%d, %d, %d): %e, %e\n", idx/n, i, j, magnitudes[two_idx], r2[i]);
 			magnitudes[two_idx]   = -magnitudes[two_idx];
 			neighbor2[idx] = true;
 		}

@@ -2,7 +2,7 @@
 *.o
 *.txt
 *.out
-
+*.exe
 # Ignore log files
 *.log
 
