@@ -37,7 +37,7 @@ void insertNeighbors(Particle* ptclCM) {
 void FBTermination(Particle* ptclCM) {
 
 	fprintf(binout,"--------------------------------------\n");
-	fprintf(binout,"In FBTermination.cpp... (CM PID: %d)\n\n", ptclCM->PID);
+	fprintf(binout,"In FBTermination.cpp... (CM PID: %d)\n", ptclCM->PID);
 	fprintf(binout, "CurrentTimeIrr of ptclCM (Myr): %e\n", ptclCM->CurrentTimeIrr*EnzoTimeStep*1e4);
 	fprintf(binout, "CurrentTimeIrr of the first member (Myr): %e\n", particles[ptclCM->Members[0]].CurrentTimeIrr*EnzoTimeStep*1e4);
 	fprintf(binout, "N_member: %d\n", ptclCM->NumberOfMember);
@@ -80,17 +80,18 @@ void FBTermination(Particle* ptclCM) {
 
 			double pos[Dim], vel[Dim];
 			members->predictParticleSecondOrder(ptclCM->CurrentTimeIrr - members->CurrentTimeIrr, pos, vel);
-
+			/*
 			for (int dim=0; dim<Dim; dim++) {
 				members->Position[dim] =  pos[dim];
 				members->Velocity[dim] =  vel[dim];
 			}
+			*/
+			members->correctParticleFourthOrder(ptclCM->CurrentTimeIrr - members->CurrentTimeIrr, pos, vel, members->a_tot);
+			members->updateParticle();
 			members->CurrentTimeIrr = ptclCM->CurrentTimeIrr;
 		}
 
-// /* // test12
 		members->calculateTimeStepReg();
-
 		if (members->TimeLevelReg <= ptclCM->TimeLevelReg-1 
 				&& members->TimeBlockReg/2+members->CurrentBlockReg > ptclCM->CurrentBlockIrr)  { // this ensures that irr time of any particles is smaller than adjusted new reg time.
 			members->TimeLevelReg = ptclCM->TimeLevelReg-1;
@@ -104,10 +105,13 @@ void FBTermination(Particle* ptclCM) {
 		members->TimeBlockReg = static_cast<ULL>(pow(2, members->TimeLevelReg-time_block));
 
 		members->calculateTimeStepIrr2();
+// /* // test12
 		if (ptclCM->NumberOfMember > 2) {
-			members->TimeLevelIrr--;
-			members->TimeStepIrr = static_cast<double>(pow(2, members->TimeLevelIrr));
-			members->TimeBlockIrr = static_cast<ULL>(pow(2, members->TimeLevelIrr-time_block));
+			while (members->TimeStepIrr*EnzoTimeStep*1e4 > 2e-10) {
+				members->TimeLevelIrr--;
+				members->TimeStepIrr = static_cast<double>(pow(2, members->TimeLevelIrr));
+				members->TimeBlockIrr = static_cast<ULL>(pow(2, members->TimeLevelIrr-time_block));
+			}
 		}
 // */
 /* // test11
@@ -178,9 +182,6 @@ void FBTermination(Particle* ptclCM) {
 	// insertNeighbors(ptclCM);
 	ptclCM->clear();
 
-	fprintf(binout,"end of Few Body Termination\n");
-	fprintf(binout,"--------------------------------------\n");
 	fflush(binout);
-
 }
 #endif

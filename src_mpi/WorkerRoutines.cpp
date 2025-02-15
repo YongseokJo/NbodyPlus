@@ -304,7 +304,7 @@ void WorkerRoutines() {
 
 			case Ends: // Simualtion ends
 				std::cout << "Processor " << MyRank<< " returns." << std::endl;
-				//return;
+				return;
 				break;
 
 			case Error:

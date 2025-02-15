@@ -594,6 +594,7 @@ void RootRoutines() {
 #ifdef NSIGHT
 				nvtxRangePushA("IrregularUpdate");
 #endif
+/*
 				// Irregular Update
 				queue_scheduler.initialize(IrrUpdate);
 				queue_scheduler.takeQueue(ThisLevelNode->ParticleList);
@@ -603,7 +604,16 @@ void RootRoutines() {
 					queue_scheduler.runQueueAuto();
 					queue_scheduler.waitQueue(0); // blocking wait
 				} while (queue_scheduler.isComplete());
-				
+*/
+				for (int ptcl_id : ThisLevelNode->ParticleList)
+				{
+					ptcl = &particles[ptcl_id];
+
+					if (ptcl->NumberOfNeighbor != 0) // IAR modified
+						ptcl->updateParticle();
+					ptcl->CurrentBlockIrr = ptcl->NewCurrentBlockIrr;
+					ptcl->CurrentTimeIrr  = ptcl->CurrentBlockIrr*time_step;
+				}
 #ifdef DEBUG
 				for (int i: ThisLevelNode->ParticleList) {
 					ptcl = &particles[i];
@@ -661,19 +671,12 @@ void RootRoutines() {
 								Merge(donor, accretor);
 
 								queue_scheduler.initialize(MergeManyBody);
-								int total_queues = 1;
 								int rank = CMPtclWorker[ptcl->ParticleIndex];
 								queue.task = MergeManyBody;
 								queue.pid = ptcl->ParticleIndex;
 								workers[rank].addQueue(queue);
-								queue_scheduler.WorkersToGo.insert(&workers[rank]);
-
-								queue_scheduler.setTotalQueue(total_queues);
-								do
-								{
-									queue_scheduler.runQueueAuto();
-									queue_scheduler.waitQueue(0);
-								} while (queue_scheduler.isComplete());
+								workers[rank].runQueue();
+								workers[rank].callback();
 								
 								continue;
 							}
@@ -722,6 +725,7 @@ void RootRoutines() {
 #ifdef DEBUG
 				std::cout << "FB search starts" << std::endl;
 #endif
+/*
 				// std::cerr << "FB search starts" << std::endl;
 				// Few-body group search
 				queue_scheduler.initialize(SearchGroup);
@@ -735,6 +739,22 @@ void RootRoutines() {
 				} while (queue_scheduler.isComplete());
 
 				// std::cerr << "FB search ended" << std::endl;
+*/
+				for (int ptcl_id : ThisLevelNode->ParticleList)
+				{
+					ptcl = &particles[ptcl_id];
+					ptcl->NewNumberOfNeighbor = 0;
+					if (ptcl->getBinaryInterruptState() == BinaryInterruptState::manybody)
+					{
+						ptcl->checkNewGroup2();
+						ptcl->setBinaryInterruptState(BinaryInterruptState::none);
+					}
+					else
+					{
+						if (ptcl->TimeStepIrr * EnzoTimeStep * 1e4 < TSEARCH)
+							ptcl->checkNewGroup();
+					}
+				}
 #ifdef DEBUG
 				std::cout << "FB search ended" << std::endl;
 #endif
