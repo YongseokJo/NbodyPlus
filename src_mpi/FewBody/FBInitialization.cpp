@@ -378,7 +378,9 @@ void NewFBInitialization3(Group* group) {
 	ptclCM->NewNumberOfNeighbor = 0;
 	for (int i = 0; i < ptclCM->NumberOfMember; i++) {
 		Particle* members = &particles[ptclCM->Members[i]];
-		if (members->Mass != 0) {
+		if (members->Mass == 0)
+			members->CMPtclIndex = -1;
+		else {
 			ptclCM->NewNeighbors[ptclCM->NewNumberOfNeighbor] = ptclCM->Members[i];
 			ptclCM->NewNumberOfNeighbor++;
 		}
