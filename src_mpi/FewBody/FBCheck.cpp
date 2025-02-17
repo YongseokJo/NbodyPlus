@@ -256,6 +256,7 @@ bool Group::CheckBreak() {
         fprintf(workerout, "peri: %e pc\n\t", bin_root.semi*(1-bin_root.ecc)*position_unit);
         fprintf(workerout, "apo: %e pc\n\t", bin_root.semi*(1+bin_root.ecc)*position_unit);
         fprintf(workerout, "r_crit: %e pc\n\n", sym_int.info.r_break_crit*position_unit);
+        /*
         if (n_member > 2) {
             for (int i=0; i<n_member; i++) {
                 Particle* ptcl1 = &particles[groupCM->Members[i]];
@@ -265,7 +266,8 @@ bool Group::CheckBreak() {
                     ptcl1->setBinaryInterruptState(BinaryInterruptState::manybody);
             }
         }
-        /*
+        */
+        // /*
         if (n_member > 2) {
             fprintf(workerout, "Left PID: %d, Right PID: %d\n", bin_root.getLeftMember()->PID, bin_root.getRightMember()->PID);
             int outgoingPID = bin_root.getLeftMember()->PID != -1 ? bin_root.getLeftMember()->PID : bin_root.getRightMember()->PID;
@@ -290,7 +292,7 @@ bool Group::CheckBreak() {
                 }
             }
         }
-        */
+        // */
         fflush(workerout);
         return true;
     }
@@ -313,6 +315,7 @@ bool Group::CheckBreak() {
             fprintf(workerout, "peri: %e pc\n\t", bin_root.semi*(1-bin_root.ecc)*position_unit);
             fprintf(workerout, "apo: %e pc\n\t", bin_root.semi*(1+bin_root.ecc)*position_unit);
             fprintf(workerout, "r_crit: %e pc\n\n", sym_int.info.r_break_crit*position_unit);
+            /*
             if (n_member > 2) {
                 for (int i=0; i<n_member; i++) {
                     Particle* ptcl1 = &particles[groupCM->Members[i]];
@@ -322,7 +325,8 @@ bool Group::CheckBreak() {
                         ptcl1->setBinaryInterruptState(BinaryInterruptState::manybody);
                 }
             }
-            /*
+            */
+            // /*
             if (n_member > 2) {
                 fprintf(workerout, "Left PID: %d, Right PID: %d\n", bin_root.getLeftMember()->PID, bin_root.getRightMember()->PID);
                 int outgoingPID = bin_root.getLeftMember()->PID != -1 ? bin_root.getLeftMember()->PID : bin_root.getRightMember()->PID;
@@ -347,7 +351,7 @@ bool Group::CheckBreak() {
                     }
                 }
             }
-            */
+            // */
             fflush(workerout);
             return true;
         }
@@ -406,6 +410,7 @@ bool Group::CheckBreak() {
                 fprintf(workerout, "ecca: %e\n\t", bin_root.ecca);
                 fprintf(workerout, "peri: %e pc\n\t", bin_root.semi*(1-bin_root.ecc)*position_unit);
                 fprintf(workerout, "r_crit: %e pc\n\n", sym_int.info.r_break_crit*position_unit);
+                /*
                 if (n_member > 2) {
                     for (int i=0; i<n_member; i++) {
                         Particle* ptcl1 = &particles[groupCM->Members[i]];
@@ -415,7 +420,8 @@ bool Group::CheckBreak() {
                             ptcl1->setBinaryInterruptState(BinaryInterruptState::manybody);
                     }
                 }
-                /*
+                */
+                // /*
                 if (n_member > 2) {
                     fprintf(workerout, "Left PID: %d, Right PID: %d\n", bin_root.getLeftMember()->PID, bin_root.getRightMember()->PID);
                     int outgoingPID = bin_root.getLeftMember()->PID != -1 ? bin_root.getLeftMember()->PID : bin_root.getRightMember()->PID;
@@ -440,7 +446,7 @@ bool Group::CheckBreak() {
                         }
                     }
                 }
-                */
+                // */
                 fflush(workerout);
                 return true;
             }
@@ -524,6 +530,7 @@ bool Group::CheckBreak() {
                 fprintf(workerout, "peri: %e pc\n\t", bin_root.semi*(1-bin_root.ecc)*position_unit);
                 fprintf(workerout, "apo: %e pc\n\t", bin_root.semi*(1+bin_root.ecc)*position_unit);
                 fprintf(workerout, "r_break: %e pc\n\n", sym_int.info.r_break_crit*position_unit);
+                /*
                 if (n_member > 2) {
                     for (int i=0; i<n_member; i++) {
                         Particle* ptcl1 = &particles[groupCM->Members[i]];
@@ -533,7 +540,8 @@ bool Group::CheckBreak() {
                             ptcl1->setBinaryInterruptState(BinaryInterruptState::manybody);
                     }
                 }
-                /*
+                */
+                // /*
                 if (n_member > 2) {
                     fprintf(workerout, "Left PID: %d, Right PID: %d\n", bin_root.getLeftMember()->PID, bin_root.getRightMember()->PID);
                     int outgoingPID = bin_root.getLeftMember()->PID != -1 ? bin_root.getLeftMember()->PID : bin_root.getRightMember()->PID;
@@ -558,7 +566,7 @@ bool Group::CheckBreak() {
                         }
                     }
                 }
-                */
+                // */
                 fflush(workerout);
                 return true;
             }

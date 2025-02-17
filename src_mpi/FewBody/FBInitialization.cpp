@@ -315,7 +315,7 @@ void NewFBInitialization(Particle* ptclCM) {
 	auto& bin_root = ptclGroup->sym_int.info.getBinaryTreeRoot();
 	if (bin_root.semi>0.0) {
 		// ptclGroup->sym_int.info.r_break_crit = fmin(2*bin_root.semi, sqrt(ptclCM->RadiusOfNeighbor));
-		ptclGroup->sym_int.info.r_break_crit = fmin(2*bin_root.semi, 0.01/position_unit); // test12
+		ptclGroup->sym_int.info.r_break_crit = fmin(2*bin_root.semi, 1e-3/position_unit); // test12
 		fprintf(workerout, "Bound. separation: %e pc\n\t", bin_root.r*position_unit);
 		fprintf(workerout, "ecc: %e\n\t", bin_root.ecc);
 		fprintf(workerout, "semi: %e pc\n\t", bin_root.semi*position_unit);
@@ -433,7 +433,7 @@ void NewFBInitialization3(Group* group) {
 	auto& bin_root = ptclGroup->sym_int.info.getBinaryTreeRoot();
 	if (bin_root.semi>0.0) {
 		// ptclGroup->sym_int.info.r_break_crit = fmin(2*bin_root.semi, sqrt(ptclCM->RadiusOfNeighbor));
-		ptclGroup->sym_int.info.r_break_crit = fmin(2*bin_root.semi, 0.01/position_unit); // test12
+		ptclGroup->sym_int.info.r_break_crit = fmin(2*bin_root.semi, 1e-3/position_unit); // test12
 		fprintf(workerout, "Bound. separation: %e pc\n\t", bin_root.r*position_unit);
 		fprintf(workerout, "ecc: %e\n\t", bin_root.ecc);
 		fprintf(workerout, "semi: %e pc\n\t", bin_root.semi*position_unit);

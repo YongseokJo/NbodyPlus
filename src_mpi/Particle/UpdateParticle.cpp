@@ -390,11 +390,19 @@ void Particle::calculateTimeStepReg() {
 		TimeStepReg = 1 - CurrentTimeReg;
 		TimeBlockReg = block_max-CurrentBlockReg;
 	}
-
+	/*
 	if (TimeStepReg*EnzoTimeStep*1e4<1e-9) {
 		fprintf(stderr, "PID: %d, TimeStep = %.3e, TimeStepTmp0 = %.3e\n",
 			 	PID, TimeStepReg*EnzoTimeStep*1e4, static_cast<double>(pow(2, TimeLevelTmp0))*EnzoTimeStep*1e4);
 		throw std::runtime_error("TimeStepReg is too small.");
+	}
+	*/
+	if (TimeStepReg*EnzoTimeStep*1e4<1e-9) {
+		fprintf(stderr, "Too small TimeStepReg! PID: %d, TimeStep = %.3e, TimeStepTmp0 = %.3e\n",
+				PID, TimeStepReg*EnzoTimeStep*1e4, static_cast<double>(pow(2, TimeLevelTmp0))*EnzoTimeStep*1e4);
+		TimeLevelReg++;
+		TimeStepReg  = static_cast<double>(pow(2, TimeLevelReg));
+		TimeBlockReg = static_cast<ULL>(pow(2, TimeLevelReg-time_block));
 	}
 	if (TimeStepReg > 1) {
 		fprintf(stderr, "TimeStepReg=%e, TimeLevelReg=%d, TimeLevelTmp0=%d\n",TimeStepReg, TimeLevelReg, TimeLevelTmp0);
