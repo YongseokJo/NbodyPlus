@@ -194,8 +194,12 @@ void WorkerRoutines() {
 				ptcl = &particles[ptcl_id];
 				// std::cerr << "FB search of particle  " << ptcl_id << " is initiated on rank " << MyRank << "." <<std::endl;
 
-				if (ptcl->getBinaryInterruptState()==BinaryInterruptState::manybody) {
-					// ptcl->checkNewGroup2();
+				if (ptcl->getBinaryInterruptState()==BinaryInterruptState::threebody) {
+					ptcl->setBinaryInterruptState(BinaryInterruptState::none);
+				}
+				else if (ptcl->getBinaryInterruptState()==BinaryInterruptState::manybody) {
+					ptcl->NewNumberOfNeighbor = 0;
+					ptcl->checkNewGroup2();
 					ptcl->setBinaryInterruptState(BinaryInterruptState::none);
 				}
 				else {

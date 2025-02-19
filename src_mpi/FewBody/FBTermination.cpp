@@ -55,6 +55,8 @@ void FBTermination(Particle* ptclCM) {
 
 		if (ptclCM->NumberOfMember == 2)
 			members->setBinaryInterruptState(BinaryInterruptState::none);
+		else if (ptclCM->NumberOfMember > 3)
+			members->setBinaryInterruptState(BinaryInterruptState::manybody);
 
 		members->CurrentBlockIrr	= ptclCM->CurrentBlockIrr;
 		members->CurrentBlockReg	= ptclCM->CurrentBlockReg;

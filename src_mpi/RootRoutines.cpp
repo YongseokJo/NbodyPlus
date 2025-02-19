@@ -743,9 +743,14 @@ void RootRoutines() {
 				for (int ptcl_id : ThisLevelNode->ParticleList)
 				{
 					ptcl = &particles[ptcl_id];
-					if (ptcl->getBinaryInterruptState() == BinaryInterruptState::manybody)
+					
+					if (ptcl->getBinaryInterruptState() == BinaryInterruptState::threebody) {
+						ptcl->setBinaryInterruptState(BinaryInterruptState::none);
+					}
+					else if (ptcl->getBinaryInterruptState()==BinaryInterruptState::manybody)
 					{
-						// ptcl->checkNewGroup2();
+						ptcl->NewNumberOfNeighbor = 0;
+						ptcl->checkNewGroup2();
 						ptcl->setBinaryInterruptState(BinaryInterruptState::none);
 					}
 					else

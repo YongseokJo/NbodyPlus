@@ -638,12 +638,17 @@ public:
             Float peri = semi*(1 - ecc);
             Float ecc_anomaly  = _bin.calcEccAnomaly(dr); // 0 ~ pi
             Float mean_anomaly = _bin.calcMeanAnomaly(ecc_anomaly, ecc); // 0 ~ pi
+            if (drdv < 0)
+                mean_anomaly = 2*M_PI - mean_anomaly;
+            mean_anomaly = fmod(mean_anomaly + 2*M_PI, 2*M_PI);
             Float mean_motion  = sqrt(gravitational_constant*_bin.Mass/(fabs(_bin.semi*_bin.semi*_bin.semi))); 
-            Float t_peri = abs(mean_anomaly/mean_motion); // always smaller than period / 2
+            Float t_peri = abs(mean_anomaly/mean_motion); // always smaller than half the period
             Float period = 2*M_PI/mean_motion;
 
             if (peri < radius && _dt > t_peri) {
-                fprintf(workerout, "peri: %e pc, radius: %e pc\n", peri*position_unit, radius*position_unit);
+                fprintf(workerout, "Merger in KeplerSolver. peri: %e pc, radius: %e pc\n", peri*position_unit, radius*position_unit);
+                fprintf(workerout, "PID: %d and %d\n", p1->PID, p2->PID);
+                fflush(workerout);
 
                 p1->setBinaryInterruptState(BinaryInterruptState::collision);
                 p2->setBinaryInterruptState(BinaryInterruptState::collision);

@@ -18,10 +18,11 @@ enum class BinaryInterruptState:int {
 	exchange = 2, 
 	collisioncandidate = 3,
 	collision = 4,
-	manybody = 5,	// many-body (>2) group terminated // added by EW 2025.1.19
-	kicked = 6,		// kicked or exploded as PISN during stellar evolution // added by EW 2025.1.19
-	terminated = 7,	// CM particle only; terminated // added by EW 2025.1.20
-	merger = 8		// CM particle only; merger inside // added by EW 2025.1.20
+	threebody = 5,	// particles from 3body interaction // added by EW 2025.2.18
+	manybody = 6,	// many-body (>3) group terminated // added by EW 2025.1.19
+	kicked = 7,		// kicked or exploded as PISN during stellar evolution // added by EW 2025.1.19
+	terminated = 8,	// CM particle only; terminated // added by EW 2025.1.20
+	merger = 9		// CM particle only; merger inside // added by EW 2025.1.20
 };
 #define BINARY_STATE_ID_SHIFT 4 // Eunwoo
 #define BINARY_INTERRUPT_STATE_MASKER 0xF // Eunwoo
