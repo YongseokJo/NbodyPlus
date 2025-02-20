@@ -111,8 +111,10 @@ void formBinaries(std::vector<int>& ParticleList, std::vector<int>& newCMptcls,
 		NewCM->ParticleIndex = i;
 		NewCM->PID = NewPID;
 		NewPID++;
+#ifdef DEBUG
 		std::cout << "New CM ParticleIndex: " << i << std::endl;
 		std::cout << "New CM PID: " << NewCM->PID << std::endl;
+#endif
 		NewCM->setBinaryInterruptState(BinaryInterruptState::none);
 
 		NumberOfParticle += 1 - NewCM->NewNumberOfNeighbor;

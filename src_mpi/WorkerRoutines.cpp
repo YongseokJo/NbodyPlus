@@ -235,8 +235,10 @@ void WorkerRoutines() {
 				ptcl = &particles[ptcl_id];
 
 				NewFBInitialization(ptcl);
+#ifdef DEBUG
 				std::cout << "FewBody object of particle " << ptcl->PID
 						  << " is successfully initialized on rank " << MyRank << "." <<std::endl;
+#endif
 				break;
 
 			case DeleteGroup: // Delete a Group struct
@@ -273,11 +275,14 @@ void WorkerRoutines() {
 						ptcl->setBinaryInterruptState(BinaryInterruptState::terminated);
 
 					delete ptcl->GroupInfo;
-
+#ifdef DEBUG
 					std::cout << "(SDAR) Processor " << MyRank<< ": PID= "<<ptcl->PID << " deleted!" <<std::endl;
+#endif
 				}
+#ifdef DEBUG
 				else
 					std::cout << "(SDAR) Processor " << MyRank<< ": PID= "<<ptcl->PID << " done!" <<std::endl;
+#endif
 				break;
 			
 			case MergeManyBody: // Merger insided many-body (>2) group

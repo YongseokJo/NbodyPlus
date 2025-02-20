@@ -392,7 +392,7 @@ void RootRoutines() {
 	}
 	*/
 	/* Particle Initialization Check */
-	/*
+	// /*
 	{
 		//, NextRegTime= %.3e Myr(%llu),
 		for (int i=0; i<=LastParticleIndex; i++) {
@@ -417,7 +417,7 @@ void RootRoutines() {
 						ptcl->NumberOfNeighbor);
 		}
 	}
-	*/
+	// */
 
 
 	/* Actual Loop */
@@ -812,15 +812,18 @@ void RootRoutines() {
 
 						queue_scheduler.initialize(MakeGroup);
 						rank_new = CMPtclWorker[ptclCM->ParticleIndex];
-						// fprintf(stdout, "New CM ptcl is %d\n", newCMptcls[0]);
+#ifdef DEBUG
 						fprintf(stdout, "Rank of CM ptcl %d: %d\n", ptclCM->PID, rank_new);
+#endif
 						queue.task = MakeGroup;
 						queue.pid = ptclCM->ParticleIndex;
 						workers[rank_new].addQueue(queue);
 						workers[rank_new].runQueue();
 						workers[rank_new].callback();
 					}
+#ifdef DEBUG
 					std::cout << "All new fewbody objects are initialized." << std::endl;
+#endif
 
 					ThisLevelNode->ParticleList.erase(
 						std::remove_if(

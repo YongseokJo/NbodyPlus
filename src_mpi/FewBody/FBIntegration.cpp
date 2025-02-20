@@ -415,8 +415,8 @@ void Merge(Particle* p1, Particle* p2) { // Stellar merger
             if (mcm*mass_unit > 2.2 && mcm*mass_unit < 600) {
 
                 std::vector<std::string> args = {"empty", // Not used
-                                            // "-myself", "/data/vinicius/NbodyPlus/SEVN",
-                                            "-tables", "/data/vinicius/mpi/NbodyPlues/SEVN/tables/SEVNtracks_parsec_ov04_AGB", 
+                                            // "-myself", "/data/vinicius/sevn/build",
+                                            "-tables", "/data/vinicius/sevn/tables/SEVNtracks_parsec_ov04_AGB", 
                                             //  "-tables", "/data/vinicius/NbodyPlus/SEVN/tables/SEVNtracks_MIST_AGB",
                                             // "-tables_HE", "/data/vinicius/NbodyPlus/SEVN/tables/SEVNtracks_parsec_pureHe36",
                                             // "-turn_WR_to_pureHe", "false",
@@ -799,28 +799,5 @@ void recoilKick(Particle* p1, Particle* p2) {
     // fprintf(mergerout, "Remnant velocity: (%e, %e, %e) km/s\n", p1->Velocity[0]*velocity_unit/yr*pc/1e5, p1->Velocity[1]*velocity_unit/yr*pc/1e5, p1->Velocity[2]*velocity_unit/yr*pc/1e5);
     fflush(mergerout);
 }
-
-#ifdef SEVN
-// Use this function when merger happened
-void SetRadius(Particle* ptcl) {
-
-    if (!ptcl->StellarEvolution->amiremnant()) {
-        ptcl->radius = ptcl->StellarEvolution->getp(Radius::ID)/(utilities::parsec_to_Rsun)/position_unit;
-        if (ptcl->Mass*mass_unit > ptcl->StellarEvolution->get_max_zams()) // VMS correction; constant stellar density is assumed
-            ptcl->radius *= pow(ptcl->Mass*1e9/ptcl->StellarEvolution->get_max_zams(), 1./3);
-    }
-    else if (ptcl->StellarEvolution->amiWD()) {
-        double RNS = 11/(velocity_unit/yr*pc/1e5); // 11 km/s in code unit
-        double Mch = 1.41/mass_unit;
-        double RWD = 0.0115*std::sqrt(pow(Mch/ptcl->Mass,0.6666666667) -  pow(ptcl->Mass/Mch,0.6666666667));
-        
-        ptcl->radius = std::max(RNS,RWD);
-    }
-    else if (ptcl->StellarEvolution->amiNS())
-        ptcl->radius = 11/(velocity_unit/yr*pc/1e5); // 11 km/s in code unit
-    else if (ptcl->StellarEvolution->amiBH())
-        ptcl->radius = 2*ptcl->Mass/pow(299752.458/(velocity_unit/yr*pc/1e5), 2); // Schwartzschild radius in code unit
-}
-#endif
 
 #endif

@@ -223,6 +223,16 @@ void Particle::calculateTimeStepIrr() {
 	TimeStepIrr = static_cast<double>(pow(2, TimeLevelIrr));
 	TimeBlockIrr = static_cast<ULL>(pow(2, TimeLevelIrr-time_block));
 
+	if (TimeStepIrr*EnzoTimeStep*1e4<1e-11) {
+		fprintf(stderr, "Too small TimeStepIrr! PID: %d, TimeStep = %e, TimeStepTmp0 = %e\n",
+				PID, TimeStepIrr*EnzoTimeStep*1e4, static_cast<double>(pow(2, TimeLevelTmp0))*EnzoTimeStep*1e4);
+		while (TimeStepIrr*EnzoTimeStep*1e4<1e-11) {
+			TimeLevelIrr++;
+			TimeStepIrr  = static_cast<double>(pow(2, TimeLevelIrr));
+			TimeBlockIrr = static_cast<ULL>(pow(2, TimeLevelIrr-time_block));
+		}
+	}
+
 	if (TimeStepIrr > 1) {
 		fprintf(stderr, "TimeStepIrr=%e, TimeLevelIrr=%d, TimeLevelTmp0=%d\n",TimeStepIrr, TimeLevelIrr, TimeLevelTmp0);
 		fflush(stderr);
@@ -290,6 +300,16 @@ void Particle::calculateTimeStepIrr2() {
 
 	TimeStepIrr = static_cast<double>(pow(2, TimeLevelIrr));
 	TimeBlockIrr = static_cast<ULL>(pow(2, TimeLevelIrr-time_block));
+
+	if (TimeStepIrr*EnzoTimeStep*1e4<1e-11) {
+		fprintf(stderr, "Too small TimeStepIrr! PID: %d, TimeStep = %e, TimeStepTmp0 = %e\n",
+				PID, TimeStepIrr*EnzoTimeStep*1e4, static_cast<double>(pow(2, TimeLevelTmp0))*EnzoTimeStep*1e4);
+		while (TimeStepIrr*EnzoTimeStep*1e4<1e-11) {
+			TimeLevelIrr++;
+			TimeStepIrr  = static_cast<double>(pow(2, TimeLevelIrr));
+			TimeBlockIrr = static_cast<ULL>(pow(2, TimeLevelIrr-time_block));
+		}
+	}
 
 	if (TimeStepIrr > 1) {
 		fprintf(stderr, "TimeStepIrr=%e, TimeLevelIrr=%d, TimeLevelTmp0=%d\n",TimeStepIrr, TimeLevelIrr, TimeLevelTmp0);
@@ -398,11 +418,13 @@ void Particle::calculateTimeStepReg() {
 	}
 	*/
 	if (TimeStepReg*EnzoTimeStep*1e4<1e-9) {
-		fprintf(stderr, "Too small TimeStepReg! PID: %d, TimeStep = %.3e, TimeStepTmp0 = %.3e\n",
+		fprintf(stderr, "Too small TimeStepReg! PID: %d, TimeStep = %e, TimeStepTmp0 = %e\n",
 				PID, TimeStepReg*EnzoTimeStep*1e4, static_cast<double>(pow(2, TimeLevelTmp0))*EnzoTimeStep*1e4);
-		TimeLevelReg++;
-		TimeStepReg  = static_cast<double>(pow(2, TimeLevelReg));
-		TimeBlockReg = static_cast<ULL>(pow(2, TimeLevelReg-time_block));
+		while (TimeStepReg*EnzoTimeStep*1e4<1e-9) {
+			TimeLevelReg++;
+			TimeStepReg  = static_cast<double>(pow(2, TimeLevelReg));
+			TimeBlockReg = static_cast<ULL>(pow(2, TimeLevelReg-time_block));
+		}
 	}
 	if (TimeStepReg > 1) {
 		fprintf(stderr, "TimeStepReg=%e, TimeLevelReg=%d, TimeLevelTmp0=%d\n",TimeStepReg, TimeLevelReg, TimeLevelTmp0);
