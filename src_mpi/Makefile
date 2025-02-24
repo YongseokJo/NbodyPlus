@@ -33,11 +33,11 @@ CU_SRCS = cuda/cuda_my_acceleration.cu cuda/cuda_kernels.cu
 CXXFLAGS += -I./../SDAR/src -DAR_TTL -DAR_SLOWDOWN_TREE -DAR_SLOWDOWN_TIMESCALE -DFEWBODY #-DDEBUG
 CXX_SRCS += FewBody/FBCheck.cpp FewBody/FBInitialization.cpp FewBody/FBIntegration.cpp FewBody/FBTermination.cpp FewBody/GroupAccelerationRoutine.cpp
 
-ifdef USE_SEVN
-    CXXFLAGS += -DSEVN -I/data/vinicius/sevn/build/include/sevn
-    LDFLAGS += -L/data/vinicius/sevn/build/lib64/sevn -lsevn_lib_shared
-    CXX_SRCS += StellarEvolution.cpp
-endif
+# ifdef USE_SEVN
+#     CXXFLAGS += -DSEVN -I/data/vinicius/sevn/build/include/sevn
+#     LDFLAGS += -L/data/vinicius/sevn/build/lib64/sevn -lsevn_lib_shared
+#     CXX_SRCS += StellarEvolution.cpp
+# endif
 
 #
 OBJS = $(CU_SRCS:.cu=.o) $(CXX_SRCS:.cpp=.o)

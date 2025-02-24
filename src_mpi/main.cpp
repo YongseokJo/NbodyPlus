@@ -109,6 +109,8 @@ int main(int argc, char *argv[]) {
 		if (outFile.is_open()) {
 			// Write the variable to the file
 			outFile << performance.IrregularForce << std::endl;
+			outFile << "Irregular Routine " << performance.IrregularRoutine << std::endl;
+			outFile << "Regular Routine " << performance.RegularRoutine << std::endl;
 
 			// Close the file
 			outFile.close();

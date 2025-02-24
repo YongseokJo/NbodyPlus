@@ -80,6 +80,11 @@ void RootRoutines() {
 
 	QueueScheduler queue_scheduler;
 
+#ifdef PerformanceTrace
+	std::chrono::high_resolution_clock::time_point start_point;
+	std::chrono::high_resolution_clock::time_point end_point;
+#endif
+
 	/* Particle loading Check */
 	/*
 	{
@@ -434,6 +439,10 @@ void RootRoutines() {
 		//ParticleSynchronization();
 		while (1) {
 
+#ifdef PerformanceTrace
+			start_point = std::chrono::high_resolution_clock::now();
+#endif
+
 			// create output at appropriate time intervals
 			if (global_time >= outputTime) {
 				writeParticle(global_time, outNum++);
@@ -450,8 +459,13 @@ void RootRoutines() {
 				std::cout << "Simulation Done!" << std::endl;
 				return;
 			}
-
+#ifdef NSIGHT
+			nvtxRangePushA("updateNextRegTime");
+#endif
 			updateNextRegTime(RegularList);
+#ifdef NSIGHT
+			nvtxRangePop();
+#endif
 			/*
 			std::cout << "NextRegTimeBlock=" << NextRegTimeBlock << std::endl;
 			std::cout << "PID= ";
@@ -460,11 +474,15 @@ void RootRoutines() {
 			std::cout << std::endl;
 			std::cout << "size of regularlist= " << RegularList.size() << std::endl;
 			*/
-
+#ifdef NSIGHT
+			nvtxRangePushA("createSkipList");
+#endif
 			skiplist = new SkipList(max_level, prob);
 			if (createSkipList(skiplist) == FAIL)
 				fprintf(stderr, "There are no irregular particles!\nBut is it really happening? check skiplist->display()\n");
-
+#ifdef NSIGHT
+			nvtxRangePop();
+#endif
 			bool bin_termination = false;
 			bool new_binaries = false;
 
@@ -987,7 +1005,15 @@ void RootRoutines() {
 #ifdef DEBUG
 			std::cout << "(FB) updateNextRegTime starts" << std::endl;
 #endif
+
+#ifdef NSIGHT
+				nvtxRangePushA("updateNextRegTime");
+#endif
 				updateNextRegTime(RegularList);
+#ifdef NSIGHT
+				nvtxRangePop();
+#endif
+
 #ifdef DEBUG
 			std::cout << "(FB) updateNextRegTime done" << std::endl;
 			std::cout << "(FB) RegularList size: " << RegularList.size() << std::endl;
@@ -995,8 +1021,17 @@ void RootRoutines() {
 			}
 #endif
 
+#ifdef PerformanceTrace
+			end_point = std::chrono::high_resolution_clock::now();
+			performance.IrregularRoutine +=
+				std::chrono::duration_cast<std::chrono::nanoseconds>(end_point - start_point).count();
+#endif
+
 #ifdef CUDA
 			{
+#ifdef PerformanceTrace
+				start_point = std::chrono::high_resolution_clock::now();
+#endif
 				//total_tasks = RegularList.size();
 				next_time = NextRegTimeBlock*time_step;
 
@@ -1043,6 +1078,12 @@ void RootRoutines() {
 
 #ifdef NSIGHT
 				nvtxRangePop();
+#endif
+
+#ifdef PerformanceTrace
+				end_point = std::chrono::high_resolution_clock::now();
+				performance.RegularRoutine +=
+					std::chrono::duration_cast<std::chrono::nanoseconds>(end_point - start_point).count();
 #endif
 			}
 				/*
