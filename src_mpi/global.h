@@ -7,6 +7,10 @@
 #include "performance.h"
 #include <mpi.h>
 
+#ifdef SEVN
+#include "IO.h"
+#endif
+
 
 extern Particle *particles;
 extern Particle *particles_original;
@@ -74,6 +78,7 @@ extern FILE* binout;
 extern FILE* mergerout;
 #ifdef SEVN
 extern FILE* SEVNout;
+extern IO* sevnio;
 #endif
 extern FILE* workerout;
 

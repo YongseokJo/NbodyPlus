@@ -413,7 +413,7 @@ void Merge(Particle* p1, Particle* p2) { // Stellar merger
             p1->radius = 2.25461e-8/position_unit*pow(p1->Mass*mass_unit, 1./3); // stellar radius in code unit
 
             if (mcm*mass_unit > 2.2 && mcm*mass_unit < 600) {
-
+/*
                 std::vector<std::string> args = {"empty", // Not used
                                             // "-myself", "/data/vinicius/sevn/build",
                                             "-tables", "/data/vinicius/sevn/tables/SEVNtracks_parsec_ov04_AGB", 
@@ -436,7 +436,7 @@ void Merge(Particle* p1, Particle* p2) { // Stellar merger
                 IO* sevnio; // Eunwoo: global variable -> We can initialize Star and Binstar class anywhere.
                 sevnio = new IO;
                 sevnio->load(c_args.size(), c_args.data());
-
+*/
                 std::vector<std::string> init_params{std::to_string(double(p1->Mass*mass_unit)), "0.0002", "0.0", "delayed", "zams", "end", "events"};
                 size_t id = p1->PID;
                 p1->StellarEvolution = new Star(sevnio, init_params, id, false);

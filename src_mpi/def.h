@@ -5,8 +5,8 @@
 
 
 #define NumberOfTask 20
-#define MaxNumberOfParticle 1000000
-#define MaxNumberOfNeighbor 2000 // 10000 -> 2000 modified by EW 2025.1.11
+#define MaxNumberOfParticle 200000
+#define MaxNumberOfNeighbor 1000 // 10000 -> 2000 modified by EW 2025.1.11
 
 
 
@@ -17,7 +17,7 @@
 #define FixNumNeighbor 100 // 500 -> 100 modified by EW 2025.1.11
 //#define NumNeighborMax 100
 #define NumNeighborMax 1000 // 5000 -> 1000 modified by EW 2025.1.11
-#define ACRadius 0.05 // 0.11 -> 0.05 modified by EW 2025.1.11
+#define ACRadius 0.015 // 0.11 -> 0.05 modified by EW 2025.1.11
 
 
 // SDAR
@@ -74,7 +74,7 @@ typedef unsigned long long ULL;
 
 #define nbodymax 100000000 //100000000 for node14
 #define BatchSize 64 // 64. each thread calculates BatchSize particles with a single shared memory
-#define GridDimY 64 // 32 original //  each block calcuates NNB/GridDimY particles
+#define GridDimY 32 // 32 original //  each block calcuates NNB/GridDimY particles
 #define NNB_per_block 128 //256 original
 #define NSIGHT // for nsight debugging
 #define MultiGPU // for multi-gpu
