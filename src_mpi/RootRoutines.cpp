@@ -552,15 +552,15 @@ void RootRoutines() {
 								iter = queue_scheduler.CMPtcls.begin();
 							cm_pid = *(iter);
 							ptcl = &particles[cm_pid];
-							for (int j = 0; j < ptcl->NumberOfNeighbor; j++)
-							{
-								// if (particles[ptcl->Neighbors[j]].isUpdateToDate == false) // original code
-								if (particles[ptcl->Neighbors[j]].isActive && !particles[ptcl->Neighbors[j]].isUpdateToDate) // modified by EW 2025.2.26
-								{
-									iter++;
-									goto skip_to_next;
-								}
-							}
+							// for (int j = 0; j < ptcl->NumberOfNeighbor; j++)
+							// {
+							// 	// if (particles[ptcl->Neighbors[j]].isUpdateToDate == false) // original code
+							// 	if (particles[ptcl->Neighbors[j]].isActive && !particles[ptcl->Neighbors[j]].isUpdateToDate) // modified by EW 2025.2.26
+							// 	{
+							// 		iter++;
+							// 		goto skip_to_next;
+							// 	}
+							// }
 							//queue_scheduler.printFreeWorker();
 							//queue_scheduler.printWorkerToGo();
 							//std::cout << "before: The number of CM ptcl is " << queue_scheduler.CMPtcls.size() << std::endl;
@@ -628,8 +628,21 @@ void RootRoutines() {
 				{
 					ptcl = &particles[ptcl_id];
 
-					if (ptcl->NumberOfNeighbor != 0) // IAR modified
-						ptcl->updateParticle();
+					// if (ptcl->NumberOfNeighbor != 0) // IAR modified
+					// 	ptcl->updateParticleIrr();
+					if (ptcl->NumberOfNeighbor != 0) {
+						for (int dim=0; dim<Dim; dim++) {
+							ptcl->Position[dim] = ptcl->NewPosition[dim];
+							ptcl->Velocity[dim] = ptcl->NewVelocity[dim];
+						}
+					
+						for (int i=0; i<Dim; i++) {
+							for (int j=0; j<HERMITE_ORDER; j++) {
+								ptcl->a_irr[i][j] = ptcl->New_a_irr[i][j];
+								ptcl->a_tot[i][j] = ptcl->New_a_tot[i][j];
+							}
+						}
+					}
 					ptcl->CurrentBlockIrr = ptcl->NewCurrentBlockIrr;
 					ptcl->CurrentTimeIrr  = ptcl->CurrentBlockIrr*time_step;
 				}

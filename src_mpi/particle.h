@@ -38,6 +38,9 @@ struct Particle {
 	double a_tot[Dim][HERMITE_ORDER];
 	double a_reg[Dim][HERMITE_ORDER];
 	double a_irr[Dim][HERMITE_ORDER];
+	double New_a_tot[Dim][HERMITE_ORDER]; // added by EW 2025.2.26
+	double New_a_reg[Dim][HERMITE_ORDER]; // added by EW 2025.2.26
+	double New_a_irr[Dim][HERMITE_ORDER]; // added by EW 2025.2.26
 	int    Neighbors[MaxNumberOfNeighbor];    // 
 	int    NumberOfNeighbor;    // 
 	int    NewNeighbors[MaxNumberOfNeighbor];    // 
@@ -62,7 +65,7 @@ struct Particle {
 
 	// For SDAR
 	bool isActive;
-	bool isUpdateToDate;
+	// bool isUpdateToDate;
 	double radius; // used in SEVN too
 	double dm; // Stellar mass which will be distributed to nearby gas cells // used in SEVN too
 	double time_check; // time to check next interrupt
@@ -122,7 +125,7 @@ struct Particle {
 		setBinaryInterruptState(BinaryInterruptState::none);
 		GroupInfo = nullptr;
 		isCMptcl = false; //(Query)
-		isUpdateToDate = true;
+		// isUpdateToDate = true;
 		CMPtclIndex = -1;
 		NumberOfMember = 0;
 #ifdef SEVN
@@ -170,7 +173,7 @@ struct Particle {
 		this->a_spin[1] = 0.;
 		this->a_spin[2] = 0.;
 		this->CMPtclIndex = -1;
-		this->isUpdateToDate = true;
+		// this->isUpdateToDate = true;
 		this->NumberOfMember = 0;
 
 #ifndef SEVN
@@ -198,7 +201,7 @@ struct Particle {
         NumberOfNeighbor = 0;
         NewNumberOfNeighbor = 0;
 
-		isUpdateToDate = true;
+		// isUpdateToDate = true;
         isActive = false;
 		GroupInfo = nullptr;
 		isCMptcl = false;
@@ -221,7 +224,8 @@ struct Particle {
 
 
 
-	void updateParticle(); 
+	void updateParticleIrr(); 
+	void updateParticleReg(); 
 
 	/*
 	void getAcceleration(const double pos[], const double vel[]) {

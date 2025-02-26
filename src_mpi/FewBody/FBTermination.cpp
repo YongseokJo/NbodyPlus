@@ -79,14 +79,14 @@ void FBTermination(Particle* ptclCM) {
 
 			double pos[Dim], vel[Dim];
 			members->predictParticleSecondOrder(ptclCM->CurrentTimeIrr - members->CurrentTimeIrr, pos, vel);
-			/*
-			for (int dim=0; dim<Dim; dim++) {
-				members->Position[dim] =  pos[dim];
-				members->Velocity[dim] =  vel[dim];
-			}
-			*/
 			members->correctParticleFourthOrder(ptclCM->CurrentTimeIrr - members->CurrentTimeIrr, pos, vel, members->a_tot);
-			members->updateParticle();
+			// members->updateParticle();
+			// /*
+			for (int dim=0; dim<Dim; dim++) {
+				members->Position[dim] =  members->NewPosition[dim];
+				members->Velocity[dim] =  members->NewVelocity[dim];
+			}
+			// */
 			members->CurrentTimeIrr = ptclCM->CurrentTimeIrr;
 		}
 

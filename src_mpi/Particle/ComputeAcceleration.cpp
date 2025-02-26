@@ -189,10 +189,10 @@ void Particle::computeAccelerationIrr() {
 
 
 		// note that these higher order terms and lowers have different neighbors
-		this->a_irr[dim][0] = a_tmp[dim];
-		this->a_irr[dim][1] = adot_tmp[dim];
-		this->a_irr[dim][2] = a2*24/dt3;
-		this->a_irr[dim][3] = a3*120/dt4;
+		this->New_a_irr[dim][0] = a_tmp[dim];
+		this->New_a_irr[dim][1] = adot_tmp[dim];
+		this->New_a_irr[dim][2] = a2*24/dt3;
+		this->New_a_irr[dim][3] = a3*120/dt4;
 #else
 		// do the higher order correcteion
 		da_dt2  = (this->a_irr[dim][0] - a_tmp[dim]) / dt2; 
@@ -206,20 +206,20 @@ void Particle::computeAccelerationIrr() {
 		this->NewVelocity[dim] = vel[dim] + a2*dt3/6  + a3*dt4/24;
 
 		// note that these higher order terms and lowers have different neighbors
-		this->a_irr[dim][0] = a_tmp[dim];
-		this->a_irr[dim][1] = adot_tmp[dim];
-		this->a_irr[dim][2] = a2;
-		this->a_irr[dim][3] = a3;
+		this->New_a_irr[dim][0] = a_tmp[dim];
+		this->New_a_irr[dim][1] = adot_tmp[dim];
+		this->New_a_irr[dim][2] = a2;
+		this->New_a_irr[dim][3] = a3;
 #endif
 	}
 
 
 
 	for (int dim=0; dim<Dim; dim++) {
-		this->a_tot[dim][0] = this->a_reg[dim][0] + this->a_irr[dim][0] + this->a_reg[dim][1]*dt_ex; // affect the next
-		this->a_tot[dim][1] = this->a_reg[dim][1] + this->a_irr[dim][1];
-		this->a_tot[dim][2] = this->a_reg[dim][2] + this->a_irr[dim][2];
-		this->a_tot[dim][3] = this->a_reg[dim][3] + this->a_irr[dim][3];
+		this->New_a_tot[dim][0] = this->a_reg[dim][0] + this->New_a_irr[dim][0] + this->a_reg[dim][1]*dt_ex; // affect the next
+		this->New_a_tot[dim][1] = this->a_reg[dim][1] + this->New_a_irr[dim][1];
+		this->New_a_tot[dim][2] = this->a_reg[dim][2] + this->New_a_irr[dim][2];
+		this->New_a_tot[dim][3] = this->a_reg[dim][3] + this->New_a_irr[dim][3];
 	}
 
 
@@ -492,8 +492,8 @@ void Particle::updateRegularParticleCuda(int *NewNeighborsGPU, int NewNumberOfNe
 	for (int dim=0; dim<Dim; dim++) {
 		a_tmp[dim]          = 0.;
 		adot_tmp[dim]       = 0.;
-		this->a_irr[dim][0] = 0.;
-		this->a_irr[dim][1] = 0.;
+		this->New_a_irr[dim][0] = 0.;
+		this->New_a_irr[dim][1] = 0.;
 	}
 
 
@@ -612,8 +612,8 @@ void Particle::updateRegularParticleCuda(int *NewNeighborsGPU, int NewNumberOfNe
 			m_r3 = ptcl->Mass/dr2/sqrt(dr2);
 
 			for (int dim=0; dim<Dim; dim++){
-				a_irr[dim][0] += m_r3*dx[dim];
-				a_irr[dim][1] += m_r3*(dv[dim] - 3*dx[dim]*dxdv/dr2);
+				New_a_irr[dim][0] += m_r3*dx[dim];
+				New_a_irr[dim][1] += m_r3*(dv[dim] - 3*dx[dim]*dxdv/dr2);
 			}
 
 			// neighbor in new but not in old
@@ -679,8 +679,8 @@ void Particle::updateRegularParticleCuda(int *NewNeighborsGPU, int NewNumberOfNe
 		this->NewPosition[dim] = pos[dim] + a2*dt4/24 + a3*dt5/120;
 		this->NewVelocity[dim] = vel[dim] + a2*dt3/6  + a3*dt4/24;
 
-		this->a_reg[dim][2] = a2;
-		this->a_reg[dim][3] = a3;
+		this->New_a_reg[dim][2] = a2;
+		this->New_a_reg[dim][3] = a3;
 
 		// reset for future use
 		a_tmp[dim]    = 0.;
@@ -701,13 +701,13 @@ void Particle::updateRegularParticleCuda(int *NewNeighborsGPU, int NewNumberOfNe
 
 
 	for (int dim=0; dim<Dim; dim++) {
-		this->a_reg[dim][0] = new_a[dim];
-		this->a_reg[dim][1] = new_adot[dim];
-		this->a_tot[dim][0] = this->a_reg[dim][0] + this->a_irr[dim][0];
-		this->a_tot[dim][1] = this->a_reg[dim][1] + this->a_irr[dim][1];
+		this->New_a_reg[dim][0] = new_a[dim];
+		this->New_a_reg[dim][1] = new_adot[dim];
+		this->New_a_tot[dim][0] = this->New_a_reg[dim][0] + this->New_a_irr[dim][0];
+		this->New_a_tot[dim][1] = this->New_a_reg[dim][1] + this->New_a_irr[dim][1];
 		if (this->NewNumberOfNeighbor == 0) {
-			this->a_tot[dim][2] = this->a_reg[dim][2];
-			this->a_tot[dim][3] = this->a_reg[dim][3];
+			this->New_a_tot[dim][2] = this->New_a_reg[dim][2];
+			this->New_a_tot[dim][3] = this->New_a_reg[dim][3];
 		}
 	}
 }

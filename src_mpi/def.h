@@ -17,7 +17,7 @@
 #define FixNumNeighbor 100 // 500 -> 100 modified by EW 2025.1.11
 //#define NumNeighborMax 100
 #define NumNeighborMax 1000 // 5000 -> 1000 modified by EW 2025.1.11
-#define ACRadius 0.015 // 0.11 -> 0.05 modified by EW 2025.1.11
+#define ACRadius 0.05 // 0.11 -> 0.05 modified by EW 2025.1.11
 
 
 // SDAR

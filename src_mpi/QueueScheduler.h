@@ -254,7 +254,7 @@ public:
         for (int i=0; i<_total_queues; i++)
         {
             pid = queue_list[i];
-            particles[pid].isUpdateToDate = false;
+            // particles[pid].isUpdateToDate = false;
             if (!particles[pid].isCMptcl)
             {
                 _queue_list[single_ptcl++] = pid;
@@ -373,7 +373,7 @@ private:
 
         for (int i=0; i<_ParticleList.size(); i++) {
             pid_tmp = _ParticleList[i];
-            particles[pid_tmp].isUpdateToDate = false;
+            // particles[pid_tmp].isUpdateToDate = false;
             if (particles[pid_tmp].isCMptcl)
             {
                 SingleParticleList.push_back(pid_tmp);
@@ -534,11 +534,11 @@ private:
             fprintf(stderr, "this is not CM ptcl!\n");
             exit(EXIT_FAILURE);
            }
-           for (int j = 0; j < _ptcl->NumberOfNeighbor; j++)
-           {
-               if (particles[_ptcl->Neighbors[j]].isUpdateToDate == false)
-                   break;
-           }
+        //    for (int j = 0; j < _ptcl->NumberOfNeighbor; j++)
+        //    {
+        //        if (particles[_ptcl->Neighbors[j]].isUpdateToDate == false)
+        //            break;
+        //    }
            ReadyToGoCMPtcl.insert(pid); // (Query to myself) should I add worker rank?
         }
     }

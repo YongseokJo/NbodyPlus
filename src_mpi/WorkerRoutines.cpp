@@ -59,7 +59,7 @@ void WorkerRoutines() {
 				ptcl->NewCurrentBlockIrr = ptcl->CurrentBlockIrr + ptcl->TimeBlockIrr; // of this particle
 				ptcl->calculateTimeStepIrr();
 				ptcl->NextBlockIrr = ptcl->NewCurrentBlockIrr + ptcl->TimeBlockIrr; // of this particle
-				ptcl->isUpdateToDate = true;
+				// ptcl->isUpdateToDate = true;
 				//std::cout << "IrrCal done " << MyRank << std::endl;
 				break;
 
@@ -79,7 +79,7 @@ void WorkerRoutines() {
 				ptcl = &particles[ptcl_id];
 
 				if (ptcl->NumberOfNeighbor != 0) // IAR modified
-					ptcl->updateParticle();
+					ptcl->updateParticleIrr();
 				ptcl->CurrentBlockIrr = ptcl->NewCurrentBlockIrr;
 				ptcl->CurrentTimeIrr  = ptcl->CurrentBlockIrr*time_step;
 				//std::cout << "pid=" << ptcl_id << ", CurrentBlockIrr=" << particles[ptcl_id].CurrentBlockIrr << std::endl;
@@ -92,7 +92,7 @@ void WorkerRoutines() {
 				//std::cout << "ptcl " << ptcl_id << std::endl;
 
 				ptcl = &particles[ptcl_id];
-				ptcl->updateParticle();
+				ptcl->updateParticleReg();
 
 				for (int i=0; i<ptcl->NewNumberOfNeighbor; i++)
 					ptcl->Neighbors[i] = ptcl->NewNeighbors[i];
@@ -129,7 +129,7 @@ void WorkerRoutines() {
 					ptcl->Neighbors[j] = ptcl->NewNeighbors[j];
 				ptcl->NumberOfNeighbor = ptcl->NewNumberOfNeighbor;
 
-				ptcl->updateParticle();
+				ptcl->updateParticleReg();
 				ptcl->CurrentBlockReg = ptcl->CurrentBlockReg + ptcl->TimeBlockReg;
 				ptcl->CurrentTimeReg = ptcl->CurrentBlockReg * time_step;
 				ptcl->calculateTimeStepReg();

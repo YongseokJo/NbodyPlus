@@ -93,14 +93,44 @@ void Particle::polynomialPrediction(double current_time) {
 */
 
 
-void Particle::updateParticle() {
+void Particle::updateParticleIrr() {
 	
 	for (int dim=0; dim<Dim; dim++) {
 		this->Position[dim] = this->NewPosition[dim];
 		this->Velocity[dim] = this->NewVelocity[dim];
 	}
+
+	for (int i=0; i<Dim; i++) {
+		for (int j=0; j<HERMITE_ORDER; j++) {
+			this->a_irr[i][j] = this->New_a_irr[i][j];
+			this->a_tot[i][j] = this->New_a_tot[i][j];
+		}
+	}
+
+}
+
+void Particle::updateParticleReg() {
 	
-	//updateTimeStep();
+	for (int dim=0; dim<Dim; dim++) {
+		this->Position[dim] = this->NewPosition[dim];
+		this->Velocity[dim] = this->NewVelocity[dim];
+
+		this->a_irr[dim][0] = this->New_a_irr[dim][0];
+		this->a_irr[dim][1] = this->New_a_irr[dim][1];
+
+		this->a_reg[dim][0] = this->New_a_reg[dim][0];
+		this->a_reg[dim][1] = this->New_a_reg[dim][1];
+		this->a_reg[dim][2] = this->New_a_reg[dim][2];
+		this->a_reg[dim][3] = this->New_a_reg[dim][3];
+		
+		this->a_tot[dim][0] = this->a_reg[dim][0] + this->a_irr[dim][0];
+		this->a_tot[dim][1] = this->a_reg[dim][1] + this->a_irr[dim][1];
+		if (this->NewNumberOfNeighbor == 0) {
+			this->a_tot[dim][2] = this->a_reg[dim][2];
+			this->a_tot[dim][3] = this->a_reg[dim][3];
+		}
+	}
+
 }
 
 
