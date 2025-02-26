@@ -554,7 +554,8 @@ void RootRoutines() {
 							ptcl = &particles[cm_pid];
 							for (int j = 0; j < ptcl->NumberOfNeighbor; j++)
 							{
-								if (particles[ptcl->Neighbors[j]].isUpdateToDate == false)
+								// if (particles[ptcl->Neighbors[j]].isUpdateToDate == false) // original code
+								if (particles[ptcl->Neighbors[j]].isActive && !particles[ptcl->Neighbors[j]].isUpdateToDate) // modified by EW 2025.2.26
 								{
 									iter++;
 									goto skip_to_next;

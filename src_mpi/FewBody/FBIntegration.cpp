@@ -444,8 +444,8 @@ void Merge(Particle* p1, Particle* p2) { // Stellar merger
                 p1->FormationTime = p1->CurrentTimeIrr*EnzoTimeStep*1e4;
                 p1->WorldTime = p1->CurrentTimeIrr*EnzoTimeStep*1e4;
                 SetRadius(p1);
-                fprintf(SEVNout, "New Star class made!\n");
-                fprintf(SEVNout, "PID: %d. Mass: %e Msol, Radius: %e pc\n", p1->PID, p1->Mass*mass_unit, p1->radius*position_unit);
+                fprintf(stdout, "New Star class made!\n");
+                fprintf(stdout, "PID: %d. Mass: %e Msol, Radius: %e pc\n", p1->PID, p1->Mass*mass_unit, p1->radius*position_unit);
             }
             fprintf(mergerout, "---------------Merger remnant properties---------------\n");
             fprintf(mergerout, "Position (pc) - x:%e, y:%e, z:%e, \n", p1->Position[0]*position_unit, p1->Position[1]*position_unit, p1->Position[2]*position_unit);
@@ -457,7 +457,7 @@ void Merge(Particle* p1, Particle* p2) { // Stellar merger
         else if (p1->StellarEvolution != nullptr && p2->StellarEvolution != nullptr) {
 
             Mix(p1->StellarEvolution, p2->StellarEvolution);
-            fprintf(SEVNout, "Mix done!\n");
+            fprintf(stdout, "Mix done!\n");
 
             if (p1->StellarEvolution->amiempty() && !p2->StellarEvolution->amiempty()) {
                 p1->Mass = 0.0;
@@ -522,7 +522,7 @@ void Merge(Particle* p1, Particle* p2) { // Stellar merger
                 p1->Mass = 0.0;
             }            
 
-            fprintf(SEVNout, "Mix with no done!\n");
+            fprintf(stdout, "Mix with no done!\n");
             fprintf(mergerout, "---------------Merger remnant properties---------------\n");
             fprintf(mergerout, "Position (pc) - x:%e, y:%e, z:%e, \n", p2->Position[0]*position_unit, p2->Position[1]*position_unit, p2->Position[2]*position_unit);
             fprintf(mergerout, "Velocity (km/s) - vx:%e, vy:%e, vz:%e, \n", p2->Velocity[0]*velocity_unit/yr*pc/1e5, p2->Velocity[1]*velocity_unit/yr*pc/1e5, p2->Velocity[2]*velocity_unit/yr*pc/1e5);
@@ -548,7 +548,7 @@ void Merge(Particle* p1, Particle* p2) { // Stellar merger
                 p2->Mass = 0.0;
             }
 
-            fprintf(SEVNout, "Mix with no done!\n");
+            fprintf(stdout, "Mix with no done!\n");
             fprintf(mergerout, "---------------Merger remnant properties---------------\n");
             fprintf(mergerout, "Position (pc) - x:%e, y:%e, z:%e, \n", p1->Position[0]*position_unit, p1->Position[1]*position_unit, p1->Position[2]*position_unit);
             fprintf(mergerout, "Velocity (km/s) - vx:%e, vy:%e, vz:%e, \n", p1->Velocity[0]*velocity_unit/yr*pc/1e5, p1->Velocity[1]*velocity_unit/yr*pc/1e5, p1->Velocity[2]*velocity_unit/yr*pc/1e5);
@@ -562,7 +562,7 @@ void Merge(Particle* p1, Particle* p2) { // Stellar merger
         }
     }
     fflush(mergerout);
-    fflush(SEVNout);
+    fflush(stdout);
 #else
         p1->radius = 2.25461e-8/position_unit*pow(p1->Mass*mass_unit, 1./3); // stellar radius in code unit
 
