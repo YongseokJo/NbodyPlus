@@ -79,20 +79,20 @@ void FBTermination(Particle* ptclCM) {
 
 			double pos[Dim], vel[Dim];
 			members->predictParticleSecondOrder(ptclCM->CurrentTimeIrr - members->CurrentTimeIrr, pos, vel);
-			/*
+			// /*
 			for (int dim=0; dim<Dim; dim++) {
 				members->Position[dim] =  pos[dim];
 				members->Velocity[dim] =  vel[dim];
 			}
-			*/
-			members->correctParticleFourthOrder(ptclCM->CurrentTimeIrr - members->CurrentTimeIrr, pos, vel, members->a_tot);
-			members->updateParticle();
+			// */
+			// members->correctParticleFourthOrder(ptclCM->CurrentTimeIrr - members->CurrentTimeIrr, pos, vel, members->a_tot);
+			// members->updateParticle();
 			members->CurrentTimeIrr = ptclCM->CurrentTimeIrr;
 		}
 
 		members->calculateTimeStepReg();
 		if (members->TimeLevelReg <= ptclCM->TimeLevelReg-1 
-				&& members->TimeBlockReg/2+members->CurrentBlockReg > ptclCM->CurrentBlockIrr)  { // this ensures that irr time of any particles is smaller than adjusted new reg time.
+				&& members->TimeBlockReg/2+members->CurrentBlockReg >= NextRegTimeBlock)  { // this ensures that irr time of any particles is smaller than adjusted new reg time.
 			members->TimeLevelReg = ptclCM->TimeLevelReg-1;
 		}
 		else if  (members->TimeLevelReg >= ptclCM->TimeLevelReg+1) {
@@ -103,12 +103,30 @@ void FBTermination(Particle* ptclCM) {
 		members->TimeStepReg  = static_cast<double>(pow(2, members->TimeLevelReg));
 		members->TimeBlockReg = static_cast<ULL>(pow(2, members->TimeLevelReg-time_block));
 
-		members->calculateTimeStepIrr2();
+		if (members->NumberOfNeighbor != 0) {
+			members->calculateTimeStepIrr2();
 
-		if (ptclCM->NumberOfMember > 2) {
-			members->TimeLevelIrr--;
-			members->TimeStepIrr = static_cast<double>(pow(2, members->TimeLevelIrr));
-			members->TimeBlockIrr = static_cast<ULL>(pow(2, members->TimeLevelIrr-time_block));
+			if (ptclCM->NumberOfMember > 2) {
+				members->TimeLevelIrr--;
+				members->TimeStepIrr = static_cast<double>(pow(2, members->TimeLevelIrr));
+				members->TimeBlockIrr = static_cast<ULL>(pow(2, members->TimeLevelIrr-time_block));
+			}
+			members->NewCurrentBlockIrr = members->CurrentBlockIrr + members->TimeBlockIrr;
+			members->NextBlockIrr = members->CurrentBlockIrr + members->TimeBlockIrr;
+		} 
+		else {
+			members->TimeStepReg -= members->CurrentTimeIrr - members->CurrentTimeReg;
+
+			members->TimeStepIrr = members->TimeStepReg;
+			members->NewCurrentBlockIrr = members->CurrentBlockReg + members->TimeBlockReg;
+			members->NextBlockIrr = members->CurrentBlockReg + members->TimeBlockReg;
+			members->TimeBlockIrr = members->NextBlockIrr - members->CurrentBlockIrr;
+
+			members->CurrentBlockReg = members->CurrentBlockIrr;
+
+			members->correctParticleFourthOrder(members->CurrentTimeIrr - members->CurrentTimeReg, members->Position, members->Velocity, members->a_tot);
+			members->updateParticle();
+			members->CurrentTimeReg = members->CurrentTimeIrr;
 		}
 /* // test11
 		if (ptclCM->NumberOfMember == 2) {
@@ -149,11 +167,11 @@ void FBTermination(Particle* ptclCM) {
 				members->TimeStepIrr = static_cast<double>(pow(2, members->TimeLevelIrr));
 				members->TimeBlockIrr = static_cast<ULL>(pow(2, members->TimeLevelIrr-time_block));
 			}
+
+			members->NewCurrentBlockIrr = members->CurrentBlockIrr + members->TimeBlockIrr;
+			members->NextBlockIrr = members->CurrentBlockIrr + members->TimeBlockIrr;
 		}
 */
-		members->NewCurrentBlockIrr = members->CurrentBlockIrr + members->TimeBlockIrr;
-		members->NextBlockIrr = members->CurrentBlockIrr + members->TimeBlockIrr;
-
 		fprintf(binout,"PID: %d\n", members->PID);
 		fprintf(binout, "Position (pc) - x:%e, y:%e, z:%e, \n", members->Position[0]*position_unit, members->Position[1]*position_unit, members->Position[2]*position_unit);
 		fprintf(binout, "Velocity (km/s) - vx:%e, vy:%e, vz:%e, \n", members->Velocity[0]*velocity_unit/yr*pc/1e5, members->Velocity[1]*velocity_unit/yr*pc/1e5, members->Velocity[2]*velocity_unit/yr*pc/1e5);

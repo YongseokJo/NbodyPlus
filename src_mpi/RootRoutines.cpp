@@ -60,6 +60,9 @@ void RootRoutines() {
 	// merged particles & PISN will be contained here
 	// new single Particle formed in Enzo can be formed in ParticleIndex of these ptcls
 	// if empty, LastParticleIndex++
+
+	bool bin_termination = false;
+	bool new_binaries = false;
 	
 
 
@@ -462,15 +465,17 @@ void RootRoutines() {
 #ifdef NSIGHT
 			nvtxRangePushA("updateNextRegTime");
 #endif
-			updateNextRegTime(RegularList);
+			if (!bin_termination && !new_binaries)
+				updateNextRegTime(RegularList);
+
 #ifdef NSIGHT
 			nvtxRangePop();
 #endif
 			/*
 			std::cout << "NextRegTimeBlock=" << NextRegTimeBlock << std::endl;
 			std::cout << "PID= ";
-			for (int i=0; i<RegularList.size(); i++)
-				std::cout << RegularList[i]<< ", ";
+			for (int i : RegularList)
+				std::cout << i<< ", ";
 			std::cout << std::endl;
 			std::cout << "size of regularlist= " << RegularList.size() << std::endl;
 			*/
@@ -483,8 +488,6 @@ void RootRoutines() {
 #ifdef NSIGHT
 			nvtxRangePop();
 #endif
-			bool bin_termination = false;
-			bool new_binaries = false;
 
 
 			// Irregular
@@ -1003,6 +1006,7 @@ void RootRoutines() {
 
 #ifdef FEWBODY
 			if (bin_termination || new_binaries) {
+				ULL OriginalNextRegTimeBlock = NextRegTimeBlock;
 #ifdef DEBUG
 			std::cout << "(FB) updateNextRegTime starts" << std::endl;
 #endif
@@ -1010,7 +1014,13 @@ void RootRoutines() {
 #ifdef NSIGHT
 				nvtxRangePushA("updateNextRegTime");
 #endif
+
 				updateNextRegTime(RegularList);
+				if (OriginalNextRegTimeBlock != NextRegTimeBlock)
+					continue;
+
+				bin_termination = false;
+				new_binaries = false;
 #ifdef NSIGHT
 				nvtxRangePop();
 #endif
@@ -1350,6 +1360,7 @@ void updateNextRegTime(std::unordered_set<int>& RegularList) {
 		}
 	}
 	NextRegTimeBlock = time;
+	global_variable->NextRegTimeBlock = NextRegTimeBlock;
 }
 
 

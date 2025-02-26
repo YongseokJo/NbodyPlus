@@ -3,6 +3,7 @@
 
 struct GlobalVariable {
 	int LastParticleIndex;
+	ULL NextRegTimeBlock;
 	// int NumberOfParticle;
 };
 
