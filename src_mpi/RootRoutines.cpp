@@ -247,7 +247,9 @@ void RootRoutines() {
 		broadcastFromRoot(time_step);
 		//MPI_Barrier(MPI_COMM_WORLD);
 		//qmanager.reportProgress();
-        MPI_Win_fence(0, win);
+		MPI_Win_fence(0, win);
+        //MPI_Barrier(MPI_COMM_WORLD);
+		//MPI_Win_fence(0, win);
 		fprintf(stderr, "nbody+:time_block = %d, EnzoTimeStep=%e\n", time_block, EnzoTimeStep);
 		fflush(stderr);
 	}
@@ -410,7 +412,7 @@ void RootRoutines() {
 #endif
 
 				// Irregular Force
-#ifdef _FEWBODY
+#ifdef FEWBODY
 #ifdef NSIGHT
 				nvtxRangePushA("IrregularForce");
 #endif
@@ -427,12 +429,12 @@ void RootRoutines() {
 				CMPtclsForComputation.clear();
 				global_variable->QueueSize = ThisLevelNode->ParticleList.size();
 
-				std::cout << "Queues = ";
+				//std::cout << "Queues = ";
 				for (int i = 0; i < ThisLevelNode->ParticleList.size(); i++)
 				{
 					if (!particles[ThisLevelNode->ParticleList[i]].isActive)
 					{
-						std::cout << "PID "<< ThisLevelNode->ParticleList[i] <<" is inactive." << std::endl;
+						//std::cout << "PID "<< ThisLevelNode->ParticleList[i] <<" is inactive." << std::endl;
 						assert(particles[ThisLevelNode->ParticleList[i]].isActive);
 					}
 					if (particles[ThisLevelNode->ParticleList[i]].isCMptcl)
@@ -440,9 +442,9 @@ void RootRoutines() {
 						CMPtclsForComputation.insert(ThisLevelNode->ParticleList[i]);
 					}
 					queues[i] = ThisLevelNode->ParticleList[i];
-					std::cout << queues[i] << ", ";
+					//std::cout << queues[i] << ", ";
 				}
-				std::cout << std::endl;
+				//std::cout << std::endl;
 				tasks[0] = IrrForce;
 				qmanager.completed_queues = 0;
 				qmanager.NumberOfCommunication = 0;
@@ -579,6 +581,37 @@ void RootRoutines() {
 				//std::cerr << "IrrUpdate1 (ns) = " << performance.get(IrrUpdate1) << std::endl;
 				//std::cerr << "IrrUpdate2 (ns) = " << performance.get(IrrUpdate2) << std::endl;
 				//exit(1);
+
+#define noTEST_1
+#ifdef TEST_1
+#ifdef NSIGHT
+				nvtxRangePushA("FewBodySearch");
+#endif
+
+#ifdef DEBUG
+				std::cout << "FB search starts" << std::endl;
+#endif
+#ifdef PerformanceTrace
+				//performance.start(IrrUpdate1);
+#endif
+				qmanager.initialize(ThisLevelNode->ParticleList, SearchGroup);
+				qmanager.signalWorkers();
+				qmanager.reportProgress();
+#ifdef PerformanceTrace
+				//performance.end(IrrUpdate1);
+#endif
+#ifdef DEBUG
+				std::cout << "FB search ended" << std::endl;
+#endif
+
+#ifdef NSIGHT
+				nvtxRangePop();
+#endif
+#endif
+
+
+
+
 
 #ifdef _FEWBODY	
 
@@ -920,7 +953,7 @@ void RootRoutines() {
 			skiplist = nullptr;
 			//exit(SUCCESS);
 
-#ifdef _FEWBODY
+#ifdef FEWBODY
 			if (bin_termination || new_binaries) {
 #ifdef DEBUG
 			std::cout << "(FB) updateNextRegTime starts" << std::endl;

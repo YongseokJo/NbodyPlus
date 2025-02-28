@@ -63,9 +63,10 @@ void WorkerRoutines() {
 		switch (task) {
 
 /*=======================================*
- *           Irregular Update            *
+ *           Irregular Force             *
  *=======================================*/
 			case IrrForce: // Irregular Acceleration
+				MPI_Win_fence(0, win);
 				MPI_Win_fence(0, win4);
 				MPI_Win_fence(0, win5);
 				MPI_Win_sync(win4);
@@ -91,6 +92,8 @@ void WorkerRoutines() {
 					ptcl_id = queues[MyCurrentQueue];
 					if (ptcl_id == ALREADY_COMPUTED)
 					{
+						std::cerr << "Queue skipped" << std::endl;
+						exit(1);
 #ifdef WORKER_DEBUG
 					fprintf(workerout, "skipped\n");
 #endif
@@ -143,6 +146,7 @@ void WorkerRoutines() {
  *           Irregular Update            *
  *=======================================*/
 			case IrrUpdate: // Irregular Update Particle
+				MPI_Win_fence(0, win);
 				MPI_Win_fence(0, win4);
 				MPI_Win_fence(0, win5);
         MPI_Win_sync(win4);
@@ -169,6 +173,8 @@ void WorkerRoutines() {
 					#endif
 					if (ptcl_id == ALREADY_COMPUTED)
 					{
+						std::cerr << "Queue skipped" << std::endl;
+						exit(1);
 #ifdef WORKER_DEBUG
 					fprintf(workerout, "skipped\n");
 #endif
@@ -235,8 +241,9 @@ void WorkerRoutines() {
  *           Regular CUDA                *
  *=======================================*/
 			case RegCuda: // Update Regular Particle CUDA
-		MPI_Win_fence(0, win4);
-		MPI_Win_fence(0, win5);
+				MPI_Win_fence(0, win);
+				MPI_Win_fence(0, win4);
+				MPI_Win_fence(0, win5);
 				while (MyCurrentQueue < global_variable->QueueSize)
 				{
 					ptcl_id = queues[MyCurrentQueue];
@@ -261,8 +268,9 @@ void WorkerRoutines() {
  *           Regular CUDA Update         *
  *=======================================*/
 			case RegCudaUpdate: // Update Regular Particle CUDA II
-		MPI_Win_fence(0, win4);
-		MPI_Win_fence(0, win5);
+				MPI_Win_fence(0, win);
+				MPI_Win_fence(0, win4);
+				MPI_Win_fence(0, win5);
 				while (MyCurrentQueue < global_variable->QueueSize)
 				{
 					ptcl_id = queues[MyCurrentQueue];
@@ -302,8 +310,9 @@ void WorkerRoutines() {
  *           Initialize Acceleration 1   *
  *=======================================*/
 			case InitAcc1: // Initialize Acceleration(01)
-		MPI_Win_fence(0, win4);
-		MPI_Win_fence(0, win5);
+				MPI_Win_fence(0, win);
+				MPI_Win_fence(0, win4);
+				MPI_Win_fence(0, win5);
 				//std::cout << "Processor " << MyRank << " initialization starts." << std::endl;
 				//fprintf(workerout, "InitAcc1 starts, next_time =  %e\n", global_variable->next_time);
 				while (MyCurrentQueue < global_variable->QueueSize)
@@ -311,6 +320,8 @@ void WorkerRoutines() {
 					//fprintf(workerout, "MyCurrentQueue =  %d\n", MyCurrentQueue);
 					ptcl_id = queues[MyCurrentQueue];
 					if (ptcl_id == ALREADY_COMPUTED) {
+						std::cerr << "Queue skipped" << std::endl;
+						exit(1);
 						MyCurrentQueue++;
 						continue;
 					}
@@ -335,12 +346,15 @@ void WorkerRoutines() {
  *           Initialize Acceleration 2   *
  *=======================================*/
 			case InitAcc2: // Initialize Acceleration(23)
-		MPI_Win_fence(0, win4);
-		MPI_Win_fence(0, win5);
+				MPI_Win_fence(0, win);
+				MPI_Win_fence(0, win4);
+				MPI_Win_fence(0, win5);
 				while (MyCurrentQueue < global_variable->QueueSize)
 				{
 					ptcl_id = queues[MyCurrentQueue];
 					if (ptcl_id == ALREADY_COMPUTED) {
+						std::cerr << "Queue skipped" << std::endl;
+						exit(1);
 						MyCurrentQueue++;
 						continue;
 					}
@@ -359,12 +373,15 @@ void WorkerRoutines() {
  *           Initialize Time             *
  *=======================================*/
 			case InitTime: // Initialize Time Step
-		MPI_Win_fence(0, win4);
-		MPI_Win_fence(0, win5);
+				MPI_Win_fence(0, win);
+				MPI_Win_fence(0, win4);
+				MPI_Win_fence(0, win5);
 				while (MyCurrentQueue < global_variable->QueueSize)
 				{
 					ptcl_id = queues[MyCurrentQueue];
 					if (ptcl_id == ALREADY_COMPUTED) {
+						std::cerr << "Queue skipped" << std::endl;
+						exit(1);
 						MyCurrentQueue++;
 						continue;
 					}
@@ -385,8 +402,9 @@ void WorkerRoutines() {
  *           Time Synchronization        *
  *=======================================*/
 			case TimeSync: // Initialize Timestep variables
-		MPI_Win_fence(0, win4);
-		MPI_Win_fence(0, win5);
+				MPI_Win_fence(0, win);
+				MPI_Win_fence(0, win4);
+				MPI_Win_fence(0, win5);
 				broadcastFromRoot(time_block);
 				broadcastFromRoot(block_max);
 				broadcastFromRoot(time_step);
@@ -424,10 +442,10 @@ void WorkerRoutines() {
 				break;
 
 			case SearchGroup: // Few-body group search
-		MPI_Win_fence(0, win4);
-		MPI_Win_fence(0, win5);
-        MPI_Win_sync(win4);
-        MPI_Win_sync(win5);
+				MPI_Win_fence(0, win4);
+				MPI_Win_fence(0, win5);
+				MPI_Win_sync(win4);
+				MPI_Win_sync(win5);
 				//fprintf(workerout, "SearchGroup starts, next_time =  %e\n", global_variable->next_time);
 				while (MyCurrentQueue < global_variable->QueueSize)
 				{
@@ -454,8 +472,8 @@ void WorkerRoutines() {
 					}
 
 					// MPI_Isend(NULL, 0, MPI_BYTE, ROOT, FINISH_TAG, MPI_COMM_WORLD, &requests[NumberOfCommunication++]);
-					//MPI_Isend(NULL, 0, MPI_BYTE, ROOT, FINISH_TAG, MPI_COMM_WORLD, &requests[0]);
-					MPI_Send(NULL, 0, MPI_BYTE, ROOT, FINISH_TAG, MPI_COMM_WORLD);
+					MPI_Isend(NULL, 0, MPI_BYTE, ROOT, FINISH_TAG, MPI_COMM_WORLD, &requests[0]);
+					//MPI_Send(NULL, 0, MPI_BYTE, ROOT, FINISH_TAG, MPI_COMM_WORLD);
 					MyCurrentQueue += NumberOfWorker;
 					//fprintf(workerout, "PID= %d,CurrentTimeIrr =  %e\n", ptcl_id, ptcl->CurrentTimeIrr);
 				}
@@ -596,6 +614,8 @@ void WorkerRoutines() {
 		}
 
 		MPI_Win_fence(0, win);
+        //MPI_Barrier(MPI_COMM_WORLD);
+		//MPI_Win_fence(0, win);
 		//MPI_Win_sync(win);
 		//MPI_Win_flush_all(win);
 		//std::cerr << "Processor " << MyRank << " done." << std::endl;

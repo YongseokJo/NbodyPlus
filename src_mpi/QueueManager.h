@@ -64,8 +64,9 @@ public:
             //MPI_Send(NULL, 0, MPI_BYTE, i, TASK_TAG, MPI_COMM_WORLD);
             //MPI_Send(&tasks[0], 1, MPI_INT, i, TASK_TAG, MPI_COMM_WORLD);
         }
-        //MPI_Waitall(NumberOfCommunication, requests, statuses);
-        //NumberOfCommunication = 0;
+        MPI_Waitall(NumberOfCommunication, requests, statuses);
+        NumberOfCommunication = 0;
+        MPI_Win_fence(0, win);
 		MPI_Win_fence(0, win4);
 		MPI_Win_fence(0, win5);
     }
@@ -89,6 +90,8 @@ public:
             //fprintf(stderr, "completed queues = (%d/%d)\n", completed_queues, global_variable->QueueSize);
         }
         MPI_Win_fence(0, win);
+        //MPI_Barrier(MPI_COMM_WORLD);
+        //MPI_Win_fence(0, win);
         //MPI_Win_sync(win);
     }
 
