@@ -90,63 +90,61 @@ void Particle::checkNewGroup() {
             }
         }
     }
-    if (!CMPtclsSet.empty()) {
-        for (int i: CMPtclsSet) {
-			ptcl2 = &particles[i];
+    for (int i: CMPtclsSet) {
+        ptcl2 = &particles[i];
 
-            if (this->PID == ptcl2->PID) {
-				continue;
-			}
+        if (this->PID == ptcl2->PID) {
+            continue;
+        }
 
-			if (!ptcl2->isActive) {
-				fprintf(stderr, "Why inactive CM ptcl? this PID: %d, neighbor PID: %d\n", this->PID, ptcl2->PID);
-				assert(ptcl2->isActive);
-			}
+        if (!ptcl2->isActive) {
+            fprintf(stderr, "Why inactive CM ptcl? this PID: %d, neighbor PID: %d\n", this->PID, ptcl2->PID);
+            assert(ptcl2->isActive);
+        }
 
-            // if (ptcl2->TimeStepIrr > this->TimeStepIrr) // test_1e5_4 & 5: this must make the same result!
-            if (ptcl2->TimeStepIrr*EnzoTimeStep*1e4 > TSEARCH) // fiducial: 1e-5 but for RSEARCH = 0.00025 pc, 1e-6 Myr seems good
-                continue;
+        // if (ptcl2->TimeStepIrr > this->TimeStepIrr) // test_1e5_4 & 5: this must make the same result!
+        if (ptcl2->TimeStepIrr*EnzoTimeStep*1e4 > TSEARCH) // fiducial: 1e-5 but for RSEARCH = 0.00025 pc, 1e-6 Myr seems good
+            continue;
 
-            double dt = this->CurrentTimeIrr > ptcl2->CurrentTimeIrr ? \
-                            this->CurrentTimeIrr - ptcl2->CurrentTimeIrr : ptcl2->CurrentTimeIrr - this->CurrentTimeIrr;
+        double dt = this->CurrentTimeIrr > ptcl2->CurrentTimeIrr ? \
+                        this->CurrentTimeIrr - ptcl2->CurrentTimeIrr : ptcl2->CurrentTimeIrr - this->CurrentTimeIrr;
 
-            double pos2[Dim], vel2[Dim];
-            
-            this->predictParticleSecondOrder(dt, pos1, vel1);
-            ptcl2->predictParticleSecondOrder(dt, pos2, vel2);
+        double pos2[Dim], vel2[Dim];
+        
+        this->predictParticleSecondOrder(dt, pos1, vel1);
+        ptcl2->predictParticleSecondOrder(dt, pos2, vel2);
 
-            const Float dr = dist(pos1, pos2);
-            
-            if (dr < r_crit) {
+        const Float dr = dist(pos1, pos2);
+        
+        if (dr < r_crit) {
 
-                Float drdv = calcDrDv(pos1, pos2, vel1, vel2);
-                // only inwards
-                if(drdv<0.0) {
+            Float drdv = calcDrDv(pos1, pos2, vel1, vel2);
+            // only inwards
+            if(drdv<0.0) {
 // /* // test_1e4_2
-                    Float fcm[3] = {this->Mass*this->a_irr[0][0] + ptcl2->Mass*ptcl2->a_irr[0][0], 
-                                    this->Mass*this->a_irr[1][0] + ptcl2->Mass*ptcl2->a_irr[1][0], 
-                                    this->Mass*this->a_irr[2][0] + ptcl2->Mass*ptcl2->a_irr[2][0]};
+                Float fcm[3] = {this->Mass*this->a_irr[0][0] + ptcl2->Mass*ptcl2->a_irr[0][0], 
+                                this->Mass*this->a_irr[1][0] + ptcl2->Mass*ptcl2->a_irr[1][0], 
+                                this->Mass*this->a_irr[2][0] + ptcl2->Mass*ptcl2->a_irr[2][0]};
 
-                    AR::SlowDown sd;
-                    Interaction interaction;
-                    Float mcm = this->Mass + ptcl2->Mass;
+                AR::SlowDown sd;
+                Interaction interaction;
+                Float mcm = this->Mass + ptcl2->Mass;
 
-                    // sd.initialSlowDownReference(ar_manager->slowdown_pert_ratio_ref, ar_manager->slowdown_timescale_max);
-                    sd.initialSlowDownReference(1e-6, NUMERIC_FLOAT_MAX);
+                // sd.initialSlowDownReference(ar_manager->slowdown_pert_ratio_ref, ar_manager->slowdown_timescale_max);
+                sd.initialSlowDownReference(1e-6, NUMERIC_FLOAT_MAX);
 
-                    sd.pert_in = interaction.calcPertFromMR(dr, this->Mass, ptcl2->Mass);
-                    sd.pert_out = interaction.calcPertFromForce(fcm, mcm, mcm);
+                sd.pert_in = interaction.calcPertFromMR(dr, this->Mass, ptcl2->Mass);
+                sd.pert_out = interaction.calcPertFromForce(fcm, mcm, mcm);
 
-                    sd.calcSlowDownFactor();
-                    Float kappa_org = sd.getSlowDownFactorOrigin();
+                sd.calcSlowDownFactor();
+                Float kappa_org = sd.getSlowDownFactorOrigin();
 
-                    // avoid strong perturbed case, estimate perturbation
-                    // if kappa_org < criterion, avoid to form new group, should be consistent as checkbreak
-                    if(kappa_org<kappa_org_crit) continue;
+                // avoid strong perturbed case, estimate perturbation
+                // if kappa_org < criterion, avoid to form new group, should be consistent as checkbreak
+                if(kappa_org<kappa_org_crit) continue;
 // */ // test_1e4_2
-                    this->NewNeighbors[this->NewNumberOfNeighbor] = i;
-                    this->NewNumberOfNeighbor++;
-                }
+                this->NewNeighbors[this->NewNumberOfNeighbor] = i;
+                this->NewNumberOfNeighbor++;
             }
         }
     }
@@ -194,36 +192,34 @@ void Particle::checkNewGroup2() {
             this->NewNumberOfNeighbor++;
         }
     }
-    if (!CMPtclsSet.empty()) {
-        for (int i: CMPtclsSet) {
-			ptcl2 = &particles[i];
+    for (int i: CMPtclsSet) {
+        ptcl2 = &particles[i];
 
-            if (this->PID == ptcl2->PID) {
-				continue;
-			}
+        if (this->PID == ptcl2->PID) {
+            continue;
+        }
 
-			if (!ptcl2->isActive) {
-				fprintf(stderr, "Why inactive CM ptcl? this PID: %d, neighbor PID: %d\n", this->PID, ptcl2->PID);
-				assert(ptcl2->isActive);
-			}
+        if (!ptcl2->isActive) {
+            fprintf(stderr, "Why inactive CM ptcl? this PID: %d, neighbor PID: %d\n", this->PID, ptcl2->PID);
+            assert(ptcl2->isActive);
+        }
 
-            double dt = this->CurrentTimeIrr > ptcl2->CurrentTimeIrr ? \
-                            this->CurrentTimeIrr - ptcl2->CurrentTimeIrr : ptcl2->CurrentTimeIrr - this->CurrentTimeIrr;
+        double dt = this->CurrentTimeIrr > ptcl2->CurrentTimeIrr ? \
+                        this->CurrentTimeIrr - ptcl2->CurrentTimeIrr : ptcl2->CurrentTimeIrr - this->CurrentTimeIrr;
 
-            double pos2[Dim], vel2[Dim];
-            
-            this->predictParticleSecondOrder(dt, pos1, vel1);
-            ptcl2->predictParticleSecondOrder(dt, pos2, vel2);
+        double pos2[Dim], vel2[Dim];
+        
+        this->predictParticleSecondOrder(dt, pos1, vel1);
+        ptcl2->predictParticleSecondOrder(dt, pos2, vel2);
 
-            const Float dr = dist(pos1, pos2);
+        const Float dr = dist(pos1, pos2);
 
-            double v2 = std::pow(dist(vel1, vel2), 2);
-            double energy = v2/2 - (this->Mass + ptcl2->Mass)/dr; // determine they are bound or not
-            
-            if (dr < r_crit && energy < 0) {
-                this->NewNeighbors[this->NewNumberOfNeighbor] = i;
-                this->NewNumberOfNeighbor++;
-            }
+        double v2 = std::pow(dist(vel1, vel2), 2);
+        double energy = v2/2 - (this->Mass + ptcl2->Mass)/dr; // determine they are bound or not
+        
+        if (dr < r_crit && energy < 0) {
+            this->NewNeighbors[this->NewNumberOfNeighbor] = i;
+            this->NewNumberOfNeighbor++;
         }
     }
 }

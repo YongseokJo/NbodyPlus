@@ -5,8 +5,8 @@ export LD_LIBRARY_PATH=/home/wispedia/local/openmpi-4.0.5/lib:$LD_LIBRARY_PATH
 
 #module add mpi/latest
 make clean
-make -j8
-# make -j8 USE_SEVN=1
+# make -j8
+make -j8 USE_SEVN=1
 #cp abyss_mpi.exe /data1/wispedia/nbody/purenbody
 
 #cp nbodyplus_binary.exe /data1/wispedia/nbody/purenbody

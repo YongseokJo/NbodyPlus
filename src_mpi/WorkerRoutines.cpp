@@ -134,7 +134,9 @@ void WorkerRoutines() {
 				ptcl->CurrentTimeReg = ptcl->CurrentBlockReg * time_step;
 				ptcl->calculateTimeStepReg();
 				ptcl->calculateTimeStepIrr();
+				// /*
 				if (ptcl->NumberOfNeighbor == 0) {
+					/*
 					if (ptcl->CurrentBlockIrr != ptcl->CurrentBlockReg || ptcl->CurrentTimeIrr != ptcl->CurrentBlockReg*time_step) {
 						fprintf(stderr, "PID: %d\n", ptcl->PID);
 						fprintf(stderr, "CurrentBlockIrr: %llu, CurrentBlockReg: %llu\n", ptcl->CurrentBlockIrr, ptcl->CurrentBlockReg);
@@ -145,9 +147,11 @@ void WorkerRoutines() {
 						assert(ptcl->CurrentBlockIrr == ptcl->CurrentBlockReg);
 						assert(ptcl->CurrentTimeIrr == ptcl->CurrentBlockReg*time_step);
 					}
-					// ptcl->CurrentBlockIrr = ptcl->CurrentBlockReg;
-					// ptcl->CurrentTimeIrr = ptcl->CurrentBlockReg*time_step;
+					*/
+					ptcl->CurrentBlockIrr = ptcl->CurrentBlockReg;
+					ptcl->CurrentTimeIrr = ptcl->CurrentBlockReg*time_step;
 				}
+				// */
 				ptcl->updateRadius();
 				ptcl->NextBlockIrr = ptcl->CurrentBlockIrr + ptcl->TimeBlockIrr; // of ptcl particle
 				break;

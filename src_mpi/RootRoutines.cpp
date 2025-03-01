@@ -536,6 +536,7 @@ void RootRoutines() {
 #ifdef DEBUG
 				std::cout << "Irr force starts" << std::endl;
 #endif
+/*
 				int cm_pid;
 				Queue queue;
 				queue_scheduler.initializeIrr(IrrForce, next_time, ThisLevelNode->ParticleList);
@@ -550,7 +551,7 @@ void RootRoutines() {
 						// if there's any CMPtcl
 						if (queue_scheduler.CMPtcls.size() > 0)
 						{
-							/* check if there's any CM ptcl ready to go for SDAR*/
+							// check if there's any CM ptcl ready to go for SDAR
 							if (iter == queue_scheduler.CMPtcls.end())
 								iter = queue_scheduler.CMPtcls.begin();
 							cm_pid = *(iter);
@@ -586,6 +587,32 @@ void RootRoutines() {
 					queue_scheduler.callback(worker);
 					//queue_scheduler.printStatus();
 				} while (queue_scheduler.isComplete());
+*/
+				queue_scheduler.initialize(IrrForce, next_time);
+				queue_scheduler.takeQueue(ThisLevelNode->ParticleList);
+				do
+				{
+					queue_scheduler.assignQueueAuto();
+					queue_scheduler.runQueueAuto();
+					queue_scheduler.waitQueue(0); // blocking wait
+				} while (queue_scheduler.isComplete());
+
+				Queue queue;
+				for (int ptcl_id : ThisLevelNode->ParticleList)
+				{
+					ptcl = &particles[ptcl_id];
+
+					if (ptcl->isCMptcl) {
+						// queue_scheduler.initialize(ARIntegration, next_time);
+						int rank = CMPtclWorker[ptcl->ParticleIndex];
+						queue.task = ARIntegration;
+						queue.pid = ptcl->ParticleIndex;
+						queue.next_time = next_time;
+						workers[rank].addQueue(queue);
+						workers[rank].runQueue();
+						workers[rank].callback();
+					}
+				}
 #ifdef DEBUG
 				 std::cout << "Irregular Force done" << std::endl;
 #endif

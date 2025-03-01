@@ -8,30 +8,6 @@ void UpdateEvolution(Particle* ptcl);
 // Start SEVN stellar evolution
 // Set stellar radii, BH spin, etc
 void initializeStellarEvolution() {
-/*
-    std::vector<std::string> args = {"empty", // Not used
-                                // "-myself", "/data/vinicius/NbodyPlus/SEVN",
-                                "-tables", "/data/vinicius/sevn/tables/SEVNtracks_parsec_ov04_AGB", 
-                                //  "-tables", "/data/vinicius/NbodyPlus/SEVN/tables/SEVNtracks_MIST_AGB",
-                                // "-tables_HE", "/data/vinicius/NbodyPlus/SEVN/tables/SEVNtracks_parsec_pureHe36",
-                                // "-turn_WR_to_pureHe", "false",
-                                "-snmode", "delayed",
-                                "-Z", "0.0002",
-                                "-spin", "0.0",
-                                "-tini", "zams", 
-                                "-tf", "end",
-                                // "-tf", "0.000122",
-                                "-dtout", "events",
-                                "-xspinmode", "geneva"};
-    std::vector<char*> c_args;
-    for (auto& arg : args) {
-        c_args.push_back(&arg[0]);
-    }
-
-    IO* sevnio;
-    sevnio = new IO;
-    sevnio->load(c_args.size(), c_args.data());
-*/
 
     std::ostringstream oss;
 	oss << sevnio->svpar;
@@ -60,8 +36,6 @@ void initializeStellarEvolution() {
 		std::vector<std::string> init_params{std::to_string(double(ptcl->Mass*mass_unit)), "0.0002", "0.0", "delayed", "zams", "end", "events"};
 
         size_t id = ptcl->PID;
-        fprintf(stdout, "PID: %d, Mass: %e Msol\n", ptcl->PID, ptcl->Mass*mass_unit);
-        fflush(stdout);
         ptcl->StellarEvolution = new Star(sevnio, init_params, id, false);
 
 		ptcl->radius = ptcl->StellarEvolution->getp(Radius::ID)/(utilities::parsec_to_Rsun)/position_unit; // stellar radius in code unit

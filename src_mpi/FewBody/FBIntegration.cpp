@@ -1,6 +1,7 @@
 #ifdef FEWBODY
 #include "../global.h"
 #include <random>
+#include <unordered_set>
 
 #ifdef SEVN
 void Mix(Star* star1, Star* star2);
@@ -24,10 +25,44 @@ void Group::ARIntegration(double next_time){
         for (int j=0; j<HERMITE_ORDER; j++)
             sym_int.particles.cm.a_irr[dim][j] = groupCM->a_irr[dim][j];
     }
+// /*
+    if (groupCM->CurrentTimeReg >= groupCM->CurrentTimeIrr) { // Neighbors were updated in regular routine
+        sym_int.particles.cm.NumberOfNeighbor = groupCM->NumberOfNeighbor;
+        for (int i=0; i<groupCM->NumberOfNeighbor; i++)
+            sym_int.particles.cm.Neighbors[i] = groupCM->Neighbors[i];
+    }
+// */
+/* // This makes simulation very slower.. I recommend not to use this by EW 2025.2.28
+    std::unordered_set<int> CMPtclsSet;
+    Particle* ptcl;
     
-    sym_int.particles.cm.NumberOfNeighbor = groupCM->NumberOfNeighbor;
-    for (int i=0; i<groupCM->NumberOfNeighbor; i++)
-        sym_int.particles.cm.Neighbors[i] = groupCM->Neighbors[i];
+    sym_int.particles.cm.NumberOfNeighbor = 0;
+    for (int i=0; i<groupCM->NumberOfNeighbor; i++) {
+        ptcl = &particles[groupCM->Neighbors[i]];
+
+        if (!ptcl->isActive) {
+			if (ptcl->CMPtclIndex != -1) {
+				CMPtclsSet.insert(ptcl->CMPtclIndex);
+			}
+			continue;
+		}
+        sym_int.particles.cm.Neighbors[sym_int.particles.cm.NumberOfNeighbor++] = groupCM->Neighbors[i];
+    }
+    for (int i: CMPtclsSet) {
+        ptcl = &particles[i];
+
+        if (groupCM->PID == ptcl->PID) {
+            continue;
+        }
+
+        if (!ptcl->isActive) {
+            fprintf(stderr, "Why inactive CM ptcl? this PID: %d, neighbor PID: %d\n", groupCM->PID, ptcl->PID);
+            assert(ptcl->isActive);
+        }
+
+        sym_int.particles.cm.Neighbors[sym_int.particles.cm.NumberOfNeighbor++] = i;
+    }
+*/
 
 
 #ifdef SEVN
@@ -413,30 +448,7 @@ void Merge(Particle* p1, Particle* p2) { // Stellar merger
             p1->radius = 2.25461e-8/position_unit*pow(p1->Mass*mass_unit, 1./3); // stellar radius in code unit
 
             if (mcm*mass_unit > 2.2 && mcm*mass_unit < 600) {
-/*
-                std::vector<std::string> args = {"empty", // Not used
-                                            // "-myself", "/data/vinicius/sevn/build",
-                                            "-tables", "/data/vinicius/sevn/tables/SEVNtracks_parsec_ov04_AGB", 
-                                            //  "-tables", "/data/vinicius/NbodyPlus/SEVN/tables/SEVNtracks_MIST_AGB",
-                                            // "-tables_HE", "/data/vinicius/NbodyPlus/SEVN/tables/SEVNtracks_parsec_pureHe36",
-                                            // "-turn_WR_to_pureHe", "false",
-                                            "-snmode", "delayed",
-                                            "-Z", "0.0002",
-                                            "-spin", "0.0",
-                                            "-tini", "zams", 
-                                            "-tf", "end",
-                                            // "-tf", "0.000122",
-                                            "-dtout", "events",
-                                            "-xspinmode", "geneva"};
-                std::vector<char*> c_args;
-                for (auto& arg : args) {
-                    c_args.push_back(&arg[0]);
-                }
-
-                IO* sevnio; // Eunwoo: global variable -> We can initialize Star and Binstar class anywhere.
-                sevnio = new IO;
-                sevnio->load(c_args.size(), c_args.data());
-*/
+                
                 std::vector<std::string> init_params{std::to_string(double(p1->Mass*mass_unit)), "0.0002", "0.0", "delayed", "zams", "end", "events"};
                 size_t id = p1->PID;
                 p1->StellarEvolution = new Star(sevnio, init_params, id, false);

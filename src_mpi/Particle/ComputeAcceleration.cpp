@@ -108,46 +108,44 @@ void Particle::computeAccelerationIrr() {
 		}
 	} // endfor ptcl
 
-	if (!CMPtclsSet.empty()) {
-		for (int i: CMPtclsSet) {
-			ptcl = &particles[i];
+	for (int i: CMPtclsSet) {
+		ptcl = &particles[i];
 
-			if (this->PID == ptcl->PID) {
-				continue;
-			}
+		if (this->PID == ptcl->PID) {
+			continue;
+		}
 
-			if (!ptcl->isActive) {
-				fprintf(stderr, "Why inactive CM ptcl? this PID: %d, neighbor PID: %d\n", this->PID, ptcl->PID);
-				assert(ptcl->isActive);
-			}
+		if (!ptcl->isActive) {
+			fprintf(stderr, "Why inactive CM ptcl? this PID: %d, neighbor PID: %d\n", this->PID, ptcl->PID);
+			assert(ptcl->isActive);
+		}
 
-			// reset temporary variables at the start of a new calculation
-			r2 = 0.0;
-			vx = 0.0;
+		// reset temporary variables at the start of a new calculation
+		r2 = 0.0;
+		vx = 0.0;
 
-			ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeIrr, pos_neighbor, vel_neighbor);
+		ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeIrr, pos_neighbor, vel_neighbor);
 
-			for (int dim=0; dim<Dim; dim++) {
-				// calculate position and velocity differences for current time
-				x[dim] = pos_neighbor[dim] - pos[dim];
-				v[dim] = vel_neighbor[dim] - vel[dim];
+		for (int dim=0; dim<Dim; dim++) {
+			// calculate position and velocity differences for current time
+			x[dim] = pos_neighbor[dim] - pos[dim];
+			v[dim] = vel_neighbor[dim] - vel[dim];
 
-				// calculate the square of radius and inner product of r and v for each case
-				r2 += x[dim]*x[dim];
-				vx += v[dim]*x[dim];
-			}
+			// calculate the square of radius and inner product of r and v for each case
+			r2 += x[dim]*x[dim];
+			vx += v[dim]*x[dim];
+		}
 
-			//mdot = ptcl->evolveStarMass(CurrentTimeIrr,
-					//CurrentTimeIrr+TimeStepIrr*1.01)/TimeStepIrr*1e-2; // derivative can be improved
-																														//
-																														// add the contribution of jth particle to acceleration of current and predicted times
+		//mdot = ptcl->evolveStarMass(CurrentTimeIrr,
+				//CurrentTimeIrr+TimeStepIrr*1.01)/TimeStepIrr*1e-2; // derivative can be improved
+																													//
+																													// add the contribution of jth particle to acceleration of current and predicted times
 
-			m_r3 = ptcl->Mass/(r2*sqrt(r2));
+		m_r3 = ptcl->Mass/(r2*sqrt(r2));
 
-			for (int dim=0; dim<Dim; dim++){
-				a_tmp[dim]    += m_r3*x[dim];
-				adot_tmp[dim] += m_r3*(v[dim] - 3*x[dim]*vx/r2);
-			}
+		for (int dim=0; dim<Dim; dim++){
+			a_tmp[dim]    += m_r3*x[dim];
+			adot_tmp[dim] += m_r3*(v[dim] - 3*x[dim]*vx/r2);
 		}
 	}
 

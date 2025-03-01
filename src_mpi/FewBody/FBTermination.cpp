@@ -104,7 +104,8 @@ void FBTermination(Particle* ptclCM) {
 		members->TimeBlockReg = static_cast<ULL>(pow(2, members->TimeLevelReg-time_block));
 
 		if (members->NumberOfNeighbor != 0) {
-			members->calculateTimeStepIrr2();
+			// members->calculateTimeStepIrr2();
+			members->calculateTimeStepIrr();
 
 			if (ptclCM->NumberOfMember > 2) {
 				members->TimeLevelIrr--;
