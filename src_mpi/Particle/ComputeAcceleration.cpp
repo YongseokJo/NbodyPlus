@@ -12,6 +12,8 @@ void calculateSingleAcceleration(Particle *ptcl2, double *pos, double *vel, doub
 
 void Particle::computeAccelerationIrr() {
 
+	this->NewNumberOfNeighbor = 0; // for Few-body Search by EW 2025.3.1
+
 	if (this->NumberOfNeighbor == 0) {
 		for (int dim=0; dim<Dim; dim++){
 			this->NewPosition[dim] = this->Position[dim];
@@ -95,6 +97,9 @@ void Particle::computeAccelerationIrr() {
 			vx += v[dim]*x[dim];
 		}
 
+		if (sqrt(r2) < RSEARCH/position_unit && vx < 0)
+			this->NewNeighbors[this->NewNumberOfNeighbor++] = this->Neighbors[i];
+
 		//mdot = ptcl->evolveStarMass(CurrentTimeIrr,
 				//CurrentTimeIrr+TimeStepIrr*1.01)/TimeStepIrr*1e-2; // derivative can be improved
 																													 //
@@ -135,6 +140,9 @@ void Particle::computeAccelerationIrr() {
 			r2 += x[dim]*x[dim];
 			vx += v[dim]*x[dim];
 		}
+
+		if (sqrt(r2) < RSEARCH/position_unit && vx < 0)
+			this->NewNeighbors[this->NewNumberOfNeighbor++] = i;
 
 		//mdot = ptcl->evolveStarMass(CurrentTimeIrr,
 				//CurrentTimeIrr+TimeStepIrr*1.01)/TimeStepIrr*1e-2; // derivative can be improved

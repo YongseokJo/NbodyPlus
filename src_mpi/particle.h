@@ -270,6 +270,8 @@ struct Particle {
 	// SDAR
 	void checkNewGroup();
 	void checkNewGroup2();
+	void checkNewGroup3();
+	void checkNewGroup4();
 
 	//! save pair id in binary_state with shift bit size of BINARY_STATE_ID_SHIFT
 	void setBinaryPairID(const int _id) {

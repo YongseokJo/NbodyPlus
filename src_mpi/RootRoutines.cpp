@@ -537,20 +537,40 @@ void RootRoutines() {
 				std::cout << "Irr force starts" << std::endl;
 #endif
 /*
+				int num_iter1 = 0;
+				int num_iter2 = 0;
+
 				int cm_pid;
 				Queue queue;
 				queue_scheduler.initializeIrr(IrrForce, next_time, ThisLevelNode->ParticleList);
 				auto iter = queue_scheduler.CMPtcls.begin();
 				do
 				{
+					num_iter1++;
 					queue_scheduler.assignQueueAuto();
 					queue_scheduler.runQueueAuto();
 					// queue_scheduler.printStatus();
-					do { 
+					if ((num_iter1 > 1000000 && num_iter1 < 1000005) || (num_iter2 > 1000000 && num_iter2 < 1000005)) {
+						fprintf(stdout, "Here 1!\n");
+						queue_scheduler.printStatus();
+						fflush(stdout);
+					}
+					do {
+						num_iter2++;
+						if ((num_iter1 > 1000000 && num_iter1 < 1000005) || (num_iter2 > 1000000 && num_iter2 < 1000005)) {
+							fprintf(stdout, "Here 2!\n");
+							queue_scheduler.printStatus();
+							fflush(stdout);
+						} 
 						worker = queue_scheduler.waitQueue(1); // non-blocking wait
 						// if there's any CMPtcl
 						if (queue_scheduler.CMPtcls.size() > 0)
 						{
+							if ((num_iter1 > 1000000 && num_iter1 < 1000005) || (num_iter2 > 1000000 && num_iter2 < 1000005)) {
+								fprintf(stdout, "Here 3!\n");
+								queue_scheduler.printStatus();
+								fflush(stdout);
+							}
 							// check if there's any CM ptcl ready to go for SDAR
 							if (iter == queue_scheduler.CMPtcls.end())
 								iter = queue_scheduler.CMPtcls.begin();
@@ -561,6 +581,11 @@ void RootRoutines() {
 								// if (particles[ptcl->Neighbors[j]].isUpdateToDate == false) // original code
 								if (particles[ptcl->Neighbors[j]].isActive && !particles[ptcl->Neighbors[j]].isUpdateToDate) // modified by EW 2025.2.26
 								{
+									if ((num_iter1 > 1000000 && num_iter1 < 1000005) || (num_iter2 > 1000000 && num_iter2 < 1000005)) {
+										fprintf(stdout, "Here 4!\n");
+										// queue_scheduler.printStatus();
+										fflush(stdout);
+									}
 									iter++;
 									goto skip_to_next;
 								}
@@ -581,13 +606,25 @@ void RootRoutines() {
 						}
 						if (worker != nullptr) 
 						{
+							if ((num_iter1 > 1000000 && num_iter1 < 1000005) || (num_iter2 > 1000000 && num_iter2 < 1000005)) {
+								fprintf(stdout, "Here 5!\n");
+								fprintf(stdout, "Worker rank: %d\n", worker->MyRank);
+								queue_scheduler.printStatus();
+								fflush(stdout);
+							}
 							//fprintf(stdout, "Worker rank: %d\n", worker->MyRank);
 						}
 					} while (worker == nullptr);
 					queue_scheduler.callback(worker);
+					if ((num_iter1 > 1000000 && num_iter1 < 1000005) || (num_iter2 > 1000000 && num_iter2 < 1000005)) {
+						fprintf(stdout, "Here 6!\n");
+						queue_scheduler.printStatus();
+						fflush(stdout);
+					}
 					//queue_scheduler.printStatus();
 				} while (queue_scheduler.isComplete());
 */
+// /*
 				queue_scheduler.initialize(IrrForce, next_time);
 				queue_scheduler.takeQueue(ThisLevelNode->ParticleList);
 				do
@@ -603,7 +640,6 @@ void RootRoutines() {
 					ptcl = &particles[ptcl_id];
 
 					if (ptcl->isCMptcl) {
-						// queue_scheduler.initialize(ARIntegration, next_time);
 						int rank = CMPtclWorker[ptcl->ParticleIndex];
 						queue.task = ARIntegration;
 						queue.pid = ptcl->ParticleIndex;
@@ -613,6 +649,7 @@ void RootRoutines() {
 						workers[rank].callback();
 					}
 				}
+// */
 #ifdef DEBUG
 				 std::cout << "Irregular Force done" << std::endl;
 #endif
@@ -719,7 +756,6 @@ void RootRoutines() {
 
 								Merge(donor, accretor);
 
-								queue_scheduler.initialize(MergeManyBody);
 								int rank = CMPtclWorker[ptcl->ParticleIndex];
 								queue.task = MergeManyBody;
 								queue.pid = ptcl->ParticleIndex;
@@ -754,15 +790,25 @@ void RootRoutines() {
 					}
 				}
 
-				// Erase terminated CM particles by EW 2025.1.6
-				ThisLevelNode->ParticleList.erase(
-					std::remove_if(ThisLevelNode->ParticleList.begin(), ThisLevelNode->ParticleList.end(),
-						[](int i) {
-						return !particles[i].isActive;
-						}
-					),
-					ThisLevelNode->ParticleList.end()
-				);
+				if (bin_termination) {
+					for (int i=OriginalSize; i<ThisLevelNode->ParticleList.size(); i++) {
+						ptcl = &particles[ThisLevelNode->ParticleList[i]];
+						ptcl->NewNumberOfNeighbor = 0;
+						if (ptcl->TimeStepIrr * EnzoTimeStep * 1e4 < TSEARCH)
+							ptcl->checkNewGroup4();
+					}
+
+					// Erase terminated CM particles by EW 2025.1.6
+					ThisLevelNode->ParticleList.erase(
+						std::remove_if(ThisLevelNode->ParticleList.begin(), ThisLevelNode->ParticleList.end(),
+							[](int i) {
+							return !particles[i].isActive;
+							}
+						),
+						ThisLevelNode->ParticleList.end()
+					);
+				}
+
 #ifdef NSIGHT
 				nvtxRangePop();
 #endif
@@ -802,11 +848,9 @@ void RootRoutines() {
 						ptcl->checkNewGroup2();
 						ptcl->setBinaryInterruptState(BinaryInterruptState::none);
 					}
-					else
+					else if (ptcl->NewNumberOfNeighbor != 0)
 					{	
-						ptcl->NewNumberOfNeighbor = 0;
-						if (ptcl->TimeStepIrr * EnzoTimeStep * 1e4 < TSEARCH)
-							ptcl->checkNewGroup();
+						ptcl->checkNewGroup3();
 					}
 				}
 #ifdef DEBUG
@@ -845,7 +889,6 @@ void RootRoutines() {
 							mem_ptclCM = &particles[ptclCM->NewNeighbors[j]];
 							if (mem_ptclCM->isCMptcl) {
 								fprintf(stdout, "manybody group detected; PID %d should be deleted first\n", mem_ptclCM->PID);
-								queue_scheduler.initialize(DeleteGroup);
 								rank_delete = CMPtclWorker[mem_ptclCM->ParticleIndex];
 								fprintf(stdout, "Rank of CM ptcl %d: %d\n", mem_ptclCM->PID, rank_delete);
 								queue.task = DeleteGroup;
@@ -859,7 +902,6 @@ void RootRoutines() {
 							}
 						}
 
-						queue_scheduler.initialize(MakeGroup);
 						rank_new = CMPtclWorker[ptclCM->ParticleIndex];
 #ifdef DEBUG
 						fprintf(stdout, "Rank of CM ptcl %d: %d\n", ptclCM->PID, rank_new);

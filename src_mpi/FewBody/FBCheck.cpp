@@ -224,6 +224,137 @@ void Particle::checkNewGroup2() {
     }
 }
 
+void Particle::checkNewGroup3() {
+
+    const Float kappa_org_crit = 1e-2; // kappa_org criterion for new group kappa_org>kappa_org_crit
+    Particle* ptcl2;
+
+    int NumberOfGroupCandidate = this->NewNumberOfNeighbor;
+
+    this->NewNumberOfNeighbor = 0;
+
+    double pos1[Dim], vel1[Dim];
+    double pos2[Dim], vel2[Dim];
+
+    for (int i=0; i < NumberOfGroupCandidate; i++) {
+        ptcl2 = &particles[this->NewNeighbors[i]];
+
+        double dt = this->CurrentTimeIrr > ptcl2->CurrentTimeIrr ? \
+                        this->CurrentTimeIrr - ptcl2->CurrentTimeIrr : ptcl2->CurrentTimeIrr - this->CurrentTimeIrr;
+
+        this->predictParticleSecondOrder(dt, pos1, vel1);
+        ptcl2->predictParticleSecondOrder(dt, pos2, vel2);
+
+        const Float dr = dist(pos1, pos2);
+
+        Float fcm[3] = {this->Mass*this->a_irr[0][0] + ptcl2->Mass*ptcl2->a_irr[0][0], 
+        this->Mass*this->a_irr[1][0] + ptcl2->Mass*ptcl2->a_irr[1][0], 
+        this->Mass*this->a_irr[2][0] + ptcl2->Mass*ptcl2->a_irr[2][0]};
+    
+        AR::SlowDown sd;
+        Interaction interaction;
+        Float mcm = this->Mass + ptcl2->Mass;
+    
+        // sd.initialSlowDownReference(ar_manager->slowdown_pert_ratio_ref, ar_manager->slowdown_timescale_max);
+        sd.initialSlowDownReference(1e-6, NUMERIC_FLOAT_MAX);
+    
+        sd.pert_in = interaction.calcPertFromMR(dr, this->Mass, ptcl2->Mass);
+        sd.pert_out = interaction.calcPertFromForce(fcm, mcm, mcm);
+    
+        sd.calcSlowDownFactor();
+        Float kappa_org = sd.getSlowDownFactorOrigin();
+    
+        // avoid strong perturbed case, estimate perturbation
+        // if kappa_org < criterion, avoid to form new group, should be consistent as checkbreak
+        if(kappa_org<kappa_org_crit) continue;
+
+        this->NewNeighbors[this->NewNumberOfNeighbor] = this->NewNeighbors[i];
+        this->NewNumberOfNeighbor++;
+    }
+}
+
+void Particle::checkNewGroup4() {
+
+    const double r_crit = RSEARCH/position_unit; // distance criterion
+
+    double pos1[Dim], vel1[Dim];
+
+    Particle* ptcl2;
+
+    std::unordered_set<int> CMPtclsSet;
+
+    // check only active particles 
+    // single case
+    for (int i=0; i < this->NumberOfNeighbor; i++) {
+        ptcl2 = &particles[this->Neighbors[i]];
+        if (!ptcl2->isActive) {
+            if (ptcl2->CMPtclIndex != -1) {
+                CMPtclsSet.insert(ptcl2->CMPtclIndex);
+            }
+            continue;
+        }
+
+        // if (ptcl2->TimeStepIrr > this->TimeStepIrr) // test_1e5_4 & 5: this must make the same result!
+        if (ptcl2->TimeStepIrr*EnzoTimeStep*1e4 > TSEARCH) // fiducial: 1e-5 but for RSEARCH = 0.00025 pc, 1e-6 Myr seems good
+            continue;
+
+        double dt = this->CurrentTimeIrr > ptcl2->CurrentTimeIrr ? \
+                        this->CurrentTimeIrr - ptcl2->CurrentTimeIrr : ptcl2->CurrentTimeIrr - this->CurrentTimeIrr;
+
+        double pos2[Dim], vel2[Dim];
+        
+		this->predictParticleSecondOrder(dt, pos1, vel1);
+		ptcl2->predictParticleSecondOrder(dt, pos2, vel2);
+
+        const Float dr = dist(pos1, pos2);
+        
+        if (dr < r_crit) {
+
+            Float drdv = calcDrDv(pos1, pos2, vel1, vel2);
+            // only inwards
+            if(drdv<0.0) {
+                this->NewNeighbors[this->NewNumberOfNeighbor] = this->Neighbors[i];
+                this->NewNumberOfNeighbor++;
+            }
+        }
+    }
+    for (int i: CMPtclsSet) {
+        ptcl2 = &particles[i];
+
+        if (this->PID == ptcl2->PID) {
+            continue;
+        }
+
+        if (!ptcl2->isActive) {
+            fprintf(stderr, "Why inactive CM ptcl? this PID: %d, neighbor PID: %d\n", this->PID, ptcl2->PID);
+            assert(ptcl2->isActive);
+        }
+
+        // if (ptcl2->TimeStepIrr > this->TimeStepIrr) // test_1e5_4 & 5: this must make the same result!
+        if (ptcl2->TimeStepIrr*EnzoTimeStep*1e4 > TSEARCH) // fiducial: 1e-5 but for RSEARCH = 0.00025 pc, 1e-6 Myr seems good
+            continue;
+
+        double dt = this->CurrentTimeIrr > ptcl2->CurrentTimeIrr ? \
+                        this->CurrentTimeIrr - ptcl2->CurrentTimeIrr : ptcl2->CurrentTimeIrr - this->CurrentTimeIrr;
+
+        double pos2[Dim], vel2[Dim];
+        
+        this->predictParticleSecondOrder(dt, pos1, vel1);
+        ptcl2->predictParticleSecondOrder(dt, pos2, vel2);
+
+        const Float dr = dist(pos1, pos2);
+        
+        if (dr < r_crit) {
+
+            Float drdv = calcDrDv(pos1, pos2, vel1, vel2);
+            // only inwards
+            if(drdv<0.0) {
+                this->NewNeighbors[this->NewNumberOfNeighbor] = i;
+                this->NewNumberOfNeighbor++;
+            }
+        }
+    }
+}
 
 // reference: checkBreak in hermite_integrator.h (SDAR)
 bool Group::CheckBreak() {
