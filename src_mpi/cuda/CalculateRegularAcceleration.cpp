@@ -26,6 +26,10 @@ void CalculateAccelerationOnDevice(int *NumTargetTotal, int *h_target_list, doub
  */
 void calculateRegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueScheduler &queue_scheduler){
 
+#ifdef PerformanceTrace
+	std::chrono::high_resolution_clock::time_point start_point_routine;
+	std::chrono::high_resolution_clock::time_point end_point_routine;
+#endif
 
 
 	// regIds are the list of positions of particles subject to regular force calculation in std::vector list particle
@@ -103,6 +107,11 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueSch
 #endif 
 		}
 	}
+
+#ifdef PerformanceTrace
+	start_point_routine = std::chrono::high_resolution_clock::now();
+#endif
+
 #ifdef DEBUG
 	std::cout << "sendAllParticlesToGPU starts" << std::endl;
 #endif
@@ -117,6 +126,12 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueSch
 
 #ifdef DEBUG
 	std::cout << "sendAllParticlesToGPU ended" << std::endl;
+#endif
+
+#ifdef PerformanceTrace
+	end_point_routine = std::chrono::high_resolution_clock::now();
+	performance.RegularSendAllParticlesToGPU +=
+		std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
 #endif
 	
 	
@@ -147,6 +162,10 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueSch
 #endif
 */
 
+#ifdef PerformanceTrace
+	start_point_routine = std::chrono::high_resolution_clock::now();
+#endif
+
 #ifdef DEBUG
 	std::cout << "CalculateAccelerationOnDevice starts" << std::endl;
 #endif
@@ -167,6 +186,12 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueSch
   
 #ifdef DEBUG
 	std::cout << "CalculateAccelerationOnDevice ended" << std::endl;
+#endif
+
+#ifdef PerformanceTrace
+	end_point_routine = std::chrono::high_resolution_clock::now();
+	performance.RegularGPU +=
+		std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
 #endif
 
 	for (int i=0; i<ListSize; i++) {
@@ -205,6 +230,10 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueSch
 	std::cout << std::endl;
 	*/
 
+#ifdef PerformanceTrace
+	start_point_routine = std::chrono::high_resolution_clock::now();
+#endif
+
 #ifdef DEBUG
 	std::cout << "Adjust Regular Gravity starts" << std::endl;
 #endif
@@ -241,25 +270,13 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueSch
 				*/
                 worker = queue_scheduler.WorkersToGo.erase(worker);
 				i++;
-#ifdef DEBUG
-				std::cout << "i: " << i << std::endl;
-#endif
             }
 			else
 			{
                 ++worker;
-#ifdef DEBUG
-				std::cout << "worker MyRank: " << (*worker)->MyRank << std::endl;
-#endif
 			}
         }
-#ifdef DEBUG
-		std::cout << "queue_scheduler.waitQueue(0) starts" << std::endl;
-#endif
 		queue_scheduler.waitQueue(0); // blocking wait
-#ifdef DEBUG
-		std::cout << "queue_scheduler.waitQueue(0) ended" << std::endl;
-#endif
 	} while (queue_scheduler.isComplete());
 
 #ifdef NSIGHT
@@ -268,6 +285,12 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueSch
 
 #ifdef DEBUG
 	std::cout << "Adjust Regular Gravity ended" << std::endl;
+#endif
+
+#ifdef PerformanceTrace
+	end_point_routine = std::chrono::high_resolution_clock::now();
+	performance.RegularAdjust +=
+		std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
 #endif
 
 

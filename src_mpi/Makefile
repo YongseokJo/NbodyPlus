@@ -34,8 +34,8 @@ CXXFLAGS += -I./../SDAR/src -DAR_TTL -DAR_SLOWDOWN_TREE -DAR_SLOWDOWN_TIMESCALE 
 CXX_SRCS += FewBody/FBCheck.cpp FewBody/FBInitialization.cpp FewBody/FBIntegration.cpp FewBody/FBTermination.cpp FewBody/GroupAccelerationRoutine.cpp
 
 ifdef USE_SEVN
-    CXXFLAGS += -DSEVN -I/data/vinicius/sevn/build/include/sevn
-    LDFLAGS += -L/data/vinicius/sevn/build/lib64/sevn -lsevn_lib_shared
+    CXXFLAGS += -DSEVN -I/data/vinicius/sevn_n14/build/include/sevn
+    LDFLAGS += -L/data/vinicius/sevn_n14/build/lib64/sevn -lsevn_lib_shared
     CXX_SRCS += StellarEvolution.cpp
 endif
 

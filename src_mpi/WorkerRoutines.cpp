@@ -45,16 +45,9 @@ void WorkerRoutines() {
 				MPI_Recv(&ptcl_id,   1, MPI_INT   , ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
 				//std::cout << "(IRR_FORCE) Processor " << MyRank<< ": PID= "<<ptcl_id << std::endl;
 				MPI_Recv(&next_time, 1, MPI_DOUBLE, ROOT, TIME_TAG, MPI_COMM_WORLD, &status); // (Query to myself) it seems like it's not needed.
-#ifdef PerformanceTrace
+
 				ptcl = &particles[ptcl_id];
-				start_point = std::chrono::high_resolution_clock::now();
 				ptcl->computeAccelerationIrr();
-				end_point = std::chrono::high_resolution_clock::now();
-				performance.IrregularForce +=
-					std::chrono::duration_cast<std::chrono::nanoseconds>(end_point - start_point).count();
-#else
-				ptcl->computeAccelerationIrr();
-#endif
 
 				ptcl->NewCurrentBlockIrr = ptcl->CurrentBlockIrr + ptcl->TimeBlockIrr; // of this particle
 				ptcl->calculateTimeStepIrr();

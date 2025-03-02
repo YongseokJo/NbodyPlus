@@ -182,13 +182,13 @@ int writeParticle(double current_time, int outputNum) {
         return 1;
     }
 
-		outputFile << current_time*EnzoTimeStep*1e10/1e6 << " Myr, "; //
-		//outputFile << global_time*EnzoTimeStep*1e10/1e6 << " Myr"; //
-		outputFile << "\n";
-		outputFile << outputTime << ", "; //
-		outputFile << outputTimeStep << ", "; //
-		outputFile << current_time << ""; //
-		outputFile << "\n";
+	outputFile << current_time*EnzoTimeStep*1e10/1e6 << " Myr, "; //
+	//outputFile << global_time*EnzoTimeStep*1e10/1e6 << " Myr"; //
+	outputFile << "\n";
+	outputFile << outputTime << ", "; //
+	outputFile << outputTimeStep << ", "; //
+	outputFile << current_time << ""; //
+	outputFile << "\n";
     outputFile << std::left 
 			<< std::setw(width) << "PID"
 			<< std::setw(width) << "Mass (Msun)"
@@ -206,35 +206,85 @@ int writeParticle(double current_time, int outputNum) {
 
 
     // Write particle data to the file
-		Particle *ptcl;
-		double pos[Dim], vel[Dim];
-		for (int i=0; i<=LastParticleIndex; i++) {
-			ptcl = &particles[i];
+	Particle *ptcl;
+	double pos[Dim], vel[Dim];
+	for (int i=0; i<=LastParticleIndex; i++) {
+		ptcl = &particles[i];
 
-			if (!ptcl->isActive) continue;
+		if (!ptcl->isActive) continue;
 
-			ptcl->predictParticleSecondOrder(current_time - ptcl->CurrentTimeIrr, pos, vel);
+		ptcl->predictParticleSecondOrder(current_time - ptcl->CurrentTimeIrr, pos, vel);
 
-			if (ptcl->isCMptcl) {
-				Particle* members;
-				for (int j=0; j < ptcl->NumberOfMember; j++) {
-					members = &particles[ptcl->Members[j]];
-					write_out_group(outputFile, ptcl, members, pos, vel);
-				}
+		if (ptcl->isCMptcl) {
+			Particle* members;
+			for (int j=0; j < ptcl->NumberOfMember; j++) {
+				members = &particles[ptcl->Members[j]];
+				write_out_group(outputFile, ptcl, members, pos, vel);
 			}
-			else
-				write_out(outputFile, ptcl, pos, vel);
+		}
+		else
+			write_out(outputFile, ptcl, pos, vel);
 
 // write_neighbor(output_nn, ptcl);
-		}
+	}
 
-		// Close the file
-		outputFile.close();
-		// output_nn.close();
+	// Close the file
+	outputFile.close();
+	// output_nn.close();
 
-		std::cout << "Data written to output.txt successfully!" << std::endl;
+	std::cout << "Data written to output.txt successfully!" << std::endl;
 
-		return 0;
+#ifdef PerformanceTrace
+	if (outputNum != 0) {
+		std::cout << "--------------Performance-Summary--------------" << std::endl;
+		std::cout << "Simulation Time: " << current_time*EnzoTimeStep*1e10/1e6 << " Myr" << std::endl;
+
+		std::cout << std::fixed << std::setprecision(2);
+
+		std::cout << "Whole Time: " << performance.WholeRoutine*1e-9 << " s" << std::endl;
+
+		std::cout << "Irregular Force: " << 100.0 * performance.IrregularForce / performance.WholeRoutine << " %" << std::endl;
+		performance.IrregularForce = 0;
+		std::cout << "Irregular Update: " << 100.0 * performance.IrregularUpdate / performance.WholeRoutine << " %" << std::endl;
+		performance.IrregularUpdate = 0;
+
+		std::cout << "FewBody Termination: " << 100.0 * performance.FewBodyTermination / performance.WholeRoutine << " %" << std::endl;
+		performance.FewBodyTermination = 0;
+		std::cout << "FewBody Search: " << 100.0 * performance.FewBodySearch / performance.WholeRoutine << " %" << std::endl;
+		performance.FewBodySearch = 0;
+		std::cout << "FewBody Initialization: " << 100.0 * performance.FewBodyInitialization / performance.WholeRoutine << " %" << std::endl;
+		performance.FewBodyInitialization = 0;
+
+		std::cout << "Regular SendToGPU: " << 100.0 * performance.RegularSendAllParticlesToGPU / performance.WholeRoutine << " %" << std::endl;
+		performance.RegularSendAllParticlesToGPU = 0;
+		std::cout << "Regular GPU: " << 100.0 * performance.RegularGPU / performance.WholeRoutine << " %" << std::endl;
+		performance.RegularGPU = 0;
+		std::cout << "Regular Adjust: " << 100.0 * performance.RegularAdjust / performance.WholeRoutine << " %" << std::endl;
+		performance.RegularAdjust = 0;
+		std::cout << "Regular Update: " << 100.0 * performance.RegularUpdate / performance.WholeRoutine << " %" << std::endl;
+		performance.RegularUpdate = 0;
+
+		std::cout << "SkipList Create: " << 100.0 * performance.SkipListCreate / performance.WholeRoutine << " %" << std::endl;
+		performance.SkipListCreate = 0;
+		std::cout << "SkipList Update: " << 100.0 * performance.SkipListUpdate / performance.WholeRoutine << " %" << std::endl;
+		performance.SkipListUpdate = 0;
+		std::cout << "UpdateNextRegTime: " << 100.0 * performance.UpdateNextRegTime / performance.WholeRoutine << " %" << std::endl;
+		performance.UpdateNextRegTime = 0;
+		std::cout << "UpdateNextRegTimeFB: " << 100.0 * performance.UpdateNextRegTimeFB / performance.WholeRoutine << " %" << std::endl;
+		performance.UpdateNextRegTimeFB = 0;
+
+#ifdef SEVN
+		std::cout << "Stellar Evolution: " << 100.0 * performance.StellarEvolution / performance.WholeRoutine << " %" << std::endl;
+		performance.StellarEvolution = 0;
+#endif
+		performance.WholeRoutine = 0;
+		std::cout << "-----------------------------------------------" << std::endl;
+
+		std::cout.unsetf(std::ios::fixed | std::ios::scientific);
+	}
+#endif
+
+	return 0;
 
 }
 

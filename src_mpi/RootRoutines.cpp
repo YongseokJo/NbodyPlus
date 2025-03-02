@@ -84,8 +84,11 @@ void RootRoutines() {
 	QueueScheduler queue_scheduler;
 
 #ifdef PerformanceTrace
-	std::chrono::high_resolution_clock::time_point start_point;
-	std::chrono::high_resolution_clock::time_point end_point;
+	std::chrono::high_resolution_clock::time_point start_point_whole;
+	std::chrono::high_resolution_clock::time_point end_point_whole;
+
+	std::chrono::high_resolution_clock::time_point start_point_routine;
+	std::chrono::high_resolution_clock::time_point end_point_routine;
 #endif
 
 	/* Particle loading Check */
@@ -442,10 +445,6 @@ void RootRoutines() {
 		//ParticleSynchronization();
 		while (1) {
 
-#ifdef PerformanceTrace
-			start_point = std::chrono::high_resolution_clock::now();
-#endif
-
 			// create output at appropriate time intervals
 			if (global_time >= outputTime) {
 				writeParticle(global_time, outNum++);
@@ -462,15 +461,32 @@ void RootRoutines() {
 				std::cout << "Simulation Done!" << std::endl;
 				return;
 			}
-#ifdef NSIGHT
-			nvtxRangePushA("updateNextRegTime");
-#endif
-			if (!bin_termination && !new_binaries)
-				updateNextRegTime(RegularList);
 
-#ifdef NSIGHT
-			nvtxRangePop();
+#ifdef PerformanceTrace
+			start_point_whole = std::chrono::high_resolution_clock::now();
 #endif
+
+			if (!bin_termination && !new_binaries) {
+#ifdef PerformanceTrace
+				start_point_routine = std::chrono::high_resolution_clock::now();
+#endif
+#ifdef NSIGHT
+				nvtxRangePushA("updateNextRegTime");
+#endif
+				updateNextRegTime(RegularList);
+#ifdef NSIGHT
+				nvtxRangePop();
+#endif
+#ifdef PerformanceTrace
+				end_point_routine = std::chrono::high_resolution_clock::now();
+				performance.UpdateNextRegTime +=
+					std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
+#endif
+			}
+
+			bin_termination = false;
+			new_binaries = false;
+				
 			/*
 			std::cout << "NextRegTimeBlock=" << NextRegTimeBlock << std::endl;
 			std::cout << "PID= ";
@@ -479,6 +495,9 @@ void RootRoutines() {
 			std::cout << std::endl;
 			std::cout << "size of regularlist= " << RegularList.size() << std::endl;
 			*/
+#ifdef PerformanceTrace
+			start_point_routine = std::chrono::high_resolution_clock::now();
+#endif		
 #ifdef NSIGHT
 			nvtxRangePushA("createSkipList");
 #endif
@@ -487,6 +506,11 @@ void RootRoutines() {
 				fprintf(stderr, "There are no irregular particles!\nBut is it really happening? check skiplist->display()\n");
 #ifdef NSIGHT
 			nvtxRangePop();
+#endif
+#ifdef PerformanceTrace
+			end_point_routine = std::chrono::high_resolution_clock::now();
+			performance.SkipListCreate +=
+				std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
 #endif
 
 
@@ -502,8 +526,16 @@ void RootRoutines() {
 					),
 					ThisLevelNode->ParticleList.end()
 				);
+				if (ThisLevelNode->ParticleList.size() == 0) {
+					skiplist->deleteFirstNode();
+					continue;
+				}
 				next_time     = particles[ThisLevelNode->ParticleList[0]].CurrentTimeIrr\
 									 	    + particles[ThisLevelNode->ParticleList[0]].TimeStepIrr;
+
+#ifdef PerformanceTrace
+				start_point_routine = std::chrono::high_resolution_clock::now();
+#endif
 			
 #ifdef DEBUG
 				// print out particlelist
@@ -536,9 +568,9 @@ void RootRoutines() {
 #ifdef DEBUG
 				std::cout << "Irr force starts" << std::endl;
 #endif
-/*
-				int num_iter1 = 0;
-				int num_iter2 = 0;
+// /*
+				// int num_iter1 = 0;
+				// int num_iter2 = 0;
 
 				int cm_pid;
 				Queue queue;
@@ -546,50 +578,53 @@ void RootRoutines() {
 				auto iter = queue_scheduler.CMPtcls.begin();
 				do
 				{
-					num_iter1++;
+					// num_iter1++;
 					queue_scheduler.assignQueueAuto();
 					queue_scheduler.runQueueAuto();
 					// queue_scheduler.printStatus();
+					/*
 					if ((num_iter1 > 1000000 && num_iter1 < 1000005) || (num_iter2 > 1000000 && num_iter2 < 1000005)) {
 						fprintf(stdout, "Here 1!\n");
 						queue_scheduler.printStatus();
 						fflush(stdout);
 					}
+					*/
 					do {
-						num_iter2++;
+						// num_iter2++;
+						/*
 						if ((num_iter1 > 1000000 && num_iter1 < 1000005) || (num_iter2 > 1000000 && num_iter2 < 1000005)) {
 							fprintf(stdout, "Here 2!\n");
 							queue_scheduler.printStatus();
 							fflush(stdout);
-						} 
+						}
+						*/ 
 						worker = queue_scheduler.waitQueue(1); // non-blocking wait
 						// if there's any CMPtcl
 						if (queue_scheduler.CMPtcls.size() > 0)
 						{
+							/*
 							if ((num_iter1 > 1000000 && num_iter1 < 1000005) || (num_iter2 > 1000000 && num_iter2 < 1000005)) {
 								fprintf(stdout, "Here 3!\n");
 								queue_scheduler.printStatus();
 								fflush(stdout);
 							}
+							*/
 							// check if there's any CM ptcl ready to go for SDAR
 							if (iter == queue_scheduler.CMPtcls.end())
 								iter = queue_scheduler.CMPtcls.begin();
 							cm_pid = *(iter);
 							ptcl = &particles[cm_pid];
+							/*
 							for (int j = 0; j < ptcl->NumberOfNeighbor; j++)
 							{
 								// if (particles[ptcl->Neighbors[j]].isUpdateToDate == false) // original code
 								if (particles[ptcl->Neighbors[j]].isActive && !particles[ptcl->Neighbors[j]].isUpdateToDate) // modified by EW 2025.2.26
 								{
-									if ((num_iter1 > 1000000 && num_iter1 < 1000005) || (num_iter2 > 1000000 && num_iter2 < 1000005)) {
-										fprintf(stdout, "Here 4!\n");
-										// queue_scheduler.printStatus();
-										fflush(stdout);
-									}
 									iter++;
 									goto skip_to_next;
 								}
 							}
+							*/
 							//queue_scheduler.printFreeWorker();
 							//queue_scheduler.printWorkerToGo();
 							//std::cout << "before: The number of CM ptcl is " << queue_scheduler.CMPtcls.size() << std::endl;
@@ -602,29 +637,33 @@ void RootRoutines() {
 							//std::cout << "after: The number of CM ptcl is " << queue_scheduler.CMPtcls.size() << std::endl;
 							//queue_scheduler.printFreeWorker();
 							//queue_scheduler.printWorkerToGo();
-						skip_to_next:;
+						// skip_to_next:;
 						}
 						if (worker != nullptr) 
 						{
+							/*
 							if ((num_iter1 > 1000000 && num_iter1 < 1000005) || (num_iter2 > 1000000 && num_iter2 < 1000005)) {
 								fprintf(stdout, "Here 5!\n");
 								fprintf(stdout, "Worker rank: %d\n", worker->MyRank);
 								queue_scheduler.printStatus();
 								fflush(stdout);
 							}
+							*/
 							//fprintf(stdout, "Worker rank: %d\n", worker->MyRank);
 						}
 					} while (worker == nullptr);
 					queue_scheduler.callback(worker);
+					/*
 					if ((num_iter1 > 1000000 && num_iter1 < 1000005) || (num_iter2 > 1000000 && num_iter2 < 1000005)) {
 						fprintf(stdout, "Here 6!\n");
 						queue_scheduler.printStatus();
 						fflush(stdout);
 					}
+					*/
 					//queue_scheduler.printStatus();
 				} while (queue_scheduler.isComplete());
-*/
-// /*
+// */
+/*
 				queue_scheduler.initialize(IrrForce, next_time);
 				queue_scheduler.takeQueue(ThisLevelNode->ParticleList);
 				do
@@ -649,7 +688,7 @@ void RootRoutines() {
 						workers[rank].callback();
 					}
 				}
-// */
+*/
 #ifdef DEBUG
 				 std::cout << "Irregular Force done" << std::endl;
 #endif
@@ -667,6 +706,12 @@ void RootRoutines() {
 				} while (queue_scheduler.isComplete());
 #endif
 
+#ifdef PerformanceTrace
+				end_point_routine = std::chrono::high_resolution_clock::now();
+				performance.IrregularForce +=
+					std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
+#endif
+
 				//ParticleSynchronization();
 
 
@@ -677,6 +722,11 @@ void RootRoutines() {
 						update_idx++;
 					}				updateSkipList(skiplist, ptcl_id_return);
 					*/
+
+#ifdef PerformanceTrace
+				start_point_routine = std::chrono::high_resolution_clock::now();
+#endif
+
 #ifdef NSIGHT
 				nvtxRangePushA("IrregularUpdate");
 #endif
@@ -714,7 +764,17 @@ void RootRoutines() {
 				nvtxRangePop();
 #endif
 
-#ifdef FEWBODY	
+#ifdef PerformanceTrace
+                end_point_routine = std::chrono::high_resolution_clock::now();
+                performance.IrregularUpdate +=
+                    std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
+#endif
+
+#ifdef FEWBODY
+
+#ifdef PerformanceTrace
+                start_point_routine = std::chrono::high_resolution_clock::now();
+#endif
 
 #ifdef NSIGHT
 				nvtxRangePushA("FewBodyTermination");
@@ -813,6 +873,16 @@ void RootRoutines() {
 				nvtxRangePop();
 #endif
 
+#ifdef PerformanceTrace
+                end_point_routine = std::chrono::high_resolution_clock::now();
+                performance.FewBodyTermination +=
+                    std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
+#endif
+
+#ifdef PerformanceTrace
+                start_point_routine = std::chrono::high_resolution_clock::now();
+#endif
+
 #ifdef NSIGHT
 				nvtxRangePushA("FewBodySearch");
 #endif
@@ -859,6 +929,16 @@ void RootRoutines() {
 
 #ifdef NSIGHT
 				nvtxRangePop();
+#endif
+
+#ifdef PerformanceTrace
+                end_point_routine = std::chrono::high_resolution_clock::now();
+                performance.FewBodySearch +=
+                    std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
+#endif
+
+#ifdef PerformanceTrace
+                start_point_routine = std::chrono::high_resolution_clock::now();
 #endif
 
 #ifdef NSIGHT
@@ -932,6 +1012,16 @@ void RootRoutines() {
 				nvtxRangePop();
 #endif
 
+#ifdef PerformanceTrace
+                end_point_routine = std::chrono::high_resolution_clock::now();
+                performance.FewBodyInitialization +=
+                    std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
+#endif
+
+#endif
+
+#ifdef PerformanceTrace
+                start_point_routine = std::chrono::high_resolution_clock::now();
 #endif
 #ifdef DEBUG
 				std::cout << "updateSkipList starts" << std::endl;
@@ -940,6 +1030,11 @@ void RootRoutines() {
 					updateSkipList(skiplist, ThisLevelNode->ParticleList[i]);
 #ifdef DEBUG
 				std::cout << "updateSkipList ended" << std::endl;
+#endif
+#ifdef PerformanceTrace
+                end_point_routine = std::chrono::high_resolution_clock::now();
+                performance.SkipListUpdate +=
+                    std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
 #endif
 
 				//std::cout << "update success" << std::endl;
@@ -1075,43 +1170,39 @@ void RootRoutines() {
 
 #ifdef FEWBODY
 			if (bin_termination || new_binaries) {
-				ULL OriginalNextRegTimeBlock = NextRegTimeBlock;
+#ifdef PerformanceTrace
+                start_point_routine = std::chrono::high_resolution_clock::now();
+#endif	
 #ifdef DEBUG
-			std::cout << "(FB) updateNextRegTime starts" << std::endl;
+				std::cout << "(FB) updateNextRegTime starts" << std::endl;
 #endif
-
 #ifdef NSIGHT
 				nvtxRangePushA("updateNextRegTime");
 #endif
-
+				ULL OriginalNextRegTimeBlock = NextRegTimeBlock;
 				updateNextRegTime(RegularList);
+#ifdef NSIGHT
+				nvtxRangePop();
+#endif
+#ifdef DEBUG
+				std::cout << "(FB) updateNextRegTime done" << std::endl;
+				std::cout << "(FB) RegularList size: " << RegularList.size() << std::endl;
+#endif
+#ifdef PerformanceTrace
+                end_point_routine = std::chrono::high_resolution_clock::now();
+                performance.UpdateNextRegTimeFB +=
+                    std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
+#endif
 				if (OriginalNextRegTimeBlock != NextRegTimeBlock)
 					continue;
 
 				bin_termination = false;
 				new_binaries = false;
-#ifdef NSIGHT
-				nvtxRangePop();
-#endif
-
-#ifdef DEBUG
-			std::cout << "(FB) updateNextRegTime done" << std::endl;
-			std::cout << "(FB) RegularList size: " << RegularList.size() << std::endl;
-#endif
 			}
-#endif
-
-#ifdef PerformanceTrace
-			end_point = std::chrono::high_resolution_clock::now();
-			performance.IrregularRoutine +=
-				std::chrono::duration_cast<std::chrono::nanoseconds>(end_point - start_point).count();
 #endif
 
 #ifdef CUDA
 			{
-#ifdef PerformanceTrace
-				start_point = std::chrono::high_resolution_clock::now();
-#endif
 				//total_tasks = RegularList.size();
 				next_time = NextRegTimeBlock*time_step;
 
@@ -1133,6 +1224,10 @@ void RootRoutines() {
 
 #ifdef NSIGHT
 				nvtxRangePop();
+#endif
+
+#ifdef PerformanceTrace
+                start_point_routine = std::chrono::high_resolution_clock::now();
 #endif
 
 #ifdef NSIGHT
@@ -1161,9 +1256,9 @@ void RootRoutines() {
 #endif
 
 #ifdef PerformanceTrace
-				end_point = std::chrono::high_resolution_clock::now();
-				performance.RegularRoutine +=
-					std::chrono::duration_cast<std::chrono::nanoseconds>(end_point - start_point).count();
+                end_point_routine = std::chrono::high_resolution_clock::now();
+                performance.RegularUpdate +=
+                    std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
 #endif
 			}
 				/*
@@ -1390,8 +1485,26 @@ void RootRoutines() {
 			global_time = NextRegTimeBlock*time_step;
 
 #ifdef SEVN
+
+#ifdef PerformanceTrace
+			start_point_routine = std::chrono::high_resolution_clock::now();
+#endif
+
 			StellarEvolution(); // How about evolving particles inside RegularList only? by EW 2025.1.19
 								// Currently, evolving all the particles upto global_time
+
+#ifdef PerformanceTrace
+			end_point_routine = std::chrono::high_resolution_clock::now();
+			performance.StellarEvolution +=
+				std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
+#endif
+
+#endif
+
+#ifdef PerformanceTrace
+			end_point_whole = std::chrono::high_resolution_clock::now();
+			performance.WholeRoutine +=
+				std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_whole - start_point_whole).count();
 #endif
 			//exit(SUCCESS);
 		} // While(1)

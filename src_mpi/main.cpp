@@ -96,30 +96,6 @@ int main(int argc, char *argv[]) {
 		WorkerRoutines();
 	}
 
-#ifdef PerformanceTrace
-	//MPI_Reduce(&performance.IrregularForce, &IrrPerformance, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
-	MPI_Allreduce(MPI_IN_PLACE, &performance.IrregularForce, 1, MPI_LONG, MPI_SUM, MPI_COMM_WORLD);
-	if (MyRank == ROOT) {
-		std::cerr << "Irr Time (ns) = " << performance.IrregularForce << std::endl;
-
-		// Open the file in append mode
-		std::ofstream outFile("performance", std::ios::app);
-
-		// Check if the file opened successfully
-		if (outFile.is_open()) {
-			// Write the variable to the file
-			outFile << performance.IrregularForce << std::endl;
-			outFile << "Irregular Routine " << performance.IrregularRoutine << std::endl;
-			outFile << "Regular Routine " << performance.RegularRoutine << std::endl;
-
-			// Close the file
-			outFile.close();
-		} else {
-			std::cerr << "Error opening file!" << std::endl;
-		}
-	}
-#endif
-
 	// Finalize the window and MPI environment
 	MPI_Win_free(&win);
 	MPI_Finalize();
