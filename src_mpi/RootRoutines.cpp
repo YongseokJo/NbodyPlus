@@ -1324,7 +1324,82 @@ void RootRoutines() {
 					//fflush(stdout); 
 				}
 				*/
-#else
+#else		
+			{
+#ifdef PerformanceTrace
+				start_point_routine = std::chrono::high_resolution_clock::now();
+#endif
+
+#ifdef NSIGHT
+				nvtxRangePushA("RegForce");
+#endif
+
+#ifdef DEBUG
+				std::cout << "Regular force starts" << std::endl;
+#endif
+
+				// Regular force
+				queue_scheduler.initialize(RegForce);
+				queue_scheduler.takeQueueRegularList(RegularList);
+				do
+				{
+					queue_scheduler.assignQueueRegularList();
+					queue_scheduler.runQueueAuto();
+					queue_scheduler.waitQueue(0); // blocking wait
+				} while (queue_scheduler.isComplete());
+#ifdef DEBUG
+				std::cout << "Regular force ended" << std::endl;
+#endif
+
+#ifdef NSIGHT
+				nvtxRangePop();
+#endif
+
+#ifdef PerformanceTrace
+                end_point_routine = std::chrono::high_resolution_clock::now();
+                performance.RegularForce +=
+                    std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
+#endif
+
+
+#ifdef PerformanceTrace
+                start_point_routine = std::chrono::high_resolution_clock::now();
+#endif
+
+#ifdef NSIGHT
+				nvtxRangePushA("RegUpdate");
+#endif
+
+#ifdef DEBUG
+				std::cout << "update regular starts" << std::endl;
+#endif
+
+				// Update Regular
+				queue_scheduler.initialize(RegUpdate);
+				queue_scheduler.takeQueueRegularList(RegularList);
+				do
+				{
+					queue_scheduler.assignQueueRegularList();
+					queue_scheduler.runQueueAuto();
+					queue_scheduler.waitQueue(0); // blocking wait
+				} while (queue_scheduler.isComplete());
+#ifdef DEBUG
+				std::cout << "update regular ended" << std::endl;
+#endif
+
+#ifdef NSIGHT
+				nvtxRangePop();
+#endif
+
+#ifdef PerformanceTrace
+                end_point_routine = std::chrono::high_resolution_clock::now();
+                performance.RegularUpdate +=
+                    std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
+#endif
+			}
+#endif
+
+#ifdef nouse
 			//std::cout << "Regular Routine Starts." << std::endl;
 			// Regular
 			{

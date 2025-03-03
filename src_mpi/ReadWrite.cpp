@@ -254,7 +254,7 @@ int writeParticle(double current_time, int outputNum) {
 		performance.FewBodySearch = 0;
 		std::cout << "FewBody Initialization: " << 100.0 * performance.FewBodyInitialization / performance.WholeRoutine << " %" << std::endl;
 		performance.FewBodyInitialization = 0;
-
+#ifdef CUDA
 		std::cout << "Regular SendToGPU: " << 100.0 * performance.RegularSendAllParticlesToGPU / performance.WholeRoutine << " %" << std::endl;
 		performance.RegularSendAllParticlesToGPU = 0;
 		std::cout << "Regular GPU: " << 100.0 * performance.RegularGPU / performance.WholeRoutine << " %" << std::endl;
@@ -263,7 +263,12 @@ int writeParticle(double current_time, int outputNum) {
 		performance.RegularAdjust = 0;
 		std::cout << "Regular Update: " << 100.0 * performance.RegularUpdate / performance.WholeRoutine << " %" << std::endl;
 		performance.RegularUpdate = 0;
-
+#else
+		std::cout << "Regular Force: " << 100.0 * performance.RegularForce / performance.WholeRoutine << " %" << std::endl;
+		performance.RegularForce = 0;
+		std::cout << "Regular Update: " << 100.0 * performance.RegularUpdate / performance.WholeRoutine << " %" << std::endl;
+		performance.RegularUpdate = 0;
+#endif
 		std::cout << "SkipList Create: " << 100.0 * performance.SkipListCreate / performance.WholeRoutine << " %" << std::endl;
 		performance.SkipListCreate = 0;
 		std::cout << "SkipList Update: " << 100.0 * performance.SkipListUpdate / performance.WholeRoutine << " %" << std::endl;

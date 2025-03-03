@@ -16,6 +16,7 @@ struct Performance {
 	long FewBodySearch = 0;
 	long FewBodyInitialization = 0;
 
+	long RegularForce = 0; // use this only if CUDA is not defined
 	long RegularSendAllParticlesToGPU = 0;
 	long RegularGPU = 0;
 	long RegularAdjust = 0;

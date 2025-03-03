@@ -59,7 +59,7 @@ void WorkerRoutines() {
 			case RegForce: // Regular Acceleration
 				//std::cout << "RegCal start " << MyRank << std::endl;
 				MPI_Recv(&ptcl_id,   1, MPI_INT,    ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
-				MPI_Recv(&next_time, 1, MPI_DOUBLE, ROOT, TIME_TAG, MPI_COMM_WORLD, &status);
+				// MPI_Recv(&next_time, 1, MPI_DOUBLE, ROOT, TIME_TAG, MPI_COMM_WORLD, &status); // commented out by EW 2025.3.3 as this is unnecessary
 
 				particles[ptcl_id].computeAccelerationReg();
 				//ComputeAcceleration(ptcl_id, next_time);
@@ -94,7 +94,7 @@ void WorkerRoutines() {
 				ptcl->CurrentBlockReg += ptcl->TimeBlockReg;
 				ptcl->CurrentTimeReg   = ptcl->CurrentBlockReg*time_step;
 				ptcl->calculateTimeStepReg();
-				ptcl->NewCurrentBlockIrr = ptcl->CurrentBlockReg;
+				// ptcl->NewCurrentBlockIrr = ptcl->CurrentBlockReg; // commented out by EW 2025.3.3 to match with RegCudaUpdate task
 				ptcl->calculateTimeStepIrr();
 				ptcl->updateRadius();
 				if (ptcl->NumberOfNeighbor == 0) {
