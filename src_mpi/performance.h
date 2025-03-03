@@ -25,7 +25,6 @@ struct Performance {
 	long SkipListCreate = 0;
 	long SkipListUpdate = 0;
 	long UpdateNextRegTime = 0;
-	long UpdateNextRegTimeFB = 0;
 
 #ifdef SEVN
 	long StellarEvolution = 0;

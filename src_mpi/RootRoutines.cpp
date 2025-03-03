@@ -466,23 +466,21 @@ void RootRoutines() {
 			start_point_whole = std::chrono::high_resolution_clock::now();
 #endif
 
-			if (!bin_termination && !new_binaries) {
 #ifdef PerformanceTrace
-				start_point_routine = std::chrono::high_resolution_clock::now();
+			start_point_routine = std::chrono::high_resolution_clock::now();
 #endif
 #ifdef NSIGHT
-				nvtxRangePushA("updateNextRegTime");
+			nvtxRangePushA("updateNextRegTime");
 #endif
-				updateNextRegTime(RegularList);
+			updateNextRegTime(RegularList);
 #ifdef NSIGHT
-				nvtxRangePop();
+			nvtxRangePop();
 #endif
 #ifdef PerformanceTrace
-				end_point_routine = std::chrono::high_resolution_clock::now();
-				performance.UpdateNextRegTime +=
-					std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
+			end_point_routine = std::chrono::high_resolution_clock::now();
+			performance.UpdateNextRegTime +=
+				std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
 #endif
-			}
 
 			bin_termination = false;
 			new_binaries = false;
@@ -857,6 +855,10 @@ void RootRoutines() {
 				if (bin_termination) {
 					for (int i=OriginalSize; i<ThisLevelNode->ParticleList.size(); i++) {
 						ptcl = &particles[ThisLevelNode->ParticleList[i]];
+
+						if (ptcl->CurrentBlockReg + ptcl->TimeBlockReg == NextRegTimeBlock)
+							RegularList.insert(ptcl->ParticleIndex);
+
 						ptcl->NewNumberOfNeighbor = 0;
 						if (ptcl->TimeStepIrr * EnzoTimeStep * 1e4 < TSEARCH)
 							ptcl->checkNewGroup4();
@@ -995,6 +997,9 @@ void RootRoutines() {
 						workers[rank_new].addQueue(queue);
 						workers[rank_new].runQueue();
 						workers[rank_new].callback();
+
+						if (ptclCM->CurrentBlockReg + ptclCM->TimeBlockReg == NextRegTimeBlock)
+							RegularList.insert(ptcl->ParticleIndex);
 					}
 #ifdef DEBUG
 					std::cout << "All new fewbody objects are initialized." << std::endl;
@@ -1174,34 +1179,16 @@ void RootRoutines() {
 
 #ifdef FEWBODY
 			if (bin_termination || new_binaries) {
-#ifdef PerformanceTrace
-                start_point_routine = std::chrono::high_resolution_clock::now();
-#endif	
-#ifdef DEBUG
-				std::cout << "(FB) updateNextRegTime starts" << std::endl;
-#endif
-#ifdef NSIGHT
-				nvtxRangePushA("updateNextRegTime");
-#endif
-				ULL OriginalNextRegTimeBlock = NextRegTimeBlock;
-				updateNextRegTime(RegularList);
-#ifdef NSIGHT
-				nvtxRangePop();
-#endif
-#ifdef DEBUG
-				std::cout << "(FB) updateNextRegTime done" << std::endl;
-				std::cout << "(FB) RegularList size: " << RegularList.size() << std::endl;
-#endif
-#ifdef PerformanceTrace
-                end_point_routine = std::chrono::high_resolution_clock::now();
-                performance.UpdateNextRegTimeFB +=
-                    std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
-#endif
-				if (OriginalNextRegTimeBlock != NextRegTimeBlock)
-					continue;
 
-				bin_termination = false;
-				new_binaries = false;
+				for (auto it = RegularList.begin(); it != RegularList.end(); ) {
+					if (!particles[*it].isActive)
+						it = RegularList.erase(it);
+					else
+						++it;
+				}
+
+				if (RegularList.empty())
+					continue;
 			}
 #endif
 

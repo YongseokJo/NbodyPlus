@@ -92,7 +92,7 @@ void Particle::polynomialPrediction(double current_time) {
 }
 */
 
-
+/* // commented out by EW 2025.3.3 to define this function as inline function
 void Particle::updateParticle() {
 	
 	for (int dim=0; dim<Dim; dim++) {
@@ -102,7 +102,7 @@ void Particle::updateParticle() {
 	
 	//updateTimeStep();
 }
-
+*/
 
 
 void Particle::updateRadius() {

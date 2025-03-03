@@ -221,7 +221,16 @@ struct Particle {
 
 
 
-	void updateParticle(); 
+	// void updateParticle(); 
+	void updateParticle() { // inline function by EW 2025.3.3 to reduce function call time
+	
+		for (int dim=0; dim<Dim; dim++) {
+			this->Position[dim] = this->NewPosition[dim];
+			this->Velocity[dim] = this->NewVelocity[dim];
+		}
+		
+		//updateTimeStep();
+	}
 
 	/*
 	void getAcceleration(const double pos[], const double vel[]) {

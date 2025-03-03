@@ -275,8 +275,6 @@ int writeParticle(double current_time, int outputNum) {
 		performance.SkipListUpdate = 0;
 		std::cout << "UpdateNextRegTime: " << 100.0 * performance.UpdateNextRegTime / performance.WholeRoutine << " %" << std::endl;
 		performance.UpdateNextRegTime = 0;
-		std::cout << "UpdateNextRegTimeFB: " << 100.0 * performance.UpdateNextRegTimeFB / performance.WholeRoutine << " %" << std::endl;
-		performance.UpdateNextRegTimeFB = 0;
 
 #ifdef SEVN
 		std::cout << "Stellar Evolution: " << 100.0 * performance.StellarEvolution / performance.WholeRoutine << " %" << std::endl;
