@@ -73,7 +73,7 @@ void CalculateAllAccelerationOnGPU(std::vector<Particle*> &particle){
 	NumNeighborReceive = new int[NNB];
 	ACListReceive      = new int*[NNB];
 	for (int i=0; i<NNB; i++) {
-		ACListReceive[i] = new int[NumNeighborMax];
+		ACListReceive[i] = new int[MaxNumNeighbor];
 	}
 
 
@@ -95,7 +95,7 @@ void CalculateAllAccelerationOnGPU(std::vector<Particle*> &particle){
 	}
 
 	// send the arrays to GPU
-	//SendToDevice(&NNB, MassSend, PositionSend, VelocitySend, MdotSend, &NumNeighborMax);
+	//SendToDevice(&NNB, MassSend, PositionSend, VelocitySend, MdotSend, &MaxNumNeighbor);
 
 
 	// calculate the force by sending the particles to GPU in multiples of 1024
@@ -239,7 +239,7 @@ void CalculateListAccelerationOnGPU(std::vector<int> &IndexList, std::vector<Par
 
 	AClistGpu = new int*[ListSize];
 	for (int i=0; i<(NNB); i++) {
-		AClistGpu[i] = new int[NumNeighborMax];
+		AClistGpu[i] = new int[MaxNumNeighbor];
 	}
 
 
@@ -379,7 +379,7 @@ void SendAllParticlesToGPU(std::vector <Particle*> &particle) {
 	}
 
 	// send the arrays to GPU
-	//SendToDevice(&NNB, Mass, Position, Velocity, Mdot, &NumNeighborMax);
+	//SendToDevice(&NNB, Mass, Position, Velocity, Mdot, &MaxNumNeighbor);
 
 	// free the temporary variables
 	delete[] Mass;

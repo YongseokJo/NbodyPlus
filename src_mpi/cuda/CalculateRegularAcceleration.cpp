@@ -54,7 +54,7 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueSch
 	CUDA_REAL (*AccRegReceive_f)[Dim];
 	CUDA_REAL (*AccRegDotReceive_f)[Dim];
 #endif 
-	//int (*ACListReceive)[NumNeighborMax];
+	//int (*ACListReceive)[MaxNumNeighbor];
 
 	//double* PotSend;
 	// int **ACListReceive;
@@ -92,10 +92,10 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueSch
 	NumNeighborReceive  = new int[ListSize];
 
 	// ACListReceive      = new int*[ListSize];
-	ACListReceive = new int[ListSize * NumNeighborMax];
+	ACListReceive = new int[ListSize * MaxNumNeighbor];
 
 	for (int i=0; i<ListSize; i++) {
-		// ACListReceive[i] = new int[NumNeighborMax];
+		// ACListReceive[i] = new int[MaxNumNeighbor];
 		for (int dim=0; dim<Dim; dim++) {
 			AccRegReceive[i][dim]    = 0;
 			AccRegDotReceive[i][dim] = 0;
@@ -259,7 +259,7 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueSch
 				MPI_Send(&task, 1, MPI_INT, (*worker)->MyRank, TASK_TAG, MPI_COMM_WORLD);
 				MPI_Send(&ActiveIndexToOriginalIndex[IndexList[i]], 1, MPI_INT, (*worker)->MyRank, PTCL_TAG, MPI_COMM_WORLD);
 				MPI_Send(&NumNeighborReceive[i], 1, MPI_INT, (*worker)->MyRank, 10, MPI_COMM_WORLD);
-				MPI_Send(&ACListReceive[i * NumNeighborMax], NumNeighborReceive[i], MPI_INT, (*worker)->MyRank, 11, MPI_COMM_WORLD);
+				MPI_Send(&ACListReceive[i * MaxNumNeighbor], NumNeighborReceive[i], MPI_INT, (*worker)->MyRank, 11, MPI_COMM_WORLD);
 				MPI_Send(&AccRegReceive[i][0], 3, MPI_DOUBLE, (*worker)->MyRank, 12, MPI_COMM_WORLD);
 				MPI_Send(&AccRegDotReceive[i][0], 3, MPI_DOUBLE, (*worker)->MyRank, 13, MPI_COMM_WORLD);
 				((*worker))->onDuty = true;
@@ -320,7 +320,7 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueSch
 			MPI_Send(&ws._WorkerTmp->task, 1, MPI_INT, ws._WorkerTmp->MyRank, TASK_TAG, MPI_COMM_WORLD);
 			MPI_Send(&RegularList[i], 1, MPI_INT, ws._WorkerTmp->MyRank, PTCL_TAG, MPI_COMM_WORLD);
 			MPI_Send(&NumNeighborReceive[i], 1, MPI_INT, ws._WorkerTmp->MyRank, 10, MPI_COMM_WORLD);
-			MPI_Send(&ACListReceive[i * NumNeighborMax], NumNeighborReceive[i], MPI_INT, ws._WorkerTmp->MyRank, 11, MPI_COMM_WORLD);
+			MPI_Send(&ACListReceive[i * MaxNumNeighbor], NumNeighborReceive[i], MPI_INT, ws._WorkerTmp->MyRank, 11, MPI_COMM_WORLD);
 			MPI_Send(&AccRegReceive[i][0], 3, MPI_DOUBLE, ws._WorkerTmp->MyRank, 12, MPI_COMM_WORLD);
 			MPI_Send(&AccRegDotReceive[i][0], 3, MPI_DOUBLE, ws._WorkerTmp->MyRank, 13, MPI_COMM_WORLD);
 			ws._WorkerTmp->onDuty = true;

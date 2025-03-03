@@ -241,7 +241,7 @@ int writeParticle(double current_time, int outputNum) {
 
 		std::cout << std::fixed << std::setprecision(2);
 
-		std::cout << "Whole Time: " << performance.WholeRoutine*1e-9 << " s" << std::endl;
+		std::cout << "Elapsed time from the last output: " << performance.WholeRoutine*1e-9 << " s" << std::endl;
 
 		std::cout << "Irregular Force: " << 100.0 * performance.IrregularForce / performance.WholeRoutine << " %" << std::endl;
 		performance.IrregularForce = 0;

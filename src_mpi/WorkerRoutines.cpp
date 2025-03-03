@@ -25,7 +25,7 @@ void WorkerRoutines() {
 	int ptcl_id;
 	double next_time;
 	int NewNumberOfNeighbor;
-	int NewNeighbors[NumNeighborMax];
+	int NewNeighbors[MaxNumNeighbor];
 	int size=0;
 	double new_a[Dim];
 	double new_adot[Dim];

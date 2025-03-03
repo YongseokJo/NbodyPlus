@@ -506,7 +506,7 @@ void Particle::updateRegularParticleCuda(int *NewNeighborsGPU, int NewNumberOfNe
 	std::unordered_set<int> hashTableOld;
 	std::unordered_set<int> hashTableNew;
 	
-	int RealNeighbors[MaxNumberOfNeighbor]; // this->Neighbors is containing members, not CM ptcls, but this is containing CM ptcls, not members
+	int RealNeighbors[MaxNumNeighbor]; // this->Neighbors is containing members, not CM ptcls, but this is containing CM ptcls, not members
 	int RealNumberOfNeighbor = 0;
 
 	int size = this->NumberOfNeighbor > NewNumberOfNeighborGPU ? this->NumberOfNeighbor : NewNumberOfNeighborGPU;
@@ -643,7 +643,7 @@ void Particle::updateRegularParticleCuda(int *NewNeighborsGPU, int NewNumberOfNe
 
 	//fprintf(stderr,"%d Neighbor Correction new=%d, old=%d\n", ptcl->PID, NumNeighborReceive[i], ptcl->NumberOfAC);
 	/*
-		 if (NumNeighborReceive[i]>NumNeighborMax) {
+		 if (NumNeighborReceive[i]>MaxNumNeighbor) {
 		 std::cerr <<  "MyPID=" <<  ptcl->PID << ", NN=" << NumNeighborReceive[i] << std::endl;
 		 }
 		 */

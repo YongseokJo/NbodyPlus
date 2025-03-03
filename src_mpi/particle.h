@@ -38,9 +38,9 @@ struct Particle {
 	double a_tot[Dim][HERMITE_ORDER];
 	double a_reg[Dim][HERMITE_ORDER];
 	double a_irr[Dim][HERMITE_ORDER];
-	int    Neighbors[MaxNumberOfNeighbor];    // 
+	int    Neighbors[MaxNumNeighbor];    // 
 	int    NumberOfNeighbor;    // 
-	int    NewNeighbors[MaxNumberOfNeighbor];    // 
+	int    NewNeighbors[MaxNumNeighbor];    // 
 	int    NewNumberOfNeighbor;    // 
 
 	double CurrentTimeIrr;

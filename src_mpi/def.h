@@ -1,23 +1,16 @@
-#define PerformanceTrace
-
 #define FAIL    -1
 #define SUCCESS  1
 
 
 #define NumberOfTask 20
+
 #define MaxNumberOfParticle 200000
-#define MaxNumberOfNeighbor 1000 // 10000 -> 2000 modified by EW 2025.1.11
-
-
-
 #define MaxNumberOfCommunication 10000
 
 
-//#define FixNumNeighbor 20
-#define FixNumNeighbor 100 // 500 -> 100 modified by EW 2025.1.11
-//#define NumNeighborMax 100
-#define NumNeighborMax 1000 // 5000 -> 1000 modified by EW 2025.1.11
-#define ACRadius 0.009 // 0.11 -> 0.05 modified by EW 2025.1.11
+#define FixNumNeighbor 200 // 500 -> 100 modified by EW 2025.1.11
+#define MaxNumNeighbor 1000 // 10000 -> 2000 modified by EW 2025.1.11
+#define ACRadius 0.01 // 0.11 -> 0.05 modified by EW 2025.1.11
 
 
 // SDAR

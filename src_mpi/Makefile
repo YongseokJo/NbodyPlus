@@ -30,7 +30,7 @@ CU_SRCS = cuda/cuda_my_acceleration.cu cuda/cuda_kernels.cu
 
 
 # SDAR
-CXXFLAGS += -I./../SDAR/src -DAR_TTL -DAR_SLOWDOWN_TREE -DAR_SLOWDOWN_TIMESCALE -DFEWBODY #-DDEBUG
+CXXFLAGS += -I./../SDAR/src -DAR_TTL -DAR_SLOWDOWN_TREE -DAR_SLOWDOWN_TIMESCALE -DFEWBODY -DPerformanceTrace #-DDEBUG
 CXX_SRCS += FewBody/FBCheck.cpp FewBody/FBInitialization.cpp FewBody/FBIntegration.cpp FewBody/FBTermination.cpp FewBody/GroupAccelerationRoutine.cpp
 
 ifdef USE_SEVN

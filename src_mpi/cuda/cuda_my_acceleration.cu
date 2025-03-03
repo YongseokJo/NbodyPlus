@@ -227,7 +227,7 @@ void GetAcceleration(
 
             toHost(NeighborList_array[i],
                    d_neighbor_array[i],
-                   NumTarget * NumNeighborMax,
+                   NumTarget * MaxNumNeighbor,
                    streams[i]);
 			
             toHost(h_num_neighbor_array[i],
@@ -269,12 +269,12 @@ void GetAcceleration(
 			int offset = 0;
 			for (int i = 0; i < deviceCount; i++) {
 				int count = h_num_neighbor_array[i][k];
-				if (offset + count > NumNeighborMax) {
-					fprintf(stderr, "ERROR: Sum of neighbors exceeds NumNeighborMax for target %d!\n", k);
+				if (offset + count > MaxNumNeighbor) {
+					fprintf(stderr, "ERROR: Sum of neighbors exceeds MaxNumNeighbor for target %d!\n", k);
 					// Handle error, e.g. break or throw
 				}
-				memcpy(&NeighborList[k * NumNeighborMax + offset],
-					&NeighborList_array[i][k * NumNeighborMax],
+				memcpy(&NeighborList[k * MaxNumNeighbor + offset],
+					&NeighborList_array[i][k * MaxNumNeighbor],
 					count * sizeof(int));
 				offset += count; 
 			}
@@ -302,7 +302,7 @@ void GetAcceleration(
 
 			fprintf(stderr, "%d (%d) neighbors of %d = ", i, h_target_list[i], NumNeighbor[i]);
 			for (int j=0;j<NumNeighbor[i];j++) {
-				fprintf(stderr, "%d, ", NeighborList[i * NumNeighborMax + j]);
+				fprintf(stderr, "%d, ", NeighborList[i * MaxNumNeighbor + j]);
 			}
 			fprintf(stderr, "\n");
 
@@ -446,14 +446,14 @@ void GetAcceleration(
 		nvtxRangePushA("Neighbor in CPU1");
 		#endif
 
-		// toHost(NeighborList, d_neighbor, NumTarget * NumNeighborMax);
-		toHost(NeighborList, d_neighbor, NumTarget * NumNeighborMax);
+		// toHost(NeighborList, d_neighbor, NumTarget * MaxNumNeighbor);
+		toHost(NeighborList, d_neighbor, NumTarget * MaxNumNeighbor);
 
 
 		#ifdef NSIGHT
 		nvtxRangePop();
 		#endif
-		// toHost(h_neighbor, d_neighbor, NumTarget * NumNeighborMax);//
+		// toHost(h_neighbor, d_neighbor, NumTarget * MaxNumNeighbor);//
 		#ifdef NSIGHT
 		nvtxRangePushA("Neighbor in CPU2");
 		#endif
@@ -503,7 +503,7 @@ void GetAcceleration(
 
 				// Loop over each neighbor in the current block
 				for (int n = 0; n < numNeighborsInBlock; n++) {
-					if (k < NumNeighborMax){
+					if (k < MaxNumNeighbor){
 						targetNeighborList[k++] = blockNeighborList[n]; // added by YS 2025.01.22
 					}
 					else {
@@ -543,7 +543,7 @@ void GetAcceleration(
 
 		fprintf(stderr, "%d (%d) neighbors of %d = ", i, h_target_list[i], NumNeighbor[i]);
 		for (int j=0;j<NumNeighbor[i];j++) {
-			fprintf(stderr, "%d, ", NeighborList[i * NumNeighborMax + j]);
+			fprintf(stderr, "%d, ", NeighborList[i * MaxNumNeighbor + j]);
 		}
 		fprintf(stderr, "\n");
 
@@ -617,7 +617,7 @@ void _ReceiveFromHost(
 	//time_send -= get_wtime();
 	//nbodymax       = 100000000;
 	NNB            = _NNB;
-	//NumNeighborMax = _NumNeighborMax;
+	//MaxNumNeighbor = _MaxNumNeighbor;
 	isend++;
 	assert(NNB <= nbodymax);
 	cudaError_t cudaStatus;
@@ -693,25 +693,25 @@ void _ReceiveFromHost(
 		// C * (m / N_device)
 		my_allocate_d(d_num_neighbor_block_array, GridDimY * target_size, deviceCount, 0);
 		my_allocate_d(d_neighbor_block_array, GridDimY * NNB_per_block * target_size, deviceCount, 0);
-		my_allocate_d(d_neighbor_array, NumNeighborMax * target_size, deviceCount, 0);
+		my_allocate_d(d_neighbor_array, MaxNumNeighbor * target_size, deviceCount, 0);
 		for (int i = 0; i < deviceCount; i++) {
 			cudaSetDevice(i);
 			cudaMallocHost(&h_result_array[i], _six*variable_size * sizeof(CUDA_REAL));
 			cudaMallocHost(&h_num_neighbor_array[i], variable_size * sizeof(int));
-			cudaMallocHost(&NeighborList_array[i], variable_size * NumNeighborMax * sizeof(int));
+			cudaMallocHost(&NeighborList_array[i], variable_size * MaxNumNeighbor * sizeof(int));
 		}
 		#else
 		my_allocate(&h_ptcl         , &d_ptcl        ,         _seven*variable_size); // x,v,m
 		my_allocate(&h_result       , &d_result      ,           _six*variable_size);
 		// my_allocate(&h_num_neighbor , &d_num_neighbor,                variable_size);
-		// my_allocate(&h_neighbor     , &d_neighbor    , NumNeighborMax*variable_size);
+		// my_allocate(&h_neighbor     , &d_neighbor    , MaxNumNeighbor*variable_size);
 		cudaMalloc((void**)&d_r2        ,        variable_size * sizeof(CUDA_REAL));
 		cudaMalloc((void**)&d_target    ,        variable_size * sizeof(int));
 		// cudaMalloc((void**)&d_diff      , _six * variable_size * target_size * sizeof(CUDA_REAL));
 
 		cudaMalloc((void**)&d_diff      , _six * GridDimY * target_size * sizeof(CUDA_REAL));
 		cudaMalloc((void**)&d_neighbor_block, GridDimY * NNB_per_block * target_size * sizeof(int));
-		my_allocate(&h_neighbor     , &d_neighbor    , NumNeighborMax * target_size);
+		my_allocate(&h_neighbor     , &d_neighbor    , MaxNumNeighbor * target_size);
 		my_allocate(&h_num_neighbor , &d_num_neighbor,                GridDimY * variable_size);
 		#endif
 

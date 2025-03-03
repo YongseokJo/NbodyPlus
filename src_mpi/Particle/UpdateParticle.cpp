@@ -110,7 +110,7 @@ void Particle::updateRadius() {
 	/* exponential (aggressive) */
 	/*
 		 const double c = 0.5;
-		 const double b = std::log(2) / (NumNeighborMax);  // ln(2) / 40
+		 const double b = std::log(2) / (MaxNumNeighbor);  // ln(2) / 40
 		 double exp = a * (std::exp(b * NumberOfAC) - 1);
 		 */
 
@@ -118,7 +118,7 @@ void Particle::updateRadius() {
 
 	if (this->NumberOfNeighbor > FixNumNeighbor) {
 		const int n = 2;
-		const double c = (NumNeighborMax-FixNumNeighbor);
+		const double c = (MaxNumNeighbor-FixNumNeighbor);
 		const double b = 0.9 / std::pow(c,n);  // ln(2) / 40
 		double x = this->NumberOfNeighbor-FixNumNeighbor;
 		double a = n%2==0 ? b*std::abs(x)*std::pow(x,n-1) : b*std::pow(x,n);
@@ -128,7 +128,7 @@ void Particle::updateRadius() {
 	}
 	else if (this->NumberOfNeighbor < FixNumNeighbor) {
 		const int n = 3;
-		const double c = (NumNeighborMax-FixNumNeighbor);
+		const double c = (MaxNumNeighbor-FixNumNeighbor);
 		const double b = 0.5 / std::pow(c,n);  // ln(2) / 40
 		double x = this->NumberOfNeighbor-FixNumNeighbor;
 		double a = n%2==0 ? b*std::abs(x)*std::pow(x,n-1) : b*std::pow(x,n);

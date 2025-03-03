@@ -201,10 +201,10 @@ __global__ void gather_neighbor(const int* neighbor_block, const int* num_neighb
     }
 
     int local_neighbor_count = num_neighbor[i * num_blocks_per_m + b];
-    assert (neighbor_start_index + local_neighbor_count < NumNeighborMax);
+    assert (neighbor_start_index + local_neighbor_count < MaxNumNeighbor);
 
     for (int n = 0; n < local_neighbor_count; n++) {
-        gathered_neighbor[i * NumNeighborMax + neighbor_start_index + n] =
+        gathered_neighbor[i * MaxNumNeighbor + neighbor_start_index + n] =
             neighbor_block[(i * num_blocks_per_m + b) * num_neighbors_per_block + n];
     }
 }
@@ -429,10 +429,10 @@ __global__ void gather_neighbor(const int* neighbor_block, const int* num_neighb
     }
 
     int local_neighbor_count = num_neighbor[i * num_blocks_per_m + b];
-    assert (neighbor_start_index + local_neighbor_count < NumNeighborMax);
+    assert (neighbor_start_index + local_neighbor_count < MaxNumNeighbor);
 
     for (int n = 0; n < local_neighbor_count; n++) {
-        gathered_neighbor[i * NumNeighborMax + neighbor_start_index + n] =
+        gathered_neighbor[i * MaxNumNeighbor + neighbor_start_index + n] =
             neighbor_block[(i * num_blocks_per_m + b) * num_neighbors_per_block + n];
     }
 }
@@ -476,8 +476,8 @@ __global__	void initialize(CUDA_REAL* result, CUDA_REAL* diff, int n, int m, int
 			result[_six*i + 5] = 0.;
 			// num_neighbor[i] = 0;
 			/*
-			for (j=0; j<NumNeighborMax; j++)
-				neighbor[NumNeighborMax*i+j] = 0;
+			for (j=0; j<MaxNumNeighbor; j++)
+				neighbor[MaxNumNeighbor*i+j] = 0;
 				*/
 		}
 	}
@@ -790,9 +790,9 @@ __global__ void assign_neighbor(int *neighbor, int* num_neighbor, const CUDA_REA
 				for (j=2; j<=bdim; j++)
 					sdata[j] += sdata[j-1];
 
-				if ((offset+sdata[bdim]) > NumNeighborMax) {
+				if ((offset+sdata[bdim]) > MaxNumNeighbor) {
 					printf("blockid=%d, Too many neighbors (%d, %d)\n", bid, offset, sdata[bdim]);
-					assert(offset+sdata[bdim] < NumNeighborMax);
+					assert(offset+sdata[bdim] < MaxNumNeighbor);
 				}
 
 				/*
@@ -812,7 +812,7 @@ __global__ void assign_neighbor(int *neighbor, int* num_neighbor, const CUDA_REA
 			 */
 
 			for (j=0;j<n_num;j++) {
-				neighbor[NumNeighborMax*bid+offset+sdata[tid]+j] = list[j];
+				neighbor[MaxNumNeighbor*bid+offset+sdata[tid]+j] = list[j];
 				//printf("(%d,%d), j=%d\n", l, tid, list[j]);
 			}
 			__syncthreads();
@@ -902,9 +902,9 @@ __global__ void assign_neighbor(int *neighbor, int* num_neighbor, const CUDA_REA
 					for (j=2; j<=bdim; j++)
 						sdata[j] += sdata[j-1];
 
-					if ((offset+sdata[bdim]) > NumNeighborMax) {
+					if ((offset+sdata[bdim]) > MaxNumNeighbor) {
 						printf("blockid=%d, Too many neighbors (%d, %d)\n", bid, offset, sdata[bdim]);
-						assert(offset+sdata[bdim] < NumNeighborMax);
+						assert(offset+sdata[bdim] < MaxNumNeighbor);
 					}
 
 					/*
@@ -924,7 +924,7 @@ __global__ void assign_neighbor(int *neighbor, int* num_neighbor, const CUDA_REA
 				 */
 
 				for (j=0;j<n_num;j++) {
-					neighbor[NumNeighborMax*l+offset+sdata[tid]+j] = list[j];
+					neighbor[MaxNumNeighbor*l+offset+sdata[tid]+j] = list[j];
 					//printf("(%d,%d), j=%d\n", l, tid, list[j]);
 				}
 				__syncthreads();
@@ -964,7 +964,7 @@ __global__ void assign_neighbor(int *neighbor, int* num_neighbor, const REAL* r2
 				k = _two*(n*idx+j);
 				if (magnitudes[k] < 0) {
 					//printf("(%d, %d,%d) = %d, %e, %e\n", idx, i, j, num_neighbor[idx], magnitudes[k], r2[i]);
-					neighbor[NumNeighborMax*idx+num_neighbor[idx]] = j;
+					neighbor[MaxNumNeighbor*idx+num_neighbor[idx]] = j;
 					num_neighbor[idx]++;
 					if (num_neighbor[idx] > 100)  {
 						//printf("Error: (%d, %d,%d) = %d, %e, %e\n", idx, i, j, num_neighbor[idx], magnitudes[k], r2[i]);
@@ -1040,14 +1040,14 @@ void reduce_neighbors(cublasHandle_t handle, int *neighbor, int* num_neighbor, C
         thrust::counting_iterator<int> index_sequence(0);
 
         // Use thrust::copy_if to select indices where elements are less than zero
-        auto end = thrust::copy_if(index_sequence, index_sequence + n, row_start, d_neighbor + row * NumNeighborMax, less_than_zero());
+        auto end = thrust::copy_if(index_sequence, index_sequence + n, row_start, d_neighbor + row * MaxNumNeighbor, less_than_zero());
 
         // Calculate the number of negative elements in the current row
-        int num_neg_elements = thrust::distance(d_neighbor + row * NumNeighborMax, end);
+        int num_neg_elements = thrust::distance(d_neighbor + row * MaxNumNeighbor, end);
 
-        if (num_neg_elements > NumNeighborMax) {
+        if (num_neg_elements > MaxNumNeighbor) {
             cudaFree(d_matrix);
-            throw std::runtime_error("Number of negative elements exceeds NumNeighborMax");
+            throw std::runtime_error("Number of negative elements exceeds MaxNumNeighbor");
         }
 
         d_num_neighbor[row] = num_neg_elements;
