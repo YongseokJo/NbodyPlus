@@ -15,6 +15,8 @@ void initializeStellarEvolution() {
     // fprintf(SEVNout, "PID\tPhase\tMass (Msun)\tRadius (pc)\tTime (Myr)\tWorldtime (Myr)\n")
 	fflush(SEVNout);
 
+    assert(SEVNList.empty());
+
     for (int i=0; i<NumberOfParticle; i++) {
 
         Particle* ptcl = &particles[i];
@@ -37,6 +39,7 @@ void initializeStellarEvolution() {
 
         size_t id = ptcl->PID;
         ptcl->StellarEvolution = new Star(sevnio, init_params, id, false);
+        SEVNList.insert(ptcl->ParticleIndex);
 
 		ptcl->radius = ptcl->StellarEvolution->getp(Radius::ID)/(utilities::parsec_to_Rsun)/position_unit; // stellar radius in code unit
     }
@@ -60,7 +63,7 @@ void StellarEvolution() {
     int OriginalNumberOfParticle = NumberOfParticle;
     Particle* ptcl;
 
-    for (int i=0; i<=LastParticleIndex; i++) {
+    for (int i: SEVNList) {
 
         ptcl = &particles[i];
 
@@ -79,27 +82,6 @@ void StellarEvolution() {
             UpdateEvolution(ptcl);
         }          
     }
-
-    if (OriginalNumberOfParticle != NumberOfParticle) {
-        for (int i=0; i<=LastParticleIndex; i++) {
-
-            ptcl = &particles[i];
-            if (!ptcl->isActive)
-                continue;
-
-            auto newEnd = std::remove_if(
-                ptcl->Neighbors, 
-                ptcl->Neighbors + ptcl->NumberOfNeighbor, 
-                [&particles](int j) {
-                    return !particles[j].isActive;
-                }
-            );
-
-            if (newEnd != ptcl->Neighbors + ptcl->NumberOfNeighbor)
-                ptcl->NumberOfNeighbor = newEnd - ptcl->Neighbors;
-
-        }
-    }
 }
 
 void UpdateEvolution(Particle* ptcl) {
@@ -114,6 +96,7 @@ void UpdateEvolution(Particle* ptcl) {
         fprintf(SEVNout, "PID: %d, Phase: %d, Mass: %e Msol, Radius: %e pc, Time: %e Myr, Worldtime: %e Myr\n", ptcl->PID, int(ptcl->StellarEvolution->getp(Phase::ID)), ptcl->Mass*mass_unit, ptcl->radius*position_unit, ptcl->WorldTime, ptcl->StellarEvolution->getp(Worldtime::ID));
     }
     else if (ptcl->StellarEvolution->amiWD()) {
+        SEVNList.erase(ptcl->ParticleIndex);
         // fprintf(SEVNout, "WD. PID: %d, Mass: %e Msol, Radius: %e pc, Time: %e Myr, Worldtime: %e Myr\n", ptcl->PID, ptcl->StellarEvolution->getp(Mass::ID), ptcl->StellarEvolution->getp(Radius::ID)/(utilities::parsec_to_Rsun), ptcl->WorldTime, ptcl->StellarEvolution->getp(Worldtime::ID));
         ptcl->dm += ptcl->Mass - ptcl->StellarEvolution->getp(Mass::ID)/mass_unit; // Eunwoo: dm should be 0 after it distributes its mass to the nearby gas cells.
         ptcl->Mass = ptcl->StellarEvolution->getp(Mass::ID)/mass_unit;
@@ -129,6 +112,7 @@ void UpdateEvolution(Particle* ptcl) {
         fprintf(SEVNout, "WD. PID: %d, Mass: %e Msol, Radius: %e pc, Time: %e Myr, Worldtime: %e Myr\n", ptcl->PID, ptcl->Mass*mass_unit, ptcl->radius*position_unit, ptcl->WorldTime, ptcl->StellarEvolution->getp(Worldtime::ID));
     }
     else if (ptcl->StellarEvolution->amiNS()) {
+        SEVNList.erase(ptcl->ParticleIndex);
         // fprintf(SEVNout, "NS. PID: %d, Mass: %e Msol, Radius: %e pc, Time: %e Myr, Worldtime: %e Myr\n", ptcl->PID, ptcl->StellarEvolution->getp(Mass::ID), ptcl->StellarEvolution->getp(Radius::ID)/(utilities::parsec_to_Rsun), ptcl->WorldTime, ptcl->StellarEvolution->getp(Worldtime::ID));
         ptcl->dm += ptcl->Mass - ptcl->StellarEvolution->getp(Mass::ID)/mass_unit; // Eunwoo: dm should be 0 after it distributes its mass to the nearby gas cells.
         ptcl->Mass = ptcl->StellarEvolution->getp(Mass::ID)/mass_unit;
@@ -144,6 +128,7 @@ void UpdateEvolution(Particle* ptcl) {
         fprintf(SEVNout, "NS. PID: %d, Mass: %e Msol, Radius: %e pc, Time: %e Myr, Worldtime: %e Myr\n", ptcl->PID, ptcl->Mass*mass_unit, ptcl->radius*position_unit, ptcl->WorldTime, ptcl->StellarEvolution->getp(Worldtime::ID));
     }
     else if (ptcl->StellarEvolution->amiBH()) {
+        SEVNList.erase(ptcl->ParticleIndex);
         // fprintf(SEVNout, "BH. PID: %d, Mass: %e Msol, Radius: %e pc, Time: %e Myr, Worldtime: %e Myr\n", ptcl->PID, ptcl->StellarEvolution->getp(Mass::ID), ptcl->StellarEvolution->getp(Radius::ID)/(utilities::parsec_to_Rsun), ptcl->WorldTime, ptcl->StellarEvolution->getp(Worldtime::ID));
         setBHspin(ptcl);
         fprintf(SEVNout, "\tDimless spin. mag: %e, (%e, %e, %e)\n", ptcl->StellarEvolution->getp(Xspin::ID), ptcl->a_spin[0], ptcl->a_spin[1], ptcl->a_spin[2]);
@@ -162,6 +147,7 @@ void UpdateEvolution(Particle* ptcl) {
         fprintf(SEVNout, "BH. PID: %d, Mass: %e Msol, Radius: %e pc, Time: %e Myr, Worldtime: %e Myr\n", ptcl->PID, ptcl->Mass*mass_unit, ptcl->radius*position_unit, ptcl->WorldTime, ptcl->StellarEvolution->getp(Worldtime::ID));
     }
     else if (ptcl->StellarEvolution->amiempty()) {
+        SEVNList.erase(ptcl->ParticleIndex);
         // fprintf(SEVNout, "Empty. PID: %d, Mass: %e Msol, Time: %e Myr, Worldtime: %e Myr\n", ptcl->PID, ptcl->StellarEvolution->getp(Mass::ID), ptcl->WorldTime, ptcl->StellarEvolution->getp(Worldtime::ID));
         ptcl->dm += ptcl->Mass; // Eunwoo: dm should be 0 after it distributes its mass to the nearby gas cells.
         ptcl->Mass = 0.0;

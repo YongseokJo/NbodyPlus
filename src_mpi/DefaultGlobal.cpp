@@ -1,6 +1,9 @@
 #include <iostream>
 #include <stdio.h>
 #include "global.h"
+#ifdef SEVN
+#include <unordered_set>
+#endif
 
 Particle *particles_original;
 Particle *particles;
@@ -62,6 +65,7 @@ FILE* mergerout;
 #ifdef SEVN
 FILE* SEVNout;
 IO* sevnio = nullptr;
+std::unordered_set<int> SEVNList;
 #endif
 FILE* workerout;
 

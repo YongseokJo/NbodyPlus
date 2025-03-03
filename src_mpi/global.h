@@ -9,6 +9,7 @@
 
 #ifdef SEVN
 #include "IO.h"
+#include <unordered_set>
 #endif
 
 
@@ -79,6 +80,7 @@ extern FILE* mergerout;
 #ifdef SEVN
 extern FILE* SEVNout;
 extern IO* sevnio;
+extern std::unordered_set<int> SEVNList;
 #endif
 extern FILE* workerout;
 
