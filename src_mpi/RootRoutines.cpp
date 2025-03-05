@@ -24,7 +24,11 @@ void broadcastFromRoot(double &data);
 void broadcastFromRoot(ULL &data);
 void broadcastFromRoot(int &data);
 void ParticleSynchronization();
+#ifdef CUDA
 void updateNextRegTime(std::unordered_set<int>& RegularList);
+#else
+void updateNextRegTime(std::vector<int>& RegularList);
+#endif
 bool createSkipList(SkipList *skiplist);
 bool updateSkipList(SkipList *skiplist, int ptcl_id);
 int writeParticle(double current_time, int outputNum);
@@ -65,8 +69,11 @@ void RootRoutines() {
 	bool new_binaries = false;
 	
 
-
+#ifdef CUDA
 	std::unordered_set<int> RegularList;
+#else
+	std::vector<int> RegularList;
+#endif
 	//MPI_Request requests[NumberOfProcessor];  // Pointer to the request handle
 	//MPI_Status statuses[NumberOfProcessor];    // Pointer to the status object
 	MPI_Request request;  // Pointer to the request handle
@@ -439,6 +446,7 @@ void RootRoutines() {
 		Node* ThisLevelNode;
 		double current_time_irr=0;
 		double next_time=0;
+		int ptcl_id_return;
 		Worker* worker;
 
 
@@ -856,8 +864,13 @@ void RootRoutines() {
 					for (int i=OriginalSize; i<ThisLevelNode->ParticleList.size(); i++) {
 						ptcl = &particles[ThisLevelNode->ParticleList[i]];
 
-						if (ptcl->CurrentBlockReg + ptcl->TimeBlockReg == NextRegTimeBlock)
+						if (ptcl->CurrentBlockReg + ptcl->TimeBlockReg == NextRegTimeBlock) {
+#ifdef CUDA
 							RegularList.insert(ptcl->ParticleIndex);
+#else
+							RegularList.push_back(ptcl->ParticleIndex);
+#endif
+						}
 
 						ptcl->NewNumberOfNeighbor = 0;
 						if (ptcl->TimeStepIrr * EnzoTimeStep * 1e4 < TSEARCH)
@@ -998,8 +1011,13 @@ void RootRoutines() {
 						workers[rank_new].runQueue();
 						workers[rank_new].callback();
 
-						if (ptclCM->CurrentBlockReg + ptclCM->TimeBlockReg == NextRegTimeBlock)
+						if (ptclCM->CurrentBlockReg + ptclCM->TimeBlockReg == NextRegTimeBlock) {
+#ifdef CUDA
 							RegularList.insert(ptcl->ParticleIndex);
+#else
+							RegularList.push_back(ptcl->ParticleIndex);
+#endif
+						}
 					}
 #ifdef DEBUG
 					std::cout << "All new fewbody objects are initialized." << std::endl;
@@ -1329,7 +1347,7 @@ void RootRoutines() {
 #ifdef DEBUG
 				std::cout << "Regular force starts" << std::endl;
 #endif
-
+/*
 				// Regular force
 				queue_scheduler.initialize(RegForce);
 				queue_scheduler.takeQueueRegularList(RegularList);
@@ -1339,6 +1357,49 @@ void RootRoutines() {
 					queue_scheduler.runQueueAuto();
 					queue_scheduler.waitQueue(0); // blocking wait
 				} while (queue_scheduler.isComplete());
+*/
+// /*
+				// Regular Gravity
+				task = RegForce;
+				completed_tasks = 0;
+				total_tasks = RegularList.size();
+				next_time = NextRegTimeBlock*time_step;
+
+				//std::cout << "TotalTask=" << total_tasks << std::endl;
+
+				/*
+				std::cout << "RegularList, PID= ";
+				for (int i=0; i<total_tasks; i++) {
+					std::cout << RegularList[i]<< ", ";
+				}*/
+				//std::cout << std::endl;
+
+				InitialAssignmentOfTasks(task, total_tasks, TASK_TAG);
+				InitialAssignmentOfTasks(RegularList, next_time, total_tasks, PTCL_TAG);
+				// MPI_Waitall(NumberOfCommunication, requests, statuses);
+				// NumberOfCommunication = 0;
+
+				// further assignments
+				remaining_tasks = total_tasks-NumberOfWorker;
+				while (completed_tasks < total_tasks) {
+					// Check which worker is done
+					MPI_Irecv(&ptcl_id_return, 1, MPI_INT, MPI_ANY_SOURCE, TERMINATE_TAG, MPI_COMM_WORLD, &request);
+					MPI_Wait(&request, &status);
+					completed_rank = status.MPI_SOURCE;
+
+					if (remaining_tasks > 0) {
+						ptcl_id = RegularList[NumberOfWorker + completed_tasks];
+						MPI_Send(&task,      1, MPI_INT, completed_rank, TASK_TAG, MPI_COMM_WORLD);
+						MPI_Send(&ptcl_id,   1, MPI_INT, completed_rank, PTCL_TAG, MPI_COMM_WORLD);
+						MPI_Send(&next_time, 1, MPI_DOUBLE, completed_rank, TIME_TAG, MPI_COMM_WORLD);
+						remaining_tasks--;
+					} else {
+						//printf("Rank %d: No more tasks to assign\n", completed_rank);
+					}
+					//updateSkipList(skiplist, ptcl_id_return);
+					completed_tasks++;
+				}
+// */
 #ifdef DEBUG
 				std::cout << "Regular force ended" << std::endl;
 #endif
@@ -1365,7 +1426,7 @@ void RootRoutines() {
 #ifdef DEBUG
 				std::cout << "update regular starts" << std::endl;
 #endif
-
+/*
 				// Update Regular
 				queue_scheduler.initialize(RegUpdate);
 				queue_scheduler.takeQueueRegularList(RegularList);
@@ -1375,6 +1436,39 @@ void RootRoutines() {
 					queue_scheduler.runQueueAuto();
 					queue_scheduler.waitQueue(0); // blocking wait
 				} while (queue_scheduler.isComplete());
+*/
+// /*
+				// Regular Update
+				//std::cout<< "Reg Acc Done." <<std::endl;
+				task = RegUpdate;
+				completed_tasks = 0;
+
+				InitialAssignmentOfTasks(task, total_tasks, TASK_TAG);
+				InitialAssignmentOfTasks(RegularList, total_tasks, PTCL_TAG);
+				// MPI_Waitall(NumberOfCommunication, requests, statuses);
+				// NumberOfCommunication = 0;
+
+				// further assignments
+				remaining_tasks = total_tasks-NumberOfWorker;
+				while (completed_tasks < total_tasks) {
+					// Check which worker is done
+					MPI_Irecv(&ptcl_id_return, 1, MPI_INT, MPI_ANY_SOURCE, TERMINATE_TAG, MPI_COMM_WORLD, &request);
+					MPI_Wait(&request, &status);
+					completed_rank = status.MPI_SOURCE;
+
+					if (remaining_tasks > 0) {
+						ptcl_id = RegularList[NumberOfWorker + completed_tasks];
+						//MPI_Isend(&task,      1, MPI_INT, completed_rank, TASK_TAG, MPI_COMM_WORLD, &request);
+						//MPI_Isend(&ptcl_id,   1, MPI_INT, completed_rank, PTCL_TAG, MPI_COMM_WORLD, &request);
+						MPI_Send(&task,      1, MPI_INT, completed_rank, TASK_TAG, MPI_COMM_WORLD);
+						MPI_Send(&ptcl_id,   1, MPI_INT, completed_rank, PTCL_TAG, MPI_COMM_WORLD);
+						remaining_tasks--;
+					} else {
+						//printf("Rank %d: No more tasks to assign\n", completed_rank);
+					}
+					completed_tasks++;
+				}
+// */
 #ifdef DEBUG
 				std::cout << "update regular ended" << std::endl;
 #endif
@@ -1580,7 +1674,7 @@ void RootRoutines() {
 
 
 
-
+#ifdef CUDA
 void updateNextRegTime(std::unordered_set<int>& RegularList) {
 
 	ULL time_tmp=0, time=block_max;
@@ -1611,6 +1705,38 @@ void updateNextRegTime(std::unordered_set<int>& RegularList) {
 	NextRegTimeBlock = time;
 	global_variable->NextRegTimeBlock = NextRegTimeBlock;
 }
+#else
+void updateNextRegTime(std::vector<int>& RegularList) {
+
+	ULL time_tmp=0, time=block_max;
+	Particle *ptcl;
+
+	RegularList.clear();
+
+	for (int i=0; i<=LastParticleIndex; i++)
+	{
+		//std::cout << i << std::endl;
+		ptcl = &particles[i];
+		if (!ptcl->isActive)
+			continue;
+		// Next regular time step
+		time_tmp = ptcl->CurrentBlockReg + ptcl->TimeBlockReg;
+
+		// Find the minum regular time step
+		if (time_tmp <= time) {
+			//fprintf(stderr, "PID=%d, time_tme=%llu\n", ptcl->PID, time_tmp);
+			if (time_tmp < time) {
+				RegularList.clear();
+				time = time_tmp;
+			}
+			RegularList.push_back(ptcl->ParticleIndex);
+			// RegularList.insert(ptcl->ParticleIndex);
+		}
+	}
+	NextRegTimeBlock = time;
+	global_variable->NextRegTimeBlock = NextRegTimeBlock;
+}
+#endif
 
 
 

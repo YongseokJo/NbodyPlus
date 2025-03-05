@@ -260,7 +260,6 @@ void Particle::computeAccelerationReg() {
 	dt       = this->TimeStepReg*EnzoTimeStep; // interval of time step
 	this->NewNumberOfNeighbor = 0;
 
-	std::unordered_set<int> CMPtclsSet;
 	std::unordered_set<int> RealNeighbors; // Neighbors containing CM ptcls, not members
 
 	// initialize irregular force terms for ith particle just in case
@@ -296,15 +295,8 @@ void Particle::computeAccelerationReg() {
 	for (int i=0; i<=global_variable->LastParticleIndex; i++) {
 		ptcl = &particles[i];
 
-		if (this->PID == ptcl->PID)
+		if (!ptcl->isActive || this->PID == ptcl->PID)
 			continue;
-
-		if (!ptcl->isActive) {
-			if (ptcl->CMPtclIndex != -1) {
-				CMPtclsSet.insert(ptcl->CMPtclIndex);
-			}
-			continue;
-		}
 
 		// reset temporary variables at the start of a new calculation
 		r2 = 0.0;
@@ -348,79 +340,16 @@ void Particle::computeAccelerationReg() {
 
 
 		if (r2 < this->RadiusOfNeighbor) {
-			this->NewNeighbors[this->NewNumberOfNeighbor] = ptcl->ParticleIndex;
-			this->NewNumberOfNeighbor++;
-			for (int dim=0; dim<Dim; dim++){
-				this->a_irr[dim][0] += m_r3*x[dim];
-				this->a_irr[dim][1] += m_r3*(v[dim] - 3*x[dim]*vx/r2);
-			}
-		}
-		else {
-			for (int dim=0; dim<Dim; dim++){
-				a_new[dim]    += m_r3*x[dim];
-				adot_new[dim] += m_r3*(v[dim] - 3*x[dim]*vx/r2);
-			}
-		}
-	} // endfor ptcl
-
-	for (int i: CMPtclsSet) {
-		ptcl = &particles[i];
-
-		if (this->PID == ptcl->PID) {
-			continue;
-		}
-
-		if (!ptcl->isActive) {
-			fprintf(stderr, "Why inactive CM ptcl? this PID: %d, neighbor PID: %d\n", this->PID, ptcl->PID);
-			assert(ptcl->isActive);
-		}
-
-		// reset temporary variables at the start of a new calculation
-		r2 = 0.0;
-		vx = 0.0;
-
-		if (ptcl->NumberOfNeighbor == 0)
-			ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeReg, pos_neighbor, vel_neighbor);
-		else
-			ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeIrr, pos_neighbor, vel_neighbor);
-
-		for (int dim=0; dim<Dim; dim++) {
-			// calculate position and velocity differences for current time
-			x[dim] = pos_neighbor[dim] - pos[dim];
-			v[dim] = vel_neighbor[dim] - vel[dim];
-
-			// calculate the square of radius and inner product of r and v for each case
-			r2 += x[dim]*x[dim];
-			vx += v[dim]*x[dim];
-		}
-
-		//mdot = ptcl->evolveStarMass(CurrentTimeIrr,
-		//CurrentTimeIrr+TimeStepIrr*1.01)/TimeStepIrr*1e-2; // derivative can be improved
-		//
-		// add the contribution of jth particle to acceleration of current and predicted times
-
-		m_r3 = ptcl->Mass/r2/sqrt(r2);
-
-
-		//std::cout << "PIDs=" <<  this->Neighbors[j] << ', ' << ptcl->PID << NumberOfNeighbor<< std::endl;
-		//if (this->Neighbors[j] == ptcl->PID) {
-		if (RealNeighbors.find(ptcl->ParticleIndex) != RealNeighbors.end()) {
-			//std::cout << this->PID << ", PIDs=" <<  this->Neighbors[j] << ", " << ptcl->PID << std::endl;
-			j++;
-		} 
-		else {
-			for (int dim=0; dim<Dim; dim++){
-				a[dim]    += m_r3*x[dim];
-				adot[dim] += m_r3*(v[dim] - 3*x[dim]*vx/r2);
-			}
-		}
-
-
-		if (r2 < this->RadiusOfNeighbor) {
-			for (int k=0; k<ptcl->NumberOfMember; k++) {
-				this->NewNeighbors[this->NewNumberOfNeighbor] = ptcl->Members[k];
+			if (!ptcl->isCMptcl) {
+				this->NewNeighbors[this->NewNumberOfNeighbor] = ptcl->ParticleIndex;
 				this->NewNumberOfNeighbor++;
 			}
+			else {
+				for (int k=0; k<ptcl->NumberOfMember; k++) {
+					this->NewNeighbors[this->NewNumberOfNeighbor] = ptcl->Members[k];
+					this->NewNumberOfNeighbor++;
+				}
+			}
 			for (int dim=0; dim<Dim; dim++){
 				this->a_irr[dim][0] += m_r3*x[dim];
 				this->a_irr[dim][1] += m_r3*(v[dim] - 3*x[dim]*vx/r2);
@@ -433,7 +362,6 @@ void Particle::computeAccelerationReg() {
 			}
 		}
 	} // endfor ptcl
-
 	assert(j == RealNeighbors.size());
 
 	/*******************************************************
