@@ -1317,6 +1317,7 @@ void RootRoutines() {
 				*/
 #else		
 			{
+				next_time = NextRegTimeBlock*time_step;
 #ifdef PerformanceTrace
 				start_point_routine = std::chrono::high_resolution_clock::now();
 #endif

@@ -280,7 +280,7 @@ void Particle::computeAccelerationReg() {
 		else if (ptcl->CMPtclIndex != -1)
 			RealNeighbors.insert(ptcl->CMPtclIndex);
 	}
-	if (ptcl->isCMptcl)
+	if (this->isCMptcl)
 		RealNeighbors.erase(this->ParticleIndex);
 
 

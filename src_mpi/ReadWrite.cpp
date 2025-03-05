@@ -243,41 +243,56 @@ int writeParticle(double current_time, int outputNum) {
 
 		std::cout << "Elapsed time from the last output: " << performance.WholeRoutine*1e-9 << " s" << std::endl;
 
-		std::cout << "Irregular Force: " << 100.0 * performance.IrregularForce / performance.WholeRoutine << " %" << std::endl;
+		std::cout << "Irregular Force: " << performance.IrregularForce*1e-9 << " s";
+		std::cout << " (" << 100.0 * performance.IrregularForce / performance.WholeRoutine << " %)" << std::endl;
 		performance.IrregularForce = 0;
-		std::cout << "Irregular Update: " << 100.0 * performance.IrregularUpdate / performance.WholeRoutine << " %" << std::endl;
+		std::cout << "Irregular Update: " << performance.IrregularUpdate*1e-9 << " s";
+		std::cout << " (" << 100.0 * performance.IrregularUpdate / performance.WholeRoutine << " %)" << std::endl;
 		performance.IrregularUpdate = 0;
 
-		std::cout << "FewBody Termination: " << 100.0 * performance.FewBodyTermination / performance.WholeRoutine << " %" << std::endl;
+		std::cout << "FewBody Termination: " << performance.FewBodyTermination*1e-9 << " s";
+		std::cout << " (" << 100.0 * performance.FewBodyTermination / performance.WholeRoutine << " %)" << std::endl;
 		performance.FewBodyTermination = 0;
-		std::cout << "FewBody Search: " << 100.0 * performance.FewBodySearch / performance.WholeRoutine << " %" << std::endl;
+		std::cout << "FewBody Search: " << performance.FewBodySearch*1e-9 << " s";
+		std::cout << " (" << 100.0 * performance.FewBodySearch / performance.WholeRoutine << " %)" << std::endl;
 		performance.FewBodySearch = 0;
-		std::cout << "FewBody Initialization: " << 100.0 * performance.FewBodyInitialization / performance.WholeRoutine << " %" << std::endl;
+		std::cout << "FewBody Initialization: " << performance.FewBodyInitialization*1e-9 << " s";
+		std::cout << " (" << 100.0 * performance.FewBodyInitialization / performance.WholeRoutine << " %)" << std::endl;
 		performance.FewBodyInitialization = 0;
 #ifdef CUDA
-		std::cout << "Regular SendToGPU: " << 100.0 * performance.RegularSendAllParticlesToGPU / performance.WholeRoutine << " %" << std::endl;
+		std::cout << "Regular SendToGPU: " << performance.RegularSendAllParticlesToGPU*1e-9 << " s";
+		std::cout << " (" << 100.0 * performance.RegularSendAllParticlesToGPU / performance.WholeRoutine << " %)" << std::endl;
 		performance.RegularSendAllParticlesToGPU = 0;
-		std::cout << "Regular GPU: " << 100.0 * performance.RegularGPU / performance.WholeRoutine << " %" << std::endl;
+		std::cout << "Regular GPU: " << performance.RegularGPU*1e-9 << " s";
+		std::cout << " (" << 100.0 * performance.RegularGPU / performance.WholeRoutine << " %)" << std::endl;
 		performance.RegularGPU = 0;
-		std::cout << "Regular Adjust: " << 100.0 * performance.RegularAdjust / performance.WholeRoutine << " %" << std::endl;
+		std::cout << "Regular Adjust: " << performance.RegularAdjust*1e-9 << " s";
+		std::cout << " (" << 100.0 * performance.RegularAdjust / performance.WholeRoutine << " %)" << std::endl;
 		performance.RegularAdjust = 0;
-		std::cout << "Regular Update: " << 100.0 * performance.RegularUpdate / performance.WholeRoutine << " %" << std::endl;
+		std::cout << "Regular Update: " << performance.RegularUpdate*1e-9 << " s";
+		std::cout << " (" << 100.0 * performance.RegularUpdate / performance.WholeRoutine << " %)" << std::endl;
 		performance.RegularUpdate = 0;
 #else
-		std::cout << "Regular Force: " << 100.0 * performance.RegularForce / performance.WholeRoutine << " %" << std::endl;
+		std::cout << "Regular Force: " << performance.RegularForce*1e-9 << " s";
+		std::cout << " (" << 100.0 * performance.RegularForce / performance.WholeRoutine << " %)" << std::endl;
 		performance.RegularForce = 0;
-		std::cout << "Regular Update: " << 100.0 * performance.RegularUpdate / performance.WholeRoutine << " %" << std::endl;
+		std::cout << "Regular Update: " << performance.RegularUpdate*1e-9 << " s";
+		std::cout << " (" << 100.0 * performance.RegularUpdate / performance.WholeRoutine << " %)" << std::endl;
 		performance.RegularUpdate = 0;
 #endif
-		std::cout << "SkipList Create: " << 100.0 * performance.SkipListCreate / performance.WholeRoutine << " %" << std::endl;
+		std::cout << "SkipList Create: " << performance.SkipListCreate*1e-9 << " s";
+		std::cout << " (" << 100.0 * performance.SkipListCreate / performance.WholeRoutine << " %)" << std::endl;
 		performance.SkipListCreate = 0;
-		std::cout << "SkipList Update: " << 100.0 * performance.SkipListUpdate / performance.WholeRoutine << " %" << std::endl;
+		std::cout << "SkipList Update: " << performance.SkipListUpdate*1e-9 << " s";
+		std::cout << " (" << 100.0 * performance.SkipListUpdate / performance.WholeRoutine << " %)" << std::endl;
 		performance.SkipListUpdate = 0;
-		std::cout << "UpdateNextRegTime: " << 100.0 * performance.UpdateNextRegTime / performance.WholeRoutine << " %" << std::endl;
+		std::cout << "UpdateNextRegTime: " << performance.UpdateNextRegTime*1e-9 << " s";
+		std::cout << " (" << 100.0 * performance.UpdateNextRegTime / performance.WholeRoutine << " %)" << std::endl;
 		performance.UpdateNextRegTime = 0;
 
 #ifdef SEVN
-		std::cout << "Stellar Evolution: " << 100.0 * performance.StellarEvolution / performance.WholeRoutine << " %" << std::endl;
+		std::cout << "Stellar Evolution: " << performance.StellarEvolution*1e-9 << " s";
+		std::cout << " (" << 100.0 * performance.StellarEvolution / performance.WholeRoutine << " %)" << std::endl;
 		performance.StellarEvolution = 0;
 #endif
 		performance.WholeRoutine = 0;
