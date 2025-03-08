@@ -80,7 +80,7 @@ void CalculateAcceleration01(Particle* ptcl1) {
 			}
 			else {
 				for (int j=0; j<ptcl2->NumberOfMember; j++) {
-					ptcl1->Neighbors[ptcl1->NewNumberOfNeighbor] = ptcl2->Members[j];
+					ptcl1->Neighbors[ptcl1->NumberOfNeighbor] = ptcl2->Members[j];
 					ptcl1->NumberOfNeighbor++;
 				}
 			}

@@ -10,11 +10,11 @@
 
 #define FixNumNeighbor 100 // 500 -> 100 modified by EW 2025.1.11
 #define MaxNumNeighbor 1000 // 10000 -> 2000 modified by EW 2025.1.11
-#define ACRadius 0.05 // 0.11 -> 0.05 modified by EW 2025.1.11
+#define ACRadius 0.013 // 0.11 -> 0.05 modified by EW 2025.1.11
 
 
 // SDAR
-#define RSEARCH 1e-4 // 1e-4 // pc
+#define RSEARCH 2e-4 // 1e-4 // pc
 #define TSEARCH 1e-6 // 1e-6 // Myr
 
 #define NormalStar 1

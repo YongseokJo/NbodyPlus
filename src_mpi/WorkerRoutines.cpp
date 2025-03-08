@@ -256,10 +256,10 @@ void WorkerRoutines() {
 
 			case ARIntegration: // SDAR for few body encounters
 				MPI_Recv(&ptcl_id,   1, MPI_INT   , ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
-				// MPI_Recv(&next_time, 1, MPI_DOUBLE, ROOT, TIME_TAG, MPI_COMM_WORLD, &status);
+				MPI_Recv(&next_time, 1, MPI_DOUBLE, ROOT, TIME_TAG, MPI_COMM_WORLD, &status);
 				
 				ptcl = &particles[ptcl_id];
-				next_time = ptcl->NewCurrentBlockIrr*time_step;
+				// next_time = ptcl->NewCurrentBlockIrr*time_step;
 				// std::cout << "(SDAR) Processor " << MyRank<< ": PID= "<<ptcl->PID << std::endl;
 
 				/* (Query) this will be done already. 
