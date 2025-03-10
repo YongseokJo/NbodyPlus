@@ -13,8 +13,10 @@
 #include "global.h"
 #include <mpi.h>
 #include <unistd.h>
+#ifdef CUDA
 #include <cuda_runtime.h>
 #include "cuda/cuda_functions.h"
+#endif
 
 
 void broadcastFromRoot(int &data);
