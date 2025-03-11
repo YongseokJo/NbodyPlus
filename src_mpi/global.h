@@ -51,6 +51,7 @@ extern ULL NextRegTimeBlock;
 extern int time_block;
 extern double time_step;
 extern ULL block_max;
+extern double eta;
 
 
 extern double binary_time;
@@ -74,6 +75,7 @@ extern bool IsOutput;
 extern double outputTime;
 extern int outNum;
 extern double outputTimeStep;
+extern char* config_file;
 
 extern FILE* binout;
 extern FILE* mergerout;

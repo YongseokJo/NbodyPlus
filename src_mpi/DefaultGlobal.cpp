@@ -40,6 +40,8 @@ ULL block_max;
 double outputTimeStep;
 double endTime;
 
+double eta;
+
 double binary_time;
 double binary_time_prev;
 ULL binary_block;
@@ -59,6 +61,7 @@ char* foutput;
 bool IsOutput;
 double outputTime;
 int outNum;
+char *config_file;
 
 FILE* binout;
 FILE* mergerout;
@@ -98,6 +101,8 @@ void DefaultGlobal() {
 
 	global_time = 0.;
 	outputTime = 0.;
+
+	eta = 0.01;
 
 #ifdef SEVN
 	std::vector<std::string> args = {"empty", // Not used

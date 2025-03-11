@@ -25,7 +25,7 @@
 #define MIN_LEVEL_BUFFER 30
 
 #define Dim 3
-#define eta 0.01
+//#define eta 0.01
 #define HERMITE_ORDER 4
 
 
