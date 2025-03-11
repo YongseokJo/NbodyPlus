@@ -8,11 +8,11 @@
 
 >`structure of a configuration file`
 <pre>
-Filename [name of initial condition]
-Epsilon  [constant for the timestepper]
-StopTime [duration of simulations (in yr)]
-dtOutput [frequency of output (in yr)]
-OutputDirectory [name of output directory]
+Filename        = [name of initial condition]
+eta             = [constant for the timestepper]
+StopTime        = [duration of simulations (in yr)]
+dtOutput        = [frequency of output (in yr)]
+OutputDirectory = [name of output directory]
 </pre>
 
 
