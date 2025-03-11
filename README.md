@@ -11,12 +11,14 @@
 Filename        = [name of initial condition]
 eta             = [constant for the timestepper]
 FixNumNeighbor  = [number of neighbors]
-InitialRadius   = [initial radius of neighbor]
+InitialRadius   = [initial radius of neighbor (in pc)]
 StopTime        = [duration of simulations (in yr)]
 dtOutput        = [frequency of output (in yr)]
 OutputDirectory = [name of output directory]
 </pre>
 
+# How to compile this code
+CUDA is mendatory as of now.
 
 ## On-going Projects
 - GPU optimization by Minyong Jung
