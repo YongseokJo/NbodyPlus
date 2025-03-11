@@ -27,6 +27,7 @@ OutputDirectory = [name of output directory]
 - Gravitational wave
 - X-ray Binary (XRB)
 - Cosmic ray
+- Developement of engines for acceleration computation
 
 For these projects, if interested, please feel free to contact Yongseok Jo (g.kerex@gmail.com).
   
