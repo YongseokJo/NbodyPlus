@@ -10,7 +10,7 @@
 <pre>
 Filename        = [name of initial condition]
 eta             = [constant for the timestepper]
-FixNumNeighbor  = [number of neighbors]
+FixNumNeighbor  = [number of neighbors (N^(1/2) is recommended)]
 InitialRadius   = [initial radius of neighbor (in pc)]
 StopTime        = [duration of simulations (in yr)]
 dtOutput        = [frequency of output (in yr)]
