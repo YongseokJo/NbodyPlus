@@ -36,6 +36,10 @@ extern int LastParticleIndex;
 extern int NumberOfParticle;
 extern int NewPID;
 
+extern int FixNumNeighbor;
+extern double InitialNeighborRadius;
+
+
 // Task
 const int TASK_TAG = 1;
 const int PTCL_TAG = 2;

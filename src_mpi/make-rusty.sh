@@ -25,7 +25,7 @@ module add openmpi #/cuda
 
 make clean
 make -j8
-cp ./abyss_mpi.exe abyss_mpi_fb.exe
+cp ./abyss.exe abyss-stable.exe
 
 
 #./nbodyplus.exe -f nbody.dat >stdout 2>stderr

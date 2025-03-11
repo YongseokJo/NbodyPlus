@@ -52,6 +52,8 @@ double EnzoLength, EnzoMass, EnzoVelocity, EnzoTime, EnzoForce, EnzoAcceleration
 double EnzoTimeStep;
 
 
+int FixNumNeighbor;
+double InitialNeighborRadius;
 
 // i/o
 char* fname;
@@ -103,6 +105,8 @@ void DefaultGlobal() {
 	outputTime = 0.;
 
 	eta = 0.01;
+	FixNumNeighbor = 100;
+	InitialNeighborRadius = 0.011;
 
 #ifdef SEVN
 	std::vector<std::string> args = {"empty", // Not used

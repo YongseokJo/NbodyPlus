@@ -85,6 +85,8 @@ int readParameterFile() {
 		outputTimeStep = config.getDouble("dtOutput");
 		foutput			   = config.getChar("OutputDirectory");
 		eta			   = config.getDouble("eta");
+		FixNumNeighbor  = config.getInt("FixNumNeighbor");
+		InitialNeighborRadius	= config.getDouble("InitialNeighborRadius");
 
 
 		EnzoTimeStep   = endTime/1e10; // endTime should be Myr
