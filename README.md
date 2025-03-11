@@ -3,13 +3,15 @@
 
 > `e.g., abyss.exe -p config.txt`  
 <pre>
--p [name of a configuration (parameter) file]
+-c|--config [name of a configuration (parameter) file]
 </pre>
 
 >`structure of a configuration file`
 <pre>
 Filename        = [name of initial condition]
 eta             = [constant for the timestepper]
+FixNumNeighbor  = [number of neighbors]
+InitialRadius   = [initial radius of neighbor]
 StopTime        = [duration of simulations (in yr)]
 dtOutput        = [frequency of output (in yr)]
 OutputDirectory = [name of output directory]
