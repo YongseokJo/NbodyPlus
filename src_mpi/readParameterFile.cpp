@@ -38,7 +38,8 @@ class Config {
 			if (config_data_.count(key)) {
 				return config_data_.at(key);
 			} else {
-				throw std::runtime_error("Key not found: " + key);
+				//throw std::runtime_error("Key not found: " + key);
+				return "-1";
 			}
 		}
 
@@ -84,9 +85,9 @@ int readParameterFile() {
 		endTime        = config.getDouble("StopTime");
 		outputTimeStep = config.getDouble("dtOutput");
 		foutput			   = config.getChar("OutputDirectory");
-		eta			   = config.getDouble("eta");
+		eta							= config.getDouble("eta");
 		FixNumNeighbor  = config.getInt("FixNumNeighbor");
-		InitialNeighborRadius	= config.getDouble("InitialNeighborRadius");
+		InitialNeighborRadius	= config.getDouble("InitialRadius");
 
 
 		EnzoTimeStep   = endTime/1e10; // endTime should be Myr
@@ -96,6 +97,8 @@ int readParameterFile() {
 			std::cout << "Starting ABYSS ..." <<  std::endl;
 			std::cout << "File name: " << fname << std::endl;
 			std::cout << "eta: " << eta << std::endl;
+			std::cout << "FixNumNeighbor: " << FixNumNeighbor << std::endl;
+			std::cout << "InitialRadius: " << InitialNeighborRadius << std::endl;
 			std::cout << "Output file name: " << foutput << std::endl;
 			std::cout << "End Time: " << endTime << std::endl;
 			std::cout << "EnzoTimeStep = "   << EnzoTimeStep   << std::endl;

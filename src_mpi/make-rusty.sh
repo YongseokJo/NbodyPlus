@@ -1,5 +1,9 @@
 #!/bin/bash
 
+
+export USE_CUDA=1
+#export USE_SEVN=0
+
 #module add modules
 module add modules/2.2-20230808
 #module add modules/2.1-20230222
