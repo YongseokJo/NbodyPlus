@@ -1,7 +1,7 @@
 #ifdef FEWBODY
 #include "../global.h"
 #include <random>
-#include <unordered_set>
+#include <map>
 
 #ifdef SEVN
 void Mix(Star* star1, Star* star2);
@@ -451,11 +451,13 @@ void Merge(Particle* p1, Particle* p2) { // Stellar merger
                 
                 std::vector<std::string> init_params{std::to_string(double(p1->Mass*mass_unit)), "0.0002", "0.0", "delayed", "zams", "end", "events"};
                 size_t id = p1->PID;
-                p1->StellarEvolution = new Star(sevnio, init_params, id, false);
-                SEVNList.insert(p1->ParticleIndex);
 
+                p1->StellarEvolution = new Star(sevnio, init_params, id, false);
                 p1->FormationTime = p1->CurrentTimeIrr*EnzoTimeStep*1e4;
                 p1->WorldTime = p1->CurrentTimeIrr*EnzoTimeStep*1e4;
+
+                SEVNList.insert({p1->WorldTime + p1->StellarEvolution->getp(Timestep::ID), p1->ParticleIndex});
+
                 SetRadius(p1);
                 fprintf(stdout, "New Star class made!\n");
                 fprintf(stdout, "PID: %d. Mass: %e Msol, Radius: %e pc\n", p1->PID, p1->Mass*mass_unit, p1->radius*position_unit);

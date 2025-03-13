@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include "global.h"
 #ifdef SEVN
-#include <unordered_set>
+#include <map>
 #endif
 
 Particle *particles_original;
@@ -65,7 +65,7 @@ FILE* mergerout;
 #ifdef SEVN
 FILE* SEVNout;
 IO* sevnio = nullptr;
-std::unordered_set<int> SEVNList;
+std::multimap<double, int> SEVNList;
 #endif
 FILE* workerout;
 

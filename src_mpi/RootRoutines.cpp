@@ -1651,8 +1651,8 @@ void RootRoutines() {
 			start_point_routine = std::chrono::high_resolution_clock::now();
 #endif
 
-			StellarEvolution(); // How about evolving particles inside RegularList only? by EW 2025.1.19
-								// Currently, evolving all the particles upto global_time
+			if (!SEVNList.empty() && SEVNList.begin()->first <= global_time*EnzoTimeStep*1e4)
+				StellarEvolution(); // Currently, evolving all the particles upto global_time
 
 #ifdef PerformanceTrace
 			end_point_routine = std::chrono::high_resolution_clock::now();
