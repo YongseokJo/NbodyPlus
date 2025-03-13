@@ -208,10 +208,25 @@ int writeParticle(double current_time, int outputNum) {
     // Write particle data to the file
 	Particle *ptcl;
 	double pos[Dim], vel[Dim];
+
+	// for performance test by EW 2025.3.13
+	int PID_minIrr, PID_minReg;
+	double minTimeStepIrr = 1.;
+	double minTimeStepReg = 1.;
+
 	for (int i=0; i<=LastParticleIndex; i++) {
 		ptcl = &particles[i];
 
 		if (!ptcl->isActive) continue;
+
+		if (ptcl->TimeStepIrr < minTimeStepIrr) {
+			PID_minIrr = ptcl->PID;
+			minTimeStepIrr = ptcl->TimeStepIrr;
+		}
+		if (ptcl->TimeStepReg < minTimeStepReg) {
+			PID_minReg = ptcl->PID;
+			minTimeStepReg = ptcl->TimeStepReg;
+		}
 
 		ptcl->predictParticleSecondOrder(current_time - ptcl->CurrentTimeIrr, pos, vel);
 
@@ -238,6 +253,9 @@ int writeParticle(double current_time, int outputNum) {
 	if (outputNum != 0) {
 		std::cout << "--------------Performance-Summary--------------" << std::endl;
 		std::cout << "Simulation Time: " << current_time*EnzoTimeStep*1e10/1e6 << " Myr" << std::endl;
+
+		std::cout << "Minimum TimeStepIrr (PID: " << PID_minIrr << "): " << minTimeStepIrr*EnzoTimeStep*1e4 << " Myr" << std::endl;
+		std::cout << "Minimum TimeStepReg (PID: " << PID_minReg << "): " << minTimeStepReg*EnzoTimeStep*1e4 << " Myr" << std::endl;
 
 		std::cout << std::fixed << std::setprecision(2);
 

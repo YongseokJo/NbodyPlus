@@ -261,6 +261,7 @@ void Particle::computeAccelerationReg() {
 	this->NewNumberOfNeighbor = 0;
 
 	std::unordered_set<int> RealNeighbors; // Neighbors containing CM ptcls, not members
+	RealNeighbors.reserve(this->NumberOfNeighbor);
 
 	// initialize irregular force terms for ith particle just in case
 	for (int dim=0; dim<Dim; dim++){
@@ -515,7 +516,9 @@ void Particle::updateRegularParticleCuda(int *NewNeighborsGPU, int NewNumberOfNe
 
 
 	std::unordered_set<int> hashTableOld;
+	hashTableOld.reserve(this->NumberOfNeighbor);
 	std::unordered_set<int> hashTableNew;
+	hashTableNew.reserve(NewNumberOfNeighborGPU);
 	
 	int RealNeighbors[MaxNumNeighbor]; // this->Neighbors is containing members, not CM ptcls, but this is containing CM ptcls, not members
 	int RealNumberOfNeighbor = 0;

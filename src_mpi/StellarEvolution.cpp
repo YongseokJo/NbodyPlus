@@ -70,8 +70,8 @@ void StellarEvolution() {
 
         evolved = false;
     
-        if (ptcl->StellarEvolution == nullptr || ptcl->StellarEvolution->amiremnant()) // CM particle & Stars with mass < 2.2 Msol don't have star class.
-            continue;
+        // if (ptcl->StellarEvolution == nullptr || ptcl->StellarEvolution->amiremnant()) // CM particle & Stars with mass < 2.2 Msol don't have star class.
+        //     continue;
 
         while (ptcl->WorldTime + ptcl->StellarEvolution->getp(Timestep::ID) < global_time*EnzoTimeStep*1e4) {
             ptcl->WorldTime += ptcl->StellarEvolution->getp(Timestep::ID);
