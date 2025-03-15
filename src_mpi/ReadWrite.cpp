@@ -210,7 +210,7 @@ int writeParticle(double current_time, int outputNum) {
 	double pos[Dim], vel[Dim];
 
 	// for performance test by EW 2025.3.13
-	int PID_minIrr, PID_minReg;
+	int Index_minIrr, Index_minReg;
 	double minTimeStepIrr = 1.;
 	double minTimeStepReg = 1.;
 
@@ -220,11 +220,11 @@ int writeParticle(double current_time, int outputNum) {
 		if (!ptcl->isActive) continue;
 
 		if (ptcl->TimeStepIrr < minTimeStepIrr) {
-			PID_minIrr = ptcl->PID;
+			Index_minIrr = ptcl->ParticleIndex;
 			minTimeStepIrr = ptcl->TimeStepIrr;
 		}
 		if (ptcl->TimeStepReg < minTimeStepReg) {
-			PID_minReg = ptcl->PID;
+			Index_minReg = ptcl->ParticleIndex;
 			minTimeStepReg = ptcl->TimeStepReg;
 		}
 
@@ -254,8 +254,27 @@ int writeParticle(double current_time, int outputNum) {
 		std::cout << "--------------Performance-Summary--------------" << std::endl;
 		std::cout << "Simulation Time: " << current_time*EnzoTimeStep*1e10/1e6 << " Myr" << std::endl;
 
-		std::cout << "Minimum TimeStepIrr (PID: " << PID_minIrr << "): " << minTimeStepIrr*EnzoTimeStep*1e4 << " Myr" << std::endl;
-		std::cout << "Minimum TimeStepReg (PID: " << PID_minReg << "): " << minTimeStepReg*EnzoTimeStep*1e4 << " Myr" << std::endl;
+		Particle* members = &particles[Index_minIrr];
+		fprintf(stdout, "Particle Info with minimum TimeStepIrr...\n");
+		fprintf(stdout, "PID: %d. Position (pc) - x:%e, y:%e, z:%e, \n", members->PID, members->Position[0]*position_unit, members->Position[1]*position_unit, members->Position[2]*position_unit);
+		fprintf(stdout, "PID: %d. Velocity (km/s) - vx:%e, vy:%e, vz:%e, \n", members->PID, members->Velocity[0]*velocity_unit/yr*pc/1e5, members->Velocity[1]*velocity_unit/yr*pc/1e5, members->Velocity[2]*velocity_unit/yr*pc/1e5);
+		fprintf(stdout, "PID: %d. Mass (Msol) - %e, \n", members->PID, members->Mass*mass_unit);
+		fprintf(stdout, "NumNeighbor: %d, ACRadius: %e\n", members->NumberOfNeighbor, sqrt(members->RadiusOfNeighbor)*position_unit);
+        fprintf(stderr, "PID: %d. Total Acceleration - ax:%e, ay:%e, az:%e \n", members->PID, members->a_tot[0][0], members->a_tot[1][0], members->a_tot[2][0]);
+		fprintf(stdout, "PID: %d. Reg Acceleration - ax:%e, ay:%e, az:%e, \n", members->PID, members->a_reg[0][0], members->a_reg[1][0], members->a_reg[2][0]);
+		fprintf(stdout, "PID: %d. Irr Acceleration - ax:%e, ay:%e, az:%e, \n", members->PID, members->a_irr[0][0], members->a_irr[1][0], members->a_irr[2][0]);
+		fprintf(stdout, "PID: %d. Time Steps (Myr) - irregular:%e, regular:%e \n", members->PID, members->TimeStepIrr*EnzoTimeStep*1e4, members->TimeStepReg*EnzoTimeStep*1e4);
+
+		Particle* members = &particles[Index_minReg];
+		fprintf(stdout, "Particle Info with minimum TimeStepReg...\n");
+		fprintf(stdout, "PID: %d. Position (pc) - x:%e, y:%e, z:%e, \n", members->PID, members->Position[0]*position_unit, members->Position[1]*position_unit, members->Position[2]*position_unit);
+		fprintf(stdout, "PID: %d. Velocity (km/s) - vx:%e, vy:%e, vz:%e, \n", members->PID, members->Velocity[0]*velocity_unit/yr*pc/1e5, members->Velocity[1]*velocity_unit/yr*pc/1e5, members->Velocity[2]*velocity_unit/yr*pc/1e5);
+		fprintf(stdout, "PID: %d. Mass (Msol) - %e, \n", members->PID, members->Mass*mass_unit);
+		fprintf(stdout, "NumNeighbor: %d, ACRadius: %e\n", members->NumberOfNeighbor, sqrt(members->RadiusOfNeighbor)*position_unit);
+        fprintf(stderr, "PID: %d. Total Acceleration - ax:%e, ay:%e, az:%e \n", members->PID, members->a_tot[0][0], members->a_tot[1][0], members->a_tot[2][0]);
+		fprintf(stdout, "PID: %d. Reg Acceleration - ax:%e, ay:%e, az:%e, \n", members->PID, members->a_reg[0][0], members->a_reg[1][0], members->a_reg[2][0]);
+		fprintf(stdout, "PID: %d. Irr Acceleration - ax:%e, ay:%e, az:%e, \n", members->PID, members->a_irr[0][0], members->a_irr[1][0], members->a_irr[2][0]);
+		fprintf(stdout, "PID: %d. Time Steps (Myr) - irregular:%e, regular:%e \n", members->PID, members->TimeStepIrr*EnzoTimeStep*1e4, members->TimeStepReg*EnzoTimeStep*1e4);
 
 		std::cout << std::fixed << std::setprecision(2);
 

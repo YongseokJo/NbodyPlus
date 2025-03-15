@@ -848,7 +848,24 @@ void RootRoutines() {
 							particles[ptcl->Members[j]].CMPtclIndex = -1;
 							if (particles[ptcl->Members[j]].Mass == 0.0) {
 #ifdef SEVN
-								SEVNList.erase(particles[ptcl->Members[j]].ParticleIndex);
+								Particle* ptcl_erased = &particles[ptcl->Members[j]];
+								if (ptcl_erased->StellarEvolution != nullptr) {
+
+									auto it = SEVNList.begin();
+									while (it != SEVNList.end()) {
+										if (it->second == ptcl_erased->ParticleIndex) {
+											it = SEVNList.erase(it);
+											fprintf(stdout, "Merger induced zero mass particle (PID: %d) is deleted from SEVNList\n", ptcl_erased->PID);
+											break;
+										}
+										else
+											it++;
+									}
+
+									delete ptcl_erased->StellarEvolution;
+									ptcl_erased->StellarEvolution = nullptr;
+									fprintf(stdout, "Merger induced zero mass particle (PID: %d) SEVN memory is free now\n", ptcl_erased->PID);
+								}
 #endif
 								continue;
 							}
@@ -1189,9 +1206,9 @@ void RootRoutines() {
 #endif
 			} // Irr
 #ifdef DEBUG
-			delete skiplist;
 			std::cout << "delete skiplist" << std::endl;
 #endif
+			delete skiplist;
 			skiplist = nullptr;
 			//exit(SUCCESS);
 

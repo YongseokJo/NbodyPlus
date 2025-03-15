@@ -61,20 +61,23 @@ void setBHspin(Particle* ptcl) {
 void StellarEvolution() {
 
     Particle* ptcl;
-    while (1) {
+    while (!SEVNList.empty()) {
+         
+        auto it = SEVNList.begin();
+        ptcl = &particles[it->second];
 
-        ptcl = &particles[SEVNList.begin()->second];
         ptcl->WorldTime += ptcl->StellarEvolution->getp(Timestep::ID);
         ptcl->StellarEvolution->evolve();
 
-        while (ptcl->WorldTime + ptcl->StellarEvolution->getp(Timestep::ID) <= global_time*EnzoTimeStep*1e4) {
+        while (ptcl->WorldTime + ptcl->StellarEvolution->getp(Timestep::ID) <= global_time * EnzoTimeStep * 1e4) {
             ptcl->WorldTime += ptcl->StellarEvolution->getp(Timestep::ID);
             ptcl->StellarEvolution->evolve();
         }
-        SEVNList.erase(SEVNList.begin());
+
+        it = SEVNList.erase(it);
         UpdateEvolution(ptcl);
-        
-        if (SEVNList.empty() || SEVNList.begin()->first > global_time*EnzoTimeStep*1e4)
+
+        if (SEVNList.empty() || SEVNList.begin()->first > global_time * EnzoTimeStep * 1e4)
             break;
     }
     fflush(SEVNout);
@@ -157,6 +160,8 @@ void UpdateEvolution(Particle* ptcl) {
             ptcl->isActive = false;
             NumberOfParticle--;
         }
+        delete ptcl->StellarEvolution;
+        ptcl->StellarEvolution = nullptr;
     }
 }
 
