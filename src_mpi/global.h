@@ -84,8 +84,7 @@ extern std::multimap<double, int> SEVNList;
 #endif
 extern FILE* workerout;
 
-#ifdef PerformanceTrace
-// Performance trace
+#ifdef PERFORMANCETRACE
 extern Performance performance;
 #endif
 

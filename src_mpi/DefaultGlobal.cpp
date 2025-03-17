@@ -69,7 +69,7 @@ std::multimap<double, int> SEVNList;
 #endif
 FILE* workerout;
 
-#ifdef PerformanceTrace
+#ifdef PERFORMANCETRACE
 Performance performance;
 #endif
 

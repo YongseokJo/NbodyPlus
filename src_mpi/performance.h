@@ -24,7 +24,11 @@ struct Performance {
 
 	long SkipListCreate = 0;
 	long SkipListUpdate = 0;
+#ifdef MULTIMAP
+	long RegularMap = 0;
+#else // no multimap
 	long UpdateNextRegTime = 0;
+#endif // multimap
 
 #ifdef SEVN
 	long StellarEvolution = 0;

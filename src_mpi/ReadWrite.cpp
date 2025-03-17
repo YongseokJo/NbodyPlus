@@ -249,7 +249,7 @@ int writeParticle(double current_time, int outputNum) {
 
 	std::cout << "Data written to output.txt successfully!" << std::endl;
 
-#ifdef PerformanceTrace
+#ifdef PERFORMANCETRACE
 	if (outputNum != 0) {
 		std::cout << "--------------Performance-Summary--------------" << std::endl;
 		std::cout << "Simulation Time: " << current_time*EnzoTimeStep*1e10/1e6 << " Myr" << std::endl;
@@ -323,9 +323,15 @@ int writeParticle(double current_time, int outputNum) {
 		std::cout << "SkipList Update: " << performance.SkipListUpdate*1e-9 << " s";
 		std::cout << " (" << 100.0 * performance.SkipListUpdate / performance.WholeRoutine << " %)" << std::endl;
 		performance.SkipListUpdate = 0;
+#ifdef MULTIMAP
+		std::cout << "RegularMap: " << performance.RegularMap*1e-9 << " s";
+		std::cout << " (" << 100.0 * performance.RegularMap / performance.WholeRoutine << " %)" << std::endl;
+		performance.RegularMap = 0;
+#else
 		std::cout << "UpdateNextRegTime: " << performance.UpdateNextRegTime*1e-9 << " s";
 		std::cout << " (" << 100.0 * performance.UpdateNextRegTime / performance.WholeRoutine << " %)" << std::endl;
 		performance.UpdateNextRegTime = 0;
+#endif
 
 #ifdef SEVN
 		std::cout << "Stellar Evolution: " << performance.StellarEvolution*1e-9 << " s";

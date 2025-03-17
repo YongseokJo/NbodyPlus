@@ -24,11 +24,7 @@ void broadcastFromRoot(double &data);
 void broadcastFromRoot(ULL &data);
 void broadcastFromRoot(int &data);
 void ParticleSynchronization();
-#ifdef CUDA
-void updateNextRegTime(std::unordered_set<int>& RegularList);
-#else
-void updateNextRegTime(std::vector<int>& RegularList);
-#endif
+
 bool createSkipList(SkipList *skiplist);
 bool updateSkipList(SkipList *skiplist, int ptcl_id);
 int writeParticle(double current_time, int outputNum);
@@ -38,6 +34,23 @@ void formPrimordialBinaries(int beforeLastParticleIndex);
 void formBinaries(std::vector<int>& ParticleList, std::vector<int>& newCMptcls, std::unordered_map<int, int>& existing, std::unordered_map<int, int>& terminated);
 void FBTermination(Particle* ptclCM);
 void Merge(Particle* p1, Particle* p2);
+
+#ifdef MULTIMAP
+void createRegularMap(std::multimap<ULL,int>& RegularMap);
+#ifdef CUDA
+void getRegularList(std::multimap<ULL,int>& RegularMap, std::unordered_set<int>& RegularList);
+void updateRegularMap(std::multimap<ULL,int>& RegularMap, std::unordered_set<int>& RegularList);
+#else
+void getRegularList(std::multimap<ULL,int>& RegularMap, std::vector<int>& RegularList);
+void updateRegularMap(std::multimap<ULL,int>& RegularMap, std::vector<int>& RegularList);
+#endif
+#else // no multimap
+#ifdef CUDA
+void updateNextRegTime(std::unordered_set<int>& RegularList);
+#else
+void updateNextRegTime(std::vector<int>& RegularList);
+#endif
+#endif // multimap
 
 #ifdef SEVN
 void StellarEvolution();
@@ -67,7 +80,9 @@ void RootRoutines() {
 
 	bool bin_termination = false;
 	bool new_binaries = false;
-	
+#ifdef MULTIMAP
+	std::multimap<ULL,int> RegularMap;
+#endif
 
 #ifdef CUDA
 	std::unordered_set<int> RegularList;
@@ -90,13 +105,17 @@ void RootRoutines() {
 
 	QueueScheduler queue_scheduler;
 
-#ifdef PerformanceTrace
+#ifdef PERFORMANCETRACE
 	std::chrono::high_resolution_clock::time_point start_point_whole;
 	std::chrono::high_resolution_clock::time_point end_point_whole;
 
 	std::chrono::high_resolution_clock::time_point start_point_routine;
 	std::chrono::high_resolution_clock::time_point end_point_routine;
+#ifdef MULTIMAP
+	std::chrono::high_resolution_clock::time_point start_point_map;
+	std::chrono::high_resolution_clock::time_point end_point_map;
 #endif
+#endif // performance
 
 	/* Particle loading Check */
 	/*
@@ -448,7 +467,10 @@ void RootRoutines() {
 		double next_time=0;
 		int ptcl_id_return;
 		Worker* worker;
-
+		
+#ifdef MULTIMAP
+		createRegularMap(RegularMap);
+#endif
 
 		//ParticleSynchronization();
 		while (1) {
@@ -470,11 +492,13 @@ void RootRoutines() {
 				return;
 			}
 
-#ifdef PerformanceTrace
+#ifdef PERFORMANCETRACE
 			start_point_whole = std::chrono::high_resolution_clock::now();
 #endif
 
-#ifdef PerformanceTrace
+#ifndef MULTIMAP
+
+#ifdef PERFORMANCETRACE
 			start_point_routine = std::chrono::high_resolution_clock::now();
 #endif
 #ifdef NSIGHT
@@ -484,11 +508,13 @@ void RootRoutines() {
 #ifdef NSIGHT
 			nvtxRangePop();
 #endif
-#ifdef PerformanceTrace
+#ifdef PERFORMANCETRACE
 			end_point_routine = std::chrono::high_resolution_clock::now();
 			performance.UpdateNextRegTime +=
 				std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
 #endif
+
+#endif // no multimap
 
 			bin_termination = false;
 			new_binaries = false;
@@ -501,7 +527,7 @@ void RootRoutines() {
 			std::cout << std::endl;
 			std::cout << "size of regularlist= " << RegularList.size() << std::endl;
 			*/
-#ifdef PerformanceTrace
+#ifdef PERFORMANCETRACE
 			start_point_routine = std::chrono::high_resolution_clock::now();
 #endif		
 #ifdef NSIGHT
@@ -513,7 +539,7 @@ void RootRoutines() {
 #ifdef NSIGHT
 			nvtxRangePop();
 #endif
-#ifdef PerformanceTrace
+#ifdef PERFORMANCETRACE
 			end_point_routine = std::chrono::high_resolution_clock::now();
 			performance.SkipListCreate +=
 				std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
@@ -539,7 +565,7 @@ void RootRoutines() {
 				next_time     = particles[ThisLevelNode->ParticleList[0]].CurrentTimeIrr\
 									 	    + particles[ThisLevelNode->ParticleList[0]].TimeStepIrr;
 
-#ifdef PerformanceTrace
+#ifdef PERFORMANCETRACE
 				start_point_routine = std::chrono::high_resolution_clock::now();
 #endif
 			
@@ -712,7 +738,7 @@ void RootRoutines() {
 				} while (queue_scheduler.isComplete());
 #endif
 
-#ifdef PerformanceTrace
+#ifdef PERFORMANCETRACE
 				end_point_routine = std::chrono::high_resolution_clock::now();
 				performance.IrregularForce +=
 					std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
@@ -729,7 +755,7 @@ void RootRoutines() {
 					}				updateSkipList(skiplist, ptcl_id_return);
 					*/
 
-#ifdef PerformanceTrace
+#ifdef PERFORMANCETRACE
 				start_point_routine = std::chrono::high_resolution_clock::now();
 #endif
 
@@ -770,7 +796,7 @@ void RootRoutines() {
 				nvtxRangePop();
 #endif
 
-#ifdef PerformanceTrace
+#ifdef PERFORMANCETRACE
                 end_point_routine = std::chrono::high_resolution_clock::now();
                 performance.IrregularUpdate +=
                     std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
@@ -778,7 +804,7 @@ void RootRoutines() {
 
 #ifdef FEWBODY
 
-#ifdef PerformanceTrace
+#ifdef PERFORMANCETRACE
                 start_point_routine = std::chrono::high_resolution_clock::now();
 #endif
 
@@ -872,7 +898,23 @@ void RootRoutines() {
 							ThisLevelNode->ParticleList.push_back(ptcl->Members[j]);
 							particles[ptcl->Members[j]].isActive = true;
 						}
-
+#ifdef MULTIMAP
+#ifdef PERFORMANCETRACE
+						start_point_map = std::chrono::high_resolution_clock::now();
+#endif
+						auto range = RegularMap.equal_range(ptcl->CurrentBlockReg + ptcl->TimeBlockReg);
+						for (auto it = range.first; it != range.second; ++it) {
+							if (ptcl->PID == particles[it->second].PID) {
+								RegularMap.erase(it);
+								break;
+							}
+						}
+#ifdef PERFORMANCETRACE
+						end_point_map = std::chrono::high_resolution_clock::now();
+						performance.RegularMap +=
+							std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_map - start_point_map).count();
+#endif
+#endif // multimap
 						FBTermination(ptcl);
 					}
 				}
@@ -880,7 +922,19 @@ void RootRoutines() {
 				if (bin_termination) {
 					for (int i=OriginalSize; i<ThisLevelNode->ParticleList.size(); i++) {
 						ptcl = &particles[ThisLevelNode->ParticleList[i]];
+#ifdef MULTIMAP
+#ifdef PERFORMANCETRACE
+						start_point_map = std::chrono::high_resolution_clock::now();
+#endif
 
+						RegularMap.insert({ptcl->CurrentBlockReg + ptcl->TimeBlockReg, ptcl->ParticleIndex});
+
+#ifdef PERFORMANCETRACE
+						end_point_map = std::chrono::high_resolution_clock::now();
+						performance.RegularMap +=
+							std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_map - start_point_map).count();
+#endif
+#else // no multimap
 						if (ptcl->CurrentBlockReg + ptcl->TimeBlockReg == NextRegTimeBlock) {
 #ifdef CUDA
 							RegularList.insert(ptcl->ParticleIndex);
@@ -888,6 +942,7 @@ void RootRoutines() {
 							RegularList.push_back(ptcl->ParticleIndex);
 #endif
 						}
+#endif // multimap
 
 						ptcl->NewNumberOfNeighbor = 0;
 						if (ptcl->TimeStepIrr * EnzoTimeStep * 1e4 < TSEARCH)
@@ -909,13 +964,13 @@ void RootRoutines() {
 				nvtxRangePop();
 #endif
 
-#ifdef PerformanceTrace
+#ifdef PERFORMANCETRACE
                 end_point_routine = std::chrono::high_resolution_clock::now();
                 performance.FewBodyTermination +=
                     std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
 #endif
 
-#ifdef PerformanceTrace
+#ifdef PERFORMANCETRACE
                 start_point_routine = std::chrono::high_resolution_clock::now();
 #endif
 
@@ -967,13 +1022,13 @@ void RootRoutines() {
 				nvtxRangePop();
 #endif
 
-#ifdef PerformanceTrace
+#ifdef PERFORMANCETRACE
                 end_point_routine = std::chrono::high_resolution_clock::now();
                 performance.FewBodySearch +=
                     std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
 #endif
 
-#ifdef PerformanceTrace
+#ifdef PERFORMANCETRACE
                 start_point_routine = std::chrono::high_resolution_clock::now();
 #endif
 
@@ -1003,6 +1058,24 @@ void RootRoutines() {
 
 						for (int j=0; j<ptclCM->NewNumberOfNeighbor; j++) {
 							mem_ptclCM = &particles[ptclCM->NewNeighbors[j]];
+#ifdef MULTIMAP
+#ifdef PERFORMANCETRACE
+							start_point_map = std::chrono::high_resolution_clock::now();
+#endif
+
+							auto range = RegularMap.equal_range(mem_ptclCM->CurrentBlockReg + mem_ptclCM->TimeBlockReg);
+							for (auto it = range.first; it != range.second; ++it) {
+								if (mem_ptclCM->PID == particles[it->second].PID) {
+									RegularMap.erase(it);
+									break;
+								}
+							}
+#ifdef PERFORMANCETRACE
+							end_point_map = std::chrono::high_resolution_clock::now();
+							performance.RegularMap +=
+								std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_map - start_point_map).count();
+#endif
+#endif // multimap
 							if (mem_ptclCM->isCMptcl) {
 								fprintf(stdout, "manybody group detected; PID %d should be deleted first\n", mem_ptclCM->PID);
 								rank_delete = CMPtclWorker[mem_ptclCM->ParticleIndex];
@@ -1027,7 +1100,17 @@ void RootRoutines() {
 						workers[rank_new].addQueue(queue);
 						workers[rank_new].runQueue();
 						workers[rank_new].callback();
-
+#ifdef MULTIMAP
+#ifdef PERFORMANCETRACE
+						start_point_map = std::chrono::high_resolution_clock::now();
+#endif
+						RegularMap.insert({ptclCM->CurrentBlockReg + ptclCM->TimeBlockReg, ptclCM->ParticleIndex});
+#ifdef PERFORMANCETRACE
+						end_point_map = std::chrono::high_resolution_clock::now();
+						performance.RegularMap +=
+							std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_map - start_point_map).count();
+#endif
+#else // no multimap
 						if (ptclCM->CurrentBlockReg + ptclCM->TimeBlockReg == NextRegTimeBlock) {
 #ifdef CUDA
 							RegularList.insert(ptcl->ParticleIndex);
@@ -1035,6 +1118,7 @@ void RootRoutines() {
 							RegularList.push_back(ptcl->ParticleIndex);
 #endif
 						}
+#endif
 					}
 #ifdef DEBUG
 					std::cout << "All new fewbody objects are initialized." << std::endl;
@@ -1056,7 +1140,7 @@ void RootRoutines() {
 				nvtxRangePop();
 #endif
 
-#ifdef PerformanceTrace
+#ifdef PERFORMANCETRACE
                 end_point_routine = std::chrono::high_resolution_clock::now();
                 performance.FewBodyInitialization +=
                     std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
@@ -1064,7 +1148,7 @@ void RootRoutines() {
 
 #endif
 
-#ifdef PerformanceTrace
+#ifdef PERFORMANCETRACE
                 start_point_routine = std::chrono::high_resolution_clock::now();
 #endif
 #ifdef DEBUG
@@ -1075,7 +1159,7 @@ void RootRoutines() {
 #ifdef DEBUG
 				std::cout << "updateSkipList ended" << std::endl;
 #endif
-#ifdef PerformanceTrace
+#ifdef PERFORMANCETRACE
                 end_point_routine = std::chrono::high_resolution_clock::now();
                 performance.SkipListUpdate +=
                     std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
@@ -1214,7 +1298,13 @@ void RootRoutines() {
 
 #ifdef FEWBODY
 			if (bin_termination || new_binaries) {
-
+#ifdef MULTIMAP
+				if (NextRegTimeBlock != RegularMap.begin()->first) {
+					NextRegTimeBlock = RegularMap.begin()->first;
+					global_variable->NextRegTimeBlock = NextRegTimeBlock;
+					continue;
+				}
+#else // no multimap
 				for (auto it = RegularList.begin(); it != RegularList.end(); ) {
 					if (!particles[*it].isActive)
 						it = RegularList.erase(it);
@@ -1224,6 +1314,7 @@ void RootRoutines() {
 
 				if (RegularList.empty())
 					continue;
+#endif
 			}
 #endif
 
@@ -1231,6 +1322,18 @@ void RootRoutines() {
 			{
 				//total_tasks = RegularList.size();
 				next_time = NextRegTimeBlock*time_step;
+#ifdef MULTIMAP
+#ifdef PERFORMANCETRACE
+                start_point_routine = std::chrono::high_resolution_clock::now();
+#endif
+				getRegularList(RegularMap, RegularList);
+
+#ifdef PERFORMANCETRACE
+                end_point_routine = std::chrono::high_resolution_clock::now();
+                performance.RegularMap +=
+                    std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
+#endif
+#endif // multimap
 
 				//fprintf(stdout, "Regular starts\n");
 #ifdef NSIGHT
@@ -1252,7 +1355,7 @@ void RootRoutines() {
 				nvtxRangePop();
 #endif
 
-#ifdef PerformanceTrace
+#ifdef PERFORMANCETRACE
                 start_point_routine = std::chrono::high_resolution_clock::now();
 #endif
 
@@ -1281,11 +1384,24 @@ void RootRoutines() {
 				nvtxRangePop();
 #endif
 
-#ifdef PerformanceTrace
+#ifdef PERFORMANCETRACE
                 end_point_routine = std::chrono::high_resolution_clock::now();
                 performance.RegularUpdate +=
                     std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
 #endif
+
+#ifdef MULTIMAP
+#ifdef PERFORMANCETRACE
+                start_point_routine = std::chrono::high_resolution_clock::now();
+#endif
+				updateRegularMap(RegularMap, RegularList);
+
+#ifdef PERFORMANCETRACE
+                end_point_routine = std::chrono::high_resolution_clock::now();
+                performance.RegularMap +=
+                    std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
+#endif
+#endif // multimap
 			}
 				/*
 				{
@@ -1350,10 +1466,23 @@ void RootRoutines() {
 					//fflush(stdout); 
 				}
 				*/
-#else		
+#else // no cuda
 			{
 				next_time = NextRegTimeBlock*time_step;
-#ifdef PerformanceTrace
+#ifdef MULTIMAP
+#ifdef PERFORMANCETRACE
+				start_point_routine = std::chrono::high_resolution_clock::now();
+#endif
+				getRegularList(RegularMap, RegularList);
+
+#ifdef PERFORMANCETRACE
+				end_point_routine = std::chrono::high_resolution_clock::now();
+				performance.RegularMap +=
+					std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
+#endif
+#endif // multimap
+
+#ifdef PERFORMANCETRACE
 				start_point_routine = std::chrono::high_resolution_clock::now();
 #endif
 
@@ -1425,14 +1554,14 @@ void RootRoutines() {
 				nvtxRangePop();
 #endif
 
-#ifdef PerformanceTrace
+#ifdef PERFORMANCETRACE
                 end_point_routine = std::chrono::high_resolution_clock::now();
                 performance.RegularForce +=
                     std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
 #endif
 
 
-#ifdef PerformanceTrace
+#ifdef PERFORMANCETRACE
                 start_point_routine = std::chrono::high_resolution_clock::now();
 #endif
 
@@ -1494,13 +1623,26 @@ void RootRoutines() {
 				nvtxRangePop();
 #endif
 
-#ifdef PerformanceTrace
+#ifdef PERFORMANCETRACE
                 end_point_routine = std::chrono::high_resolution_clock::now();
                 performance.RegularUpdate +=
                     std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
 #endif
-			}
+
+#ifdef MULTIMAP
+#ifdef PERFORMANCETRACE
+                start_point_routine = std::chrono::high_resolution_clock::now();
 #endif
+				updateRegularMap(RegularMap, RegularList);
+
+#ifdef PERFORMANCETRACE
+                end_point_routine = std::chrono::high_resolution_clock::now();
+                performance.RegularMap +=
+                    std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
+#endif
+#endif // multimap
+			} // no cuda regular routine ends
+#endif // cuda
 
 #ifdef nouse
 			//std::cout << "Regular Routine Starts." << std::endl;
@@ -1664,14 +1806,14 @@ void RootRoutines() {
 
 #ifdef SEVN
 
-#ifdef PerformanceTrace
+#ifdef PERFORMANCETRACE
 			start_point_routine = std::chrono::high_resolution_clock::now();
 #endif
 
 			if (!SEVNList.empty() && SEVNList.begin()->first <= global_time*EnzoTimeStep*1e4)
 				StellarEvolution(); // Currently, evolving all the particles upto global_time
 
-#ifdef PerformanceTrace
+#ifdef PERFORMANCETRACE
 			end_point_routine = std::chrono::high_resolution_clock::now();
 			performance.StellarEvolution +=
 				std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
@@ -1679,7 +1821,7 @@ void RootRoutines() {
 
 #endif
 
-#ifdef PerformanceTrace
+#ifdef PERFORMANCETRACE
 			end_point_whole = std::chrono::high_resolution_clock::now();
 			performance.WholeRoutine +=
 				std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_whole - start_point_whole).count();
@@ -1689,8 +1831,129 @@ void RootRoutines() {
 	} // Actual Loop
 }
 
+#ifdef MULTIMAP
+void createRegularMap(std::multimap<ULL,int>& RegularMap) {
 
+	assert(RegularMap.empty());
 
+	Particle* ptcl;
+	for (int i=0; i<=LastParticleIndex; i++)
+	{
+		ptcl = &particles[i];
+		if (!ptcl->isActive)
+			continue;
+
+		RegularMap.insert({ptcl->CurrentBlockReg + ptcl->TimeBlockReg, ptcl->ParticleIndex});
+	}
+	NextRegTimeBlock = RegularMap.begin()->first;
+	global_variable->NextRegTimeBlock = NextRegTimeBlock;
+}
+#ifdef CUDA
+void getRegularList(std::multimap<ULL,int>& RegularMap, std::unordered_set<int>& RegularList) {
+
+	// assert(RegularMap.size() == NumberOfParticle);
+	if (RegularMap.size() != NumberOfParticle) { // PISN case
+
+		int num_erased = RegularMap.size() - NumberOfParticle;
+		int num = 0;
+
+		fprintf(stdout, "PISN search (number: %d) in RegularMap...\n", num_erased);
+
+		auto it = RegularMap.begin();
+		while (it != RegularMap.end()) {
+			if (particles[it->second].Mass != 0) {
+				it++;
+			}
+			else {
+				fprintf(stdout, "PISN (PID: %d) is erased in RegularMap\n", particles[it->second].PID);
+				it = RegularMap.erase(it);
+				num++;
+				if (num == num_erased)
+					break;
+			}
+		}
+	}
+	assert(RegularMap.begin()->first == NextRegTimeBlock);
+	assert(RegularList.empty());
+
+	auto it = RegularMap.begin();
+	while (it->first == NextRegTimeBlock) {
+		RegularList.insert(it->second);
+		it = RegularMap.erase(it);
+	}
+	assert(RegularMap.size() + RegularList.size() == NumberOfParticle);
+}
+
+void updateRegularMap(std::multimap<ULL,int>& RegularMap, std::unordered_set<int>& RegularList) {
+
+	assert(RegularMap.size() + RegularList.size() == NumberOfParticle);
+
+	Particle* ptcl;
+	while (!RegularList.empty()) {
+		ptcl = &particles[*RegularList.begin()];
+		RegularMap.insert({ptcl->CurrentBlockReg + ptcl->TimeBlockReg, ptcl->ParticleIndex});
+		RegularList.erase(RegularList.begin());
+	}
+	assert(RegularList.empty());
+	assert(RegularMap.size() == NumberOfParticle);
+
+	NextRegTimeBlock = RegularMap.begin()->first;
+	global_variable->NextRegTimeBlock = NextRegTimeBlock;
+}
+#else // no cuda
+void getRegularList(std::multimap<ULL,int>& RegularMap, std::vector<int>& RegularList) {
+
+	// assert(RegularMap.size() == NumberOfParticle);
+	if (RegularMap.size() != NumberOfParticle) { // PISN case
+
+		int num_erased = RegularMap.size() - NumberOfParticle;
+		int num = 0;
+
+		fprintf(stdout, "PISN search (number: %d) in RegularMap...\n", num_erased);
+
+		auto it = RegularMap.begin();
+		while (it != RegularMap.end()) {
+			if (particles[it->second].Mass != 0) {
+				it++;
+			}
+			else {
+				fprintf(stdout, "PISN (PID: %d) is erased in RegularMap\n", particles[it->second].PID);
+				it = RegularMap.erase(it);
+				num++;
+				if (num == num_erased)
+					break;
+			}
+		}
+	}
+	assert(RegularMap.begin()->first == NextRegTimeBlock);
+	assert(RegularList.empty());
+
+	auto it = RegularMap.begin();
+	while (it->first == NextRegTimeBlock) {
+		RegularList.push_back(it->second);
+		it = RegularMap.erase(it);
+	}
+	assert(RegularMap.size() + RegularList.size() == NumberOfParticle);
+}
+
+void updateRegularMap(std::multimap<ULL,int>& RegularMap, std::vector<int>& RegularList) {
+
+	assert(RegularMap.size() + RegularList.size() == NumberOfParticle);
+
+	Particle* ptcl;
+	while (!RegularList.empty()) {
+		ptcl = &particles[RegularList.back()];
+		RegularMap.insert({ptcl->CurrentBlockReg + ptcl->TimeBlockReg, ptcl->ParticleIndex});
+		RegularList.pop_back();
+	}
+	assert(RegularList.empty());
+	assert(RegularMap.size() == NumberOfParticle);
+
+	NextRegTimeBlock = RegularMap.begin()->first;
+	global_variable->NextRegTimeBlock = NextRegTimeBlock;
+}
+#endif // cuda
+#else // no multimap
 #ifdef CUDA
 void updateNextRegTime(std::unordered_set<int>& RegularList) {
 
@@ -1722,7 +1985,7 @@ void updateNextRegTime(std::unordered_set<int>& RegularList) {
 	NextRegTimeBlock = time;
 	global_variable->NextRegTimeBlock = NextRegTimeBlock;
 }
-#else
+#else // no cuda
 void updateNextRegTime(std::vector<int>& RegularList) {
 
 	ULL time_tmp=0, time=block_max;
@@ -1753,13 +2016,8 @@ void updateNextRegTime(std::vector<int>& RegularList) {
 	NextRegTimeBlock = time;
 	global_variable->NextRegTimeBlock = NextRegTimeBlock;
 }
-#endif
-
-
-
-
-
-
+#endif // cuda
+#endif // multimap
 
 bool createSkipList(SkipList *skiplist) {
 
