@@ -454,10 +454,10 @@ void RootRoutines() {
 		while (1) {
 
 			// create output at appropriate time intervals
-			if (global_time >= outputTime) {
-				writeParticle(global_time, outNum++);
-				outputTime += outputTimeStep;
-			}
+			//if (global_time >= outputTime) {
+			writeParticle(global_time, outNum++);
+			//outputTime += outputTimeStep;
+			//}
 
 			// end if the global time exceeds the end time
 			if (global_time >= 1) {
@@ -1270,11 +1270,10 @@ void RootRoutines() {
                     std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
 #endif
 			}
-				/*
 				{
 					//, NextRegTime= %.3e Myr(%llu),
-					for (int i=0; i<RegularList.size(); i++) {
-						ptcl = &particles[RegularList[i]];
+					for (int i:RegularList) {
+						ptcl = &particles[i];
 						fprintf(stdout, "PID=%d, CurrentTime (Irr, Reg) = (%.3e(%llu), %.3e(%llu)) Myr, NextReg = %.3e (%llu)\n"\
 								"dtIrr = %.4e Myr, dtReg = %.4e Myr, blockIrr=%llu (%d), blockReg=%llu (%d), NextBlockIrr= %.3e(%llu)\n"\
 								"NumNeighbor= %d\n",
@@ -1332,8 +1331,7 @@ void RootRoutines() {
 					}
 					//fflush(stdout); 
 				}
-				*/
-#else		
+#else		 // CUDA
 			{
 				next_time = NextRegTimeBlock*time_step;
 #ifdef PerformanceTrace

@@ -81,6 +81,8 @@ extern int outNum;
 extern double outputTimeStep;
 extern char* config_file;
 
+extern FILE* ATsout;
+
 extern FILE* binout;
 extern FILE* mergerout;
 #ifdef SEVN

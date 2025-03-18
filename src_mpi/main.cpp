@@ -53,7 +53,7 @@ int main(int argc, char *argv[]) {
 	int root_proc = 0;
 	//if (MyRank == ROOT)
 	OpenDevice(&root_proc);
-	cudaDeviceSynchronize(); 
+	cudaDeviceSynchronize();
 #endif
 
 	/*
@@ -78,10 +78,17 @@ int main(int argc, char *argv[]) {
 	Parser(argc, argv);
 	readParameterFile();
 
+
+
+	if (MyRank == ROOT) {
+		std::string directoryPath = "output";
+		std::string filename = directoryPath + "/" + foutput + ".txt";
+		ATsout = fopen(filename.c_str(), "w");
+	}
 	// Write Particles
 	if (MyRank == ROOT && readData() == FAIL)
 		fprintf(stderr, "Read Data Failed!\n");
-	
+
 
 	if (MyRank == ROOT) {
 		global_variable->LastParticleIndex = LastParticleIndex;
@@ -94,7 +101,7 @@ int main(int argc, char *argv[]) {
 		fprintf(workerout, "Starting nbody - WORKER OUTPUT\n");
 		fflush(workerout);
 		// */
-		
+
 		WorkerRoutines();
 	}
 

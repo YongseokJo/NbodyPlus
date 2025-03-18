@@ -65,6 +65,7 @@ double outputTime;
 int outNum;
 char *config_file;
 
+FILE* ATsout;
 FILE* binout;
 FILE* mergerout;
 #ifdef SEVN

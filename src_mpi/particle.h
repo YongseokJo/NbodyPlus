@@ -5,7 +5,9 @@
 #include <cmath>
 
 // SDAR
+#ifdef FEWBODY
 #include "Common/Float.h"
+#endif
 #include <iostream>
 #include <iomanip>
 #ifdef SEVN
@@ -120,7 +122,9 @@ struct Particle {
 		ParticleIndex = -1;
 		radius = 0.;
 		dm = 0.0;
+#ifdef FEWBODY
 		time_check = NUMERIC_FLOAT_MAX;
+#endif
 		setBinaryInterruptState(BinaryInterruptState::none);
 		GroupInfo = nullptr;
 		isCMptcl = false; //(Query)
@@ -164,7 +168,9 @@ struct Particle {
 		this->isActive				= true;
 		this->ParticleIndex			= PID;
 		this->dm = 0.0;
+#ifdef FEWBODY
 		this->time_check = NUMERIC_FLOAT_MAX;
+#endif
 		this->setBinaryInterruptState(BinaryInterruptState::none);
 		this->GroupInfo = nullptr;
 		this->isCMptcl = false;
