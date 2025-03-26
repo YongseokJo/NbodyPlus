@@ -826,7 +826,15 @@ void RootRoutines() {
 								Particle* accretor = &particles[ptcl->Members[1]];
 
 								Merge(donor, accretor);
-								
+#ifdef SEVN
+								if (donor->StellarEvolution != nullptr && accretor->StellarEvolution != nullptr) {
+									fprintf(stdout, "After Merge... Donor (PID: %d). Mass: %e Msun,  StellarEvolution->get_zams: %e Msun\n", donor->PID, donor->Mass*mass_unit, donor->StellarEvolution->get_zams());
+									fprintf(stdout, "After Merge... Accretor (PID: %d). Mass: %e Msun, StellarEvolution->get_zams: %e Msun\n", accretor->PID, accretor->Mass*mass_unit, accretor->StellarEvolution->get_zams());
+									fprintf(stdout, "Donor: amiempty(): %d\n", donor->StellarEvolution->amiempty());
+									fprintf(stdout, "Accretor: amiempty(): %d\n", accretor->StellarEvolution->amiempty());
+									fflush(stdout);
+								}
+#endif
 							}
 							else { // from NewFBInitialization3
 
@@ -847,7 +855,15 @@ void RootRoutines() {
 								}
 
 								Merge(donor, accretor);
-
+#ifdef SEVN
+								if (donor->StellarEvolution != nullptr && accretor->StellarEvolution != nullptr) {
+									fprintf(stdout, "After Merge... Donor (PID: %d). Mass: %e Msun,  StellarEvolution->get_zams: %e Msun\n", donor->PID, donor->Mass*mass_unit, donor->StellarEvolution->get_zams());
+									fprintf(stdout, "After Merge... Accretor (PID: %d). Mass: %e Msun, StellarEvolution->get_zams: %e Msun\n", accretor->PID, accretor->Mass*mass_unit, accretor->StellarEvolution->get_zams());
+									fprintf(stdout, "Donor: amiempty(): %d\n", donor->StellarEvolution->amiempty());
+									fprintf(stdout, "Accretor: amiempty(): %d\n", accretor->StellarEvolution->amiempty());
+									fflush(stdout);
+								}
+#endif
 								int rank = CMPtclWorker[ptcl->ParticleIndex];
 								queue.task = MergeManyBody;
 								queue.pid = ptcl->ParticleIndex;
@@ -872,9 +888,10 @@ void RootRoutines() {
 
 						for (int j=0; j < ptcl->NumberOfMember; j++) {
 							particles[ptcl->Members[j]].CMPtclIndex = -1;
-							if (particles[ptcl->Members[j]].Mass == 0.0) {
+							if (particles[ptcl->Members[j]].Mass < 0.0) {
 #ifdef SEVN
 								Particle* ptcl_erased = &particles[ptcl->Members[j]];
+								fprintf(stdout, "ptcl_erased... PID: %d\n", ptcl_erased->PID);
 								if (ptcl_erased->StellarEvolution != nullptr) {
 
 									auto it = SEVNList.begin();
@@ -892,6 +909,7 @@ void RootRoutines() {
 									ptcl_erased->StellarEvolution = nullptr;
 									fprintf(stdout, "Merger induced zero mass particle (PID: %d) SEVN memory is free now\n", ptcl_erased->PID);
 								}
+								fflush(stdout);
 #endif
 								continue;
 							}
@@ -1861,7 +1879,7 @@ void getRegularList(std::multimap<ULL,int>& RegularMap, std::unordered_set<int>&
 
 		auto it = RegularMap.begin();
 		while (it != RegularMap.end()) {
-			if (particles[it->second].Mass != 0) {
+			if (particles[it->second].Mass > 0) {
 				it++;
 			}
 			else {
@@ -1913,7 +1931,7 @@ void getRegularList(std::multimap<ULL,int>& RegularMap, std::vector<int>& Regula
 
 		auto it = RegularMap.begin();
 		while (it != RegularMap.end()) {
-			if (particles[it->second].Mass != 0) {
+			if (particles[it->second].Mass > 0) {
 				it++;
 			}
 			else {
