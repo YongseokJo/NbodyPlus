@@ -591,12 +591,17 @@ void Merge(Particle* p1, Particle* p2) { // Stellar merger
     fflush(mergerout);
     fflush(stdout);
 #else
-        p1->radius = 2.25461e-8/position_unit*pow(p1->Mass*mass_unit, 1./3); // stellar radius in code unit
-
         p1->dm = mcm - p1->Mass;
         p2->dm = -p2->Mass;
         p1->Mass = mcm;
         p2->Mass = -1.0;
+        p1->radius = 2.25461e-8/position_unit*pow(p1->Mass*mass_unit, 1./3); // stellar radius in code unit
+
+        fprintf(mergerout, "---------------Merger remnant properties---------------\n");
+        fprintf(mergerout, "Position (pc) - x:%e, y:%e, z:%e, \n", p1->Position[0]*position_unit, p1->Position[1]*position_unit, p1->Position[2]*position_unit);
+        fprintf(mergerout, "Velocity (km/s) - vx:%e, vy:%e, vz:%e, \n", p1->Velocity[0]*velocity_unit/yr*pc/1e5, p1->Velocity[1]*velocity_unit/yr*pc/1e5, p1->Velocity[2]*velocity_unit/yr*pc/1e5);
+        fprintf(mergerout, "Mass (Msol) - %e, \n", p1->Mass*mass_unit);
+        fprintf(mergerout, "---------------------END-OF-MERGER---------------------\n\n");
     }
     fflush(mergerout);   
 #endif

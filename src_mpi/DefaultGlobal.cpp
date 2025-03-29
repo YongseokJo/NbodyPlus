@@ -119,7 +119,7 @@ void DefaultGlobal() {
 		c_args.push_back(&arg[0]);
 	}
 
-	sevnio = new IO;
+	sevnio = new IO; // (SEVN Query) We should initialize sevnio only once. Here in Abyss, and somewhere else in Enzo by EW 2025.3.27
 	sevnio->load(c_args.size(), c_args.data());
 #endif
 
