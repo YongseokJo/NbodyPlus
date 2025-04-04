@@ -12,6 +12,8 @@
 #include "star.h" // Eunwoo added for SEVN
 #endif
 
+extern double InitialNeighborRadius;
+
 enum class BinaryInterruptState:int {
 	none = 0, 
 	form = 1, 
@@ -153,7 +155,7 @@ struct Particle {
 		//this->NextParticleInEnzo = NextParticleInEnzo;
 		this->CurrentTimeReg		= 0;
 		this->CurrentTimeIrr		= 0;
-		this->RadiusOfNeighbor		= ACRadius*ACRadius;
+		this->RadiusOfNeighbor		= InitialNeighborRadius*InitialNeighborRadius;
 		//this->RadiusOfNeighbor	= 1;
 		//this->RadiusOfNeighbor	= 0;
 		this->NumberOfNeighbor		= 0;

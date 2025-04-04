@@ -1,32 +1,47 @@
 ## This is an ABYSS code simulating self-consistent gravity for stars and black holes.
 # How to run this code
 
-> `nbodyplus.exe -f ic.dat -dtdump 1e6 -tend 1e9 -d output`  
+> `e.g., abyss.exe -p config.txt`  
 <pre>
--dt    : time at which a simulations outputs snapshots in yr  
--tend  : time where a simulation ends in yr  
--d     : output file name  
+-c|--config [name of a configuration (parameter) file]
 </pre>
 
+>`structure of a configuration file`
+<pre>
+Filename        = [name of initial condition]
+eta             = [constant for the timestepper]
+FixNumNeighbor  = [number of neighbors (N^(1/2) is recommended)]
+InitialRadius   = [initial radius of neighbor (in pc)]
+StopTime        = [duration of simulations (in yr)]
+dtOutput        = [frequency of output (in yr)]
+OutputDirectory = [name of output directory]
+</pre>
+
+# How to compile this code
+CUDA is mendatory as of now.
 
 ## On-going Projects
-- GPU optimization by Minyong Jung & Yongseok Jo
-- Few-body dynamics by Eunwoo Chung
+- GPU optimization by Minyong Jung
+- Few-body dynamics & Post-Newtonian treatment by Eunwoo Chung
+- CPU parallelization by Yongseok Jo
+- Integration with a hydrodynamic code (Enzo-Abyss) by Yongseok Jo
 
 ## Future Projects
-- CPU parallelization and vector optimization
-- Post-newtonian for black hole
 - Tidal disruption for black hole
 - Gravitational wave
 - X-ray Binary (XRB)
 - Cosmic ray
+- Developement of engines for acceleration computation
+
+For these projects, if interested, please feel free to contact Yongseok Jo (g.kerex@gmail.com).
   
 
 ## Contributions ###
 * Yongseok Jo     @ Columbia University
-* Seoyoung Kim    @ University of Wisconsin-Madison
-* Minyong Jung    @ Seoul National University
 * Eunwoo Chung    @ Seoul National Univeristy
+* Minyong Jung    @ Seoul National University
+* Seoyoung Kim    @ University of Wisconsin-Madison
+
 
 ### Thanks to
 * Ji-hoon Kim    @ Seoul National University
@@ -36,4 +51,4 @@
 
 Yongseok Jo @ [yj2812@columbia.edu](mailto:yj2812@columbia.edu)
 
-EnzoN repository : [https://github.com/YongseokJo/enzo-nbody](https://github.com/YongseokJo/enzo-nbody)
+Enzo-Abyss repository : [https://github.com/YongseokJo/enzo-nbody](https://github.com/YongseokJo/enzo-nbody)

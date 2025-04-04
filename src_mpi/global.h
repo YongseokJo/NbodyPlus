@@ -36,6 +36,10 @@ extern int LastParticleIndex;
 extern int NumberOfParticle;
 extern int NewPID;
 
+extern int FixNumNeighbor;
+extern double InitialNeighborRadius;
+
+
 // Task
 const int TASK_TAG = 1;
 const int PTCL_TAG = 2;
@@ -51,6 +55,7 @@ extern ULL NextRegTimeBlock;
 extern int time_block;
 extern double time_step;
 extern ULL block_max;
+extern double eta;
 
 
 extern double binary_time;
@@ -74,6 +79,7 @@ extern bool IsOutput;
 extern double outputTime;
 extern int outNum;
 extern double outputTimeStep;
+extern char* config_file;
 
 extern FILE* binout;
 extern FILE* mergerout;

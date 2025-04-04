@@ -53,7 +53,7 @@ ifdef USE_CUDA
 endif
 
 # Executable name
-EXEC = abyss_mpi.exe
+EXEC = abyss.exe
 
 # Main target
 all: $(EXEC)

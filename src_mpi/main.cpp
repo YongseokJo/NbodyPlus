@@ -75,7 +75,7 @@ int main(int argc, char *argv[]) {
 	*/
 
 	/* Input options */
-	//Parser(argc, argv);
+	Parser(argc, argv);
 	readParameterFile();
 
 	// Write Particles
