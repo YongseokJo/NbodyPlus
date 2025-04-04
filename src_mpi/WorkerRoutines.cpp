@@ -59,7 +59,7 @@ void WorkerRoutines() {
 			case RegForce: // Regular Acceleration
 				//std::cout << "RegCal start " << MyRank << std::endl;
 				MPI_Recv(&ptcl_id,   1, MPI_INT,    ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
-				// MPI_Recv(&next_time, 1, MPI_DOUBLE, ROOT, TIME_TAG, MPI_COMM_WORLD, &status); // commented out by EW 2025.3.3 as this is unnecessary
+				MPI_Recv(&next_time, 1, MPI_DOUBLE, ROOT, TIME_TAG, MPI_COMM_WORLD, &status); // commented out by EW 2025.3.3 as this is unnecessary
 
 				particles[ptcl_id].computeAccelerationReg();
 				//ComputeAcceleration(ptcl_id, next_time);

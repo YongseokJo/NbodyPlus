@@ -257,7 +257,8 @@ void makePrimordialGroup(Particle* ptclCM) {
 		ptclCM->Mass = ptclGroup->sym_int.particles.cm.Mass;
 	}
 
-	ptclCM->RadiusOfNeighbor = InitialNeighborRadius*InitialNeighborRadius;
+	// ptclCM->RadiusOfNeighbor = InitialNeighborRadius*InitialNeighborRadius;
+	ptclCM->RadiusOfNeighbor = particles[ptclCM->NewNeighbors[0]].RadiusOfNeighbor;
 
 	fprintf(workerout, "The ID of CM is %d.\n",ptclCM->PID);
 

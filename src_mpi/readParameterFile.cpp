@@ -86,7 +86,8 @@ int readParameterFile() {
 		foutput			   = config.getChar("OutputDirectory");
 		eta			   = config.getDouble("eta");
 		FixNumNeighbor  = config.getInt("FixNumNeighbor");
-		InitialNeighborRadius	= config.getDouble("InitialNeighborRadius");
+		InitialNeighborRadius	= config.getDouble("InitialRadius");
+		InitialNeighborRadius /= position_unit; // converting unit from pc to code unit
 
 
 		EnzoTimeStep   = endTime/1e10; // endTime should be Myr
