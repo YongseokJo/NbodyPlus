@@ -8,9 +8,16 @@
 #define MaxNumberOfCommunication 10000
 
 
+
+#define FixNumNeighbor 412 // 500 -> 100 modified by EW 2025.1.11
+#define MaxNumNeighbor 2000 // 10000 -> 2000 modified by EW 2025.1.11
+#define ACRadius 0.0105634 // 0.013 // 0.11 -> 0.05 modified by EW 2025.1.11
+
+
 //#define FixNumNeighbor 100 // 500 -> 100 modified by EW 2025.1.11
-#define MaxNumNeighbor 1000 // 10000 -> 2000 modified by EW 2025.1.11
+//#define MaxNumNeighbor 1000 // 10000 -> 2000 modified by EW 2025.1.11
 //#define ACRadius 0.013 // 0.11 -> 0.05 modified by EW 2025.1.11
+
 
 
 // SDAR

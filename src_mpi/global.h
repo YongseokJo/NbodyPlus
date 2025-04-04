@@ -9,7 +9,7 @@
 
 #ifdef SEVN
 #include "IO.h"
-#include <unordered_set>
+#include <map>
 #endif
 
 
@@ -86,12 +86,11 @@ extern FILE* mergerout;
 #ifdef SEVN
 extern FILE* SEVNout;
 extern IO* sevnio;
-extern std::unordered_set<int> SEVNList;
+extern std::multimap<double, int> SEVNList;
 #endif
 extern FILE* workerout;
 
-#ifdef PerformanceTrace
-// Performance trace
+#ifdef PERFORMANCETRACE
 extern Performance performance;
 #endif
 

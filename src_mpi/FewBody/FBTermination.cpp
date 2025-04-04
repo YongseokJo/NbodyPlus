@@ -48,7 +48,7 @@ void FBTermination(Particle* ptclCM) {
 	for (int i=0; i<ptclCM->NumberOfMember; i++) {
 		members = &particles[ptclCM->Members[i]];
 
-		if (members->Mass == 0.0)
+		if (members->Mass < 0.0)
 			continue;
 
 		NumberOfParticle++; // by EW 2025.1.20

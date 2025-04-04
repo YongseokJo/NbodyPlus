@@ -26,7 +26,7 @@ void CalculateAccelerationOnDevice(int *NumTargetTotal, int *h_target_list, doub
  */
 void calculateRegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueScheduler &queue_scheduler){
 
-#ifdef PerformanceTrace
+#ifdef PERFORMANCETRACE
 	std::chrono::high_resolution_clock::time_point start_point_routine;
 	std::chrono::high_resolution_clock::time_point end_point_routine;
 #endif
@@ -108,7 +108,7 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueSch
 		}
 	}
 
-#ifdef PerformanceTrace
+#ifdef PERFORMANCETRACE
 	start_point_routine = std::chrono::high_resolution_clock::now();
 #endif
 
@@ -128,7 +128,7 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueSch
 	std::cout << "sendAllParticlesToGPU ended" << std::endl;
 #endif
 
-#ifdef PerformanceTrace
+#ifdef PERFORMANCETRACE
 	end_point_routine = std::chrono::high_resolution_clock::now();
 	performance.RegularSendAllParticlesToGPU +=
 		std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
@@ -162,7 +162,7 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueSch
 #endif
 */
 
-#ifdef PerformanceTrace
+#ifdef PERFORMANCETRACE
 	start_point_routine = std::chrono::high_resolution_clock::now();
 #endif
 
@@ -188,7 +188,7 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueSch
 	std::cout << "CalculateAccelerationOnDevice ended" << std::endl;
 #endif
 
-#ifdef PerformanceTrace
+#ifdef PERFORMANCETRACE
 	end_point_routine = std::chrono::high_resolution_clock::now();
 	performance.RegularGPU +=
 		std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
@@ -230,7 +230,7 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueSch
 	std::cout << std::endl;
 	*/
 
-#ifdef PerformanceTrace
+#ifdef PERFORMANCETRACE
 	start_point_routine = std::chrono::high_resolution_clock::now();
 #endif
 
@@ -287,7 +287,7 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueSch
 	std::cout << "Adjust Regular Gravity ended" << std::endl;
 #endif
 
-#ifdef PerformanceTrace
+#ifdef PERFORMANCETRACE
 	end_point_routine = std::chrono::high_resolution_clock::now();
 	performance.RegularAdjust +=
 		std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();

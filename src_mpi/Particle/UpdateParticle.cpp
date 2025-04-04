@@ -399,12 +399,22 @@ void Particle::calculateTimeStepReg() {
 
 	TimeStepReg  = static_cast<double>(pow(2, TimeLevelReg));
 	TimeBlockReg = static_cast<ULL>(pow(2, TimeLevelReg-time_block));
-
+// /* // original code by EW 2025.3.17
 	if (TimeStepReg*EnzoTimeStep*1e4 < 1e-7) {
 		fprintf(stderr, "PID: %d, TimeStep = %.3e, TimeStepTmp0 = %.3e\n",
 			 	PID, TimeStepReg*EnzoTimeStep*1e4, static_cast<double>(pow(2, TimeLevelTmp0))*EnzoTimeStep*1e4);
 		fflush(stderr);
 	}
+// */
+/* // modified code by EW 2025.3.17
+	if (TimeStepReg*EnzoTimeStep*1e4 < 1e-5) {
+		while (TimeStepReg*EnzoTimeStep*1e4<1e-5) {
+			TimeLevelReg++;
+			TimeStepReg  = static_cast<double>(pow(2, TimeLevelReg));
+			TimeBlockReg = static_cast<ULL>(pow(2, TimeLevelReg-time_block));
+		}
+	}
+*/
 
 	if (CurrentTimeReg+TimeStepReg > 1 && CurrentTimeReg != 1.0) {
 		TimeStepReg = 1 - CurrentTimeReg;

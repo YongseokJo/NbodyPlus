@@ -208,10 +208,25 @@ int writeParticle(double current_time, int outputNum) {
     // Write particle data to the file
 	Particle *ptcl;
 	double pos[Dim], vel[Dim];
+
+	// for performance test by EW 2025.3.13
+	int Index_minIrr, Index_minReg;
+	double minTimeStepIrr = 1.;
+	double minTimeStepReg = 1.;
+
 	for (int i=0; i<=LastParticleIndex; i++) {
 		ptcl = &particles[i];
 
 		if (!ptcl->isActive) continue;
+
+		if (ptcl->TimeStepIrr < minTimeStepIrr) {
+			Index_minIrr = ptcl->ParticleIndex;
+			minTimeStepIrr = ptcl->TimeStepIrr;
+		}
+		if (ptcl->TimeStepReg < minTimeStepReg) {
+			Index_minReg = ptcl->ParticleIndex;
+			minTimeStepReg = ptcl->TimeStepReg;
+		}
 
 		ptcl->predictParticleSecondOrder(current_time - ptcl->CurrentTimeIrr, pos, vel);
 
@@ -234,10 +249,32 @@ int writeParticle(double current_time, int outputNum) {
 
 	std::cout << "Data written to output.txt successfully!" << std::endl;
 
-#ifdef PerformanceTrace
+#ifdef PERFORMANCETRACE
 	if (outputNum != 0) {
 		std::cout << "--------------Performance-Summary--------------" << std::endl;
 		std::cout << "Simulation Time: " << current_time*EnzoTimeStep*1e10/1e6 << " Myr" << std::endl;
+
+		Particle* members = &particles[Index_minIrr];
+		fprintf(stdout, "Particle Info with minimum TimeStepIrr...\n");
+		fprintf(stdout, "PID: %d. Position (pc) - x:%e, y:%e, z:%e, \n", members->PID, members->Position[0]*position_unit, members->Position[1]*position_unit, members->Position[2]*position_unit);
+		fprintf(stdout, "PID: %d. Velocity (km/s) - vx:%e, vy:%e, vz:%e, \n", members->PID, members->Velocity[0]*velocity_unit/yr*pc/1e5, members->Velocity[1]*velocity_unit/yr*pc/1e5, members->Velocity[2]*velocity_unit/yr*pc/1e5);
+		fprintf(stdout, "PID: %d. Mass (Msol) - %e, \n", members->PID, members->Mass*mass_unit);
+		fprintf(stdout, "PID: %d. NumNeighbor: %d, ACRadius: %e (pc)\n", members->PID, members->NumberOfNeighbor, sqrt(members->RadiusOfNeighbor)*position_unit);
+        fprintf(stdout, "PID: %d. Total Acceleration - ax:%e, ay:%e, az:%e \n", members->PID, members->a_tot[0][0], members->a_tot[1][0], members->a_tot[2][0]);
+		fprintf(stdout, "PID: %d. Reg Acceleration - ax:%e, ay:%e, az:%e, \n", members->PID, members->a_reg[0][0], members->a_reg[1][0], members->a_reg[2][0]);
+		fprintf(stdout, "PID: %d. Irr Acceleration - ax:%e, ay:%e, az:%e, \n", members->PID, members->a_irr[0][0], members->a_irr[1][0], members->a_irr[2][0]);
+		fprintf(stdout, "PID: %d. Time Steps (Myr) - irregular:%e, regular:%e \n", members->PID, members->TimeStepIrr*EnzoTimeStep*1e4, members->TimeStepReg*EnzoTimeStep*1e4);
+
+		members = &particles[Index_minReg];
+		fprintf(stdout, "Particle Info with minimum TimeStepReg...\n");
+		fprintf(stdout, "PID: %d. Position (pc) - x:%e, y:%e, z:%e, \n", members->PID, members->Position[0]*position_unit, members->Position[1]*position_unit, members->Position[2]*position_unit);
+		fprintf(stdout, "PID: %d. Velocity (km/s) - vx:%e, vy:%e, vz:%e, \n", members->PID, members->Velocity[0]*velocity_unit/yr*pc/1e5, members->Velocity[1]*velocity_unit/yr*pc/1e5, members->Velocity[2]*velocity_unit/yr*pc/1e5);
+		fprintf(stdout, "PID: %d. Mass (Msol) - %e, \n", members->PID, members->Mass*mass_unit);
+		fprintf(stdout, "PID: %d. NumNeighbor: %d, ACRadius: %e (pc)\n", members->PID, members->NumberOfNeighbor, sqrt(members->RadiusOfNeighbor)*position_unit);
+        fprintf(stdout, "PID: %d. Total Acceleration - ax:%e, ay:%e, az:%e \n", members->PID, members->a_tot[0][0], members->a_tot[1][0], members->a_tot[2][0]);
+		fprintf(stdout, "PID: %d. Reg Acceleration - ax:%e, ay:%e, az:%e, \n", members->PID, members->a_reg[0][0], members->a_reg[1][0], members->a_reg[2][0]);
+		fprintf(stdout, "PID: %d. Irr Acceleration - ax:%e, ay:%e, az:%e, \n", members->PID, members->a_irr[0][0], members->a_irr[1][0], members->a_irr[2][0]);
+		fprintf(stdout, "PID: %d. Time Steps (Myr) - irregular:%e, regular:%e \n", members->PID, members->TimeStepIrr*EnzoTimeStep*1e4, members->TimeStepReg*EnzoTimeStep*1e4);
 
 		std::cout << std::fixed << std::setprecision(2);
 
@@ -286,9 +323,15 @@ int writeParticle(double current_time, int outputNum) {
 		std::cout << "SkipList Update: " << performance.SkipListUpdate*1e-9 << " s";
 		std::cout << " (" << 100.0 * performance.SkipListUpdate / performance.WholeRoutine << " %)" << std::endl;
 		performance.SkipListUpdate = 0;
+#ifdef MULTIMAP
+		std::cout << "RegularMap: " << performance.RegularMap*1e-9 << " s";
+		std::cout << " (" << 100.0 * performance.RegularMap / performance.WholeRoutine << " %)" << std::endl;
+		performance.RegularMap = 0;
+#else
 		std::cout << "UpdateNextRegTime: " << performance.UpdateNextRegTime*1e-9 << " s";
 		std::cout << " (" << 100.0 * performance.UpdateNextRegTime / performance.WholeRoutine << " %)" << std::endl;
 		performance.UpdateNextRegTime = 0;
+#endif
 
 #ifdef SEVN
 		std::cout << "Stellar Evolution: " << performance.StellarEvolution*1e-9 << " s";
