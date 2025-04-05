@@ -227,15 +227,6 @@ void Particle::computeAccelerationIrr() {
 		this->a_tot[dim][2] = this->a_reg[dim][2] + this->a_irr[dim][2];
 		this->a_tot[dim][3] = this->a_reg[dim][3] + this->a_irr[dim][3];
 	}
-
-
-	/*
-	if (this->NumberOfNeighbor == 0) {
-		//CurrentTimeIrr += TimeStepIrr;
-		std::cout << "Error: No neighbor in Irregular force!!" << std::endl;
-		return;
-	}
-	*/
 }
 
 
@@ -288,9 +279,9 @@ void Particle::computeAccelerationReg() {
 	 * Regular Acceleartion Calculation
 	 ********************************************************/
 	if (this->NumberOfNeighbor == 0)
-		this->predictParticleSecondOrder(this->TimeStepReg, pos, vel);
+		this->predictParticleSecondOrder(new_time-ptcl->CurrentTimeReg, pos, vel);
 	else
-		this->predictParticleSecondOrder(0, pos, vel);
+		this->predictParticleSecondOrder(new_time-ptcl->CurrentTimeIrr, pos, vel);
 
 
 	for (int i=0; i<=global_variable->LastParticleIndex; i++) {
@@ -405,57 +396,6 @@ void Particle::computeAccelerationReg() {
 			this->a_tot[dim][3] = this->a_reg[dim][3];
 		}
 	}
-
-
-
-	/*
-	std::cout << "\ntotal acceleartion\n" << std::flush;
-	for (int order=0; order<HERMITE_ORDER; order++) {
-		for (int dim=0; dim<Dim; dim++)	 {
-			std::cout << a_tot[dim][order] << " ";
-		}
-		std::cout << std::endl;
-	} // endfor dim
-		//
-	std::cout << "\nreg acceleartion\n" << std::flush;
-	for (int order=0; order<HERMITE_ORDER; order++) {
-		for (int dim=0; dim<Dim; dim++)	 {
-			std::cout << a_reg[dim][order] << " ";
-		}
-		std::cout << std::endl;
-	} // endfor dim
-	std::cout << std::endl;
-
-	std::cout << "\nirr acceleartion\n" << std::flush;
-	for (int order=0; order<HERMITE_ORDER; order++) {
-		for (int dim=0; dim<Dim; dim++)	 {
-			std::cout << a_irr[dim][order] << " ";
-		}
-		std::cout << std::endl;
-	} // endfor dim
-	std::cout << std::endl;
-
-	*/
-	// *position_unit/time_unit/time_unit
-
-		 //std::cout << "\nIrregular Calculation\n" << std::flush;
-		 //std::cout <<  "3. a_irr= "<< a_irr[0][0]<< ',' << a_irr[1][0]\
-		 //<< ',' << a_irr[2][0] << std::endl;
-		 //std::cout <<  "4. a_irr= "<< a_irr[0][0]<< ',' << a_irr[1][0]\
-		 << ',' << a_irr[2][0] << std::endl;
-		 //std::cout <<  "5. a_irr= "<< a_irr[0][0]<< ',' << a_irr[1][0]\
-		 << ',' << a_irr[2][0] << std::endl;
-
-	// update the current irregular time and irregular time steps
-	//this->updateParticle((CurrentTimeIrr+TimeStepIrr)*EnzoTimeStep, a_irr);
-	//this->updateParticle(CurrentTimeIrr, CurrentTimeIrr+TimeStepIrr, a_tot);
-	//this->correctParticleFourthOrder(CurrentTimeIrr, CurrentTimeIrr+TimeStepIrr, a_irr);
-
-
-	//this->updateParticle();
-	//CurrentTimeIrr += TimeStepIrr; // in sorting
-	//this->calculateTimeStepIrr(a_tot, a_irr); // calculate irregular time step based on total force
-
 }
 
 
@@ -464,39 +404,7 @@ void Particle::computeAccelerationReg() {
 // Modified by EW 2025.1.30
 
 void Particle::updateRegularParticleCuda(int *NewNeighborsGPU, int NewNumberOfNeighborGPU, double *new_a, double *new_adot) {
-/*
-	std::cerr <<  "in here!" << std::endl;
-	int NeighborIndex;
-	std::cerr <<  "Compute: MyPID=" <<  this->PID;
-	std::cerr <<  "(" << NumberOfNeighbor << ") " << std::endl;
-	std::cerr <<  "NeighborIndex = ";
-	for (int j=0;  j<NumberOfNeighbor; j++) {
-		NeighborIndex = Neighbors[j];  // gained neighbor particle (in next time list)
-		std::cerr <<  NeighborIndex << "  (" << particles[NeighborIndex].PID << "), ";
-		//std::cout <<  particles[NeighborIndex].PID << ", ";
-	}
-	std::cerr << std::endl;
 
-	std::cerr <<  "(" << NewNumberOfNeighborGPU << ") " << std::endl;
-	std::cerr <<  "NewNeighborIndex = ";
-	for (int j=0;  j<NewNumberOfNeighborGPU; j++) {
-		NeighborIndex = NewNeighborsGPU[j];  // gained neighbor particle (in next time list)
-		std::cerr <<  NeighborIndex << "  (" << particles[NeighborIndex].PID << "), ";
-		//std::cout <<  particles[NeighborIndex].PID << ", ";
-	}
-	std::cerr << std::endl;
-*/
-/*
-	if (this->PID == 28150) {
-		std::cerr << "NumberOfNeighbor: " << this->NumberOfNeighbor << "\n" << "NewNumberOfNeighborGPU: " << NewNumberOfNeighborGPU << std::endl;
-		for (int j=0;  j<NewNumberOfNeighborGPU; j++) {
-			int NeighborIndex = NewNeighborsGPU[j];  // gained neighbor particle (in next time list)
-			std::cerr <<  NeighborIndex << "  (" << particles[NeighborIndex].PID << "), ";
-			//std::cout <<  particles[NeighborIndex].PID << ", ";
-		}
-		std::cerr << std::endl << std::endl;
-	}
-*/
 	double new_time = this->CurrentTimeReg+this->TimeStepReg;
 	double pos[Dim], vel[Dim];
 	if (this->NumberOfNeighbor == 0)
