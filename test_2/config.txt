@@ -1,0 +1,7 @@
+Filename        = nbody.dat
+eta             = 0.01
+FixNumNeighbor  = 412
+InitialRadius   = 0.04225
+StopTime        = 1e6
+dtOutput        = 1e4
+OutputDirectory = output
