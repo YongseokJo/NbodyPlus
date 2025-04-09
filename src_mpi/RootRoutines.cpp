@@ -20,6 +20,7 @@ void InitialAssignmentOfTasks(std::vector<int>& data, double next_time, int NumT
 void InitialAssignmentOfTasks(std::vector<int>& data, int NumTask, int TAG);
 void InitialAssignmentOfTasks(int data, int NumTask, int TAG);
 void InitialAssignmentOfTasks(int* data, int NumTask, int TAG);
+void InitialAssignmentOfTasks(Queue queue, int NumTask, int TAG);
 void broadcastFromRoot(double &data);
 void broadcastFromRoot(ULL &data);
 void broadcastFromRoot(int &data);
@@ -339,12 +340,15 @@ void RootRoutines() {
 		std::cout << "Time Step synchronization." << std::endl;
 		task=TimeSync;
 		completed_tasks = 0; total_tasks = NumberOfWorker;
-		InitialAssignmentOfTasks(task, NumberOfWorker, TASK_TAG);
+		Queue queue = {task, -1, -1.0};
+		InitialAssignmentOfTasks(queue, NumberOfWorker, QUEUE_TAG);
 		//MPI_Waitall(NumberOfCommunication, requests, statuses);
 		//NumberOfCommunication = 0;
 		broadcastFromRoot(time_block);
 		broadcastFromRoot(block_max);
 		broadcastFromRoot(time_step);
+		fprintf(stdout, "TimeSync broadcasd done.\n");
+		fflush(stdout);
 		//MPI_Win_sync(win);  // Synchronize memory
 		//MPI_Barrier(shared_comm);
 		while (completed_tasks < total_tasks) {
@@ -484,7 +488,9 @@ void RootRoutines() {
 			// end if the global time exceeds the end time
 			if (global_time >= 1) {
 				task=Ends;
-				InitialAssignmentOfTasks(task, NumberOfWorker, TASK_TAG);
+				Queue queue = {task, -1, -1.0};
+				InitialAssignmentOfTasks(queue, NumberOfWorker, QUEUE_TAG);
+				MPI_Type_free(&QueueType);
 				//MPI_Waitall(NumberOfCommunication, requests, statuses);
 				//NumberOfCommunication = 0;
 				std::cout << EnzoTimeStep << std::endl;
@@ -562,6 +568,7 @@ void RootRoutines() {
 					skiplist->deleteFirstNode();
 					continue;
 				}
+				// fprintf(stdout, "N: %d\n", ThisLevelNode->ParticleList.size());
 				next_time     = particles[ThisLevelNode->ParticleList[0]].CurrentTimeIrr\
 									 	    + particles[ThisLevelNode->ParticleList[0]].TimeStepIrr;
 
@@ -1298,7 +1305,8 @@ void RootRoutines() {
 				// end if the global time exceeds the end time
 				if (current_time_irr >= 1) {
 					task=-100;
-					InitialAssignmentOfTasks(task, NumberOfWorker, TASK_TAG);
+					Queue queue = {task, -1, -1.0};
+					InitialAssignmentOfTasks(Queue, NumberOfWorker, QUEUE_TAG);
 					MPI_Waitall(NumberOfCommunication, requests, statuses);
 					NumberOfCommunication = 0;
 					std::cout << EnzoTimeStep << std::endl;

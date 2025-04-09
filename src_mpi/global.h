@@ -28,6 +28,7 @@ const int ROOT = 0;
 extern int NumberOfCommunication;
 extern GlobalVariable *global_variable;
 extern GlobalVariable *global_variable_original;
+extern MPI_Datatype QueueType;
 
 extern int *ActiveIndexToOriginalIndex_orginal;
 extern int *ActiveIndexToOriginalIndex;
@@ -44,6 +45,7 @@ extern double InitialNeighborRadius;
 const int TASK_TAG = 1;
 const int PTCL_TAG = 2;
 const int TIME_TAG = 3;
+const int QUEUE_TAG = 4;
 const int ANY_TAG = 100;
 const int TERMINATE_TAG = 666;
 extern int Task[NumberOfTask];

@@ -6,13 +6,14 @@
 #include "GlobalVariable.h"
 #include "global.h"
 #include <mpi.h>
+#include "Queue.h"
 
 
 template <typename T>
 void InitialAssignmentOfTasks(T data, int NumTask);
 
 
-
+MPI_Datatype createQueueType();
 
 void initializeMPI(int argc, char *argv[]) {
 	/* MPI Initialization */
@@ -30,6 +31,8 @@ void initializeMPI(int argc, char *argv[]) {
 		std::cerr << "This program requires at least 2 processes.\n";
 		MPI_Finalize();
 	}
+
+	QueueType = createQueueType();
 	/*
 	// comm for each node
 	MPI_Comm shmcomm;
@@ -114,6 +117,12 @@ void InitialAssignmentOfTasks(int data, int NumTask, int TAG) {
 	//fflush(stderr);
 }
 
+void InitialAssignmentOfTasks(Queue queue, int NumTask, int TAG) {
+	for (int i=0; i<NumberOfWorker; i++) {
+		if (i >= NumTask) break;
+		MPI_Send(&queue, 1, QueueType, i+1, TAG, MPI_COMM_WORLD);
+	}
+}
 
 
 
@@ -151,3 +160,20 @@ void FurtherAssignmentOfTasks() {
 
 }
 
+MPI_Datatype createQueueType() {
+    MPI_Datatype QueueType;
+    int block_lengths[3] = {1, 1, 1}; // Number of elements in each field
+    MPI_Aint offsets[3];
+    MPI_Datatype types[3] = {MPI_INT8_T, MPI_INT, MPI_DOUBLE}; // Match the types in the struct
+
+    // Calculate offsets
+    offsets[0] = offsetof(Queue, task);
+    offsets[1] = offsetof(Queue, pid);
+    offsets[2] = offsetof(Queue, next_time);
+
+    // Create the struct datatype
+    MPI_Type_create_struct(3, block_lengths, offsets, types, &QueueType);
+    MPI_Type_commit(&QueueType);
+
+    return QueueType;
+}

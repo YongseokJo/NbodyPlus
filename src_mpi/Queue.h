@@ -1,7 +1,9 @@
 #ifndef QUEUE_H
 #define QUEUE_H
 
-enum TaskName {
+#include <cstdint>
+
+enum TaskName : int8_t {
     IrrForce = 0,
     RegForce = 1,
     IrrUpdate = 2, 

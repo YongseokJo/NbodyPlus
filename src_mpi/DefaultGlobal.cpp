@@ -20,6 +20,7 @@ int NumberOfProcessor;
 int NumberOfWorker;
 int NumberOfCommunication;
 
+MPI_Datatype QueueType;
 
 GlobalVariable *global_variable;
 GlobalVariable *global_variable_original;

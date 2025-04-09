@@ -83,6 +83,10 @@ public:
         }
     }
 
+    void sendQueueforRegCuda(Worker *worker) {
+        worker->sendTask(_queue);
+    }
+
 
     void takeQueueRegularList(std::unordered_set<int> &queue_list) {
         _queue_list_ = queue_list;

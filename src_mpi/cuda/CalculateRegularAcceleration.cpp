@@ -245,6 +245,7 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueSch
 	// Adjust Regular Gravity
 	int i=0;
 	TaskName task=RegCuda;
+	Queue queue = {task, -1, -1.0};
 	queue_scheduler.initialize(RegCuda);
 	queue_scheduler.takeQueueRegularList(RegularList);
 	do
@@ -256,8 +257,11 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueSch
             if ((*worker)->NumberOfQueues > 0) // original
             {
 				//std::cout << "(REG_CUDA) My Rank =" << (*worker)->MyRank << std::endl;
-				MPI_Send(&task, 1, MPI_INT, (*worker)->MyRank, TASK_TAG, MPI_COMM_WORLD);
-				MPI_Send(&ActiveIndexToOriginalIndex[IndexList[i]], 1, MPI_INT, (*worker)->MyRank, PTCL_TAG, MPI_COMM_WORLD);
+				// queue_scheduler.sendQueueforRegCuda(*worker);
+				// MPI_Send(&task, 1, MPI_INT, (*worker)->MyRank, TASK_TAG, MPI_COMM_WORLD);
+				// MPI_Send(&ActiveIndexToOriginalIndex[IndexList[i]], 1, MPI_INT, (*worker)->MyRank, PTCL_TAG, MPI_COMM_WORLD);
+				queue.pid = ActiveIndexToOriginalIndex[IndexList[i]];
+				MPI_Send(&queue, 1, QueueType, (*worker)->MyRank, QUEUE_TAG, MPI_COMM_WORLD);
 				MPI_Send(&NumNeighborReceive[i], 1, MPI_INT, (*worker)->MyRank, 10, MPI_COMM_WORLD);
 				MPI_Send(&ACListReceive[i * MaxNumNeighbor], NumNeighborReceive[i], MPI_INT, (*worker)->MyRank, 11, MPI_COMM_WORLD);
 				MPI_Send(&AccRegReceive[i][0], 3, MPI_DOUBLE, (*worker)->MyRank, 12, MPI_COMM_WORLD);
