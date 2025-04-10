@@ -31,18 +31,8 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueSch
 	std::chrono::high_resolution_clock::time_point end_point_routine;
 #endif
 
-
-	// regIds are the list of positions of particles subject to regular force calculation in std::vector list particle
-
-	// variables for opening GPU
-	// const int buffer = 10;
-	// int numGpuOpen = NNB+buffer;
-	//const int NumPtclPerEachCalMax = 2048; // this also caps the number of particles computed each iteration
-	int NeighborIndex; // this size should coincide with number of threads
 	int ListSize = RegularList.size();
 	int *IndexList = new int[ListSize];
-
-	//int NumGpuCal;
 
 	// variables for saving variables to send to GPU
 	// only regular particle informations are stored here
@@ -54,22 +44,12 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueSch
 	CUDA_REAL (*AccRegReceive_f)[Dim];
 	CUDA_REAL (*AccRegDotReceive_f)[Dim];
 #endif 
-	//int (*ACListReceive)[MaxNumNeighbor];
 
-	//double* PotSend;
-	// int **ACListReceive;
+
 	int *ACListReceive;
 	int *NumNeighborReceive;
 	int MassFlag;
 
-
-	double a_tmp[Dim]{0}, adot_tmp[Dim]{0};
-	double da, dadot;
-	double a2, a3, da_dt2, adot_dt, dt2, dt3, dt4, dt5;
-
-
-	double DFR, FRD, SUM, AT3, BT2;
-	double DTR, DTSQ, DT2, DT6,DTSQ12, DTR13;
 
 	Particle *ptcl;
 
@@ -79,7 +59,6 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueSch
 
 	// need to make array to send to GPU
 	// allocate memory to the temporary variables
-	//PotSend         = new double[ListSize];
 	AccRegReceive    = new double[ListSize][Dim];
 	AccRegDotReceive = new double[ListSize][Dim];
 	AccIrr           = new double[ListSize][Dim];
@@ -91,11 +70,9 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueSch
 #endif 
 	NumNeighborReceive  = new int[ListSize];
 
-	// ACListReceive      = new int*[ListSize];
 	ACListReceive = new int[ListSize * MaxNumNeighbor];
 
 	for (int i=0; i<ListSize; i++) {
-		// ACListReceive[i] = new int[MaxNumNeighbor];
 		for (int dim=0; dim<Dim; dim++) {
 			AccRegReceive[i][dim]    = 0;
 			AccRegDotReceive[i][dim] = 0;
@@ -134,33 +111,6 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueSch
 		std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
 #endif
 	
-	
-	/*
-	for (int i=0; i<ListSize; i++) {
-		IndexList[i] = RegularList[i];
-	} // endfor copy info
-	*/
-
-
-	//std::cout <<  "Starting Calculation On Device ..." << std::endl;
-	// send information of all the particles to GPU
-	// includes prediction
-/*
-#ifdef time_trace
-	_time.reg_sendall.markStart();
-#endif
-
-	// Particles have been already at T_new through irregular time step
-
-#ifdef time_trace
-	_time.reg_sendall.markEnd();
-	_time.reg_sendall.getDuration();
-#endif
-
-#ifdef time_trace
-	_time.reg_gpu.markStart();
-#endif
-*/
 
 #ifdef PERFORMANCETRACE
 	start_point_routine = std::chrono::high_resolution_clock::now();
@@ -200,35 +150,7 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueSch
 			AccRegDotReceive[i][dim] = (CUDA_REAL) AccRegDotReceive_f[i][dim];
 		}
 	}
-	/*
-#ifdef time_trace
-	_time.reg_gpu.markEnd();
-	_time.reg_gpu.getDuration();
 
-	_time.reg_cpu1.markStart();
-#endif
-*/
-
-
-
-	/*
-#ifdef time_trace
-	_time.reg_cpu2.markEnd();
-	_time.reg_cpu2.getDuration();
-
-	_time.reg_cpu3.markStart();
-#endif
-*/
-
-
-
-/*
-	std::cout << "(REG_CUDA) RegularList, PID= ";
-	for (int i=0; i<RegularList.size(); i++) {
-		std::cout << RegularList[i]<< ", ";
-	}
-	std::cout << std::endl;
-	*/
 
 #ifdef PERFORMANCETRACE
 	start_point_routine = std::chrono::high_resolution_clock::now();
@@ -242,6 +164,29 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueSch
 	nvtxRangePushA("RegCuda");
 #endif
 
+	for (int i=0; i<ListSize; i++) {
+		ptcl = &particles[ActiveIndexToOriginalIndex[IndexList[i]]];
+
+		ptcl->NewNumberOfNeighbor = NumNeighborReceive[i];
+		for (int j=0; j<NumNeighborReceive[i]; j++) {
+			ptcl->NewNeighbors[j] = ACListReceive[i*MaxNumNeighbor + j];
+		} 
+		for (int j=0; j<Dim; j++) {
+			ptcl->a_irr[j][0] = AccRegReceive[i][j];		// Just temporarilly save new reg acc here!
+			ptcl->a_irr[j][1] = AccRegDotReceive[i][j];		// Just temporarilly save new reg acc here!
+		}
+	}
+
+	queue_scheduler.initialize(RegCuda);
+	queue_scheduler.takeQueueRegularList(RegularList);
+	do
+	{
+		queue_scheduler.assignQueueAutoRegularList();
+		queue_scheduler.runQueueAuto();
+		queue_scheduler.waitQueue(0); // blocking wait
+	} while (queue_scheduler.isComplete());
+
+/*
 	// Adjust Regular Gravity
 	int i=0;
 	TaskName task=RegCuda;
@@ -267,11 +212,6 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueSch
 				MPI_Send(&AccRegReceive[i][0], 3, MPI_DOUBLE, (*worker)->MyRank, 12, MPI_COMM_WORLD);
 				MPI_Send(&AccRegDotReceive[i][0], 3, MPI_DOUBLE, (*worker)->MyRank, 13, MPI_COMM_WORLD);
 				((*worker))->onDuty = true;
-				/*
-				(*worker)->CurrentQueue++;
-				(*worker)->CurrentQueue %= MAX_QUEUE;
-				(*worker)->NumberOfQueues--;
-				*/
                 worker = queue_scheduler.WorkersToGo.erase(worker);
 				i++;
             }
@@ -282,7 +222,7 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueSch
         }
 		queue_scheduler.waitQueue(0); // blocking wait
 	} while (queue_scheduler.isComplete());
-
+*/
 #ifdef NSIGHT
 	nvtxRangePop();
 #endif

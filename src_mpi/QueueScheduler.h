@@ -93,7 +93,7 @@ public:
         _total_queues = _queue_list_.size();
     }
 
-    void assignQueueRegularList() {
+    void assignQueueAutoRegularList() {
         if (_queue_list_.size() == 0)
             return;
         for (auto worker = _FreeWorkers.begin(); worker != _FreeWorkers.end();)

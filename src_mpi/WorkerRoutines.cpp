@@ -54,13 +54,13 @@ void WorkerRoutines() {
 
 			case RegForce: // Regular Acceleration
 
-				particles[ptcl_id].computeAccelerationReg();
+				ptcl = &particles[ptcl_id];
+				ptcl->computeAccelerationReg();
 				break;
 
 			case IrrUpdate: // Irregular Update Particle
 
 				ptcl = &particles[ptcl_id];
-
 				if (ptcl->NumberOfNeighbor != 0) // IAR modified
 					ptcl->updateParticle();
 				ptcl->CurrentBlockIrr = ptcl->NewCurrentBlockIrr;
@@ -91,11 +91,8 @@ void WorkerRoutines() {
 
 			case RegCuda: // Update Regular Particle CUDA
 
-				MPI_Recv(&NewNumberOfNeighbor, 1, MPI_INT, ROOT, 10, MPI_COMM_WORLD, &status);
-				MPI_Recv(NewNeighbors, NewNumberOfNeighbor, MPI_INT, ROOT, 11, MPI_COMM_WORLD, &status);
-				MPI_Recv(new_a, 3, MPI_DOUBLE, ROOT, 12, MPI_COMM_WORLD, &status);
-				MPI_Recv(new_adot, 3, MPI_DOUBLE, ROOT, 13, MPI_COMM_WORLD, &status);
-				particles[ptcl_id].updateRegularParticleCuda(NewNeighbors, NewNumberOfNeighbor, new_a, new_adot);
+				ptcl = &particles[ptcl_id];
+				ptcl->updateRegularParticleCuda();
 				break;
 
 			case RegCudaUpdate: // Update Regular Particle CUDA II
@@ -153,8 +150,6 @@ void WorkerRoutines() {
 				break;
 
 			case TimeSync: // Initialize Timestep variables
-				fprintf(stdout, "Inside TimeSync... rank: %d\n", MyRank);
-				fflush(stdout);
 				broadcastFromRoot(time_block);
 				broadcastFromRoot(block_max);
 				broadcastFromRoot(time_step);
