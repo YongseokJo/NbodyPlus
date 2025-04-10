@@ -73,7 +73,7 @@ void CalculateAllAccelerationOnGPU(std::vector<Particle*> &particle){
 	NumNeighborReceive = new int[NNB];
 	ACListReceive      = new int*[NNB];
 	for (int i=0; i<NNB; i++) {
-		ACListReceive[i] = new int[NumNeighborMax];
+		ACListReceive[i] = new int[MaxNumNeighbor];
 	}
 
 
@@ -95,7 +95,7 @@ void CalculateAllAccelerationOnGPU(std::vector<Particle*> &particle){
 	}
 
 	// send the arrays to GPU
-	//SendToDevice(&NNB, MassSend, PositionSend, VelocitySend, MdotSend, &NumNeighborMax);
+	//SendToDevice(&NNB, MassSend, PositionSend, VelocitySend, MdotSend, &MaxNumNeighbor);
 
 
 	// calculate the force by sending the particles to GPU in multiples of 1024
@@ -156,6 +156,7 @@ void CalculateAllAccelerationOnGPU(std::vector<Particle*> &particle){
 
 	// free all temporary variables
 	delete[] MassSend;
+	delete[] MdotSend;
 	delete[] PositionSend;
 	delete[] VelocitySend;
 
@@ -164,6 +165,12 @@ void CalculateAllAccelerationOnGPU(std::vector<Particle*> &particle){
 
 	delete[] AccSend;
 	delete[] AccDotSend;
+
+	delete[] NumNeighborReceive;
+	for (int i = 0; i < NNB; ++i) {
+		delete[] ACListReceive[i];
+	}
+	delete[] ACListReceive;
 
 	// close GPU
 	//
@@ -232,7 +239,7 @@ void CalculateListAccelerationOnGPU(std::vector<int> &IndexList, std::vector<Par
 
 	AClistGpu = new int*[ListSize];
 	for (int i=0; i<(NNB); i++) {
-		AClistGpu[i] = new int[NumNeighborMax];
+		AClistGpu[i] = new int[MaxNumNeighbor];
 	}
 
 
@@ -316,6 +323,7 @@ void CalculateListAccelerationOnGPU(std::vector<int> &IndexList, std::vector<Par
 
 	// free all temporary variables
 	delete[] MassSend;
+	delete[] MdotSend;
 	delete[] PositionSend;
 	delete[] VelocitySend;
 
@@ -325,6 +333,10 @@ void CalculateListAccelerationOnGPU(std::vector<int> &IndexList, std::vector<Par
 	delete[] AccSend;
 	delete[] AccDotSend;
 	delete[] PotSend;
+
+	for (int i = 0; i < ListSize; ++i) {
+		delete[] AClistGpu[i];
+	}
 	delete[] AClistGpu;
 
 } // calculate 0th, 1st derivative of force + neighbors on GPU ends
@@ -357,17 +369,17 @@ void SendAllParticlesToGPU(std::vector <Particle*> &particle) {
 
 	// copy the data of particles to the arrays to be sent
 	for (int i=0; i<NNB; i++) {
-		Mass[i] = particle[i]->Mass;
+		Mass[i] = (CUDA_REAL) particle[i]->Mass;
 		Mdot[i] = 0; //particle[i]->Mass;
 
 		for (int dim=0; dim<Dim; dim++) {
-			Position[i][dim] = particle[i]->PredPosition[dim];
-			Velocity[i][dim] = particle[i]->PredVelocity[dim];
+			Position[i][dim] = (CUDA_REAL) particle[i]->PredPosition[dim];
+			Velocity[i][dim] = (CUDA_REAL) particle[i]->PredVelocity[dim];
 		}
 	}
 
 	// send the arrays to GPU
-	//SendToDevice(&NNB, Mass, Position, Velocity, Mdot, &NumNeighborMax);
+	//SendToDevice(&NNB, Mass, Position, Velocity, Mdot, &MaxNumNeighbor);
 
 	// free the temporary variables
 	delete[] Mass;
@@ -376,53 +388,4 @@ void SendAllParticlesToGPU(std::vector <Particle*> &particle) {
 	delete[] Velocity;
 }
 
-
-void SendAllParticlesToGPU(CUDA_REAL time, std::vector <Particle*> &particle) {
-
-	// variables for saving variables to send to GPU
-	CUDA_REAL * Mass;
-	CUDA_REAL * Mdot;
-	CUDA_REAL * Radius2;
-	CUDA_REAL(*Position)[Dim];
-	CUDA_REAL(*Velocity)[Dim];
-	int size = (int) particle.size();
-
-	// allocate memory to the temporary variables
-	Mass     = new CUDA_REAL[size];
-	Mdot     = new CUDA_REAL[size];
-	Radius2  = new CUDA_REAL[size];
-	Position = new CUDA_REAL[size][Dim];
-	Velocity = new CUDA_REAL[size][Dim];
-
-
-	// copy the data of particles to the arrays to be sent
-	for (int i=0; i<size; i++) {
-		Mass[i]    = particle[i]->Mass;
-		Mdot[i]    = 0; //particle[i]->Mass;
-		Radius2[i] = particle[i]->RadiusOfAC*particle[i]->RadiusOfAC; // mass wieght?
-		if (particle[i]->NumberOfAC == 0)
-			particle[i]->predictParticleSecondOrder(time);
-		else
-			particle[i]->predictParticleSecondOrderIrr(time);
-
-		for (int dim=0; dim<Dim; dim++) {
-			Position[i][dim] = particle[i]->PredPosition[dim];
-			Velocity[i][dim] = particle[i]->PredVelocity[dim];
-		}
-	}
-
-	//fprintf(stdout, "Sending particles to GPU...\n");
-	//fflush(stdout);
-	// send the arrays to GPU
-	SendToDevice(&size, Mass, Position, Velocity, Radius2, Mdot);
-
-	fprintf(stdout, "Done.\n");
-	fflush(stdout);
-	// free the temporary variables
-	delete[] Mass;
-	delete[] Mdot;
-	delete[] Radius2;
-	delete[] Position;
-	delete[] Velocity;
-}
 

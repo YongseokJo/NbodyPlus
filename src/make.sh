@@ -1,6 +1,5 @@
-export LD_LIBRARY_PATH=/usr/local/cuda-11.8/targets/x86_64-linux/lib:$LD_LIBRARY_PATH
-module load icc/latest
+#export USE_CUDA=1
+#export USE_SEVN=1
 make clean
-make -j4
-cp nbodyplus_binary.exe /data1/wispedia/nbody/purenbody
+make -j8
 date

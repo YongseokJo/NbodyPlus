@@ -1,93 +1,106 @@
+#ifdef SEVN
+#include "sevn.h"
+#endif
+
 #include <iostream>
-//#include "defs.h"
+#include <fstream>
+#include <iostream>
+#include <vector>
+#include <unistd.h>
+#include "def.h"
+#include "particle.h"
+#include "GlobalVariable.h"
 #include "global.h"
-#include "nbody.h"
+#include <mpi.h>
+#include <unistd.h>
+#ifdef CUDA
+#include <cuda_runtime.h>
 #include "cuda/cuda_functions.h"
+#endif
 
 
-using namespace std;
-
-//Global Variables
-int NNB; REAL global_time; //bool debug;
-std::vector<int> LevelList;
-REAL EnzoTimeStep;
-int newNNB = 0;
-std::vector<Particle*> RegularList;
-std::vector<Particle*> BinaryCandidateList;
-std::vector<Binary*> BinaryList;
-FILE* binout;
-
-//int NumNeighborMax = 100;
-
+void broadcastFromRoot(int &data);
+void DefaultGlobal();
+void initializeMPI(int argc, char *argv[]);
+void WorkerRoutines();
+void RootRoutines();
+int Parser(int argc, char *argv[]);
+int readData();
+int readParameterFile();
 
 
 int main(int argc, char *argv[]) {
-	cout << "Staring Nbody+ ..." << endl;
+
+	/* Initialize global variables */
+	DefaultGlobal();
+
 	binout = fopen("binary_output.txt", "w");
-	fprintf(binout, "Starting nbody - Binary OUTPUT\n"); 
-	std::vector<Particle*> particle{};
-	int irank=0;
-	std::ios::sync_with_stdio(false);
-	//comm        = com;
-	//inter_comm  = inter_com;
-	//nbody_comm  = nbody_com;
+	fprintf(binout, "Starting nbody - Binary OUTPUT\n");
+	fflush(binout);
+	mergerout = fopen("merger_output.txt", "w");
+	fprintf(mergerout, "Starting nbody - Merger OUTPUT\n");
+	fflush(mergerout);
+#ifdef SEVN
+	SEVNout = fopen("SEVN_output.txt", "w");
+	fprintf(SEVNout, "Starting nbody - SEVN OUTPUT\n");
+	fflush(SEVNout);
+#endif
 
-	global_time = 0.;
-	//debug = true;
+	/* MPI Initialization */
+	initializeMPI(argc, argv);
 
-	//InitialCommunication(particle);
+#ifdef CUDA
+	int root_proc = 0;
+	//if (MyRank == ROOT)
+	OpenDevice(&root_proc);
+	cudaDeviceSynchronize(); 
+#endif
+
+	/*
+	// Insert this function definition at the top of your code after the include directives.
+	char hostname[256];
+	gethostname(hostname, sizeof(hostname));
+
+	// Insert this code right after the  MPI initialization routines (though not a mandatory requirement 
+	// to add there only). Please make a judgement based on your code.
+	// Retrieve process ID and hostname
+	pid_t pid = getpid();
+
+	volatile int i = 0;
+	while (0 == i)
+	{
+		std::cout << "My rank = " << MyRank << " PID = " << pid << " running on Host = " << hostname << " in sleep " << std::endl;
+		sleep(5);
+	}
+	*/
+
+	/* Input options */
 	Parser(argc, argv);
+	readParameterFile();
 
-	EnzoTimeStep   = endTime/1e10; // endTime should be Myr
-	outputTimeStep = outputTimeStep/endTime; // endTime should be Myr
-
-	cout << "EnzoTimeStep = "   << EnzoTimeStep   << endl;
-	cout << "outputTimeStep = " << outputTimeStep << endl;
-
-	if (readData(particle) == FAIL)
+	// Write Particles
+	if (MyRank == ROOT && readData() == FAIL)
 		fprintf(stderr, "Read Data Failed!\n");
+	
 
-	/***
-		for (Particle* elem: particle) {
-		std::cout << elem->Position[0] <<" ";
-		}
-		std::cout << std::endl;
-	 ***/
+	if (MyRank == ROOT) {
+		global_variable->LastParticleIndex = LastParticleIndex;
 
-	fprintf(stderr, "Initializing Device!\n");
-	InitializeDevice(&irank);
-	fprintf(stderr, "Initializing Particles!\n");
-	InitializeParticle(particle);
-
-
-	//createComputationChain(particle);
-
-	/*
-	for (Particle* elem: particle) {
-		std::cout << elem->TimeStepIrr <<" ";
+		RootRoutines();
+	} else {
+		// /* // by EW 2025.1.27
+		std::string filename = "worker_output_" + std::to_string(MyRank) + ".txt";
+		workerout = fopen(filename.c_str(), "w");
+		fprintf(workerout, "Starting nbody - WORKER OUTPUT\n");
+		fflush(workerout);
+		// */
+		
+		WorkerRoutines();
 	}
-	*/
 
-	/*
-	for (Particle* elem: particle) {
-		fprintf(stdout, "PID=%d, TReg=%e, TIrr=%e\n", elem->getPID(),elem->TimeStepReg, elem->TimeStepIrr);
-		fprintf(stdout, "%e, %e, %e, %e, %e, %e\n",
-				elem->Force[0], elem->Force[1], elem->Force[2], elem->ForceDot[0], elem->ForceDot[1], elem->ForceDot[2]);
-		fprintf(stdout, "%e, %e, %e, %e, %e, %e\n",
-				elem->dFReg[0][0], elem->dFReg[0][1], elem->dFReg[0][2], elem->dFIrr[0][0], elem->dFIrr[0][1], elem->dFIrr[0][3]);
-		fprintf(stdout, "%e, %lf, %lf, %lf, %e, %e, %e\n\n",
-				elem->Mass, elem->Position[0], elem->Position[1], elem->Position[2], elem->Velocity[0], elem->Velocity[1], elem->Velocity[2]);
-
-	}
-	std::cout << std::endl;
-	*/
-
-
-
-	Evolve(particle);
-
-	// Particle should be deleted at some point
-	fclose(binout);
-
+	// Finalize the window and MPI environment
+	MPI_Win_free(&win);
+	MPI_Finalize();
 	return 0;
 }
+

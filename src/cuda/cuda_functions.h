@@ -1,5 +1,5 @@
 #pragma once
-#include "../defs.h"
+#include "../def.h"
 extern "C" {
 	void InitializeDevice(int *irank);
 	void OpenDevice(const int *irank);

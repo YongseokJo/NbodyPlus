@@ -21,6 +21,7 @@
         "deque": "cpp",
         "list": "cpp",
         "unordered_map": "cpp",
+        "unordered_set": "cpp",
         "vector": "cpp",
         "exception": "cpp",
         "fstream": "cpp",
@@ -45,11 +46,7 @@
         "utility": "cpp",
         "typeindex": "cpp",
         "typeinfo": "cpp",
-        "cassert": "cpp",
-        "*.ipp": "cpp",
-        "random": "cpp",
-        "string": "cpp",
-        "iterator": "cpp"
-    },
-    "C_Cpp.errorSquiggles": "disabled"
+        "algorithm": "cpp",
+        "random": "cpp"
+    }
 }

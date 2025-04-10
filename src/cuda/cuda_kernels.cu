@@ -5,7 +5,7 @@
 #include <cuda_runtime.h>
 #include <cublas_v2.h>
 #include "cuda_defs.h"
-#include "../defs.h"
+#include "../def.h"
 #include "cuda_kernels.h"
 
 #ifdef THRUST
@@ -16,31 +16,20 @@
 
 
 // CUDA kernel to compute the forces for a subset of particles
-__global__ void print_forces_subset(CUDA_REAL* result, int m) {
+__global__ void print_forces_subset(CUDA_REAL* result, int m, int n) {
 	int idx = blockIdx.x * blockDim.x + threadIdx.x;
-
-	if (idx < m) {
-		printf("acc_x: (%d) = %e\n", idx, result[_six*idx]);
-		printf("acc_y: (%d) = %e\n", idx, result[_six*idx+1]);
-		printf("acc_z: (%d) = %e\n", idx, result[_six*idx+2]);
-		printf("adot_x: (%d) = %e\n", idx, result[_six*idx+3]);
-		printf("adot_y: (%d) = %e\n", idx, result[_six*idx+4]);
-		printf("adot_z: (%d) = %e\n", idx, result[_six*idx+5]);
-				/*
-				atomicAdd(&result[i+1], scale * diff[six_idx + 1]);
-				atomicAdd(&result[i+2], scale * diff[six_idx + 2]);
-
-				atomicAdd(&result[i+3], scale * (diff[six_idx + 3] - magnitudes[idx+1]*diff[six_idx    ]/magnitudes[idx]));
-				atomicAdd(&result[i+4], scale * (diff[six_idx + 4] - magnitudes[idx+1]*diff[six_idx + 1]/magnitudes[idx]));
-				atomicAdd(&result[i+5], scale * (diff[six_idx + 5] - magnitudes[idx+1]*diff[six_idx + 2]/magnitudes[idx]));
-				*/
+	int M = max(0, m-5);
+	if ((idx < m) && (idx >= M)) {
+		for (int j=0; j<n; j++){
+			printf("(%d %d) = %e\n", idx, j, result[j * m + idx]);
+		}
 	}
 }
 
 // NTHREAED = 64;
 // NJBlock = 28
 // NNB_per_block = 256;
-#ifdef CUDA_FLOAT
+#ifdef CUDA_FLOAT_old
 __global__ void compute_forces(const CUDA_REAL* __restrict__ ptcl, const CUDA_REAL* __restrict__ r2, CUDA_REAL* __restrict__ diff, int m, int n, const int* __restrict__ subset, int* __restrict__ neighbor, int* num_neighbor, int start){
 	// define i and j. in this code, grid is 2D and block is 1D
     int i = threadIdx.x + blockIdx.x * blockDim.x; // Unique thread index across all blocks
@@ -212,123 +201,12 @@ __global__ void gather_neighbor(const int* neighbor_block, const int* num_neighb
     }
 
     int local_neighbor_count = num_neighbor[i * num_blocks_per_m + b];
-    assert (neighbor_start_index + local_neighbor_count < NumNeighborMax);
+    assert (neighbor_start_index + local_neighbor_count < MaxNumNeighbor);
 
     for (int n = 0; n < local_neighbor_count; n++) {
-        gathered_neighbor[i * NumNeighborMax + neighbor_start_index + n] =
+        gathered_neighbor[i * MaxNumNeighbor + neighbor_start_index + n] =
             neighbor_block[(i * num_blocks_per_m + b) * num_neighbors_per_block + n];
     }
-}
-
-
-#else
-// in this stage this is the same function as the one above
-__global__ void compute_forces(const CUDA_REAL* __restrict__ ptcl, const CUDA_REAL* __restrict__ r2, CUDA_REAL* __restrict__ diff, int m, int n, const int* __restrict__ subset, int* __restrict__ neighbor, int* num_neighbor, int start){
-	// define i and j. in this code, grid is 2D and block is 1D
-    int i = threadIdx.x + blockIdx.x * blockDim.x; // Unique thread index across all blocks
-	int tid = threadIdx.x;
-	// int BatchSize = blockDim.x;
-	// int j_begin = blockIdx.x15. Come blocking her robin. * (n / (BatchSize * gridDim.x));
-	int idx_save_size = gridDim.y * m;
-
-	int j_begin = blockIdx.y * n / gridDim.y;
-	int j_end = (blockIdx.y + 1) * n / gridDim.y;
-	if (blockIdx.y == gridDim.y - 1) j_end = n;  // Ensure the last block covers all remaining elements
-	
-	while (i < m + BatchSize){ // even with i > m, the last block needs tid for the shared memory
-		int i_ptcl;
-		(i < m) ? i_ptcl = subset[i + start] : i_ptcl = subset[m - 1 + start]; //assign dummy values for the last block	
-
-		CUDA_REAL pi_x = ptcl[i_ptcl];
-		CUDA_REAL pi_y = ptcl[i_ptcl + n];
-		CUDA_REAL pi_z = ptcl[i_ptcl + 2 * n];
-		CUDA_REAL pi_vx = ptcl[i_ptcl + 3 * n];
-		CUDA_REAL pi_vy = ptcl[i_ptcl + 4 * n];
-		CUDA_REAL pi_vz = ptcl[i_ptcl + 5 * n];
-		CUDA_REAL i_r2 = r2[i_ptcl];
-		
-		int NumNeighbor = 0;
-		int idx_save = i * gridDim.y + blockIdx.y;
-		CUDA_REAL save_acc[6] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-		int* BlockNeighbor = &neighbor[NNB_per_block*idx_save]; // Pointer to the neighbor list of the current block
-
-		for (int j=j_begin; j < j_end; j+=BatchSize){ // total particles
-			int current_batch_size = min(BatchSize, j_end - j);
-			// printf("i, j, j_begin, j_end: %d, %d, %d, %d\n", i, j, j_begin, j_end);
-
-			// assing shared particles for BatchSize particles to each block
-			// __shared__ CUDA_REAL sh_ptcl[BatchSize*7];
-			__shared__ CUDA_REAL sh_pos_x[BatchSize];
-			__shared__ CUDA_REAL sh_pos_y[BatchSize];
-			__shared__ CUDA_REAL sh_pos_z[BatchSize];
-			__shared__ CUDA_REAL sh_vel_x[BatchSize];
-			__shared__ CUDA_REAL sh_vel_y[BatchSize];
-			__shared__ CUDA_REAL sh_vel_z[BatchSize];
-			__shared__ CUDA_REAL sh_mass[BatchSize];
-
-			__syncthreads();
-			if (tid < current_batch_size) {
-				sh_pos_x[tid] = ptcl[j + tid];
-				sh_pos_y[tid] = ptcl[j + tid + n];
-				sh_pos_z[tid] = ptcl[j + tid + 2 * n];
-				sh_vel_x[tid] = ptcl[j + tid + 3 * n];
-				sh_vel_y[tid] = ptcl[j + tid + 4 * n];
-				sh_vel_z[tid] = ptcl[j + tid + 5 * n];
-				sh_mass[tid]  = ptcl[j + tid + 6 * n];
-			}
-			__syncthreads();
-
-            #pragma unroll 4
-			for (int jj=0; jj<current_batch_size; jj++){
-
-				if (i<m){
-					// Calculate forces
-					CUDA_REAL dx = sh_pos_x[jj] - pi_x;
-					CUDA_REAL dy = sh_pos_y[jj] - pi_y;
-					CUDA_REAL dz = sh_pos_z[jj] - pi_z;
-					CUDA_REAL magnitude0 = dx*dx + dy*dy + dz*dz;
-					// int idx = i * n + (j + jj);
-					// neighbor[idx] = isNeighbor;
-
-
-					if (magnitude0 > i_r2) {
-						// Calculate velocity differences
-						CUDA_REAL dvx = sh_vel_x[jj] - pi_vx;
-						CUDA_REAL dvy = sh_vel_y[jj] - pi_vy;
-						CUDA_REAL dvz = sh_vel_z[jj] - pi_vz;
-						CUDA_REAL inv_sqrt_m0 = rsqrt(magnitude0);
-						CUDA_REAL inv_m0 = inv_sqrt_m0 * inv_sqrt_m0; // or 1 / magnitude0
-						CUDA_REAL scale = sh_mass[jj] * inv_sqrt_m0 * inv_m0;
-						// Calculate adot_temp
-						CUDA_REAL common_factor = 3.0 * (dx*dvx + dy*dvy + dz*dvz) * inv_m0;
-						
-						save_acc[0] += scale * dx;
-						save_acc[1] += scale * dy;
-						save_acc[2] += scale * dz;
-						save_acc[3] += scale * (dvx - common_factor * dx);
-						save_acc[4] += scale * (dvy - common_factor * dy);
-						save_acc[5] += scale * (dvz - common_factor * dz);
-						
-					}
-					else if (i_ptcl != j+jj) {
-						BlockNeighbor[NumNeighbor++] = j + jj;
-						assert (NumNeighbor < NNB_per_block);
-					}
-				}
-			} //end of jj loop
-		}//end of j loop
-		if (i < m){
-			// printf("i, blockIdx.y: (ax, adotx): %d, %d, %e, %e, %d\n", i, blockIdx.y, save_acc[2], save_acc[5], NumNeighbor);
-			diff[idx_save] = save_acc[0];
-			diff[idx_save + idx_save_size] = save_acc[1];
-			diff[idx_save + 2 * idx_save_size] = save_acc[2];
-			diff[idx_save + 3 * idx_save_size] = save_acc[3];
-			diff[idx_save + 4 * idx_save_size] = save_acc[4];
-			diff[idx_save + 5 * idx_save_size] = save_acc[5];
-			num_neighbor[idx_save] = NumNeighbor;
-		}
-		i += gridDim.x * blockDim.x;
-	} //end of i loop
 }
 
 
@@ -356,7 +234,7 @@ void reduce_forces_cublas(cublasHandle_t handle, const CUDA_REAL *diff, CUDA_REA
 		// cublasDcopy(handle, m * n, diff + i, _six, d_matrix, 1);
 		const CUDA_REAL *component_diff = diff + i * m * n;
 
-        cublasDgemv(
+        cublasStatus_t stat = cublasDgemv(
             handle,
             CUBLAS_OP_T,  // Transpose
             n,            // Number of rows of the matrix A
@@ -370,12 +248,168 @@ void reduce_forces_cublas(cublasHandle_t handle, const CUDA_REAL *diff, CUDA_REA
             result + i, // Pointer to the first element of the result vector
             _six             // Increment between elements of the result vector
         );
+		if (stat != CUBLAS_STATUS_SUCCESS) {
+			fprintf(stderr, "cublasDgemv error: %d on component %d\n", stat, i);
+			std::cout << "n: " << n << ", m: " << m << ", lda: " << n << std::endl;
+			cudaPointerAttributes attr;
+			cudaPointerGetAttributes(&attr, component_diff);
+			std::cout << "component_diff is on device: " << attr.device << std::endl;
+		}
     }
     // Cleanup
     delete[] h_ones;
     cudaFree(ones);
 	// cudaFree(d_matrix);
 }
+s
+#else
+// in this stage this is the same function as the one above
+
+
+__global__ void compute_forces(const CUDA_REAL* __restrict__ ptcl, const CUDA_REAL* __restrict__ r2, CUDA_REAL* __restrict__ diff, int m, int n, const int* __restrict__ subset, int* __restrict__ neighbor, int* num_neighbor, int i_start, int j_start, int NNB){
+	// define i and j. in this code, grid is 2D and block is 1D
+    int i = threadIdx.x + blockIdx.x * blockDim.x; // Unique thread index across all blocks
+	int tid = threadIdx.x;
+	// int BatchSize = blockDim.x;
+	// int j_begin = blockIdx.x15. Come blocking her robin. * (n / (BatchSize * gridDim.x));
+	int idx_save_size = gridDim.y * m;
+
+	int j_begin = blockIdx.y * n / gridDim.y;
+	int j_end = (blockIdx.y + 1) * n / gridDim.y;
+	if (blockIdx.y == gridDim.y - 1) j_end = n;  // Ensure the last block covers all remaining elements
+	
+	while (i < m + BatchSize){ // even with i > m, the last block needs to assign the shared memory for each tid
+		int i_ptcl;
+		(i < m) ? i_ptcl = subset[i + i_start] : i_ptcl = subset[m - 1 + i_start]; //assign dummy values for the last block	
+
+		CUDA_REAL pi_x = ptcl[i_ptcl];
+		CUDA_REAL pi_y = ptcl[i_ptcl + NNB];
+		CUDA_REAL pi_z = ptcl[i_ptcl + 2 * NNB];
+		CUDA_REAL pi_vx = ptcl[i_ptcl + 3 * NNB];
+		CUDA_REAL pi_vy = ptcl[i_ptcl + 4 * NNB];
+		CUDA_REAL pi_vz = ptcl[i_ptcl + 5 * NNB];
+		CUDA_REAL i_r2 = r2[i_ptcl];
+		
+		int NumNeighbor = 0;
+		int idx_save = i * gridDim.y + blockIdx.y;
+		// CUDA_REAL save_acc[6] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+		CUDA_REAL ax=0, ay=0, az=0;
+		CUDA_REAL jx=0, jy=0, jz=0;
+		int* BlockNeighbor = &neighbor[NNB_per_block*idx_save]; // Pointer to the neighbor list of the current block
+
+		for (int j=j_begin; j < j_end; j+=BatchSize){ // total particles
+			int current_batch_size = min(BatchSize, j_end - j);
+			// printf("i, j, j_begin, j_end: %d, %d, %d, %d\n", i, j, j_begin, j_end);
+
+			// assing shared particles for BatchSize particles to each block
+			// __shared__ CUDA_REAL sh_ptcl[BatchSize*7];
+			__shared__ CUDA_REAL sh_pos_x[BatchSize];
+			__shared__ CUDA_REAL sh_pos_y[BatchSize];
+			__shared__ CUDA_REAL sh_pos_z[BatchSize];
+			__shared__ CUDA_REAL sh_vel_x[BatchSize];
+			__shared__ CUDA_REAL sh_vel_y[BatchSize];
+			__shared__ CUDA_REAL sh_vel_z[BatchSize];
+			__shared__ CUDA_REAL sh_mass[BatchSize];
+
+			__syncthreads();
+			if (tid < current_batch_size) {
+				sh_pos_x[tid] = ptcl[j + j_start + tid];
+				sh_pos_y[tid] = ptcl[j + j_start + tid + NNB];
+				sh_pos_z[tid] = ptcl[j + j_start + tid + 2 * NNB];
+				sh_vel_x[tid] = ptcl[j + j_start + tid + 3 * NNB];
+				sh_vel_y[tid] = ptcl[j + j_start + tid + 4 * NNB];
+				sh_vel_z[tid] = ptcl[j + j_start + tid + 5 * NNB];
+				sh_mass[tid]  = ptcl[j + j_start + tid + 6 * NNB];
+			}
+			__syncthreads();
+
+            #pragma unroll 4
+			for (int jj=0; jj<current_batch_size; jj++){
+
+				if (i<m){
+					// Calculate forces
+					CUDA_REAL dx = sh_pos_x[jj] - pi_x;
+					CUDA_REAL dy = sh_pos_y[jj] - pi_y;
+					CUDA_REAL dz = sh_pos_z[jj] - pi_z;
+					CUDA_REAL magnitude0 = dx*dx + dy*dy + dz*dz;
+					// int idx = i * n + (j + jj);
+					// neighbor[idx] = isNeighbor;
+
+					if (magnitude0 > i_r2) {
+						// Calculate velocity differences
+						CUDA_REAL dvx = sh_vel_x[jj] - pi_vx;
+						CUDA_REAL dvy = sh_vel_y[jj] - pi_vy;
+						CUDA_REAL dvz = sh_vel_z[jj] - pi_vz;
+						CUDA_REAL inv_sqrt_m0 = rsqrt(magnitude0);
+						CUDA_REAL inv_m0 = inv_sqrt_m0 * inv_sqrt_m0; // or 1 / magnitude0
+						CUDA_REAL scale = sh_mass[jj] * inv_sqrt_m0 * inv_m0;
+						// Calculate adot_temp
+						CUDA_REAL common_factor = 3.0 * (dx*dvx + dy*dvy + dz*dvz) * inv_m0;
+						
+						ax += scale * dx;
+						ay += scale * dy;
+						az += scale * dz;
+						jx += scale * (dvx - common_factor * dx);
+						jy += scale * (dvy - common_factor * dy);
+						jz += scale * (dvz - common_factor * dz);
+						
+						if (i == 0){
+							// printf("dx, mag, mass, sh_mass, save_acc[0]: %.3e, %.3e %.3e %.3e %.3e\n", dx, magnitude0, ptcl[i_ptcl + 6 * n], sh_mass[jj], save_acc[0]);
+						}
+
+					}
+					else if (i_ptcl != j_start + j + jj) {
+						BlockNeighbor[NumNeighbor++] = j_start + j + jj;
+						assert (NumNeighbor < NNB_per_block);
+					}
+
+				} // end of if (i < m)
+			} // end of jj loop
+		}// end of j loop
+		if (i < m){
+			// printf("i, bIdx.y, i_ptcl: (ax, adotx): %d, %d, %d, %.3e, %.3e, %.3e, %d %d %d\n", i, blockIdx.y, i_ptcl, save_acc[2], save_acc[5], pi_x, NumNeighbor, j_begin, j_end);
+			diff[idx_save] = ax;
+			diff[idx_save + idx_save_size] = ay;
+			diff[idx_save + 2 * idx_save_size] = az;
+			diff[idx_save + 3 * idx_save_size] = jx;
+			diff[idx_save + 4 * idx_save_size] = jy;
+			diff[idx_save + 5 * idx_save_size] = jz;
+			num_neighbor[idx_save] = NumNeighbor;
+		}
+		i += gridDim.x * blockDim.x;
+	} //end of i loop
+}
+
+
+__global__ void reduce_forces_kernel(const CUDA_REAL *diff,  // [6 * m * n] total
+                                     CUDA_REAL       *result, // [6 * m] output
+                                     int n, // "rows" in each component
+                                     int m  // "columns"
+                                    )
+{
+    // Each thread handles one (component, column).
+    // We'll use a 2D block/grid: x -> column j, y -> component c
+
+    int col = blockIdx.x * blockDim.x + threadIdx.x; // j in [0..m-1]
+    int comp = blockIdx.y * blockDim.y + threadIdx.y; // c in [0..5]
+
+    // We only have 6 components total:
+    if (comp >= 6 || col >= m) return;
+
+    CUDA_REAL sumVal = 0.0;
+    // sum over the "row" dimension i in [0..n-1]
+    // component c is offset by comp*m*n
+    // column j is offset by col*n
+    // row i is just + i
+    for (int i = 0; i < n; i++){
+        sumVal += diff[comp * m * n + (col * n) + i];
+    }
+
+    // store interleaved in the output: result[j*6 + comp]
+    // matching the cublasDgemv style: incY = 6
+    result[col * 6 + comp] = sumVal;
+}
+
 
 // using uint16 type?
 __global__ void gather_neighbor(const int* neighbor_block, const int* num_neighbor, int* gathered_neighbor, int m) {
@@ -395,15 +429,25 @@ __global__ void gather_neighbor(const int* neighbor_block, const int* num_neighb
     }
 
     int local_neighbor_count = num_neighbor[i * num_blocks_per_m + b];
-    assert (neighbor_start_index + local_neighbor_count < NumNeighborMax);
+    assert (neighbor_start_index + local_neighbor_count < MaxNumNeighbor);
 
     for (int n = 0; n < local_neighbor_count; n++) {
-        gathered_neighbor[i * NumNeighborMax + neighbor_start_index + n] =
+        gathered_neighbor[i * MaxNumNeighbor + neighbor_start_index + n] =
             neighbor_block[(i * num_blocks_per_m + b) * num_neighbors_per_block + n];
     }
 }
 
+__global__ void gather_numneighbor(const int* numneighbor_block, int* gathered_numneighbor, int m) {
+    int i = threadIdx.x + blockIdx.x * blockDim.x; // Unique thread index across all blocks    
+	// NumTarget * GridDimY
+    if (i >= m) return;
 
+	int temp = 0;
+	for (int j = 0; j < GridDimY; j++) {
+		temp += numneighbor_block[i * GridDimY + j];
+	}
+	gathered_numneighbor[i] = temp;
+}
 
 #endif
 
@@ -432,8 +476,8 @@ __global__	void initialize(CUDA_REAL* result, CUDA_REAL* diff, int n, int m, int
 			result[_six*i + 5] = 0.;
 			// num_neighbor[i] = 0;
 			/*
-			for (j=0; j<NumNeighborMax; j++)
-				neighbor[NumNeighborMax*i+j] = 0;
+			for (j=0; j<MaxNumNeighbor; j++)
+				neighbor[MaxNumNeighbor*i+j] = 0;
 				*/
 		}
 	}
@@ -746,9 +790,9 @@ __global__ void assign_neighbor(int *neighbor, int* num_neighbor, const CUDA_REA
 				for (j=2; j<=bdim; j++)
 					sdata[j] += sdata[j-1];
 
-				if ((offset+sdata[bdim]) > NumNeighborMax) {
+				if ((offset+sdata[bdim]) > MaxNumNeighbor) {
 					printf("blockid=%d, Too many neighbors (%d, %d)\n", bid, offset, sdata[bdim]);
-					assert(offset+sdata[bdim] < NumNeighborMax);
+					assert(offset+sdata[bdim] < MaxNumNeighbor);
 				}
 
 				/*
@@ -768,7 +812,7 @@ __global__ void assign_neighbor(int *neighbor, int* num_neighbor, const CUDA_REA
 			 */
 
 			for (j=0;j<n_num;j++) {
-				neighbor[NumNeighborMax*bid+offset+sdata[tid]+j] = list[j];
+				neighbor[MaxNumNeighbor*bid+offset+sdata[tid]+j] = list[j];
 				//printf("(%d,%d), j=%d\n", l, tid, list[j]);
 			}
 			__syncthreads();
@@ -858,9 +902,9 @@ __global__ void assign_neighbor(int *neighbor, int* num_neighbor, const CUDA_REA
 					for (j=2; j<=bdim; j++)
 						sdata[j] += sdata[j-1];
 
-					if ((offset+sdata[bdim]) > NumNeighborMax) {
+					if ((offset+sdata[bdim]) > MaxNumNeighbor) {
 						printf("blockid=%d, Too many neighbors (%d, %d)\n", bid, offset, sdata[bdim]);
-						assert(offset+sdata[bdim] < NumNeighborMax);
+						assert(offset+sdata[bdim] < MaxNumNeighbor);
 					}
 
 					/*
@@ -880,7 +924,7 @@ __global__ void assign_neighbor(int *neighbor, int* num_neighbor, const CUDA_REA
 				 */
 
 				for (j=0;j<n_num;j++) {
-					neighbor[NumNeighborMax*l+offset+sdata[tid]+j] = list[j];
+					neighbor[MaxNumNeighbor*l+offset+sdata[tid]+j] = list[j];
 					//printf("(%d,%d), j=%d\n", l, tid, list[j]);
 				}
 				__syncthreads();
@@ -920,7 +964,7 @@ __global__ void assign_neighbor(int *neighbor, int* num_neighbor, const REAL* r2
 				k = _two*(n*idx+j);
 				if (magnitudes[k] < 0) {
 					//printf("(%d, %d,%d) = %d, %e, %e\n", idx, i, j, num_neighbor[idx], magnitudes[k], r2[i]);
-					neighbor[NumNeighborMax*idx+num_neighbor[idx]] = j;
+					neighbor[MaxNumNeighbor*idx+num_neighbor[idx]] = j;
 					num_neighbor[idx]++;
 					if (num_neighbor[idx] > 100)  {
 						//printf("Error: (%d, %d,%d) = %d, %e, %e\n", idx, i, j, num_neighbor[idx], magnitudes[k], r2[i]);
@@ -996,14 +1040,14 @@ void reduce_neighbors(cublasHandle_t handle, int *neighbor, int* num_neighbor, C
         thrust::counting_iterator<int> index_sequence(0);
 
         // Use thrust::copy_if to select indices where elements are less than zero
-        auto end = thrust::copy_if(index_sequence, index_sequence + n, row_start, d_neighbor + row * NumNeighborMax, less_than_zero());
+        auto end = thrust::copy_if(index_sequence, index_sequence + n, row_start, d_neighbor + row * MaxNumNeighbor, less_than_zero());
 
         // Calculate the number of negative elements in the current row
-        int num_neg_elements = thrust::distance(d_neighbor + row * NumNeighborMax, end);
+        int num_neg_elements = thrust::distance(d_neighbor + row * MaxNumNeighbor, end);
 
-        if (num_neg_elements > NumNeighborMax) {
+        if (num_neg_elements > MaxNumNeighbor) {
             cudaFree(d_matrix);
-            throw std::runtime_error("Number of negative elements exceeds NumNeighborMax");
+            throw std::runtime_error("Number of negative elements exceeds MaxNumNeighbor");
         }
 
         d_num_neighbor[row] = num_neg_elements;

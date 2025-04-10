@@ -145,20 +145,20 @@ struct Result{
 
 struct  Neighbor{
 	int NumNeighbor;
-	int NeighborList[NumNeighborMax]; // this needs to be modified.
+	int NeighborList[MaxNumNeighbor]; // this needs to be modified.
 
 
 	__device__ void clear() {
 		NumNeighbor = 0;
 #pragma unroll
-		for (int i=0; i<NumNeighborMax; i++) {
+		for (int i=0; i<MaxNumNeighbor; i++) {
 			NeighborList[i] = 0;
 		}
 	}
 	void clear_h() {
 		NumNeighbor = 0;
 #pragma unroll
-		for (int i=0; i<NumNeighborMax; i++) {
+		for (int i=0; i<MaxNumNeighbor; i++) {
 			NeighborList[i] = 0;
 		}
 	}
