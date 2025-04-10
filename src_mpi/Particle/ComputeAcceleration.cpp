@@ -279,9 +279,9 @@ void Particle::computeAccelerationReg() {
 	 * Regular Acceleartion Calculation
 	 ********************************************************/
 	if (this->NumberOfNeighbor == 0)
-		this->predictParticleSecondOrder(new_time-ptcl->CurrentTimeReg, pos, vel);
+		this->predictParticleSecondOrder(this->TimeStepReg, pos, vel);
 	else
-		this->predictParticleSecondOrder(new_time-ptcl->CurrentTimeIrr, pos, vel);
+		this->predictParticleSecondOrder(0, pos, vel);
 
 
 	for (int i=0; i<=global_variable->LastParticleIndex; i++) {
