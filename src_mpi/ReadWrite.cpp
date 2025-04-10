@@ -252,7 +252,7 @@ int writeParticle(double current_time, int outputNum) {
 #ifdef PERFORMANCETRACE
 	if (outputNum != 0) {
 		std::cout << "--------------Performance-Summary--------------" << std::endl;
-		std::cout << "Simulation Time: " << current_time*EnzoTimeStep*1e10/1e6 << " Myr" << std::endl;
+		fprintf(stdout, "Simulation Time: %f Myr\n", current_time*EnzoTimeStep*1e10/1e6);
 
 		Particle* members = &particles[Index_minIrr];
 		fprintf(stdout, "Particle Info with minimum TimeStepIrr...\n");
