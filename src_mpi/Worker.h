@@ -102,17 +102,7 @@ struct Worker {
 
 
     void sendTask(Queue &_queue) {
-        if ((_queue.task == 0) || (_queue.task == 1) || (_queue.task == 26))
-        {
-            MPI_Send(&_queue.task,      1, MPI_INT,    this->MyRank, TASK_TAG, MPI_COMM_WORLD);
-            MPI_Send(&_queue.pid,       1, MPI_INT,    this->MyRank, PTCL_TAG, MPI_COMM_WORLD);
-            MPI_Send(&_queue.next_time, 1, MPI_DOUBLE, this->MyRank, TIME_TAG, MPI_COMM_WORLD);
-        }
-        else
-        {
-            MPI_Send(&_queue.task, 1, MPI_INT, this->MyRank, TASK_TAG, MPI_COMM_WORLD);
-            MPI_Send(&_queue.pid,  1, MPI_INT, this->MyRank, PTCL_TAG, MPI_COMM_WORLD);
-        }
+        MPI_Send(&_queue,   1,  QueueType,  this->MyRank,   QUEUE_TAG,  MPI_COMM_WORLD);
         onDuty = true;
     }
 

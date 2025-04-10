@@ -224,7 +224,7 @@ void Particle::calculateTimeStepIrr() {
 	TimeBlockIrr = static_cast<ULL>(pow(2, TimeLevelIrr-time_block));
 
 	if (TimeStepIrr*EnzoTimeStep*1e4<1e-11) {
-		fprintf(stderr, "Too small TimeStepIrr! PID: %d, TimeStep = %e, TimeStepTmp0 = %e\n",
+		fprintf(stdout, "Too small TimeStepIrr! PID: %d, TimeStep = %e, TimeStepTmp0 = %e\n",
 				PID, TimeStepIrr*EnzoTimeStep*1e4, static_cast<double>(pow(2, TimeLevelTmp0))*EnzoTimeStep*1e4);
 		while (TimeStepIrr*EnzoTimeStep*1e4<1e-11) {
 			TimeLevelIrr++;
@@ -302,7 +302,7 @@ void Particle::calculateTimeStepIrr2() {
 	TimeBlockIrr = static_cast<ULL>(pow(2, TimeLevelIrr-time_block));
 
 	if (TimeStepIrr*EnzoTimeStep*1e4<1e-11) {
-		fprintf(stderr, "Too small TimeStepIrr! PID: %d, TimeStep = %e, TimeStepTmp0 = %e\n",
+		fprintf(stdout, "Too small TimeStepIrr! PID: %d, TimeStep = %e, TimeStepTmp0 = %e\n",
 				PID, TimeStepIrr*EnzoTimeStep*1e4, static_cast<double>(pow(2, TimeLevelTmp0))*EnzoTimeStep*1e4);
 		while (TimeStepIrr*EnzoTimeStep*1e4<1e-11) {
 			TimeLevelIrr++;
@@ -401,7 +401,7 @@ void Particle::calculateTimeStepReg() {
 	TimeBlockReg = static_cast<ULL>(pow(2, TimeLevelReg-time_block));
 // /* // original code by EW 2025.3.17
 	if (TimeStepReg*EnzoTimeStep*1e4 < 1e-7) {
-		fprintf(stderr, "PID: %d, TimeStep = %.3e, TimeStepTmp0 = %.3e\n",
+		fprintf(stdout, "PID: %d, TimeStep = %.3e, TimeStepTmp0 = %.3e\n",
 			 	PID, TimeStepReg*EnzoTimeStep*1e4, static_cast<double>(pow(2, TimeLevelTmp0))*EnzoTimeStep*1e4);
 		fflush(stderr);
 	}
@@ -428,7 +428,7 @@ void Particle::calculateTimeStepReg() {
 	}
 	*/
 	if (TimeStepReg*EnzoTimeStep*1e4<1e-9) {
-		fprintf(stderr, "Too small TimeStepReg! PID: %d, TimeStep = %e, TimeStepTmp0 = %e\n",
+		fprintf(stdout, "Too small TimeStepReg! PID: %d, TimeStep = %e, TimeStepTmp0 = %e\n",
 				PID, TimeStepReg*EnzoTimeStep*1e4, static_cast<double>(pow(2, TimeLevelTmp0))*EnzoTimeStep*1e4);
 		while (TimeStepReg*EnzoTimeStep*1e4<1e-9) {
 			TimeLevelReg++;

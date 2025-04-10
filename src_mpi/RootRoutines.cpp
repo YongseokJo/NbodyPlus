@@ -16,10 +16,11 @@
 
 #define noDEBUG
 
-void InitialAssignmentOfTasks(std::vector<int>& data, double next_time, int NumTask, int TAG);
-void InitialAssignmentOfTasks(std::vector<int>& data, int NumTask, int TAG);
-void InitialAssignmentOfTasks(int data, int NumTask, int TAG);
-void InitialAssignmentOfTasks(int* data, int NumTask, int TAG);
+// void InitialAssignmentOfTasks(std::vector<int>& data, double next_time, int NumTask, int TAG);
+// void InitialAssignmentOfTasks(std::vector<int>& data, int NumTask, int TAG);
+// void InitialAssignmentOfTasks(int data, int NumTask, int TAG);
+// void InitialAssignmentOfTasks(int* data, int NumTask, int TAG);
+void InitialAssignmentOfTasks(Queue queue, int NumTask, int TAG);
 void broadcastFromRoot(double &data);
 void broadcastFromRoot(ULL &data);
 void broadcastFromRoot(int &data);
@@ -45,11 +46,11 @@ void getRegularList(std::multimap<ULL,int>& RegularMap, std::vector<int>& Regula
 void updateRegularMap(std::multimap<ULL,int>& RegularMap, std::vector<int>& RegularList);
 #endif
 #else // no multimap
-#ifdef CUDA
+// #ifdef CUDA
 void updateNextRegTime(std::unordered_set<int>& RegularList);
-#else
-void updateNextRegTime(std::vector<int>& RegularList);
-#endif
+// #else
+// void updateNextRegTime(std::vector<int>& RegularList);
+// #endif
 #endif // multimap
 
 #ifdef SEVN
@@ -84,17 +85,15 @@ void RootRoutines() {
 	std::multimap<ULL,int> RegularMap;
 #endif
 
-#ifdef CUDA
+// #ifdef CUDA
 	std::unordered_set<int> RegularList;
-#else
-	std::vector<int> RegularList;
-#endif
-	//MPI_Request requests[NumberOfProcessor];  // Pointer to the request handle
-	//MPI_Status statuses[NumberOfProcessor];    // Pointer to the status object
+// #else
+	// std::vector<int> RegularList;
+// #endif
+
 	MPI_Request request;  // Pointer to the request handle
 	MPI_Status status;    // Pointer to the status object
 
-	//int sender_rank, sender_tag;
 	int ptcl_id;
 
 	workers = new Worker[NumberOfWorker+1];
@@ -116,25 +115,6 @@ void RootRoutines() {
 	std::chrono::high_resolution_clock::time_point end_point_map;
 #endif
 #endif // performance
-
-	/* Particle loading Check */
-	/*
-	{
-		//, NextRegTime= %.3e Myr(%llu),
-		for (int i=0; i<=LastParticleIndex; i++) {
-			ptcl = &particles[i];
-			fprintf(stdout, "PID=%d, pos=(%lf, %lf, %lf), vel=(%lf, %lf, %lf)\n",
-					ptcl->PID,
-					ptcl->Position[0],
-					ptcl->Position[1],
-					ptcl->Position[2],
-					ptcl->Velocity[0],
-					ptcl->Velocity[1],
-					ptcl->Velocity[2]
-					);
-		}
-		fflush(stdout);
-	}*/
 
 	/* Initialization */
 	{
@@ -159,8 +139,8 @@ void RootRoutines() {
 			queue_scheduler.runQueueAuto();
 			queue_scheduler.waitQueue(0); //blocking wait
 		} while(queue_scheduler.isComplete());
-
 		std::cout << "Init 01 done" << std::endl;
+
 		queue_scheduler.initialize(InitAcc2);
 		queue_scheduler.takeQueue(PIDs);
 		do
@@ -169,12 +149,10 @@ void RootRoutines() {
 			queue_scheduler.runQueueAuto();
 			queue_scheduler.waitQueue(0); //blocking wait
 		} while(queue_scheduler.isComplete());
-
 		std::cout << "Init 02 done" << std::endl;
 
 #ifdef FEWBODY
 		// Primordial binary search
-
 		queue_scheduler.initialize(SearchPrimordialGroup);
 		queue_scheduler.takeQueue(PIDs);
 		do
@@ -183,10 +161,8 @@ void RootRoutines() {
 			queue_scheduler.runQueueAuto();
 			queue_scheduler.waitQueue(0); //blocking wait
 		} while(queue_scheduler.isComplete());
-
 		std::cout << "Primordial binary search done" << std::endl;
 
-		// example code by EW 2025.1.7
 		Queue queue;
 		int rank;
 		int OriginalLastParticleIndex = LastParticleIndex;
@@ -259,7 +235,7 @@ void RootRoutines() {
 						ptcl->NumberOfNeighbor);
 		}
 		*/
-	}
+	} // Initialization ends
 
 
 
@@ -311,6 +287,57 @@ void RootRoutines() {
 	}
 
 	/*
+	for (int i=0; i<=LastParticleIndex; i++) {
+		ptcl = &particles[i];
+		if (ptcl->isActive)
+			fprintf(stdout, "PID=%d, CurrentTime (Irr, Reg) = (%.3e(%llu), %.3e(%llu)) Myr\n"
+							"dtIrr = %.4e Myr, dtReg = %.4e Myr, blockIrr=%llu (%d), blockReg=%llu (%d)\n"
+							"NumNeighbor= %d\n",
+					ptcl->PID,
+					ptcl->CurrentTimeIrr * EnzoTimeStep * 1e10 / 1e6,
+					ptcl->CurrentBlockIrr,
+					ptcl->CurrentTimeReg * EnzoTimeStep * 1e10 / 1e6,
+					ptcl->CurrentBlockReg,
+					// NextRegTimeBlock*time_step*EnzoTimeStep*1e10/1e6,
+					// NextRegTimeBlock,
+					ptcl->TimeStepIrr * EnzoTimeStep * 1e10 / 1e6,
+					ptcl->TimeStepReg * EnzoTimeStep * 1e10 / 1e6,
+					ptcl->TimeBlockIrr,
+					ptcl->TimeLevelIrr,
+					ptcl->TimeBlockReg,
+					ptcl->TimeLevelReg,
+					ptcl->NumberOfNeighbor);
+	}
+	*/
+
+	/* timestep variable synchronization */
+	{
+		std::cout << "Time Step synchronization." << std::endl;
+		task=TimeSync;
+		completed_tasks = 0; total_tasks = NumberOfWorker;
+		Queue queue = {task, -1, -1.0};
+		InitialAssignmentOfTasks(queue, NumberOfWorker, QUEUE_TAG);
+		//MPI_Waitall(NumberOfCommunication, requests, statuses);
+		//NumberOfCommunication = 0;
+		broadcastFromRoot(time_block);
+		broadcastFromRoot(block_max);
+		broadcastFromRoot(time_step);
+		fprintf(stdout, "TimeSync broadcasd done.\n");
+		fflush(stdout);
+		//MPI_Win_sync(win);  // Synchronize memory
+		//MPI_Barrier(shared_comm);
+		while (completed_tasks < total_tasks) {
+			MPI_Irecv(&task, 1, MPI_INT, MPI_ANY_SOURCE, TERMINATE_TAG, MPI_COMM_WORLD, &request);
+			MPI_Wait(&request, &status);
+			completed_tasks++;
+		}
+		fprintf(stderr, "nbody+:time_block = %d, EnzoTimeStep=%e\n", time_block, EnzoTimeStep);
+		fflush(stderr);
+	}
+
+	/* Particle Initialization Check */
+	// /*
+	{
 		for (int i=0; i<=LastParticleIndex; i++) {
 			ptcl = &particles[i];
 			if (ptcl->isActive)
@@ -331,66 +358,8 @@ void RootRoutines() {
 						ptcl->TimeBlockReg,
 						ptcl->TimeLevelReg,
 						ptcl->NumberOfNeighbor);
-		}
-		*/
-
-	/* timestep variable synchronization */
-	{
-		std::cout << "Time Step synchronization." << std::endl;
-		task=TimeSync;
-		completed_tasks = 0; total_tasks = NumberOfWorker;
-		InitialAssignmentOfTasks(task, NumberOfWorker, TASK_TAG);
-		//MPI_Waitall(NumberOfCommunication, requests, statuses);
-		//NumberOfCommunication = 0;
-		broadcastFromRoot(time_block);
-		broadcastFromRoot(block_max);
-		broadcastFromRoot(time_step);
-		//MPI_Win_sync(win);  // Synchronize memory
-		//MPI_Barrier(shared_comm);
-		while (completed_tasks < total_tasks) {
-			MPI_Irecv(&task, 1, MPI_INT, MPI_ANY_SOURCE, TERMINATE_TAG, MPI_COMM_WORLD, &request);
-			MPI_Wait(&request, &status);
-			completed_tasks++;
-		}
-		fprintf(stderr, "nbody+:time_block = %d, EnzoTimeStep=%e\n", time_block, EnzoTimeStep);
-		fflush(stderr);
-	}
-
-	/* Particle Initialization Check */
-	/*
-	{
-		//, NextRegTime= %.3e Myr(%llu),
-		for (int i=0; i<=LastParticleIndex; i++) {
-			ptcl = &particles[i];
-			fprintf(stdout, "%d(%d)=",ptcl->PID,ptcl->NumberOfNeighbor);
-			for (int j=0;j<ptcl->NumberOfNeighbor;j++) {
-				fprintf(stdout, "%d, ",ptcl->Neighbors[j]);
-			}
-			fprintf(stdout, "\n");
-		}
-	}
-		for (int i=0; i<=LastParticleIndex; i++) {
-			ptcl = &particles[i];
-			fprintf(stdout, "PID=%d, CurrentTime (Irr, Reg) = (%.3e(%llu), %.3e(%llu)) Myr\n"\
-					"dtIrr = %.4e Myr, dtReg = %.4e Myr, blockIrr=%llu (%d), blockReg=%llu (%d)\n"\
-					"NumNeighbor= %d\n",
-					ptcl->PID,
-					ptcl->CurrentTimeIrr*EnzoTimeStep*1e10/1e6,
-					ptcl->CurrentBlockIrr,
-					ptcl->CurrentTimeReg*EnzoTimeStep*1e10/1e6,
-					ptcl->CurrentBlockReg,
-					//NextRegTimeBlock*time_step*EnzoTimeStep*1e10/1e6,
-					//NextRegTimeBlock,
-					ptcl->TimeStepIrr*EnzoTimeStep*1e10/1e6,
-					ptcl->TimeStepReg*EnzoTimeStep*1e10/1e6,
-					ptcl->TimeBlockIrr,
-					ptcl->TimeLevelIrr,
-					ptcl->TimeBlockReg,
-					ptcl->TimeLevelReg,
-					ptcl->NumberOfNeighbor
-					);
-
-			fprintf(stdout, " a_tot = (%.4e,%.4e,%.4e), a_reg = (%.4e,%.4e,%.4e), a_irr = (%.4e,%.4e,%.4e), n_n=%d, R=%.3e\n\
+				/*
+				fprintf(stdout, " a_tot = (%.4e,%.4e,%.4e), a_reg = (%.4e,%.4e,%.4e), a_irr = (%.4e,%.4e,%.4e), n_n=%d, R=%.3e\n\
 					a1_reg = (%.4e,%.4e,%.4e), a2_reg = (%.4e,%.4e,%.4e), a3_reg = (%.4e,%.4e,%.4e)\n\
 					a1_irr = (%.4e,%.4e,%.4e), a2_irr = (%.4e,%.4e,%.4e), a3_irr = (%.4e,%.4e,%.4e)\n", 
 					ptcl->a_tot[0][0],
@@ -421,39 +390,10 @@ void RootRoutines() {
 					ptcl->a_irr[2][2],
 					ptcl->a_irr[0][3],
 					ptcl->a_irr[1][3],
-					ptcl->a_irr[2][3]
-						);
-
+					ptcl->a_irr[2][3]);
+				*/
 		}
-		fflush(stdout);
-	}
-	*/
-	/* Particle Initialization Check */
-	// /*
-	{
-		//, NextRegTime= %.3e Myr(%llu),
-		for (int i=0; i<=LastParticleIndex; i++) {
-			ptcl = &particles[i];
-			if (ptcl->isActive)
-				fprintf(stdout, "PID=%d, CurrentTime (Irr, Reg) = (%.3e(%llu), %.3e(%llu)) Myr\n"
-								"dtIrr = %.4e Myr, dtReg = %.4e Myr, blockIrr=%llu (%d), blockReg=%llu (%d)\n"
-								"NumNeighbor= %d\n",
-						ptcl->PID,
-						ptcl->CurrentTimeIrr * EnzoTimeStep * 1e10 / 1e6,
-						ptcl->CurrentBlockIrr,
-						ptcl->CurrentTimeReg * EnzoTimeStep * 1e10 / 1e6,
-						ptcl->CurrentBlockReg,
-						// NextRegTimeBlock*time_step*EnzoTimeStep*1e10/1e6,
-						// NextRegTimeBlock,
-						ptcl->TimeStepIrr * EnzoTimeStep * 1e10 / 1e6,
-						ptcl->TimeStepReg * EnzoTimeStep * 1e10 / 1e6,
-						ptcl->TimeBlockIrr,
-						ptcl->TimeLevelIrr,
-						ptcl->TimeBlockReg,
-						ptcl->TimeLevelReg,
-						ptcl->NumberOfNeighbor);
-		}
-	}
+	} // Particle Initialization Check ends
 	// */
 
 
@@ -484,7 +424,9 @@ void RootRoutines() {
 			// end if the global time exceeds the end time
 			if (global_time >= 1) {
 				task=Ends;
-				InitialAssignmentOfTasks(task, NumberOfWorker, TASK_TAG);
+				Queue queue = {task, -1, -1.0};
+				InitialAssignmentOfTasks(queue, NumberOfWorker, QUEUE_TAG);
+				MPI_Type_free(&QueueType);
 				//MPI_Waitall(NumberOfCommunication, requests, statuses);
 				//NumberOfCommunication = 0;
 				std::cout << EnzoTimeStep << std::endl;
@@ -548,7 +490,7 @@ void RootRoutines() {
 
 			// Irregular
 			while ( skiplist->getFirstNode() != nullptr) {
-				// update_idx=0; // commented out by EW 2025.1.6
+
 				ThisLevelNode = skiplist->getFirstNode();
 				ThisLevelNode->ParticleList.erase(
 					std::remove_if(ThisLevelNode->ParticleList.begin(), ThisLevelNode->ParticleList.end(),
@@ -562,6 +504,7 @@ void RootRoutines() {
 					skiplist->deleteFirstNode();
 					continue;
 				}
+				// fprintf(stdout, "N: %d\n", ThisLevelNode->ParticleList.size());
 				next_time     = particles[ThisLevelNode->ParticleList[0]].CurrentTimeIrr\
 									 	    + particles[ThisLevelNode->ParticleList[0]].TimeStepIrr;
 
@@ -572,7 +515,7 @@ void RootRoutines() {
 #ifdef DEBUG
 				// print out particlelist
 				fprintf(stdout, "(IRR_FORCE) next_time: %e Myr\n", next_time*EnzoTimeStep*1e4);
-				/*
+				// /*
 				fprintf(stdout, "PID: %d. CurrentTimeIrr: %e Myr, TimeStepIrr: %e Myr\n", 
 							particles[ThisLevelNode->ParticleList[0]].PID, 
 							particles[ThisLevelNode->ParticleList[0]].CurrentTimeIrr*EnzoTimeStep*1e4, 
@@ -589,7 +532,7 @@ void RootRoutines() {
 				}
 				fprintf(stdout, "\n");
 				// fflush(stdout);
-				*/
+				// */
 #endif
 
 				// Irregular Force
@@ -601,46 +544,19 @@ void RootRoutines() {
 				std::cout << "Irr force starts" << std::endl;
 #endif
 // /*
-				// int num_iter1 = 0;
-				// int num_iter2 = 0;
-
 				int cm_pid;
 				Queue queue;
 				queue_scheduler.initializeIrr(IrrForce, next_time, ThisLevelNode->ParticleList);
 				auto iter = queue_scheduler.CMPtcls.begin();
 				do
 				{
-					// num_iter1++;
 					queue_scheduler.assignQueueAuto();
 					queue_scheduler.runQueueAuto();
-					// queue_scheduler.printStatus();
-					/*
-					if ((num_iter1 > 1000000 && num_iter1 < 1000005) || (num_iter2 > 1000000 && num_iter2 < 1000005)) {
-						fprintf(stdout, "Here 1!\n");
-						queue_scheduler.printStatus();
-						fflush(stdout);
-					}
-					*/
 					do {
-						// num_iter2++;
-						/*
-						if ((num_iter1 > 1000000 && num_iter1 < 1000005) || (num_iter2 > 1000000 && num_iter2 < 1000005)) {
-							fprintf(stdout, "Here 2!\n");
-							queue_scheduler.printStatus();
-							fflush(stdout);
-						}
-						*/ 
 						worker = queue_scheduler.waitQueue(1); // non-blocking wait
 						// if there's any CMPtcl
 						if (queue_scheduler.CMPtcls.size() > 0)
 						{
-							/*
-							if ((num_iter1 > 1000000 && num_iter1 < 1000005) || (num_iter2 > 1000000 && num_iter2 < 1000005)) {
-								fprintf(stdout, "Here 3!\n");
-								queue_scheduler.printStatus();
-								fflush(stdout);
-							}
-							*/
 							// check if there's any CM ptcl ready to go for SDAR
 							if (iter == queue_scheduler.CMPtcls.end())
 								iter = queue_scheduler.CMPtcls.begin();
@@ -657,42 +573,20 @@ void RootRoutines() {
 								}
 							}
 							*/
-							//queue_scheduler.printFreeWorker();
-							//queue_scheduler.printWorkerToGo();
-							//std::cout << "before: The number of CM ptcl is " << queue_scheduler.CMPtcls.size() << std::endl;
 							queue.task = ARIntegration;
 							queue.pid = cm_pid;
 							queue.next_time = next_time;
 							workers[CMPtclWorker[cm_pid]].addQueue(queue);
 							queue_scheduler.assignWorker(&workers[CMPtclWorker[cm_pid]]);
 							iter = queue_scheduler.CMPtcls.erase(iter);
-							//std::cout << "after: The number of CM ptcl is " << queue_scheduler.CMPtcls.size() << std::endl;
-							//queue_scheduler.printFreeWorker();
-							//queue_scheduler.printWorkerToGo();
 						// skip_to_next:;
 						}
 						if (worker != nullptr) 
 						{
-							/*
-							if ((num_iter1 > 1000000 && num_iter1 < 1000005) || (num_iter2 > 1000000 && num_iter2 < 1000005)) {
-								fprintf(stdout, "Here 5!\n");
-								fprintf(stdout, "Worker rank: %d\n", worker->MyRank);
-								queue_scheduler.printStatus();
-								fflush(stdout);
-							}
-							*/
-							//fprintf(stdout, "Worker rank: %d\n", worker->MyRank);
+
 						}
 					} while (worker == nullptr);
 					queue_scheduler.callback(worker);
-					/*
-					if ((num_iter1 > 1000000 && num_iter1 < 1000005) || (num_iter2 > 1000000 && num_iter2 < 1000005)) {
-						fprintf(stdout, "Here 6!\n");
-						queue_scheduler.printStatus();
-						fflush(stdout);
-					}
-					*/
-					//queue_scheduler.printStatus();
 				} while (queue_scheduler.isComplete());
 // */
 /*
@@ -746,14 +640,6 @@ void RootRoutines() {
 
 				//ParticleSynchronization();
 
-
-				// if remaining, further sorting
-				/*
-				if (update_idx < total_tasks) {
-						updateSkipList(skiplist, ThisLevelNode->ParticleList[update_idx]);
-						update_idx++;
-					}				updateSkipList(skiplist, ptcl_id_return);
-					*/
 
 #ifdef PERFORMANCETRACE
 				start_point_routine = std::chrono::high_resolution_clock::now();
@@ -954,11 +840,11 @@ void RootRoutines() {
 #endif
 #else // no multimap
 						if (ptcl->CurrentBlockReg + ptcl->TimeBlockReg == NextRegTimeBlock) {
-#ifdef CUDA
+// #ifdef CUDA
 							RegularList.insert(ptcl->ParticleIndex);
-#else
-							RegularList.push_back(ptcl->ParticleIndex);
-#endif
+// #else
+							// RegularList.push_back(ptcl->ParticleIndex);
+// #endif
 						}
 #endif // multimap
 
@@ -1130,11 +1016,11 @@ void RootRoutines() {
 #endif
 #else // no multimap
 						if (ptclCM->CurrentBlockReg + ptclCM->TimeBlockReg == NextRegTimeBlock) {
-#ifdef CUDA
+// #ifdef CUDA
 							RegularList.insert(ptcl->ParticleIndex);
-#else
-							RegularList.push_back(ptcl->ParticleIndex);
-#endif
+// #else
+							// RegularList.push_back(ptcl->ParticleIndex);
+// #endif
 						}
 #endif
 					}
@@ -1153,7 +1039,6 @@ void RootRoutines() {
 				}
 				newCMptcls.clear();
 
-				// std::cout << "erase success" << std::endl;
 #ifdef NSIGHT
 				nvtxRangePop();
 #endif
@@ -1183,71 +1068,6 @@ void RootRoutines() {
                     std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
 #endif
 
-				//std::cout << "update success" << std::endl;
-				//skiplist->display();
-				/*
-				{
-					//, NextRegTime= %.3e Myr(%llu),
-					for (int i=0; i<ThisLevelNode->ParticleList.size(); i++) {
-						ptcl = &particles_original[ThisLevelNode->ParticleList[i]];
-						fprintf(stdout, "PID=%d, CurrentTime (Irr, Reg) = (%.3e(%llu), %.3e(%llu)) Myr, NextReg = %.3e (%llu)\n"\
-								"dtIrr = %.4e Myr, dtReg = %.4e Myr, blockIrr=%llu (%d), blockReg=%llu (%d), NextBlockIrr= %.3e(%llu)\n"\
-								"NumNeighbor= %d\n",
-								ptcl->PID,
-								ptcl->CurrentTimeIrr*EnzoTimeStep*1e10/1e6,
-								ptcl->CurrentBlockIrr,
-								ptcl->CurrentTimeReg*EnzoTimeStep*1e10/1e6,
-								ptcl->CurrentBlockReg,
-								NextRegTimeBlock*time_step*EnzoTimeStep*1e10/1e6,
-								NextRegTimeBlock,
-								ptcl->TimeStepIrr*EnzoTimeStep*1e10/1e6,
-								ptcl->TimeStepReg*EnzoTimeStep*1e10/1e6,
-								ptcl->TimeBlockIrr,
-								ptcl->TimeLevelIrr,
-								ptcl->TimeBlockReg,
-								ptcl->TimeLevelReg,
-								ptcl->NextBlockIrr*time_step*EnzoTimeStep*1e10/1e6,
-								ptcl->NextBlockIrr,
-								ptcl->NumberOfNeighbor
-								);
-
-						fprintf(stdout, " a_tot = (%.4e,%.4e,%.4e), a_reg = (%.4e,%.4e,%.4e), a_irr = (%.4e,%.4e,%.4e), n_n=%d, R=%.3e\n\
-								a1_reg = (%.4e,%.4e,%.4e), a2_reg = (%.4e,%.4e,%.4e), a3_reg = (%.4e,%.4e,%.4e)\n\
-								a1_irr = (%.4e,%.4e,%.4e), a2_irr = (%.4e,%.4e,%.4e), a3_irr = (%.4e,%.4e,%.4e)\n", 
-								ptcl->a_tot[0][0],
-								ptcl->a_tot[1][0],
-								ptcl->a_tot[2][0],
-								ptcl->a_reg[0][0],
-								ptcl->a_reg[1][0],
-								ptcl->a_reg[2][0],
-								ptcl->a_irr[0][0],
-								ptcl->a_irr[1][0],
-								ptcl->a_irr[2][0],
-								ptcl->NumberOfNeighbor,
-								ptcl->RadiusOfNeighbor,
-								ptcl->a_reg[0][1],
-								ptcl->a_reg[1][1],
-								ptcl->a_reg[2][1],
-								ptcl->a_reg[0][2],
-								ptcl->a_reg[1][2],
-								ptcl->a_reg[2][2],
-								ptcl->a_reg[0][3],
-								ptcl->a_reg[1][3],
-								ptcl->a_reg[2][3],
-								ptcl->a_irr[0][1],
-								ptcl->a_irr[1][1],
-								ptcl->a_irr[2][1],
-								ptcl->a_irr[0][2],
-								ptcl->a_irr[1][2],
-								ptcl->a_irr[2][2],
-								ptcl->a_irr[0][3],
-								ptcl->a_irr[1][3],
-								ptcl->a_irr[2][3]
-									);
-					}
-					fflush(stdout);
-				}
-				*/
 				current_time_irr = particles[ThisLevelNode->ParticleList[0]].CurrentBlockIrr*time_step;
 #ifdef DEBUG
 				std::cout << "skiplist->deleteFirstNode() starts" << std::endl;
@@ -1257,36 +1077,6 @@ void RootRoutines() {
 				std::cout << "skiplist->deleteFirstNode() ended" << std::endl;
 #endif
 
-				//std::cout << "deleteFirstNode success" << std::endl;
-				//ThisLevelNode = skiplist->getFirstNode();
-
-				/*
-				{
-					//, NextRegTime= %.3e Myr(%llu),
-					for (int i=0; i<ThisLevelNode->ParticleList.size(); i++) {
-						ptcl = &particles[ThisLevelNode->ParticleList[i]];
-						fprintf(stdout, "PID=%d, CurrentTime (Irr, Reg) = (%.3e(%llu), %.3e(%llu)) Myr, NextReg = %.3e (%llu)\n"\
-								"dtIrr = %.4e Myr, dtReg = %.4e Myr, blockIrr=%llu (%d), blockReg=%llu (%d)\n"\
-								"NumNeighbor= %d\n",
-								ptcl->PID,
-								ptcl->CurrentTimeIrr*EnzoTimeStep*1e10/1e6,
-								ptcl->CurrentBlockIrr,
-								ptcl->CurrentTimeReg*EnzoTimeStep*1e10/1e6,
-								ptcl->CurrentBlockReg,
-								NextRegTimeBlock*time_step*EnzoTimeStep*1e10/1e6,
-								NextRegTimeBlock,
-								ptcl->TimeStepIrr*EnzoTimeStep*1e10/1e6,
-								ptcl->TimeStepReg*EnzoTimeStep*1e10/1e6,
-								ptcl->TimeBlockIrr,
-								ptcl->TimeLevelIrr,
-								ptcl->TimeBlockReg,
-								ptcl->TimeLevelReg,
-								ptcl->NumberOfNeighbor
-								);
-					}
-				}
-				*/
-				//exit(SUCCESS);
 #ifdef IRR_TEST
 				std::cout << "current_time_irr=" << current_time_irr<< std::endl;
 				// create output at appropriate time intervals
@@ -1298,7 +1088,8 @@ void RootRoutines() {
 				// end if the global time exceeds the end time
 				if (current_time_irr >= 1) {
 					task=-100;
-					InitialAssignmentOfTasks(task, NumberOfWorker, TASK_TAG);
+					Queue queue = {task, -1, -1.0};
+					InitialAssignmentOfTasks(Queue, NumberOfWorker, QUEUE_TAG);
 					MPI_Waitall(NumberOfCommunication, requests, statuses);
 					NumberOfCommunication = 0;
 					std::cout << EnzoTimeStep << std::endl;
@@ -1338,7 +1129,6 @@ void RootRoutines() {
 
 #ifdef CUDA
 			{
-				//total_tasks = RegularList.size();
 				next_time = NextRegTimeBlock*time_step;
 #ifdef MULTIMAP
 #ifdef PERFORMANCETRACE
@@ -1353,7 +1143,6 @@ void RootRoutines() {
 #endif
 #endif // multimap
 
-				//fprintf(stdout, "Regular starts\n");
 #ifdef NSIGHT
 				nvtxRangePushA("calculateRegAccelerationOnGPU");
 #endif
@@ -1384,13 +1173,12 @@ void RootRoutines() {
 #ifdef DEBUG
 				std::cout << "update regular starts" << std::endl;
 #endif
-
 				// Update Regular
 				queue_scheduler.initialize(RegCudaUpdate);
 				queue_scheduler.takeQueueRegularList(RegularList);
 				do
 				{
-					queue_scheduler.assignQueueRegularList();
+					queue_scheduler.assignQueueAutoRegularList();
 					queue_scheduler.runQueueAuto();
 					queue_scheduler.waitQueue(0); // blocking wait
 				} while (queue_scheduler.isComplete());
@@ -1421,69 +1209,7 @@ void RootRoutines() {
 #endif
 #endif // multimap
 			}
-				/*
-				{
-					//, NextRegTime= %.3e Myr(%llu),
-					for (int i=0; i<RegularList.size(); i++) {
-						ptcl = &particles[RegularList[i]];
-						fprintf(stdout, "PID=%d, CurrentTime (Irr, Reg) = (%.3e(%llu), %.3e(%llu)) Myr, NextReg = %.3e (%llu)\n"\
-								"dtIrr = %.4e Myr, dtReg = %.4e Myr, blockIrr=%llu (%d), blockReg=%llu (%d), NextBlockIrr= %.3e(%llu)\n"\
-								"NumNeighbor= %d\n",
-								ptcl->PID,
-								ptcl->CurrentTimeIrr*EnzoTimeStep*1e10/1e6,
-								ptcl->CurrentBlockIrr,
-								ptcl->CurrentTimeReg*EnzoTimeStep*1e10/1e6,
-								ptcl->CurrentBlockReg,
-								NextRegTimeBlock*time_step*EnzoTimeStep*1e10/1e6,
-								NextRegTimeBlock,
-								ptcl->TimeStepIrr*EnzoTimeStep*1e10/1e6,
-								ptcl->TimeStepReg*EnzoTimeStep*1e10/1e6,
-								ptcl->TimeBlockIrr,
-								ptcl->TimeLevelIrr,
-								ptcl->TimeBlockReg,
-								ptcl->TimeLevelReg,
-								ptcl->NextBlockIrr*time_step*EnzoTimeStep*1e10/1e6,
-								ptcl->NextBlockIrr,
-								ptcl->NumberOfNeighbor
-								);
 
-						fprintf(stdout, " a_tot = (%.4e,%.4e,%.4e), a_reg = (%.4e,%.4e,%.4e), a_irr = (%.4e,%.4e,%.4e), n_n=%d, R=%.3e\n\
-								a1_reg = (%.4e,%.4e,%.4e), a2_reg = (%.4e,%.4e,%.4e), a3_reg = (%.4e,%.4e,%.4e)\n\
-								a1_irr = (%.4e,%.4e,%.4e), a2_irr = (%.4e,%.4e,%.4e), a3_irr = (%.4e,%.4e,%.4e)\n", 
-								ptcl->a_tot[0][0],
-								ptcl->a_tot[1][0],
-								ptcl->a_tot[2][0],
-								ptcl->a_reg[0][0],
-								ptcl->a_reg[1][0],
-								ptcl->a_reg[2][0],
-								ptcl->a_irr[0][0],
-								ptcl->a_irr[1][0],
-								ptcl->a_irr[2][0],
-								ptcl->NumberOfNeighbor,
-								ptcl->RadiusOfNeighbor,
-								ptcl->a_reg[0][1],
-								ptcl->a_reg[1][1],
-								ptcl->a_reg[2][1],
-								ptcl->a_reg[0][2],
-								ptcl->a_reg[1][2],
-								ptcl->a_reg[2][2],
-								ptcl->a_reg[0][3],
-								ptcl->a_reg[1][3],
-								ptcl->a_reg[2][3],
-								ptcl->a_irr[0][1],
-								ptcl->a_irr[1][1],
-								ptcl->a_irr[2][1],
-								ptcl->a_irr[0][2],
-								ptcl->a_irr[1][2],
-								ptcl->a_irr[2][2],
-								ptcl->a_irr[0][3],
-								ptcl->a_irr[1][3],
-								ptcl->a_irr[2][3]
-									);
-					}
-					//fflush(stdout); 
-				}
-				*/
 #else // no cuda
 			{
 				next_time = NextRegTimeBlock*time_step;
@@ -1511,18 +1237,18 @@ void RootRoutines() {
 #ifdef DEBUG
 				std::cout << "Regular force starts" << std::endl;
 #endif
-/*
+// /*
 				// Regular force
 				queue_scheduler.initialize(RegForce);
 				queue_scheduler.takeQueueRegularList(RegularList);
 				do
 				{
-					queue_scheduler.assignQueueRegularList();
+					queue_scheduler.assignQueueAutoRegularList();
 					queue_scheduler.runQueueAuto();
 					queue_scheduler.waitQueue(0); // blocking wait
 				} while (queue_scheduler.isComplete());
-*/
-// /*
+// */
+/*
 				// Regular Gravity
 				task = RegForce;
 				completed_tasks = 0;
@@ -1531,11 +1257,6 @@ void RootRoutines() {
 
 				//std::cout << "TotalTask=" << total_tasks << std::endl;
 
-				/*
-				std::cout << "RegularList, PID= ";
-				for (int i=0; i<total_tasks; i++) {
-					std::cout << RegularList[i]<< ", ";
-				}*/
 				//std::cout << std::endl;
 
 				InitialAssignmentOfTasks(task, total_tasks, TASK_TAG);
@@ -1563,7 +1284,7 @@ void RootRoutines() {
 					//updateSkipList(skiplist, ptcl_id_return);
 					completed_tasks++;
 				}
-// */
+*/
 #ifdef DEBUG
 				std::cout << "Regular force ended" << std::endl;
 #endif
@@ -1590,18 +1311,18 @@ void RootRoutines() {
 #ifdef DEBUG
 				std::cout << "update regular starts" << std::endl;
 #endif
-/*
+// /*
 				// Update Regular
 				queue_scheduler.initialize(RegUpdate);
 				queue_scheduler.takeQueueRegularList(RegularList);
 				do
 				{
-					queue_scheduler.assignQueueRegularList();
+					queue_scheduler.assignQueueAutoRegularList();
 					queue_scheduler.runQueueAuto();
 					queue_scheduler.waitQueue(0); // blocking wait
 				} while (queue_scheduler.isComplete());
-*/
-// /*
+// */
+/*
 				// Regular Update
 				//std::cout<< "Reg Acc Done." <<std::endl;
 				task = RegUpdate;
@@ -1632,7 +1353,7 @@ void RootRoutines() {
 					}
 					completed_tasks++;
 				}
-// */
+*/
 #ifdef DEBUG
 				std::cout << "update regular ended" << std::endl;
 #endif
@@ -1662,164 +1383,6 @@ void RootRoutines() {
 			} // no cuda regular routine ends
 #endif // cuda
 
-#ifdef nouse
-			//std::cout << "Regular Routine Starts." << std::endl;
-			// Regular
-			{
-				// Regular Gravity
-				task = RegForce;
-				completed_tasks = 0;
-				total_tasks = RegularList.size();
-				next_time = NextRegTimeBlock*time_step;
-
-				//std::cout << "TotalTask=" << total_tasks << std::endl;
-
-				/*
-				std::cout << "RegularList, PID= ";
-				for (int i=0; i<total_tasks; i++) {
-					std::cout << RegularList[i]<< ", ";
-				}*/
-				//std::cout << std::endl;
-
-				InitialAssignmentOfTasks(task, total_tasks, TASK_TAG);
-				InitialAssignmentOfTasks(RegularList, next_time, total_tasks, PTCL_TAG);
-				MPI_Waitall(NumberOfCommunication, requests, statuses);
-				NumberOfCommunication = 0;
-
-
-				// further assignments
-				remaining_tasks = total_tasks-NumberOfWorker;
-				while (completed_tasks < total_tasks) {
-					// Check which worker is done
-					MPI_Irecv(&ptcl_id_return, 1, MPI_INT, MPI_ANY_SOURCE, TERMINATE_TAG, MPI_COMM_WORLD, &request);
-					// Poll until send completes
-					/*
-						 flag=0;
-						 while (!flag) {
-						 MPI_Test(&request, &flag, &status);
-					// Perform other work while waiting
-					}
-					*/
-					MPI_Wait(&request, &status);
-					completed_rank = status.MPI_SOURCE;
-					//printf("Rank %d: Send operation completed (%d).\n",completed_rank, ptcl_id_return);
-
-					if (remaining_tasks > 0) {
-						ptcl_id = RegularList[NumberOfWorker + completed_tasks];
-						MPI_Send(&task,      1, MPI_INT, completed_rank, TASK_TAG, MPI_COMM_WORLD);
-						MPI_Send(&ptcl_id,   1, MPI_INT, completed_rank, PTCL_TAG, MPI_COMM_WORLD);
-						MPI_Send(&next_time, 1, MPI_DOUBLE, completed_rank, TIME_TAG, MPI_COMM_WORLD);
-						remaining_tasks--;
-					} else {
-						//printf("Rank %d: No more tasks to assign\n", completed_rank);
-					}
-					//updateSkipList(skiplist, ptcl_id_return);
-					completed_tasks++;
-				}
-
-
-				//ParticleSynchronization();
-
-
-				// Regular Update
-				//std::cout<< "Reg Acc Done." <<std::endl;
-				task = RegUpdate;
-				completed_tasks = 0;
-
-				InitialAssignmentOfTasks(task, total_tasks, TASK_TAG);
-				InitialAssignmentOfTasks(RegularList, total_tasks, PTCL_TAG);
-				MPI_Waitall(NumberOfCommunication, requests, statuses);
-				NumberOfCommunication = 0;
-
-
-				// further assignments
-				remaining_tasks = total_tasks-NumberOfWorker;
-				while (completed_tasks < total_tasks) {
-					// Check which worker is done
-					MPI_Irecv(&ptcl_id_return, 1, MPI_INT, MPI_ANY_SOURCE, TERMINATE_TAG, MPI_COMM_WORLD, &request);
-					MPI_Wait(&request, &status);
-					completed_rank = status.MPI_SOURCE;
-
-					if (remaining_tasks > 0) {
-						ptcl_id = RegularList[NumberOfWorker + completed_tasks];
-						//MPI_Isend(&task,      1, MPI_INT, completed_rank, TASK_TAG, MPI_COMM_WORLD, &request);
-						//MPI_Isend(&ptcl_id,   1, MPI_INT, completed_rank, PTCL_TAG, MPI_COMM_WORLD, &request);
-						MPI_Send(&task,      1, MPI_INT, completed_rank, TASK_TAG, MPI_COMM_WORLD);
-						MPI_Send(&ptcl_id,   1, MPI_INT, completed_rank, PTCL_TAG, MPI_COMM_WORLD);
-						remaining_tasks--;
-					} else {
-						//printf("Rank %d: No more tasks to assign\n", completed_rank);
-					}
-					completed_tasks++;
-				}
-
-				//ParticleSynchronization();
-				/*
-				{
-					//, NextRegTime= %.3e Myr(%llu),
-					for (int i=0; i<total_tasks; i++) {
-						ptcl = &particles[RegularList[i]];
-						fprintf(stdout, "PID=%d, CurrentTime (Irr, Reg) = (%.3e(%llu), %.3e(%llu)) Myr, NextReg = %.3e (%llu)\n"\
-								"dtIrr = %.4e Myr, dtReg = %.4e Myr, blockIrr=%llu (%d), blockReg=%llu (%d), NextBlockIrr= %.3e(%llu)\n"\
-								"NumNeighbor= %d\n",
-								ptcl->PID,
-								ptcl->CurrentTimeIrr*EnzoTimeStep*1e10/1e6,
-								ptcl->CurrentBlockIrr,
-								ptcl->CurrentTimeReg*EnzoTimeStep*1e10/1e6,
-								ptcl->CurrentBlockReg,
-								NextRegTimeBlock*time_step*EnzoTimeStep*1e10/1e6,
-								NextRegTimeBlock,
-								ptcl->TimeStepIrr*EnzoTimeStep*1e10/1e6,
-								ptcl->TimeStepReg*EnzoTimeStep*1e10/1e6,
-								ptcl->TimeBlockIrr,
-								ptcl->TimeLevelIrr,
-								ptcl->TimeBlockReg,
-								ptcl->TimeLevelReg,
-								ptcl->NextBlockIrr*time_step*EnzoTimeStep*1e10/1e6,
-								ptcl->NextBlockIrr,
-								ptcl->NumberOfNeighbor
-								);
-
-						fprintf(stdout, " a_tot = (%.4e,%.4e,%.4e), a_reg = (%.4e,%.4e,%.4e), a_irr = (%.4e,%.4e,%.4e), n_n=%d, R=%.3e\n\
-								a1_reg = (%.4e,%.4e,%.4e), a2_reg = (%.4e,%.4e,%.4e), a3_reg = (%.4e,%.4e,%.4e)\n\
-								a1_irr = (%.4e,%.4e,%.4e), a2_irr = (%.4e,%.4e,%.4e), a3_irr = (%.4e,%.4e,%.4e)\n", 
-								ptcl->a_tot[0][0],
-								ptcl->a_tot[1][0],
-								ptcl->a_tot[2][0],
-								ptcl->a_reg[0][0],
-								ptcl->a_reg[1][0],
-								ptcl->a_reg[2][0],
-								ptcl->a_irr[0][0],
-								ptcl->a_irr[1][0],
-								ptcl->a_irr[2][0],
-								ptcl->NewNumberOfNeighbor,
-								ptcl->RadiusOfNeighbor,
-								ptcl->a_reg[0][1],
-								ptcl->a_reg[1][1],
-								ptcl->a_reg[2][1],
-								ptcl->a_reg[0][2],
-								ptcl->a_reg[1][2],
-								ptcl->a_reg[2][2],
-								ptcl->a_reg[0][3],
-								ptcl->a_reg[1][3],
-								ptcl->a_reg[2][3],
-								ptcl->a_irr[0][1],
-								ptcl->a_irr[1][1],
-								ptcl->a_irr[2][1],
-								ptcl->a_irr[0][2],
-								ptcl->a_irr[1][2],
-								ptcl->a_irr[2][2],
-								ptcl->a_irr[0][3],
-								ptcl->a_irr[1][3],
-								ptcl->a_irr[2][3]
-									);
-					}
-					//fflush(stdout); 
-				}
-				*/
-				//current_time_irr = particles[ThisLevelNode->ParticleList[0]].CurrentBlockIrr;
-			} // Regular Done.
-#endif
 			global_time = NextRegTimeBlock*time_step;
 
 #ifdef SEVN
@@ -1972,7 +1535,7 @@ void updateRegularMap(std::multimap<ULL,int>& RegularMap, std::vector<int>& Regu
 }
 #endif // cuda
 #else // no multimap
-#ifdef CUDA
+// #ifdef CUDA
 void updateNextRegTime(std::unordered_set<int>& RegularList) {
 
 	ULL time_tmp=0, time=block_max;
@@ -2003,7 +1566,7 @@ void updateNextRegTime(std::unordered_set<int>& RegularList) {
 	NextRegTimeBlock = time;
 	global_variable->NextRegTimeBlock = NextRegTimeBlock;
 }
-#else // no cuda
+// #else // no cuda
 void updateNextRegTime(std::vector<int>& RegularList) {
 
 	ULL time_tmp=0, time=block_max;
@@ -2034,7 +1597,7 @@ void updateNextRegTime(std::vector<int>& RegularList) {
 	NextRegTimeBlock = time;
 	global_variable->NextRegTimeBlock = NextRegTimeBlock;
 }
-#endif // cuda
+// #endif // cuda
 #endif // multimap
 
 bool createSkipList(SkipList *skiplist) {
@@ -2048,12 +1611,6 @@ bool createSkipList(SkipList *skiplist) {
 		fflush(stdout);
 	}
 
-	/*
-#ifdef time_trace
-	_time.irr_chain.markStart();
-#endif
-*/
-
 	Particle* ptcl;
 
 	for (int i=0; i<=LastParticleIndex; i++) {
@@ -2066,13 +1623,6 @@ bool createSkipList(SkipList *skiplist) {
 				skiplist->insert(ptcl->NextBlockIrr, ptcl->ParticleIndex);
 		}
 	}
-
-	/*
-#ifdef time_trace
-	_time.irr_chain.markEnd();
-	_time.irr_chain.getDuration();
-#endif
-*/
 
 	/*
 	if (debug) {
@@ -2098,22 +1648,16 @@ bool updateSkipList(SkipList *skiplist, int ptcl_id) {
 		fflush(stdout);
 	}
 
-	/*
-#ifdef time_trace
-	_time.irr_sort.markStart();
-#endif
-*/
-
 	/* Update New Time Steps */
 	//Node* ThisLevelNode = skiplist->getFirstNode();
 
 	/*
-		 if (this->debug) {
-		 fprintf(stdout, "PID=%d, NBI=%llu, size=%lu\n", ptcl->PID, ptcl->NextBlockIrr, ThisLevelNode->particle_list.size());
-		 fprintf(stdout, "NextBlockIrr=%llu\n",ptcl->NextBlockIrr);
-		 fflush(stdout);
-		 }
-		 */
+	if (this->debug) {
+	fprintf(stdout, "PID=%d, NBI=%llu, size=%lu\n", ptcl->PID, ptcl->NextBlockIrr, ThisLevelNode->particle_list.size());
+	fprintf(stdout, "NextBlockIrr=%llu\n",ptcl->NextBlockIrr);
+	fflush(stdout);
+	}
+	*/
 
 	Particle * ptcl = &particles[ptcl_id];
 
@@ -2127,12 +1671,6 @@ bool updateSkipList(SkipList *skiplist, int ptcl_id) {
 	if (debug) {
 	}
 
-	/*
-#ifdef time_trace
-	_time.irr_sort.markEnd();
-	_time.irr_sort.getDuration();
-#endif
-*/
 
 	if (debug) {
 		//skiplist->display();
@@ -2141,7 +1679,3 @@ bool updateSkipList(SkipList *skiplist, int ptcl_id) {
 
 	return true;
 }
-
-
-
-

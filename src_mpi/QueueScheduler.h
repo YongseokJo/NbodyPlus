@@ -83,13 +83,17 @@ public:
         }
     }
 
+    void sendQueueforRegCuda(Worker *worker) {
+        worker->sendTask(_queue);
+    }
+
 
     void takeQueueRegularList(std::unordered_set<int> &queue_list) {
         _queue_list_ = queue_list;
         _total_queues = _queue_list_.size();
     }
 
-    void assignQueueRegularList() {
+    void assignQueueAutoRegularList() {
         if (_queue_list_.size() == 0)
             return;
         for (auto worker = _FreeWorkers.begin(); worker != _FreeWorkers.end();)
