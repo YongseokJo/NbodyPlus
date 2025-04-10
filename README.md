@@ -1,7 +1,7 @@
 ## This is an ABYSS code simulating self-consistent gravity for stars and black holes.
 # How to run this code
 
-> `e.g., abyss.exe -p config.txt`  
+> `e.g., abyss.exe -c config.txt`  
 <pre>
 -c|--config [name of a configuration (parameter) file]
 </pre>
