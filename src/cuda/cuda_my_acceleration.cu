@@ -119,13 +119,12 @@ void GetAcceleration(
     // Let’s define chunk = how many targets each GPU will handle at a time:
     // int chunkPerGpu = (variable_size + deviceCount - 1) / deviceCount; 
     int chunkPerGpu = (NNB + deviceCount - 1) / deviceCount; 
-
+	// chunkPerGpu = std::min(chunkPerGpu, nbodymax); // Limit to target_size_per_gpu
     // or any chunk size you prefer
 	int NumTarget;
 
-    for (int TargetStart = 0; TargetStart < NumTargetTotal; TargetStart += target_size) {
+    for (int TargetStart = 0; TargetStart < NumTargetTotal; TargetStart += target_size) { //i loop
         // How many targets remain in this chunk
-        // int bigChunk = std::min(target_size, NumTargetTotal - TargetStart);
 		NumTarget = std::min(target_size, NumTargetTotal-TargetStart);
 #ifdef DEBUG
 		fprintf(stderr, "TargetStart = %d, NumTargetTotal = %d, NumTarget = %d\n", TargetStart, NumTargetTotal, NumTarget);
@@ -145,195 +144,204 @@ void GetAcceleration(
 #ifdef DEBUG
 			fprintf(stderr, "%d, deviceJStart = %d, deviceNumJ = %d\n", i, deviceJStart, deviceNumJ);
 #endif
+			// as I modified the kernel into additive, we have to initialize the d_result_array[i] to zero
+			cudaMemset(d_result_array[i], 0,  _six*variable_size* sizeof(CUDA_REAL));
+			cudaMemset(d_neighbor_array[i], 0, MaxNumNeighbor * (size_t)target_size * sizeof(int));
+			cudaMemset(d_num_neighbor_array[i], 0, variable_size * sizeof(int));
 
-            // Copy the relevant portion of h_target_list to d_target_array[i],
-            // e.g., if needed:
-            toDevice(h_target_list + TargetStart,
-                     d_target_array[i],
-                     NumTarget,
-                     streams[i]);
-			//cudaStreamSynchronize(streams[i]);
-			
-            // Prepare kernel dimensions
-            dim3 blockDim(BatchSize, 1, 1);
-            dim3 gridDim(
-                (NumTarget + BatchSize + blockDim.x - 1) / blockDim.x, 
-                GridDimY
-            );
+			for (int JStart = deviceJStart; JStart < deviceJStart + deviceNumJ; JStart += variable_size) {
+				int NumJ = std::min(variable_size, (deviceJStart + deviceNumJ) - JStart);
 
-            // Launch compute_forces on GPU i
-            compute_forces<<<gridDim, blockDim, 0, streams[i]>>>(
-                d_ptcl_array[i],
-                d_r2_array[i],
-                d_diff_array[i],
-                NumTarget,
-                deviceNumJ, //NNB
-                d_target_array[i],
-                d_neighbor_block_array[i],
-                d_num_neighbor_block_array[i],
-                TargetStart,   // i_start
-				deviceJStart, // j_start
-				NNB
-            );
-			//cudaStreamSynchronize(streams[i]);
+				// Copy the relevant portion of h_target_list to d_target_array[i],
+				// e.g., if needed:
+				toDevice(h_target_list + TargetStart,
+						d_target_array[i],
+						NumTarget,
+						streams[i]);
+				//cudaStreamSynchronize(streams[i]);
+				
+				// Prepare kernel dimensions
+				dim3 blockDim(BatchSize, 1, 1);
+				dim3 gridDim(
+					(NumTarget + BatchSize + blockDim.x - 1) / blockDim.x, 
+					GridDimY
+				);
 
-			/*
-            // Next do reduce_forces_cublas on GPU i
-            reduce_forces_cublas(
-                cublasHandles[i], 
-                d_diff_array[i], 
-                d_result_array[i], 
-                GridDimY, 
-                NumTarget
-            );
-			*/
-			dim3 blockDim3(16, 6);       // 16 threads along X, 6 along Y
-			dim3 gridDim3((NumTarget+15)/16, 1);
-			reduce_forces_kernel<<<gridDim3, blockDim3>>>(d_diff_array[i], d_result_array[i], GridDimY, NumTarget);
+				// Launch compute_forces on GPU i
+				compute_forces<<<gridDim, blockDim, 0, streams[i]>>>(
+					d_ptcl_array[i],
+					d_r2_array[i],
+					d_diff_array[i],
+					NumTarget,
+					NumJ, //NNB
+					d_target_array[i],
+					d_neighbor_block_array[i],
+					d_num_neighbor_block_array[i],
+					TargetStart,   // i_start
+					JStart, // j_start
+					NNB
+				);
+				//cudaStreamSynchronize(streams[i]);
 
-
-			//cudaStreamSynchronize(streams[i]);
-			/*
-			fprintf(stdout, "debug_print2-3 %d %d\n",i, NumTarget); // 90 or 32300?
-			cudaStreamSynchronize(streams[i]);
-			print_forces_subset<<<gridDim2, blockDim2, 0, streams[i]>>>(d_result_array[i], NumTarget, 6);
-			cudaStreamSynchronize(streams[i]);
-			*/
-            gather_neighbor<<<gridDim2, blockDim2, 0, streams[i]>>>(
-                d_neighbor_block_array[i], 
-                d_num_neighbor_block_array[i], 
-                d_neighbor_array[i],
-                NumTarget
-            );
-
-			//fprintf(stdout, "debug_print2-2 %d \n",i);
-			//print_forces_subset<<<gridDim2, blockDim2, 0, streams[i]>>>(d_result_array[i], NumTarget, 6);
-			//cudaStreamSynchronize(streams[i]);
+				/*
+				// Next do reduce_forces_cublas on GPU i
+				reduce_forces_cublas(
+					cublasHandles[i], 
+					d_diff_array[i], 
+					d_result_array[i], 
+					GridDimY, 
+					NumTarget
+				);
+				*/
+				dim3 blockDim3(16, 6);       // 16 threads along X, 6 along Y
+				dim3 gridDim3((NumTarget+15)/16, 1);
+				reduce_forces_kernel<<<gridDim3, blockDim3>>>(d_diff_array[i], d_result_array[i], GridDimY, NumTarget);
 
 
-            gather_numneighbor<<<gridDim2, blockDim2, 0, streams[i]>>>(
-                d_num_neighbor_block_array[i], 
-                d_num_neighbor_array[i], 
-                NumTarget
-            );
-			//cudaStreamSynchronize(streams[i]);
+				//cudaStreamSynchronize(streams[i]);
+				/*
+				fprintf(stdout, "debug_print2-3 %d %d\n",i, NumTarget); // 90 or 32300?
+				cudaStreamSynchronize(streams[i]);
+				print_forces_subset<<<gridDim2, blockDim2, 0, streams[i]>>>(d_result_array[i], NumTarget, 6);
+				cudaStreamSynchronize(streams[i]);
+				*/
+				gather_neighbor<<<gridDim2, blockDim2, 0, streams[i]>>>(
+					d_neighbor_block_array[i], 
+					d_num_neighbor_block_array[i], 
+					d_neighbor_array[i],
+					d_num_neighbor_array[i],
+					NumTarget
+				);
 
-            // Copy back partial results
-            toHost(h_result_array[i],
-                   d_result_array[i],
-                   _six * NumTarget,
-                   streams[i]);
+				//fprintf(stdout, "debug_print2-2 %d \n",i);
+				//print_forces_subset<<<gridDim2, blockDim2, 0, streams[i]>>>(d_result_array[i], NumTarget, 6);
+				//cudaStreamSynchronize(streams[i]);
 
 
-            toHost(NeighborList_array[i],
-                   d_neighbor_array[i],
-                   NumTarget * MaxNumNeighbor,
-                   streams[i]);
-			
-            toHost(h_num_neighbor_array[i],
-                   d_num_neighbor_array[i],
-                   NumTarget,
-                   streams[i]);
-        }
-
-        // 2) Synchronize all devices, then copy results to host
-        for (int i = 0; i < deviceCount; i++) {
-            cudaSetDevice(i);
-			cudaStreamSynchronize(streams[i]);
-        }
-		
-		for (int j = 0; j < NumTarget; j++) {
-			int target_idx = TargetStart + j;  // Precompute base index
-			int result_idx = _six * target_idx;  // Precompute h_result index
-			NumNeighbor[j] = 0;
-
-			// Initialize h_result for this target
-			for (int k = 0; k < _six; k++) {
-				h_result[result_idx + k] = 0.0;
+				gather_numneighbor<<<gridDim2, blockDim2, 0, streams[i]>>>(
+					d_num_neighbor_block_array[i], 
+					d_num_neighbor_array[i], 
+					NumTarget
+				);
+				//cudaStreamSynchronize(streams[i]);
 			}
+			// Copy back partial results
+			toHost(h_result_array[i],
+				d_result_array[i],
+				_six * NumTarget,
+				streams[i]);
 
-			// Accumulate results across devices
+
+			toHost(NeighborList_array[i],
+				d_neighbor_array[i],
+				NumTarget * MaxNumNeighbor,
+				streams[i]);
+			
+			toHost(h_num_neighbor_array[i],
+				d_num_neighbor_array[i],
+				NumTarget,
+				streams[i]);
+
+
+			// 2) Synchronize all devices, then copy results to host
 			for (int i = 0; i < deviceCount; i++) {
+				cudaSetDevice(i);
+				cudaStreamSynchronize(streams[i]);
+			}
+			
+			for (int j = 0; j < NumTarget; j++) {
+				int target_idx = TargetStart + j;  // Precompute base index
+				int result_idx = _six * target_idx;  // Precompute h_result index
+				NumNeighbor[j] = 0;
+
+				// Initialize h_result for this target
 				for (int k = 0; k < _six; k++) {
-					h_result[result_idx + k] += h_result_array[i][j * _six + k];
+					h_result[result_idx + k] = 0.0;
 				}
-				NumNeighbor[j] += h_num_neighbor_array[i][j];
-			}
-		}
 
-		#ifdef NSIGHT
-		nvtxRangePushA("NeighborList_array to NeighborList");
-		#endif
-
-		for (int k = 0; k < NumTarget; k++) {
-			int offset = 0;
-			for (int i = 0; i < deviceCount; i++) {
-				int count = h_num_neighbor_array[i][k];
-				if (offset + count > MaxNumNeighbor) {
-					fprintf(stderr, "ERROR: Sum of neighbors exceeds MaxNumNeighbor for target %d!\n", k);
-					// Handle error, e.g. break or throw
-				}
-				memcpy(&NeighborList[k * MaxNumNeighbor + offset],
-					&NeighborList_array[i][k * MaxNumNeighbor],
-					count * sizeof(int));
-				offset += count; 
-			}
-		}
-		#ifdef NSIGHT
-		nvtxRangePop();
-		#endif
-
-
-		#ifdef NSIGHT
-		nvtxRangePushA("h_result to acc and adot");
-		#endif
-		for (int i=0; i<NumTarget; i++) {
-			acc[i+TargetStart][0]  = h_result[_six*i];
-			acc[i+TargetStart][1]  = h_result[_six*i+1];
-			acc[i+TargetStart][2]  = h_result[_six*i+2];
-			adot[i+TargetStart][0] = h_result[_six*i+3];
-			adot[i+TargetStart][1] = h_result[_six*i+4];
-			adot[i+TargetStart][2] = h_result[_six*i+5];
-			
-
-			#ifdef debuggig_verification
-			cudaSetDevice(0);
-			toHost(h_r2, d_r2_array[0], NNB); // only for verification
-
-			fprintf(stderr, "%d (%d) neighbors of %d = ", i, h_target_list[i], NumNeighbor[i]);
-			for (int j=0;j<NumNeighbor[i];j++) {
-				fprintf(stderr, "%d, ", NeighborList[i * MaxNumNeighbor + j]);
-			}
-			fprintf(stderr, "\n");
-
-			// verification
-			fprintf(stderr, "%d (%d) neighbors of %d (veri)= ", i, h_target_list[i], NumNeighbor[i]);
-			double ix = h_ptcl[h_target_list[i]];
-			double iy = h_ptcl[h_target_list[i] + NNB * 1];
-			double iz = h_ptcl[h_target_list[i] + NNB * 2];
-			double i_r2 = h_r2[h_target_list[i]];
-			
-			fprintf(stderr, "h_r2 = %e \n", i_r2);
-
-			for (int j=0; j<NNB; j++) {
-				double dx = ix - h_ptcl[j];
-				double dy = iy - h_ptcl[j + NNB * 1];
-				double dz = iz - h_ptcl[j + NNB * 2];
-				double r2_temp = dx*dx + dy*dy + dz*dz;
-				if (r2_temp < i_r2) {
-					fprintf(stderr, "%d, (%e)", j, r2_temp);
+				// Accumulate results across devices
+				for (int i = 0; i < deviceCount; i++) {
+					for (int k = 0; k < _six; k++) {
+						h_result[result_idx + k] += h_result_array[i][j * _six + k];
+					}
+					NumNeighbor[j] += h_num_neighbor_array[i][j];
 				}
 			}
-			fprintf(stderr, "\n");
-			exit(1);
+
+			#ifdef NSIGHT
+			nvtxRangePushA("NeighborList_array to NeighborList");
 			#endif
-		}
+
+			for (int k = 0; k < NumTarget; k++) {
+				int offset = 0;
+				for (int i = 0; i < deviceCount; i++) {
+					int count = h_num_neighbor_array[i][k];
+					if (offset + count > MaxNumNeighbor) {
+						fprintf(stderr, "ERROR: Sum of neighbors exceeds MaxNumNeighbor for target %d!\n", k);
+						// Handle error, e.g. break or throw
+					}
+					memcpy(&NeighborList[k * MaxNumNeighbor + offset],
+						&NeighborList_array[i][k * MaxNumNeighbor],
+						count * sizeof(int));
+					offset += count; 
+				}
+			}
+			#ifdef NSIGHT
+			nvtxRangePop();
+			#endif
+
+
+			#ifdef NSIGHT
+			nvtxRangePushA("h_result to acc and adot");
+			#endif
+			for (int i=0; i<NumTarget; i++) {
+				acc[i+TargetStart][0]  = h_result[_six*i];
+				acc[i+TargetStart][1]  = h_result[_six*i+1];
+				acc[i+TargetStart][2]  = h_result[_six*i+2];
+				adot[i+TargetStart][0] = h_result[_six*i+3];
+				adot[i+TargetStart][1] = h_result[_six*i+4];
+				adot[i+TargetStart][2] = h_result[_six*i+5];
+				
+
+				#ifdef debuggig_verification
+				cudaSetDevice(0);
+				toHost(h_r2, d_r2_array[0], NNB); // only for verification
+
+				fprintf(stderr, "%d (%d) neighbors of %d = ", i, h_target_list[i], NumNeighbor[i]);
+				for (int j=0;j<NumNeighbor[i];j++) {
+					fprintf(stderr, "%d, ", NeighborList[i * MaxNumNeighbor + j]);
+				}
+				fprintf(stderr, "\n");
+
+				// verification
+				fprintf(stderr, "%d (%d) neighbors of %d (veri)= ", i, h_target_list[i], NumNeighbor[i]);
+				double ix = h_ptcl[h_target_list[i]];
+				double iy = h_ptcl[h_target_list[i] + NNB * 1];
+				double iz = h_ptcl[h_target_list[i] + NNB * 2];
+				double i_r2 = h_r2[h_target_list[i]];
+				
+				fprintf(stderr, "h_r2 = %e \n", i_r2);
+
+				for (int j=0; j<NNB; j++) {
+					double dx = ix - h_ptcl[j];
+					double dy = iy - h_ptcl[j + NNB * 1];
+					double dz = iz - h_ptcl[j + NNB * 2];
+					double r2_temp = dx*dx + dy*dy + dz*dz;
+					if (r2_temp < i_r2) {
+						fprintf(stderr, "%d, (%e)", j, r2_temp);
+					}
+				}
+				fprintf(stderr, "\n");
+				exit(1);
+				#endif
+			}
 
 		#ifdef NSIGHT
 		nvtxRangePop();
 		#endif
 
-    } // end of TargetStart loop
+		}
+	} // end of i loop
 	/*
 	for (int i = 0; i < deviceCount; i++){
 		cudaSetDevice(i);
@@ -617,9 +625,10 @@ void _ReceiveFromHost(
 	//time_send -= get_wtime();
 	//nbodymax       = 100000000;
 	NNB            = _NNB;
+	// NNB	= std::min(_NNB, nbodymax);
 	//MaxNumNeighbor = _MaxNumNeighbor;
 	isend++;
-	assert(NNB <= nbodymax);
+	// assert(NNB <= nbodymax);
 	cudaError_t cudaStatus;
 
 
@@ -635,10 +644,10 @@ void _ReceiveFromHost(
 	if ((first) || (new_size(NNB) > variable_size )) {
 		//varaiable_size should be the number of j, and target size be the number of i
 
-		variable_size = new_size(NNB);
+		variable_size = new_size(NNB); //NNB
 		// target_size = ((NNB > nbodymax/NNB) ? int(pow(2,ceil(log(nbodymax/NNB)/log(2.0)))) : NNB);
-		target_size = variable_size;
-		target_size_per_gpu = target_size / deviceCount + 1;
+		target_size = std::min(variable_size, nbodymax); //Subset for GPU
+		// target_size_per_gpu = target_size / deviceCount + 1;
 		fprintf(stderr, "variable_size=%d, target_size=%d\n", variable_size, target_size);
 
 
@@ -684,21 +693,20 @@ void _ReceiveFromHost(
 		}
 		#ifdef MultiGPU
 		my_allocate(&h_ptcl         , d_ptcl_array        ,         _seven*variable_size, deviceCount, 0); // x,v,m
-		my_allocate(&h_result       , d_result_array      ,           _six*variable_size, deviceCount, 0);
+		my_allocate(&h_result       , d_result_array      ,           _six*variable_size, deviceCount, 0); // d_result_array should be changed into target_size
 		my_allocate(&h_num_neighbor , d_num_neighbor_array, variable_size, deviceCount, 0);
 		my_allocate_d(d_r2_array,        variable_size, deviceCount, 0);
-		my_allocate_d(d_target_array,        variable_size, deviceCount, 0);
+
+		my_allocate_d(d_target_array,        target_size, deviceCount, 0);
 		my_allocate_d(d_diff_array      , _six * GridDimY * target_size, deviceCount, 0);
-		// C * m / N_device
-		// C * (m / N_device)
 		my_allocate_d(d_num_neighbor_block_array, GridDimY * target_size, deviceCount, 0);
-		my_allocate_d(d_neighbor_block_array, GridDimY * NNB_per_block * target_size, deviceCount, 0);
-		my_allocate_d(d_neighbor_array, MaxNumNeighbor * target_size, deviceCount, 0);
+		my_allocate_d(d_neighbor_block_array, GridDimY * NNB_per_block * (size_t)target_size, deviceCount, 0);
+		my_allocate_d(d_neighbor_array, MaxNumNeighbor * (size_t)target_size, deviceCount, 0);
 		for (int i = 0; i < deviceCount; i++) {
 			cudaSetDevice(i);
-			cudaMallocHost(&h_result_array[i], _six*variable_size * sizeof(CUDA_REAL));
-			cudaMallocHost(&h_num_neighbor_array[i], variable_size * sizeof(int));
-			cudaMallocHost(&NeighborList_array[i], variable_size * MaxNumNeighbor * sizeof(int));
+			cudaMallocHost(&h_result_array[i], _six*target_size * sizeof(CUDA_REAL));
+			cudaMallocHost(&h_num_neighbor_array[i], target_size * sizeof(int));
+			cudaMallocHost(&NeighborList_array[i], (size_t)target_size * MaxNumNeighbor * sizeof(int));
 		}
 		#else
 		my_allocate(&h_ptcl         , &d_ptcl        ,         _seven*variable_size); // x,v,m

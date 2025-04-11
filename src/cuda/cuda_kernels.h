@@ -13,9 +13,9 @@ __global__ void print_forces_subset(CUDA_REAL* result, int m, int n);
 
 // __global__ void compute_forces(const CUDA_REAL* __restrict__ ptcl, const CUDA_REAL* __restrict__ r2, CUDA_REAL *d_diff, int m, int n, const int* __restrict__ subset, int* __restrict__ neighbor, int* num_neighbor, int start);
 __global__ void compute_forces(const CUDA_REAL* __restrict__ ptcl, const CUDA_REAL* __restrict__ r2, CUDA_REAL* __restrict__ diff, int m, int n, const int* __restrict__ subset, int* __restrict__ neighbor, int* num_neighbor, int i_start, int j_start, int NNB);
-__global__ void gather_neighbor(const int*  neighbor_block, const int*  num_neighbor, int* gathered_neighbor, int  m);
+// __global__ void gather_neighbor(const int*  neighbor_block, const int*  num_neighbor, int* gathered_neighbor, int  m);
 __global__ void gather_numneighbor(const int* numneighbor_block, int* gathered_numneighbor, int m);
-
+__global__ void gather_neighbor(const int* neighbor_block, const int* num_neighbor, int* gathered_neighbor, const int* gathered_numneighbor_sofar, int m);
 // void force_reduction(cublasHandle_t handle, const double3 *acc, const double3 *adot, CUDA_REAL *result, int m, int n);
 // void reduce_forces_cublas(cublasHandle_t handle, const CUDA_REAL *diff, CUDA_REAL *result, int n, int m);
 

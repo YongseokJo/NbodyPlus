@@ -407,12 +407,12 @@ __global__ void reduce_forces_kernel(const CUDA_REAL *diff,  // [6 * m * n] tota
 
     // store interleaved in the output: result[j*6 + comp]
     // matching the cublasDgemv style: incY = 6
-    result[col * 6 + comp] = sumVal;
+    result[col * 6 + comp] += sumVal; // change to add
 }
 
 
 // using uint16 type?
-__global__ void gather_neighbor(const int* neighbor_block, const int* num_neighbor, int* gathered_neighbor, int m) {
+__global__ void gather_neighbor(const int* neighbor_block, const int* num_neighbor, int* gathered_neighbor, const int* gathered_numneighbor_sofar, int m) {
     int i = blockIdx.x;  // index for m (target)
     int b = threadIdx.x; // index for block within m
     int t = threadIdx.y; // index for thread within block
@@ -428,11 +428,12 @@ __global__ void gather_neighbor(const int* neighbor_block, const int* num_neighb
         neighbor_start_index += num_neighbor[i * num_blocks_per_m + j];
     }
 
+    int base_offset = gathered_numneighbor_sofar[i];
     int local_neighbor_count = num_neighbor[i * num_blocks_per_m + b];
-    assert (neighbor_start_index + local_neighbor_count < MaxNumNeighbor);
+    assert (base_offset + neighbor_start_index + local_neighbor_count < MaxNumNeighbor);
 
     for (int n = 0; n < local_neighbor_count; n++) {
-        gathered_neighbor[i * MaxNumNeighbor + neighbor_start_index + n] =
+        gathered_neighbor[i * MaxNumNeighbor + base_offset + neighbor_start_index + n] +=
             neighbor_block[(i * num_blocks_per_m + b) * num_neighbors_per_block + n];
     }
 }
@@ -446,7 +447,7 @@ __global__ void gather_numneighbor(const int* numneighbor_block, int* gathered_n
 	for (int j = 0; j < GridDimY; j++) {
 		temp += numneighbor_block[i * GridDimY + j];
 	}
-	gathered_numneighbor[i] = temp;
+	gathered_numneighbor[i] += temp;
 }
 
 #endif

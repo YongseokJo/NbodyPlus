@@ -72,7 +72,7 @@ typedef unsigned long long ULL;
 #define CUDA_REAL double
 #endif
 
-#define nbodymax 100000000 //100000000 for node14
+#define nbodymax 262144 //2^18, 100000000 for node14
 #define BatchSize 64 // 64. each thread calculates BatchSize particles with a single shared memory
 #define GridDimY 32 // 32 original //  each block calcuates NNB/GridDimY particles
 #define NNB_per_block 128 //256 original
