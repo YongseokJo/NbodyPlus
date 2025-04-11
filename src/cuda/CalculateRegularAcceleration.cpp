@@ -18,6 +18,10 @@ void InitialAssignmentOfTasks(int* data, int NumTask, int TAG);
 void sendAllParticlesToGPU(double new_time, std::unordered_set<int> RegularList, int *IndexList);
 void CalculateAccelerationOnDevice(int *NumTargetTotal, int *h_target_list, double acc[][3], double adot[][3], int NumNeighbor[], int *NeighborList);
 
+#ifdef GPU_INITIALIZATION
+void sendAllParticlesToGPU_init(int *IndexList);
+#endif
+
 /*
  *  Purporse: calculate acceleration and neighbors of regular particles by sending them to GPU
  *
@@ -424,4 +428,270 @@ void sendAllParticlesToGPU(double new_time, std::unordered_set<int> RegularList,
 	delete[] Velocity;
 }
 
+#ifdef GPU_INITIALIZATION
+/*
+ *  Purporse: calculate acceleration and neighbors of regular particles by sending them to GPU after Enzo-abyss communication
+ *
+ *  Date    : 2025.03.18  by Eunwoo Chung
+ *
+ */
+void InitializationOnGPU() {
 
+	int ListSize = NumberOfParticle;
+	int *IndexList = new int[ListSize];
+
+	// variables for saving variables to send to GPU
+	// only regular particle informations are stored here
+	
+#ifdef CUDA_FLOAT
+	CUDA_REAL (*AccRegReceive_f)[Dim];
+	CUDA_REAL (*AccRegDotReceive_f)[Dim];
+	CUDA_REAL (*AccIrrReceive_f)[Dim];
+	CUDA_REAL (*AccIrrDotReceive_f)[Dim];
+
+	CUDA_REAL (*AccRegDotDotReceive_f)[Dim];
+	CUDA_REAL (*AccRegDotDotDotReceive_f)[Dim];
+	CUDA_REAL (*AccIrrDotDotReceive_f)[Dim];
+	CUDA_REAL (*AccIrrDotDotDotReceive_f)[Dim];
+#endif 
+
+	int *ACListReceive;
+	int *NumNeighborReceive;
+	int MassFlag;
+
+	// need to make array to send to GPU
+	// allocate memory to the temporary variables
+
+#ifdef CUDA_FLOAT
+	AccRegReceive_f		= new CUDA_REAL[ListSize][Dim];
+	AccRegDotReceive_f	= new CUDA_REAL[ListSize][Dim];
+	AccIrrReceive_f		= new CUDA_REAL[ListSize][Dim];
+	AccIrrDotReceive_f	= new CUDA_REAL[ListSize][Dim];
+
+	AccRegDotDotReceive_f		= new CUDA_REAL[ListSize][Dim];
+	AccRegDotDotDotReceive_f	= new CUDA_REAL[ListSize][Dim];
+	AccIrrDotDotReceive_f		= new CUDA_REAL[ListSize][Dim];
+	AccIrrDotDotDotReceive_f	= new CUDA_REAL[ListSize][Dim];
+#endif 
+
+	NumNeighborReceive  = new int[ListSize];
+	ACListReceive = new int[ListSize * MaxNumNeighbor];
+
+#ifdef DEBUG
+	std::cout << "sendAllParticlesToGPU_init starts" << std::endl;
+#endif
+
+#ifdef NSIGHT
+	nvtxRangePushA("sendAllParticlesToGPU_init");
+#endif
+
+	fprintf(stdout, "sendAllParticlesToGPU_init starts\n");
+	fflush(stdout);
+
+	sendAllParticlesToGPU_init(IndexList);
+
+	fprintf(stdout, "sendAllParticlesToGPU_init ends\n");
+	fflush(stdout);
+
+#ifdef NSIGHT
+	nvtxRangePop();
+#endif
+
+#ifdef DEBUG
+	std::cout << "sendAllParticlesToGPU_init ended" << std::endl;
+#endif
+	
+
+#ifdef DEBUG
+	std::cout << "CalculateAccelerationOnDevice starts" << std::endl;
+#endif
+  
+#ifdef NSIGHT
+	nvtxRangePushA("CalculateAccelerationOnDevice");
+#endif
+  
+#ifdef CUDA_FLOAT
+	// (EW to MY): We should get AccIrrReceive_f, AccIrrDotReceive_f too
+	// (EW to MY): Then, we should calculate acc_tot[0], [1] ( acc_irr[0] + acc_reg[0] & acc_irr[1] + acc_reg[1] )
+	// (EW to MY): Then, send acc_tot[0] & acc_tot[1] to GPU and calculate acc_irr[2], acc_reg[2], acc_irr[3], acc_reg[3]
+	// (EW to MY): Reference: Particle/Initialize.cpp CalculateAcceleration23 function
+	// CalculateAccelerationOnDevice(&ListSize, IndexList, AccRegReceive_f, AccRegDotReceive_f, NumNeighborReceive, ACListReceive);
+	InitializationOnDevice(&ListSize, IndexList, 
+		AccRegReceive_f, AccRegDotReceive_f, AccIrrReceive_f, AccIrrDotReceive_f,
+		AccRegDotDotReceive_f, AccRegDotDotDotReceive_f, AccIrrDotDotReceive_f, AccIrrDotDotDotReceive_f,
+		NumNeighborReceive, ACListReceive);
+#endif
+  
+#ifdef NSIGHT
+	nvtxRangePop();
+#endif
+  
+#ifdef DEBUG
+	std::cout << "CalculateAccelerationOnDevice ended" << std::endl;
+#endif
+
+	Particle* ptcl;
+
+	for (int i=0; i<ListSize; i++) {
+		ptcl = &particles[ActiveIndexToOriginalIndex[IndexList[i]]];
+
+		ptcl->NumberOfNeighbor = NumNeighborReceive[i];
+		for (int j=0; j<NumNeighborReceive[i]; j++) {
+			ptcl->Neighbors[j] = ACListReceive[i*MaxNumNeighbor + j];
+		}
+		for (int dim=0; dim<Dim; dim++) {
+			ptcl->a_irr[dim][0] = AccIrrReceive_f[i][dim];
+			ptcl->a_irr[dim][1] = AccIrrDotReceive_f[i][dim];
+			ptcl->a_irr[dim][2] = AccIrrDotDotReceive_f[i][dim];
+			ptcl->a_irr[dim][3] = AccIrrDotDotDotReceive_f[i][dim];
+
+			ptcl->a_reg[dim][0] = AccRegReceive_f[i][dim];
+			ptcl->a_reg[dim][1] = AccRegDotReceive_f[i][dim];
+			ptcl->a_reg[dim][2] = AccRegDotDotReceive_f[i][dim];
+			ptcl->a_reg[dim][3] = AccRegDotDotDotReceive_f[i][dim];
+
+			ptcl->a_tot[dim][0] = ptcl->a_irr[dim][0] + ptcl->a_reg[dim][0];
+			ptcl->a_tot[dim][1] = ptcl->a_irr[dim][1] + ptcl->a_reg[dim][1];
+			ptcl->a_tot[dim][2] = ptcl->a_irr[dim][2] + ptcl->a_reg[dim][2];
+			ptcl->a_tot[dim][3] = ptcl->a_irr[dim][3] + ptcl->a_reg[dim][3];
+		}
+	}
+
+	delete[] IndexList;
+
+#ifdef CUDA_FLOAT
+	delete[] AccRegReceive_f;
+	delete[] AccRegDotReceive_f;
+	delete[] AccIrrReceive_f;
+	delete[] AccIrrDotReceive_f;
+
+	delete[] AccRegDotDotReceive_f;
+	delete[] AccRegDotDotDotReceive_f;
+	delete[] AccIrrDotDotReceive_f;
+	delete[] AccIrrDotDotDotReceive_f;
+#endif 
+
+	delete[] NumNeighborReceive;
+	delete[] ACListReceive;
+
+	//CloseDevice();
+}
+
+void sendAllParticlesToGPU_init(int *IndexList) {
+
+#ifdef CUDA_FLOAT
+	// variables for saving variables to send to GPU
+	CUDA_REAL * Mass;
+	CUDA_REAL * Mdot;
+	CUDA_REAL * Radius2;
+	CUDA_REAL(*Position)[Dim];
+	CUDA_REAL(*Velocity)[Dim];
+	int size=0, j=0;
+	
+	// allocate memory to the temporary variables
+	Mass     = new CUDA_REAL[NumberOfParticle];
+	Mdot     = new CUDA_REAL[NumberOfParticle];
+	Radius2  = new CUDA_REAL[NumberOfParticle];
+	Position = new CUDA_REAL[NumberOfParticle][Dim];
+	Velocity = new CUDA_REAL[NumberOfParticle][Dim];
+
+	Particle *ptcl;
+
+	fprintf(stdout, "loop starts...\n");
+	fflush(stdout);
+
+	// copy the data of particles to the arrays to be sent
+	for (int i=0; i<=global_variable->LastParticleIndex; i++) {
+
+		ptcl       = &particles[i];
+
+		IndexList[j] = size;
+		j++;
+
+		Mass[size]    = (CUDA_REAL)ptcl->Mass;
+		Mdot[size]    = 0; //particle[i]->Mass;
+		Radius2[size] = (CUDA_REAL)ptcl->RadiusOfNeighbor; // mass weight?
+
+		for (int dim = 0; dim < Dim; dim++) {
+			Position[size][dim] = ptcl->Position[dim];
+			Velocity[size][dim] = ptcl->Velocity[dim];
+		}
+
+		assert(Position[size][0] == Position[size][0]);
+		assert(Velocity[size][0] == Velocity[size][0]);
+
+		ActiveIndexToOriginalIndex[size] = i;
+		size++;
+	}
+
+	fprintf(stdout, "loop ends...\n");
+	fflush(stdout);
+#else
+	// variables for saving variables to send to GPU
+	double * Mass;
+	double * Mdot;
+	double * Radius2;
+	double(*Position)[Dim];
+	double(*Velocity)[Dim];
+	//int size = NumberOfParticle;
+	int size=0;
+
+
+	// allocate memory to the temporary variables
+	Mass     = new double[NumberOfParticle];
+	Mdot     = new double[NumberOfParticle];
+	Radius2  = new double[NumberOfParticle];
+	Position = new double[NumberOfParticle][Dim];
+	Velocity = new double[NumberOfParticle][Dim];
+
+	Particle *ptcl;
+
+	// copy the data of particles to the arrays to be sent
+		
+	for (int i=0; i<=global_variable->LastParticleIndex; i++) {
+		ptcl = &particles[i];
+
+		if (!ptcl->isActive) {
+			// fprintf(stdout, "Skipping inactive particle (%d)\n", ptcl->PID);
+			continue;
+		}
+
+		IndexList[size] = i;
+
+		Mass[size]    = ptcl->Mass;
+		Mdot[size]    = 0; //particle[i]->Mass;
+		Radius2[size] = ptcl->RadiusOfNeighbor; // mass weight?
+
+		for (int dim = 0; dim < Dim; dim++) {
+			Position[size][dim] = ptcl->Position[dim];
+			Velocity[size][dim] = ptcl->Velocity[dim];
+		}
+
+		assert(Position[size][0] == Position[size][0]);
+		assert(Velocity[size][0] == Velocity[size][0]);
+		ActiveIndexToOriginalIndex[size] = i;
+		// std::cout << "(size , i) = "  << size << " " << i << std::endl;
+		size++;
+	} 
+#endif
+
+	assert(NumberOfParticle == size); // for debugging by EW 2025.1.25
+
+	// fprintf(stdout, "in sendAllParticlesToGPU, NumberOfParticle = %d, size=%d, TotalNumberOfParticle=%d\n", NumberOfParticle, size, LastParticleIndex+1);
+
+
+	//fprintf(stdout, "Sending particles to GPU...\n");
+	//fflush(stdout);
+	// send the arrays to GPU
+	SendToDevice(&size, Mass, Position, Velocity, Radius2, Mdot);
+
+	//fprintf(stdout, "Done.\n");
+	//fflush(stdout);
+	// free the temporary variables
+	delete[] Mass;
+	delete[] Mdot;
+	delete[] Radius2;
+	delete[] Position;
+	delete[] Velocity;
+}
+#endif // GPU_INITIALIZATION

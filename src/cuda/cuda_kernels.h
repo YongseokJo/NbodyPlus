@@ -29,4 +29,9 @@ __device__ void _addition(Result &result, const Result res);
 __device__ void _copy(Result &result, const Result res);
 */
 
+__global__ void compute_forces_init23(const CUDA_REAL* __restrict__ ptcl, const CUDA_REAL* __restrict__ r2, CUDA_REAL* __restrict__ atot, CUDA_REAL* __restrict__ diff,
+    CUDA_REAL* __restrict__ diffIrr, int m, int n, const int* __restrict__ subset, int i_start, int j_start, int NNB);
+__global__ void compute_forces_init01(const CUDA_REAL* __restrict__ ptcl, const CUDA_REAL* __restrict__ r2, CUDA_REAL* __restrict__ diff, CUDA_REAL* __restrict__ diffIrr,
+        int m, int n, const int* __restrict__ subset, int* __restrict__ neighbor, int* num_neighbor, 
+        int i_start, int j_start, int NNB);
 #endif

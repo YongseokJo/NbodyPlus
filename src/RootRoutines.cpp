@@ -43,6 +43,10 @@ void updateNextRegTime(std::unordered_set<int>& RegularList);
 void StellarEvolution();
 #endif
 
+#ifdef GPU_INITIALIZATION
+void InitializationOnGPU();
+#endif
+
 Worker* workers;
 
 void RootRoutines() {
@@ -109,6 +113,13 @@ void RootRoutines() {
 			PIDs[i] = i;
 		}
 
+#ifdef GPU_INITIALIZATION
+		fprintf(stdout, "GPU Initialization starts...\n");
+		fflush(stdout);
+		InitializationOnGPU();
+		fprintf(stdout, "GPU Initialization ends...\n");
+		fflush(stdout);
+#else
 		queue_scheduler.initialize(InitAcc1);
 		queue_scheduler.takeQueue(PIDs);
 		do
@@ -132,6 +143,7 @@ void RootRoutines() {
 			queue_scheduler.waitQueue(0); //blocking wait
 		} while(queue_scheduler.isComplete());
 		std::cout << "Init 02 done" << std::endl;
+#endif
 
 #ifdef FEWBODY
 		// Primordial binary search
@@ -274,14 +286,16 @@ void RootRoutines() {
 		for (int i=0; i<=LastParticleIndex; i++) {
 			ptcl = &particles[i];
 			if (ptcl->isActive)
-				fprintf(stdout, "PID=%d, CurrentTime (Irr, Reg) = (%.3e(%llu), %.3e(%llu)) Myr\n"
-								"dtIrr = %.4e Myr, dtReg = %.4e Myr, blockIrr=%llu (%d), blockReg=%llu (%d)\n"
+				// fprintf(stdout, "PID=%d, CurrentTime (Irr, Reg) = (%.3e(%llu), %.3e(%llu)) Myr\n"
+				// 				"dtIrr = %.4e Myr, dtReg = %.4e Myr, blockIrr=%llu (%d), blockReg=%llu (%d)\n"
+				// 				"NumNeighbor= %d\n",
+				fprintf(stdout, "PID=%d. dtIrr = %.4e Myr, dtReg = %.4e Myr, blockIrr=%llu (%d), blockReg=%llu (%d)\n"
 								"NumNeighbor= %d\n",
 						ptcl->PID,
-						ptcl->CurrentTimeIrr * EnzoTimeStep * 1e10 / 1e6,
-						ptcl->CurrentBlockIrr,
-						ptcl->CurrentTimeReg * EnzoTimeStep * 1e10 / 1e6,
-						ptcl->CurrentBlockReg,
+						// ptcl->CurrentTimeIrr * EnzoTimeStep * 1e10 / 1e6,
+						// ptcl->CurrentBlockIrr,
+						// ptcl->CurrentTimeReg * EnzoTimeStep * 1e10 / 1e6,
+						// ptcl->CurrentBlockReg,
 						ptcl->TimeStepIrr * EnzoTimeStep * 1e10 / 1e6,
 						ptcl->TimeStepReg * EnzoTimeStep * 1e10 / 1e6,
 						ptcl->TimeBlockIrr,
@@ -289,7 +303,7 @@ void RootRoutines() {
 						ptcl->TimeBlockReg,
 						ptcl->TimeLevelReg,
 						ptcl->NumberOfNeighbor);
-				/*
+				// /*
 				fprintf(stdout, " a_tot = (%.4e,%.4e,%.4e), a_reg = (%.4e,%.4e,%.4e), a_irr = (%.4e,%.4e,%.4e), n_n=%d, R=%.3e\n\
 					a1_reg = (%.4e,%.4e,%.4e), a2_reg = (%.4e,%.4e,%.4e), a3_reg = (%.4e,%.4e,%.4e)\n\
 					a1_irr = (%.4e,%.4e,%.4e), a2_irr = (%.4e,%.4e,%.4e), a3_irr = (%.4e,%.4e,%.4e)\n", 
@@ -303,7 +317,7 @@ void RootRoutines() {
 					ptcl->a_irr[0][1],	ptcl->a_irr[1][1],	ptcl->a_irr[2][1],
 					ptcl->a_irr[0][2],	ptcl->a_irr[1][2],	ptcl->a_irr[2][2],
 					ptcl->a_irr[0][3],	ptcl->a_irr[1][3],	ptcl->a_irr[2][3]);
-				*/
+				// */
 		}
 	} // Particle Initialization Check ends
 	// */

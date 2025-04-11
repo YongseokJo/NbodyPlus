@@ -4,7 +4,7 @@ CXX = mpic++
 #CXX = g++
 
 # Compiler flags
-CXXFLAGS  = -O2 -march=native -ftree-vectorize -std=c++11 -Wall -Wextra -Wuninitialized -I./Particle -I./ -g -DPERFORMANCETRACE #-DDEBUG #-DMULTIMAP #-DDEBUG #-fopenmp  -fsanitize=thread
+CXXFLAGS  = -O2 -march=native -ftree-vectorize -std=c++11 -Wall -Wextra -Wuninitialized -I./Particle -I./ -g -DPERFORMANCETRACE -DGPU_INITIALIZATION #-DDEBUG #-DMULTIMAP #-DDEBUG #-fopenmp  -fsanitize=thread
 #CXXFLAGS  = -O0 -std=c++11 -Wall -Wextra -Wuninitialized -I./Particle -I./ -g -qopenmp  #-fopenmp  -fsanitize=thread
 #CXXFLAGS  = -O0 -std=c++11 -Wall -Wextra -Wuninitialized -I./Particle -I./ -g -fopenmp  -fsanitize=thread
 #CXXFLAGS  = -O2 -std=c++11 -Wall -Wextra -Wuninitialized -I./Particle -I./ -g -fopenmp  #-fsanitize=thread
