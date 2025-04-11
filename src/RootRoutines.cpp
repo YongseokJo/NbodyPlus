@@ -408,7 +408,20 @@ void RootRoutines() {
 					skiplist->deleteFirstNode();
 					continue;
 				}
-				// fprintf(stdout, "N: %d\n", ThisLevelNode->ParticleList.size());
+				/* // Test for KISTI optimization
+				if ((global_time*EnzoTimeStep*1e10/1e6 >= 0 && global_time*EnzoTimeStep*1e10/1e6 <= 0.1) ||
+						(global_time*EnzoTimeStep*1e10/1e6 >= 20 && global_time*EnzoTimeStep*1e10/1e6 <= 20.1)) {
+					
+					fprintf(stdout, "N_irr: %d\n", ThisLevelNode->ParticleList.size());
+					if ((global_time*EnzoTimeStep*1e10/1e6 >= 0 && global_time*EnzoTimeStep*1e10/1e6 <= 0.0001) ||
+						(global_time*EnzoTimeStep*1e10/1e6 >= 20 && global_time*EnzoTimeStep*1e10/1e6 <= 20.0001)) {
+						for (int i=0; i<ThisLevelNode->ParticleList.size(); i++) {
+							fprintf(stdout, "NN: %d\n", particles[ThisLevelNode->ParticleList[i]].NumberOfNeighbor);
+						}
+					}
+					fflush(stdout);
+				}
+				*/
 				next_time     = particles[ThisLevelNode->ParticleList[0]].CurrentTimeIrr\
 									 	    + particles[ThisLevelNode->ParticleList[0]].TimeStepIrr;
 
@@ -1023,8 +1036,14 @@ void RootRoutines() {
 
 #ifdef CUDA
 			{
-				fprintf(stdout, "N: %d\n", RegularList.size());
-				fflush(stdout);
+				/* // Test for KISTI optimization
+				if ((global_time*EnzoTimeStep*1e10/1e6 >= 0 && global_time*EnzoTimeStep*1e10/1e6 <= 0.1) ||
+						(global_time*EnzoTimeStep*1e10/1e6 >= 20 && global_time*EnzoTimeStep*1e10/1e6 <= 20.1)) {
+					
+					fprintf(stdout, "N_reg: %d\n", RegularList.size());
+					fflush(stdout);
+				}
+				*/
 				next_time = NextRegTimeBlock*time_step;
 #ifdef MULTIMAP
 #ifdef PERFORMANCETRACE

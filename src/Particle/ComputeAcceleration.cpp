@@ -603,13 +603,18 @@ void Particle::updateRegularParticleCuda() {
 	it = hashTableNew.begin();
 	int _NewNumberOfNeighbor = 0;
 	for (int i=0; i<NewNumberOfNeighborGPU; i++) {
-		if (particles[*it].isCMptcl) {
-			for (int j=0; j<particles[*it].NumberOfMember; j++) {
-				this->NewNeighbors[_NewNumberOfNeighbor++] = particles[*it].Members[j];
+		ptcl = &particles[*it];
+		if (ptcl->isCMptcl) {
+			for (int j=0; j<ptcl->NumberOfMember; j++) {
+				this->NewNeighbors[_NewNumberOfNeighbor++] = ptcl->Members[j];
+				for (int dim=0; dim<Dim; dim++) {
+					particles[ptcl->Members[j]].Position[dim] += this->NewPosition[dim] - this->Position[dim];
+					particles[ptcl->Members[j]].Velocity[dim] += this->NewVelocity[dim] - this->Velocity[dim];
+				}
 			}
 		}
 		else
-			this->NewNeighbors[_NewNumberOfNeighbor++] = particles[*it].ParticleIndex;
+			this->NewNeighbors[_NewNumberOfNeighbor++] = ptcl->ParticleIndex;
 		it++;
 	}
 	this->NewNumberOfNeighbor = _NewNumberOfNeighbor;
