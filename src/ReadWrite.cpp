@@ -30,6 +30,7 @@ int readData() {
 	NumberOfParticle = getLineNumber();
 	NewPID = NumberOfParticle;
 	LastParticleIndex = NumberOfParticle - 1;
+	global_variable->LastParticleIndex = LastParticleIndex; // moved from main.cpp to here by EW 2025.5.12
 
 	// Declaration
 	//Particle *particle_temp;	

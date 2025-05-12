@@ -136,6 +136,12 @@ void WorkerRoutines() {
 				CalculateAcceleration01(ptcl);
 				break;
 
+			case UpdateInitAcc1:
+				if (shared_rank == 0) {
+					// (Query MultiNode) Update here!!!
+				}
+				break;
+
 			case InitAcc2: // Initialize Acceleration(23)
 
 				ptcl = &particles[ptcl_id];

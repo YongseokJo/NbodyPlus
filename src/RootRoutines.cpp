@@ -121,6 +121,57 @@ void RootRoutines() {
 			queue_scheduler.runQueueAuto();
 			queue_scheduler.waitQueue(0); //blocking wait
 		} while(queue_scheduler.isComplete());
+#ifdef MultiNode
+		// (Query MultiNode) How to start updating in WorkerRoutines.cpp?
+		// (Query MultiNode) Update list: a_tot01
+		Queue queue;
+		queue.task = UpdateInitAcc1;
+		queue.pid = -1;
+		queue.next_time = -1;
+		MPI_Send(&_queue,   1,  QueueType,  this->MyRank,   QUEUE_TAG,  MPI_COMM_WORLD);
+		int send_count = queue_scheduler.returnUpdateCount(MyRank / NumberOfNode);
+		int* send_list = new int[send_count];
+		queue_scheduler.returnUpdateList(MyRank / NumberOfNode, send_list);
+		int* recv_counts = new int[NumberOfNode];
+		MPI_Allgather(&send_count, 1, MPI_INT, recv_counts, 1, MPI_INT, update_comm);
+		int total_recv_count = 0;
+        int* displs = new int[NumberOfNode];
+
+        for (int i = 0; i < new_size; ++i) {
+            displs[i] = total_recv_count;
+            total_recv_count += recv_counts[i];
+        }
+		UpdateInitAcc1* update_list = new UpdateInitAcc1[total_recv_count];
+
+		MPI_Datatype UpdateType;
+		int block_lengths[2] = {1, 3}; // Number of elements in each field
+		MPI_Aint offsets[2];
+		MPI_Datatype types[2] = {MPI_INT, MPI_DOUBLE}; // Match the types in the struct
+
+		// Calculate offsets
+		offsets[0] = offsetof(UpdateInitAcc1, pid);
+		offsets[1] = offsetof(UpdateInitAcc1, atot);
+
+		// Create the struct datatype
+		MPI_Type_create_struct(2, block_lengths, offsets, types, &UpdateType);
+		MPI_Type_commit(&UpdateType);
+
+		MPI_Allgatherv(send_list, send_count, UpdateType, update_list, recv_counts, displs, UpdateType, update_comm);
+		for (int i=0; i<total_recv_count; i++) {
+			ptcl = &particles[update_list[i].pid];
+			ptcl->a_tot[0] = update_list[i].atot[0];
+			ptcl->a_tot[1] = update_list[i].atot[1];
+			ptcl->a_tot[2] = update_list[i].atot[2];
+		}
+		delete [] send_list;
+		send_list = nullptr;
+		delete [] recv_counts;
+		recv_counts = nullptr;
+		delete [] displs;
+		displs = nullptr;
+		delete [] update_list;
+		update_list = nullptr;
+#endif
 		std::cout << "Init 01 done" << std::endl;
 
 		queue_scheduler.initialize(InitAcc2);
@@ -131,6 +182,9 @@ void RootRoutines() {
 			queue_scheduler.runQueueAuto();
 			queue_scheduler.waitQueue(0); //blocking wait
 		} while(queue_scheduler.isComplete());
+#ifdef MultiNode
+		// (Query MultiNode) Update list: a_tot23
+#endif
 		std::cout << "Init 02 done" << std::endl;
 
 #ifdef FEWBODY
@@ -143,6 +197,9 @@ void RootRoutines() {
 			queue_scheduler.runQueueAuto();
 			queue_scheduler.waitQueue(0); //blocking wait
 		} while(queue_scheduler.isComplete());
+#ifdef MultiNode
+		// (Query MultiNode) Update list: NewNeighbors, NewNumberOfNeighbor to root only!!!
+#endif
 		std::cout << "Primordial binary search done" << std::endl;
 
 		Queue queue;
@@ -174,6 +231,9 @@ void RootRoutines() {
 				queue_scheduler.runQueueAuto();
 				queue_scheduler.waitQueue(0);
 			} while(queue_scheduler.isComplete());
+#ifdef MultiNode
+			// (Query MultiNode) Update list: isActive, isCMptcl, CMPtclIndex, ???
+#endif
 		}
 		else {
 			std::cout << "There is no primordial binary." << std::endl;

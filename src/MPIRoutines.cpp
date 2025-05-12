@@ -24,7 +24,9 @@ void initializeMPI(int argc, char *argv[]) {
 	MPI_Init(&argc, &argv);
 
 	MPI_Comm_rank(MPI_COMM_WORLD, &MyRank);
-	MPI_Comm_size(MPI_COMM_WORLD, &NumberOfProcessor);
+	MPI_Comm_size(MPI_COMM_WORLD, &NumberOfProcessor); // (Query MultiNode) This should be checked; Do I have to explictly set NumberOfWorker & NumberOfProcessor?
+	// (Query MultiNode) We need global variable NumberOfNode; How/Where to define it?
+	// (Query MultiNode) NumberOfProcessor % NumberOfNode should be 0 !!!
 	NumberOfWorker = NumberOfProcessor - 1;
 
 	if (NumberOfProcessor < 2) {
@@ -47,7 +49,10 @@ void initializeMPI(int argc, char *argv[]) {
 	MPI_Comm_split_type(MPI_COMM_WORLD, MPI_COMM_TYPE_SHARED, MyRank, MPI_INFO_NULL, &shared_comm);
 
 	// Get rank and size in the shared communicator
+	// (Query MultiNode) shared_rank, shared_size -> global variable?
+#ifndef MultiNode
 	int shared_rank, shared_size;
+#endif
 	MPI_Comm_rank(shared_comm, &shared_rank);
 	MPI_Comm_size(shared_comm, &shared_size);
 	fprintf(stderr,"My Rank =%d : Shared Rank = %d, Shared size = %d\n", MyRank, shared_rank, shared_size);
@@ -74,6 +79,16 @@ void initializeMPI(int argc, char *argv[]) {
 	MPI_Win_shared_query(win, 0, &size_bytes, &disp_unit, &particles);
 	MPI_Win_shared_query(win2, 0, &size_bytes, &disp_unit, &global_variable);
 	MPI_Win_shared_query(win3, 0, &size_bytes, &disp_unit, &ActiveIndexToOriginalIndex);
+
+#ifdef MultiNode
+	int color = (shared_rank == 0) ? 0 : MPI_UNDEFINED;
+	MPI_Comm_split(MPI_COMM_WORLD, color, world_rank, &update_comm);
+	int update_rank, update_size;
+	if (shared_rank == 0) {
+		MPI_Comm_rank(update_comm, &update_rank);
+		MPI_Comm_size(update_comm, &update_size);
+	}
+#endif
 }
 
 void InitialAssignmentOfTasks(std::vector<int>& data, int NumTask, int TAG) {

@@ -54,6 +54,9 @@ public:
                 (*worker)->addQueue(_queue);
                 WorkersToGo.insert(*worker);
                 _assigned_queues++;
+#ifdef MultiNode
+                _completed_list[(*worker)->MyRank / NumberOfNode].push_back(_queue.pid);
+#endif
                 worker = _FreeWorkers.erase(worker);
                 //_queue.print();
             }
@@ -61,6 +64,25 @@ public:
                ++worker; 
             }
         }
+#ifdef unuse
+        for (int i: _queue_list) {
+            _queue.task = _task;
+            _queue.next_time = _next_time;
+            _queue.pid = _queue_list[i];
+            int NodeNumber = i % NumberOfNode;
+            int NumberOfProcessorPerNode = NumberOfProcessor / NumberOfNode;
+            for (int j=NodeNumber*NumberOfProcessorPerNode; j<(NodeNumber+1)*NumberOfProcessorPerNode; j++) {
+                auto worker = _FreeWorkers.find(&workers[j]);
+                if (worker != _FreeWorkers.end()) {
+                    _queue_list.erase(i);
+                    (*worker)->addQueue(_queue);
+                    WorkersToGo.insert(*worker);
+                    _assigned_queues++;
+                    _completed_list[NodeNumber].push_back(i);
+                }
+            }
+        }
+#endif
     }
 
 
@@ -299,10 +321,23 @@ public:
     }
 #endif
 
+#ifdef MultiNode
+    int returnUpdateCount(int NodeNumber)
+        return _completed_list[NodeNumber].size();
+
+    void returnUpdateList(int NodeNumber, int* send_list) {
+        for (int i=0; i<_completed_list[NodeNumber].size(); i++)
+            send_list[i] = _completed_list[NodeNumber][i];
+    }
+#endif
+
 private:
     std::unordered_set<Worker*> _FreeWorkers;
     std::vector<int> _queue_list;
     std::unordered_set<int> _queue_list_;
+#ifdef MultiNode
+    std::vector<std::vector<int>> _completed_list(NumberOfNode); // (Query MultiNode) Completed ptcl indices are stored here; to be updated by broadcasting later
+#endif
     Queue _queue;
     TaskName _task;
     int _rank, _flag;
@@ -326,6 +361,12 @@ private:
         _total_queues=0;
         _assigned_queues=0;
         _completed_queues=0;
+#ifdef MultiNode
+        // (Query MultiNode) How about using assert here? How about clearing vector when update is done?
+        for (int i=0; i<NumberOfNode; i++)
+            _completed_list[i].clear();
+        _completed_list.clear();
+#endif
     }
 
 #ifdef unuse

@@ -20,6 +20,12 @@ int NumberOfProcessor;
 int NumberOfWorker;
 int NumberOfCommunication;
 
+#ifdef MultiNode
+int shared_rank;
+int shared_size;
+MPI_Comm update_comm;
+#endif
+
 MPI_Datatype QueueType;
 
 GlobalVariable *global_variable;

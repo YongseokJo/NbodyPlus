@@ -30,6 +30,12 @@ extern GlobalVariable *global_variable;
 extern GlobalVariable *global_variable_original;
 extern MPI_Datatype QueueType;
 
+#ifdef MultiNode
+extern int shared_rank;
+extern int shared_size;
+extern MPI_Comm update_comm;
+#endif
+
 extern int *ActiveIndexToOriginalIndex_orginal;
 extern int *ActiveIndexToOriginalIndex;
 
