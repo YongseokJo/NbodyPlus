@@ -32,8 +32,11 @@ extern MPI_Datatype QueueType;
 
 #ifdef MultiNode
 extern int shared_rank;
-extern int shared_size;
+extern int update_rank;
+extern int NumberOfNode;
+extern int* ranks_update_comm;
 extern MPI_Comm update_comm;
+extern MPI_Datatype UpdateInitAccType;
 #endif
 
 extern int *ActiveIndexToOriginalIndex_orginal;

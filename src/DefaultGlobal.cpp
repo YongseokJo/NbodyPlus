@@ -21,9 +21,11 @@ int NumberOfWorker;
 int NumberOfCommunication;
 
 #ifdef MultiNode
-int shared_rank;
-int shared_size;
 MPI_Comm update_comm;
+int NumberOfNode;
+int *ranks_update_comm;
+int update_rank;
+MPI_Datatype UpdateInitAccType;
 #endif
 
 MPI_Datatype QueueType;

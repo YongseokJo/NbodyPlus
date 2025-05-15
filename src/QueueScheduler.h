@@ -18,6 +18,9 @@ public:
     {
         _FreeWorkers.reserve(NumberOfWorker);
         WorkersToGo.reserve(NumberOfWorker);
+#ifdef MultiNode
+        _completed_list.resize(NumberOfNode);
+#endif
     }
 
     void initialize(TaskName task, double next_time)
@@ -55,7 +58,8 @@ public:
                 WorkersToGo.insert(*worker);
                 _assigned_queues++;
 #ifdef MultiNode
-                _completed_list[(*worker)->MyRank / NumberOfNode].push_back(_queue.pid);
+                int nodenum = getNodeNumber((*worker)->MyRank);
+                _completed_list[nodenum].push_back(_queue.pid);
 #endif
                 worker = _FreeWorkers.erase(worker);
                 //_queue.print();
@@ -322,12 +326,26 @@ public:
 #endif
 
 #ifdef MultiNode
-    int returnUpdateCount(int NodeNumber)
-        return _completed_list[NodeNumber].size();
+    std::vector<int> returnUpdateList(int NodeNumber) {
+        return _completed_list[NodeNumber];
+    }
 
-    void returnUpdateList(int NodeNumber, int* send_list) {
-        for (int i=0; i<_completed_list[NodeNumber].size(); i++)
-            send_list[i] = _completed_list[NodeNumber][i];
+    int getNodeNumber(int Rank) {
+        int left = 0;
+        int right = NumberOfNode;
+    
+        // Find first index where ranks_update_comm[i] > MyRank
+        while (left < right) {
+            int mid = (left + right) / 2;
+            if (ranks_update_comm[mid] <= Rank) {
+                left = mid + 1;
+            } else {
+                right = mid;
+            }
+        }
+    
+        // Node number is one less than the first element greater than MyRank
+        return std::max(0, left - 1);
     }
 #endif
 
@@ -336,7 +354,7 @@ private:
     std::vector<int> _queue_list;
     std::unordered_set<int> _queue_list_;
 #ifdef MultiNode
-    std::vector<std::vector<int>> _completed_list(NumberOfNode); // (Query MultiNode) Completed ptcl indices are stored here; to be updated by broadcasting later
+    std::vector<std::vector<int>> _completed_list; // (Query MultiNode) Completed ptcl indices are stored here; to be updated by broadcasting later
 #endif
     Queue _queue;
     TaskName _task;

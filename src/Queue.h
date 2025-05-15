@@ -21,6 +21,9 @@ enum TaskName : int8_t {
     DeleteGroup = 25,
     ARIntegration = 26,
     MergeManyBody = 27,
+#ifdef MultiNode
+    UpdateInitAcc01 = 30,
+#endif
     Synchronize = 100,
     Ends = -100,
     Error = -1
@@ -36,4 +39,12 @@ struct Queue {
         std::cout << "Task: " << task << ", PID: " << pid << ", Next Time: " << next_time << std::endl;
     }
 };
+
+#ifdef MultiNode
+struct UpdateInitAcc {
+    int pid;
+    double acc1[3];
+    double acc2[3];
+};
+#endif
 #endif

@@ -124,53 +124,72 @@ void RootRoutines() {
 #ifdef MultiNode
 		// (Query MultiNode) How to start updating in WorkerRoutines.cpp?
 		// (Query MultiNode) Update list: a_tot01
-		Queue queue;
-		queue.task = UpdateInitAcc1;
-		queue.pid = -1;
-		queue.next_time = -1;
-		MPI_Send(&_queue,   1,  QueueType,  this->MyRank,   QUEUE_TAG,  MPI_COMM_WORLD);
-		int send_count = queue_scheduler.returnUpdateCount(MyRank / NumberOfNode);
-		int* send_list = new int[send_count];
-		queue_scheduler.returnUpdateList(MyRank / NumberOfNode, send_list);
-		int* recv_counts = new int[NumberOfNode];
-		MPI_Allgather(&send_count, 1, MPI_INT, recv_counts, 1, MPI_INT, update_comm);
-		int total_recv_count = 0;
-        int* displs = new int[NumberOfNode];
+		int* update_count_list = new int[NumberOfNode];
+		int* displs = new int[NumberOfNode];
+		std::vector<int> update_pid_list = queue_scheduler.returnUpdateList(update_rank);
+		update_count_list[update_rank] = update_pid_list.size();
 
-        for (int i = 0; i < new_size; ++i) {
-            displs[i] = total_recv_count;
-            total_recv_count += recv_counts[i];
-        }
-		UpdateInitAcc1* update_list = new UpdateInitAcc1[total_recv_count];
-
-		MPI_Datatype UpdateType;
-		int block_lengths[2] = {1, 3}; // Number of elements in each field
-		MPI_Aint offsets[2];
-		MPI_Datatype types[2] = {MPI_INT, MPI_DOUBLE}; // Match the types in the struct
-
-		// Calculate offsets
-		offsets[0] = offsetof(UpdateInitAcc1, pid);
-		offsets[1] = offsetof(UpdateInitAcc1, atot);
-
-		// Create the struct datatype
-		MPI_Type_create_struct(2, block_lengths, offsets, types, &UpdateType);
-		MPI_Type_commit(&UpdateType);
-
-		MPI_Allgatherv(send_list, send_count, UpdateType, update_list, recv_counts, displs, UpdateType, update_comm);
-		for (int i=0; i<total_recv_count; i++) {
+		UpdateInitAcc* update_list = new UpdateInitAcc[update_count_list[update_rank]];
+		for (int i=0; i<update_count_list[update_rank]; i++) {
+			update_list[i].pid = update_pid_list[i];
 			ptcl = &particles[update_list[i].pid];
-			ptcl->a_tot[0] = update_list[i].atot[0];
-			ptcl->a_tot[1] = update_list[i].atot[1];
-			ptcl->a_tot[2] = update_list[i].atot[2];
+			update_list[i].acc1[0] = ptcl->a_tot[0][0];
+			update_list[i].acc1[1] = ptcl->a_tot[1][0];
+			update_list[i].acc1[2] = ptcl->a_tot[2][0];
+			update_list[i].acc2[0] = ptcl->a_tot[0][1];
+			update_list[i].acc2[1] = ptcl->a_tot[1][1];
+			update_list[i].acc2[2] = ptcl->a_tot[2][1];
 		}
-		delete [] send_list;
-		send_list = nullptr;
-		delete [] recv_counts;
-		recv_counts = nullptr;
+
+		Queue queue;
+		queue.task = UpdateInitAcc01;
+		for (int i=1; i<NumberOfNode; i++) {
+			update_pid_list = queue_scheduler.returnUpdateList(i);
+			update_count_list[i] = update_pid_list.size();
+			queue.pid = update_count_list[i]; // (Query MultiNode) Here, number of data size to be sent is saved as queue.pid by EW 2025.5.13
+			queue.next_time = -1;
+			MPI_Send(&queue, 1, QueueType, ranks_update_comm[i], QUEUE_TAG, MPI_COMM_WORLD);
+			MPI_Send(update_pid_list.data(), update_count_list[i], MPI_INT, i, 1, update_comm);
+		}
+		MPI_Bcast(update_count_list, NumberOfNode, MPI_INT, update_rank, update_comm);
+		
+		int total_recv_count = 0;
+        for (int i = 0; i < NumberOfNode; ++i) {
+            displs[i] = total_recv_count;
+            total_recv_count += update_count_list[i];
+        }
+		UpdateInitAcc* total_update_list = new UpdateInitAcc[total_recv_count];
+		MPI_Allgatherv(update_list, update_count_list[update_rank], UpdateInitAccType, total_update_list, update_count_list, displs, UpdateInitAccType, update_comm);
+
+		for (int i=0; i<total_recv_count; i++) {
+			if (i >= displs[update_rank] && i < displs[update_rank] + update_count_list[update_rank])
+				continue;
+
+			ptcl = &particles[update_list[i].pid];
+			ptcl->a_tot[0][0] = update_list[i].acc1[0];
+			ptcl->a_tot[1][0] = update_list[i].acc1[1];
+			ptcl->a_tot[2][0] = update_list[i].acc1[2];
+			ptcl->a_tot[0][1] = update_list[i].acc2[0];
+			ptcl->a_tot[1][1] = update_list[i].acc2[1];
+			ptcl->a_tot[2][1] = update_list[i].acc2[2];
+		}
+		delete [] update_count_list;
+		update_count_list = nullptr;
 		delete [] displs;
 		displs = nullptr;
 		delete [] update_list;
 		update_list = nullptr;
+		delete [] total_update_list;
+		total_update_list = nullptr;
+
+		int completed = 1; // Root node has already completed its job by EW 2025.5.16
+		while (completed < NumberOfNode) {
+			MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+			int completed_rank = status.MPI_SOURCE;
+			int return_value;
+			MPI_Recv(&return_value, 1, MPI_INT, completed_rank, TERMINATE_TAG, MPI_COMM_WORLD, &status);
+			completed++;
+		}
 #endif
 		std::cout << "Init 01 done" << std::endl;
 
@@ -201,8 +220,9 @@ void RootRoutines() {
 		// (Query MultiNode) Update list: NewNeighbors, NewNumberOfNeighbor to root only!!!
 #endif
 		std::cout << "Primordial binary search done" << std::endl;
-
+#ifndef MultiNode
 		Queue queue;
+#endif
 		int rank;
 		int OriginalLastParticleIndex = LastParticleIndex;
 		formPrimordialBinaries(OriginalLastParticleIndex);
@@ -1452,7 +1472,8 @@ bool createSkipList(SkipList *skiplist) {
 	if (skiplist->getFirstNode() == nullptr)
 		return FAIL;
 	else
-		return SUCCESS;
+		// return SUCCESS;
+		return 1; // SUCCESS to 1; modified by EW 2025.5.16
 }
 
 

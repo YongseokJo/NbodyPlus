@@ -1,5 +1,5 @@
 #define FAIL    -1
-#define SUCCESS  1
+//#define SUCCESS  1 // SUCCESS to 1; modified by EW 2025.5.16
 
 
 #define NumberOfTask 20

@@ -14,6 +14,9 @@ void InitialAssignmentOfTasks(T data, int NumTask);
 
 
 MPI_Datatype createQueueType();
+#ifdef MultiNode
+MPI_Datatype createUpdateInitAccType();
+#endif
 
 void initializeMPI(int argc, char *argv[]) {
 	/* MPI Initialization */
@@ -35,6 +38,9 @@ void initializeMPI(int argc, char *argv[]) {
 	}
 
 	QueueType = createQueueType();
+#ifdef MultiNode
+	UpdateInitAccType = createUpdateInitAccType();
+#endif
 	/*
 	// comm for each node
 	MPI_Comm shmcomm;
@@ -49,10 +55,8 @@ void initializeMPI(int argc, char *argv[]) {
 	MPI_Comm_split_type(MPI_COMM_WORLD, MPI_COMM_TYPE_SHARED, MyRank, MPI_INFO_NULL, &shared_comm);
 
 	// Get rank and size in the shared communicator
-	// (Query MultiNode) shared_rank, shared_size -> global variable?
-#ifndef MultiNode
-	int shared_rank, shared_size;
-#endif
+	int shared_rank, shared_size; // (Query MultiNode) shared_rank is global variable by EW 2025.5.13
+
 	MPI_Comm_rank(shared_comm, &shared_rank);
 	MPI_Comm_size(shared_comm, &shared_size);
 	fprintf(stderr,"My Rank =%d : Shared Rank = %d, Shared size = %d\n", MyRank, shared_rank, shared_size);
@@ -82,11 +86,28 @@ void initializeMPI(int argc, char *argv[]) {
 
 #ifdef MultiNode
 	int color = (shared_rank == 0) ? 0 : MPI_UNDEFINED;
-	MPI_Comm_split(MPI_COMM_WORLD, color, world_rank, &update_comm);
-	int update_rank, update_size;
+	MPI_Comm_split(MPI_COMM_WORLD, color, MyRank, &update_comm);
+	int update_size = -1; // (Query MultiNode) update_rank is global variable by EW 2025.5.13
 	if (shared_rank == 0) {
 		MPI_Comm_rank(update_comm, &update_rank);
 		MPI_Comm_size(update_comm, &update_size);
+
+		NumberOfNode = update_size;
+		fprintf(stderr,"My Rank =%d : Update Rank = %d, Update size = %d\n", MyRank, update_rank, update_size);
+
+		if (MyRank == ROOT) {
+			ranks_update_comm = new int[NumberOfNode];
+			MPI_Gather(&MyRank, 1, MPI_INT, ranks_update_comm, 1, MPI_INT, ROOT, update_comm);
+			for (int i=0; i<NumberOfNode; i++) {
+				fprintf(stderr,"Update Rank[%d]: %d\n", i, ranks_update_comm[i]);
+			}
+			assert(MyRank == 0);
+			assert(shared_rank == 0);
+			assert(update_rank == 0);
+		}
+		else {
+			MPI_Gather(&MyRank, 1, MPI_INT, NULL, 0, MPI_INT, ROOT, update_comm);
+		}
 	}
 #endif
 }
@@ -192,3 +213,23 @@ MPI_Datatype createQueueType() {
 
     return QueueType;
 }
+
+#ifdef MultiNode
+MPI_Datatype createUpdateInitAccType() {
+	// MPI_Datatype UpdateInitAccType; // (Query MultiNode) UpdateInitAccType is global variable by EW 2025.5.16
+	int block_lengths[3] = {1, 3, 3}; // Number of elements in each field
+	MPI_Aint offsets[3];
+	MPI_Datatype types[3] = {MPI_INT, MPI_DOUBLE, MPI_DOUBLE}; // Match the types in the struct
+
+	// Calculate offsets
+	offsets[0] = offsetof(UpdateInitAcc, pid);
+	offsets[1] = offsetof(UpdateInitAcc, acc1);
+	offsets[2] = offsetof(UpdateInitAcc, acc2);
+
+	// Create the struct datatype
+	MPI_Type_create_struct(3, block_lengths, offsets, types, &UpdateInitAccType);
+	MPI_Type_commit(&UpdateInitAccType);
+
+	return UpdateInitAccType;
+}
+#endif

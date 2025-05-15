@@ -32,6 +32,15 @@ void WorkerRoutines() {
 	Queue queue;
 	std::chrono::high_resolution_clock::time_point start_point;
 	std::chrono::high_resolution_clock::time_point end_point;
+#ifdef MultiNode
+	MPI_Status status_update;
+	int* update_count_list = new int[NumberOfNode];
+	int* displs = new int[NumberOfNode];
+	std::vector<int> update_pid_list;
+	UpdateInitAcc* update_list;
+	UpdateInitAcc* total_update_list; 
+	int total_recv_count;
+#endif
 
 	while (true) {
 
@@ -135,12 +144,52 @@ void WorkerRoutines() {
 				ptcl = &particles[ptcl_id];
 				CalculateAcceleration01(ptcl);
 				break;
+#ifdef MultiNode
+			case UpdateInitAcc01:
 
-			case UpdateInitAcc1:
-				if (shared_rank == 0) {
-					// (Query MultiNode) Update here!!!
+				update_pid_list.resize(ptcl_id);
+				MPI_Recv(update_pid_list.data(), ptcl_id, MPI_INT, ROOT, 1, update_comm, &status_update);
+				MPI_Bcast(update_count_list, NumberOfNode, MPI_INT, ROOT, update_comm);
+				
+				update_list = new UpdateInitAcc[update_count_list[update_rank]];
+				for (int i=0; i<update_rank; i++) {
+					update_list[i].pid = update_pid_list[i];
+					ptcl = &particles[update_list[i].pid];
+					update_list[i].acc1[0] = ptcl->a_tot[0][0];
+					update_list[i].acc1[1] = ptcl->a_tot[1][0];
+					update_list[i].acc1[2] = ptcl->a_tot[2][0];
+					update_list[i].acc2[0] = ptcl->a_tot[0][1];
+					update_list[i].acc2[1] = ptcl->a_tot[1][1];
+					update_list[i].acc2[2] = ptcl->a_tot[2][1];
 				}
+
+				total_recv_count = 0;
+				for (int i = 0; i < NumberOfNode; ++i) {
+					displs[i] = total_recv_count;
+					total_recv_count += update_count_list[i];
+				}
+				total_update_list = new UpdateInitAcc[total_recv_count];
+				MPI_Allgatherv(update_list, update_count_list[update_rank], UpdateInitAccType, total_update_list, update_count_list, displs, UpdateInitAccType, update_comm);
+
+				for (int i=0; i<total_recv_count; i++) {
+					if (i >= displs[update_rank] && i < displs[update_rank] + update_count_list[update_rank])
+						continue;
+
+					ptcl = &particles[total_update_list[i].pid];
+					ptcl->a_tot[0][0] = total_update_list[i].acc1[0];
+					ptcl->a_tot[1][0] = total_update_list[i].acc1[1];
+					ptcl->a_tot[2][0] = total_update_list[i].acc1[2];
+					ptcl->a_tot[0][1] = total_update_list[i].acc2[0];
+					ptcl->a_tot[1][1] = total_update_list[i].acc2[1];
+					ptcl->a_tot[2][1] = total_update_list[i].acc2[2];
+				}
+				delete [] update_list;
+				update_list = nullptr;
+				delete [] total_update_list;
+				total_update_list = nullptr;
+
 				break;
+#endif
 
 			case InitAcc2: // Initialize Acceleration(23)
 
