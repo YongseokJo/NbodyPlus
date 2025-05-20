@@ -318,11 +318,6 @@ public:
         }
     }
     */
-
-
-
-    ~QueueScheduler() {
-    }
 #endif
 
 #ifdef MultiNode
@@ -348,7 +343,30 @@ public:
         // Node number is one less than the first element greater than MyRank
         return std::max(0, left - 1);
     }
+
+    void updateMultiNode(TaskName task) {
+        _queue.task = task;
+        _queue.next_time = -1;
+
+        for (int i=0; i<NumberOfNode; i++) {
+            _queue.pid = _completed_list[i].size();
+            MPI_Send(&_queue, 1, QueueType, ranks_update_comm[i], QUEUE_TAG, MPI_COMM_WORLD);
+            MPI_Send(_completed_list[i].data(), _completed_list[i].size(), MPI_INT, ranks_update_comm[i], 1, MPI_COMM_WORLD);
+        }
+
+        int completed = 0; // Root node has already completed its job by EW 2025.5.16
+        while (completed < NumberOfNode) {
+            MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &_status);
+            int completed_rank = _status.MPI_SOURCE;
+            int return_value;
+            MPI_Recv(&return_value, 1, MPI_INT, completed_rank, TERMINATE_TAG, MPI_COMM_WORLD, &_status);
+            completed++;
+        }
+    }
 #endif
+
+    ~QueueScheduler() {
+    }
 
 private:
     std::unordered_set<Worker*> _FreeWorkers;

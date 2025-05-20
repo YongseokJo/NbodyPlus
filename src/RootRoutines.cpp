@@ -84,6 +84,7 @@ void RootRoutines() {
 	}
 
 	QueueScheduler queue_scheduler;
+	Queue queue;
 
 #ifdef PERFORMANCETRACE
 	std::chrono::high_resolution_clock::time_point start_point_whole;
@@ -123,31 +124,14 @@ void RootRoutines() {
 		} while(queue_scheduler.isComplete());
 #ifdef MultiNode
 		start_point_routine = std::chrono::high_resolution_clock::now();
-		// (Query MultiNode) How to start updating in WorkerRoutines.cpp?
-		// (Query MultiNode) Update list: a_tot01
-		std::vector<int> update_pid_list;
 
-		Queue queue;
-		queue.task = UpdateInitAcc01;
-		for (int i=0; i<NumberOfNode; i++) {
-			update_pid_list = queue_scheduler.returnUpdateList(i);
-			queue.pid = update_pid_list.size(); // (Query MultiNode) Here, number of data size to be sent is saved as queue.pid by EW 2025.5.13
-			queue.next_time = -1;
-			MPI_Send(&queue, 1, QueueType, ranks_update_comm[i], QUEUE_TAG, MPI_COMM_WORLD);
-			MPI_Send(update_pid_list.data(), update_pid_list.size(), MPI_INT, ranks_update_comm[i], 1, MPI_COMM_WORLD);
-		}
+		queue_scheduler.updateMultiNode(UpdateInitAcc01); // (Query MultiNode) Update list: a_tot01, NumberOfNeighbor, Neighbors
 
-		int completed = 0; // Root node has already completed its job by EW 2025.5.16
-		while (completed < NumberOfNode) {
-			MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-			int completed_rank = status.MPI_SOURCE;
-			int return_value;
-			MPI_Recv(&return_value, 1, MPI_INT, completed_rank, TERMINATE_TAG, MPI_COMM_WORLD, &status);
-			completed++;
-		}
 		end_point_routine = std::chrono::high_resolution_clock::now();
-		performance.Update = std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
-		std::cout << "Elapsed time during the update: " << performance.Update*1e-9 << " s" << std::endl;
+		performance.Update += std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
+		std::cout << "Elapsed time during the updateInitAcc01: " 
+			<< std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count()*1e-9 
+			<< " s" << std::endl;
 #endif
 		std::cout << "Init 01 done" << std::endl;
 
@@ -160,7 +144,15 @@ void RootRoutines() {
 			queue_scheduler.waitQueue(0); //blocking wait
 		} while(queue_scheduler.isComplete());
 #ifdef MultiNode
-		// (Query MultiNode) Update list: a_tot23
+		start_point_routine = std::chrono::high_resolution_clock::now();
+
+		queue_scheduler.updateMultiNode(UpdateInitAcc23); // (Query MultiNode) Update list: a_tot23
+
+		end_point_routine = std::chrono::high_resolution_clock::now();
+		performance.Update += std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
+		std::cout << "Elapsed time during the updateInitAcc23: " 
+			<< std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count()*1e-9 
+			<< " s" << std::endl;
 #endif
 		std::cout << "Init 02 done" << std::endl;
 
@@ -178,9 +170,7 @@ void RootRoutines() {
 		// (Query MultiNode) Update list: NewNeighbors, NewNumberOfNeighbor to root only!!!
 #endif
 		std::cout << "Primordial binary search done" << std::endl;
-#ifndef MultiNode
-		Queue queue;
-#endif
+
 		int rank;
 		int OriginalLastParticleIndex = LastParticleIndex;
 		formPrimordialBinaries(OriginalLastParticleIndex);
@@ -286,7 +276,7 @@ void RootRoutines() {
 		std::cout << "Time Step synchronization." << std::endl;
 		task=TimeSync;
 		completed_tasks = 0; total_tasks = NumberOfWorker;
-		Queue queue = {task, -1, -1.0};
+		queue = {task, -1, -1.0};
 		InitialAssignmentOfTasks(queue, NumberOfWorker, QUEUE_TAG);
 		//MPI_Waitall(NumberOfCommunication, requests, statuses);
 		//NumberOfCommunication = 0;
@@ -374,7 +364,7 @@ void RootRoutines() {
 			// end if the global time exceeds the end time
 			if (global_time >= 1) {
 				task=Ends;
-				Queue queue = {task, -1, -1.0};
+				queue = {task, -1, -1.0};
 				InitialAssignmentOfTasks(queue, NumberOfWorker, QUEUE_TAG);
 				MPI_Type_free(&QueueType);
 				//MPI_Waitall(NumberOfCommunication, requests, statuses);
@@ -500,7 +490,7 @@ void RootRoutines() {
 #endif
 // /*
 				int cm_pid;
-				Queue queue;
+				queue;
 				queue_scheduler.initializeIrr(IrrForce, next_time, ThisLevelNode->ParticleList);
 				auto iter = queue_scheduler.CMPtcls.begin();
 				do
@@ -1033,7 +1023,7 @@ void RootRoutines() {
 				// end if the global time exceeds the end time
 				if (current_time_irr >= 1) {
 					task=-100;
-					Queue queue = {task, -1, -1.0};
+					queue = {task, -1, -1.0};
 					InitialAssignmentOfTasks(Queue, NumberOfWorker, QUEUE_TAG);
 					MPI_Waitall(NumberOfCommunication, requests, statuses);
 					NumberOfCommunication = 0;

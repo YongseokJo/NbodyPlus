@@ -23,6 +23,7 @@ enum TaskName : int8_t {
     MergeManyBody = 27,
 #ifdef MultiNode
     UpdateInitAcc01 = 30,
+    UpdateInitAcc23 = 31,
 #endif
     Synchronize = 100,
     Ends = -100,

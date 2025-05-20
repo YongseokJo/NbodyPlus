@@ -86,7 +86,12 @@ int readData() {
 	inputFile.close();
 
 #ifdef SEVN
+#ifdef MultiNode
+	if (MyRank == ROOT)
+		initializeStellarEvolution();
+#else
 	initializeStellarEvolution();
+#endif
 #endif
 
 	/*
