@@ -34,6 +34,10 @@ struct Performance {
 	long StellarEvolution = 0;
 #endif
 
+#ifdef MultiNode
+	long Update = 0;
+#endif
+
 };
 
 #endif

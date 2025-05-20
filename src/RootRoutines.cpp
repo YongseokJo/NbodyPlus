@@ -122,75 +122,22 @@ void RootRoutines() {
 			queue_scheduler.waitQueue(0); //blocking wait
 		} while(queue_scheduler.isComplete());
 #ifdef MultiNode
+		start_point_routine = std::chrono::high_resolution_clock::now();
 		// (Query MultiNode) How to start updating in WorkerRoutines.cpp?
 		// (Query MultiNode) Update list: a_tot01
-		int* update_count_list = new int[NumberOfNode];
-		int* displs = new int[NumberOfNode];
-		std::vector<int> update_pid_list = queue_scheduler.returnUpdateList(update_rank);
-		update_count_list[update_rank] = update_pid_list.size();
-		fprintf(stderr, "In Root... MyRank: %d. list_size: %d\n", MyRank, update_count_list[update_rank]);
-
-		UpdateInitAcc* update_list = new UpdateInitAcc[update_count_list[update_rank]];
-		for (int i=0; i<update_count_list[update_rank]; i++) {
-			update_list[i].pid = update_pid_list[i];
-			ptcl = &particles[update_list[i].pid];
-			update_list[i].acc1[0] = ptcl->a_tot[0][0];
-			update_list[i].acc1[1] = ptcl->a_tot[1][0];
-			update_list[i].acc1[2] = ptcl->a_tot[2][0];
-			update_list[i].acc2[0] = ptcl->a_tot[0][1];
-			update_list[i].acc2[1] = ptcl->a_tot[1][1];
-			update_list[i].acc2[2] = ptcl->a_tot[2][1];
-			fprintf(stderr, "Gathering... MyRank: %d. PID: %d, acc1: %e %e %e, acc2: %e %e %e\n",
-					MyRank, ptcl->PID, ptcl->a_tot[0][0], ptcl->a_tot[1][0], ptcl->a_tot[2][0],
-					ptcl->a_tot[0][1], ptcl->a_tot[1][1], ptcl->a_tot[2][1]);
-		}
+		std::vector<int> update_pid_list;
 
 		Queue queue;
 		queue.task = UpdateInitAcc01;
-		for (int i=1; i<NumberOfNode; i++) {
+		for (int i=0; i<NumberOfNode; i++) {
 			update_pid_list = queue_scheduler.returnUpdateList(i);
-			update_count_list[i] = update_pid_list.size();
-			queue.pid = update_count_list[i]; // (Query MultiNode) Here, number of data size to be sent is saved as queue.pid by EW 2025.5.13
+			queue.pid = update_pid_list.size(); // (Query MultiNode) Here, number of data size to be sent is saved as queue.pid by EW 2025.5.13
 			queue.next_time = -1;
 			MPI_Send(&queue, 1, QueueType, ranks_update_comm[i], QUEUE_TAG, MPI_COMM_WORLD);
-			MPI_Send(update_pid_list.data(), update_count_list[i], MPI_INT, i, 1, update_comm);
+			MPI_Send(update_pid_list.data(), update_pid_list.size(), MPI_INT, ranks_update_comm[i], 1, MPI_COMM_WORLD);
 		}
-		MPI_Bcast(update_count_list, NumberOfNode, MPI_INT, update_rank, update_comm);
-		
-		int total_recv_count = 0;
-        for (int i = 0; i < NumberOfNode; ++i) {
-            displs[i] = total_recv_count;
-            total_recv_count += update_count_list[i];
-        }
-		UpdateInitAcc* total_update_list = new UpdateInitAcc[total_recv_count];
-		MPI_Allgatherv(update_list, update_count_list[update_rank], UpdateInitAccType, total_update_list, update_count_list, displs, UpdateInitAccType, update_comm);
-		fprintf(stderr, "In Root... MyRank: %d. total_recv_count: %d\n", MyRank, total_recv_count);
 
-		for (int i=0; i<total_recv_count; i++) {
-			if (i >= displs[update_rank] && i < displs[update_rank] + update_count_list[update_rank])
-				continue;
-
-			ptcl = &particles[total_update_list[i].pid];
-			ptcl->a_tot[0][0] = total_update_list[i].acc1[0];
-			ptcl->a_tot[1][0] = total_update_list[i].acc1[1];
-			ptcl->a_tot[2][0] = total_update_list[i].acc1[2];
-			ptcl->a_tot[0][1] = total_update_list[i].acc2[0];
-			ptcl->a_tot[1][1] = total_update_list[i].acc2[1];
-			ptcl->a_tot[2][1] = total_update_list[i].acc2[2];
-			fprintf(stderr, "Receiving... MyRank: %d. PID: %d, acc1: %e %e %e, acc2: %e %e %e\n",
-					MyRank, ptcl->PID, ptcl->a_tot[0][0], ptcl->a_tot[1][0], ptcl->a_tot[2][0],
-					ptcl->a_tot[0][1], ptcl->a_tot[1][1], ptcl->a_tot[2][1]);
-		}
-		delete [] update_count_list;
-		update_count_list = nullptr;
-		delete [] displs;
-		displs = nullptr;
-		delete [] update_list;
-		update_list = nullptr;
-		delete [] total_update_list;
-		total_update_list = nullptr;
-
-		int completed = 1; // Root node has already completed its job by EW 2025.5.16
+		int completed = 0; // Root node has already completed its job by EW 2025.5.16
 		while (completed < NumberOfNode) {
 			MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
 			int completed_rank = status.MPI_SOURCE;
@@ -198,6 +145,9 @@ void RootRoutines() {
 			MPI_Recv(&return_value, 1, MPI_INT, completed_rank, TERMINATE_TAG, MPI_COMM_WORLD, &status);
 			completed++;
 		}
+		end_point_routine = std::chrono::high_resolution_clock::now();
+		performance.Update = std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
+		std::cout << "Elapsed time during the update: " << performance.Update*1e-9 << " s" << std::endl;
 #endif
 		std::cout << "Init 01 done" << std::endl;
 

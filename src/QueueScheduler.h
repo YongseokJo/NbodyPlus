@@ -337,7 +337,8 @@ public:
         // Find first index where ranks_update_comm[i] > MyRank
         while (left < right) {
             int mid = (left + right) / 2;
-            if (ranks_update_comm[mid] <= Rank) {
+            // if (ranks_update_comm_queue[mid] <= Rank) {
+            if (ranks_update_comm[mid]-1 <= Rank) {
                 left = mid + 1;
             } else {
                 right = mid;

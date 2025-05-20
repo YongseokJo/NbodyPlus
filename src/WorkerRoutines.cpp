@@ -151,11 +151,11 @@ void WorkerRoutines() {
 			case UpdateInitAcc01:
 
 				update_pid_list.resize(ptcl_id);
-				MPI_Recv(update_pid_list.data(), ptcl_id, MPI_INT, ROOT, 1, update_comm, &status_update);
-				MPI_Bcast(update_count_list, NumberOfNode, MPI_INT, ROOT, update_comm);
+				MPI_Recv(update_pid_list.data(), ptcl_id, MPI_INT, ROOT, 1, MPI_COMM_WORLD, &status_update);
+				MPI_Allgather(&ptcl_id, 1, MPI_INT, update_count_list, 1, MPI_INT, update_comm);
 				
 				update_list = new UpdateInitAcc[update_count_list[update_rank]];
-				fprintf(stderr, "In Worker... MyRank: %d. list_size: %d\n", MyRank, update_count_list[update_rank]);
+				fprintf(stderr, "After Allgather... MyRank: %d. list_size: %d\n", MyRank, update_count_list[update_rank]);
 				for (int i=0; i<update_count_list[update_rank]; i++) {
 					update_list[i].pid = update_pid_list[i];
 					ptcl = &particles[update_list[i].pid];
@@ -177,7 +177,7 @@ void WorkerRoutines() {
 				}
 				total_update_list = new UpdateInitAcc[total_recv_count];
 				MPI_Allgatherv(update_list, update_count_list[update_rank], UpdateInitAccType, total_update_list, update_count_list, displs, UpdateInitAccType, update_comm);
-				fprintf(stderr, "In Worker... MyRank: %d. total_recv_count: %d\n", MyRank, total_recv_count);
+				fprintf(stderr, "After Allgatherv... MyRank: %d. total_recv_count: %d\n", MyRank, total_recv_count);
 
 				for (int i=0; i<total_recv_count; i++) {
 					if (i >= displs[update_rank] && i < displs[update_rank] + update_count_list[update_rank])

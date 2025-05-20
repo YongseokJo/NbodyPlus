@@ -86,28 +86,43 @@ void initializeMPI(int argc, char *argv[]) {
 	MPI_Win_shared_query(win3, 0, &size_bytes, &disp_unit, &ActiveIndexToOriginalIndex);
 
 #ifdef MultiNode
-	int color = (shared_rank == 0) ? 0 : MPI_UNDEFINED;
+	NumberOfNode = 1; // Initialization because it is used in WorkerRoutines.cpp
+	int color = (shared_rank == 1) ? 0 : MPI_UNDEFINED;
 	MPI_Comm_split(MPI_COMM_WORLD, color, MyRank, &update_comm);
 	int update_size = -1; // (Query MultiNode) update_rank is global variable by EW 2025.5.13
-	if (shared_rank == 0) {
+	if (shared_rank == 1) {
 		MPI_Comm_rank(update_comm, &update_rank);
 		MPI_Comm_size(update_comm, &update_size);
 
 		NumberOfNode = update_size;
-		fprintf(stderr,"My Rank =%d : Update Rank = %d, Update size = %d\n", MyRank, update_rank, update_size);
+		fprintf(stderr,"MyRank =%d : Update Rank = %d, Update size = %d\n", MyRank, update_rank, update_size);
 
-		if (MyRank == ROOT) {
+		if (MyRank == 1) {
 			ranks_update_comm = new int[NumberOfNode];
 			MPI_Gather(&MyRank, 1, MPI_INT, ranks_update_comm, 1, MPI_INT, ROOT, update_comm);
 			for (int i=0; i<NumberOfNode; i++) {
-				fprintf(stderr,"Update Rank[%d]: %d\n", i, ranks_update_comm[i]);
+				fprintf(stderr,"MyRank: %d. Update Rank[%d]: %d\n", MyRank, i, ranks_update_comm[i]);
 			}
-			assert(MyRank == 0);
-			assert(shared_rank == 0);
+			assert(MyRank == 1);
+			assert(shared_rank == 1);
 			assert(update_rank == 0);
 		}
 		else {
 			MPI_Gather(&MyRank, 1, MPI_INT, NULL, 0, MPI_INT, ROOT, update_comm);
+		}
+	}
+
+	if (MyRank == 1) {
+		MPI_Send(&NumberOfNode, 1, MPI_INT, ROOT, 0, MPI_COMM_WORLD);
+		MPI_Send(ranks_update_comm, NumberOfNode, MPI_INT, ROOT, 1, MPI_COMM_WORLD);
+	}
+	else if (MyRank == ROOT) {
+		MPI_Recv(&NumberOfNode, 1, MPI_INT, 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+		ranks_update_comm = new int[NumberOfNode];
+		MPI_Recv(ranks_update_comm, NumberOfNode, MPI_INT, 1, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+		fprintf(stderr, "In ROOT... NumberOfNode: %d\n", NumberOfNode);
+		for (int i=0; i<NumberOfNode; i++) {
+			fprintf(stderr,"Update Rank[%d]: %d\n", i, ranks_update_comm[i]);
 		}
 	}
 #endif
