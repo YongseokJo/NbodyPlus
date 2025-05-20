@@ -14,8 +14,8 @@ void NewFBInitialization(Particle* ptclCM);
 void deleteGroup(Particle* ptclCM);
 void NewFBInitialization3(Group* group);
 #ifdef MultiNode
-void updateInitAcc01(int ptcl_id, int* update_count_list, UpdateInitAcc* update_list, UpdateInitAcc* total_update_list, int* displs);
-void updateInitAcc23(int ptcl_id, int* update_count_list, UpdateInitAcc* update_list, UpdateInitAcc* total_update_list, int* displs);
+void updateInitAcc01(int update_count, int* update_count_list, int* displs);
+void updateInitAcc23(int update_count, int* update_count_list, int* displs);
 #endif
 
 void WorkerRoutines() {
@@ -39,9 +39,6 @@ void WorkerRoutines() {
 #ifdef MultiNode
 	int* update_count_list = new int[NumberOfNode];
 	int* displs = new int[NumberOfNode];
-	UpdateInitAcc* update_list;
-	UpdateInitAcc* total_update_list; 
-	int total_recv_count;
 #endif
 
 	while (true) {
@@ -149,12 +146,12 @@ void WorkerRoutines() {
 #ifdef MultiNode
 			case UpdateInitAcc01:
 
-				updateInitAcc01(ptcl_id, update_count_list, update_list, total_update_list, displs);
+				updateInitAcc01(ptcl_id, update_count_list, displs);
 				break;
 
 			case UpdateInitAcc23:
 
-				updateInitAcc23(ptcl_id, update_count_list, update_list, total_update_list, displs);
+				updateInitAcc23(ptcl_id, update_count_list, displs);
 				break;
 #endif
 

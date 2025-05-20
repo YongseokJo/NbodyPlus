@@ -16,7 +16,8 @@ void InitialAssignmentOfTasks(T data, int NumTask);
 
 MPI_Datatype createQueueType();
 #ifdef MultiNode
-MPI_Datatype createUpdateInitAccType();
+MPI_Datatype createUpdateInitAcc1Type();
+MPI_Datatype createUpdateInitAcc2Type();
 #endif
 
 void initializeMPI(int argc, char *argv[]) {
@@ -40,7 +41,8 @@ void initializeMPI(int argc, char *argv[]) {
 
 	QueueType = createQueueType();
 #ifdef MultiNode
-	UpdateInitAccType = createUpdateInitAccType();
+	UpdateInitAcc1Type = createUpdateInitAcc1Type();
+	UpdateInitAcc2Type = createUpdateInitAcc2Type();
 #endif
 	/*
 	// comm for each node
@@ -231,21 +233,40 @@ MPI_Datatype createQueueType() {
 }
 
 #ifdef MultiNode
-MPI_Datatype createUpdateInitAccType() {
-	// MPI_Datatype UpdateInitAccType; // (Query MultiNode) UpdateInitAccType is global variable by EW 2025.5.16
+MPI_Datatype createUpdateInitAcc1Type() {
+
+	int block_lengths[4] = {1, 1, 3, 3}; // Number of elements in each field
+	MPI_Aint offsets[4];
+	MPI_Datatype types[4] = {MPI_INT, MPI_INT, MPI_DOUBLE, MPI_DOUBLE}; // Match the types in the struct
+
+	// Calculate offsets
+	offsets[0] = offsetof(UpdateInitAcc1, pid);
+	offsets[1] = offsetof(UpdateInitAcc1, numberofneighbors);
+	offsets[2] = offsetof(UpdateInitAcc1, acc1);
+	offsets[3] = offsetof(UpdateInitAcc1, acc2);
+
+	// Create the struct datatype
+	MPI_Type_create_struct(4, block_lengths, offsets, types, &UpdateInitAcc1Type);
+	MPI_Type_commit(&UpdateInitAcc1Type);
+
+	return UpdateInitAcc1Type;
+}
+
+MPI_Datatype createUpdateInitAcc2Type() {
+
 	int block_lengths[3] = {1, 3, 3}; // Number of elements in each field
 	MPI_Aint offsets[3];
 	MPI_Datatype types[3] = {MPI_INT, MPI_DOUBLE, MPI_DOUBLE}; // Match the types in the struct
 
 	// Calculate offsets
-	offsets[0] = offsetof(UpdateInitAcc, pid);
-	offsets[1] = offsetof(UpdateInitAcc, acc1);
-	offsets[2] = offsetof(UpdateInitAcc, acc2);
+	offsets[0] = offsetof(UpdateInitAcc1, pid);
+	offsets[1] = offsetof(UpdateInitAcc1, acc1);
+	offsets[2] = offsetof(UpdateInitAcc1, acc2);
 
 	// Create the struct datatype
-	MPI_Type_create_struct(3, block_lengths, offsets, types, &UpdateInitAccType);
-	MPI_Type_commit(&UpdateInitAccType);
+	MPI_Type_create_struct(3, block_lengths, offsets, types, &UpdateInitAcc2Type);
+	MPI_Type_commit(&UpdateInitAcc2Type);
 
-	return UpdateInitAccType;
+	return UpdateInitAcc2Type;
 }
 #endif

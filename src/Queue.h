@@ -42,7 +42,14 @@ struct Queue {
 };
 
 #ifdef MultiNode
-struct UpdateInitAcc {
+struct UpdateInitAcc1 {
+    int pid;
+    int numberofneighbors;
+    double acc1[3];
+    double acc2[3];
+};
+
+struct UpdateInitAcc2 {
     int pid;
     double acc1[3];
     double acc2[3];

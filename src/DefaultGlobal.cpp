@@ -26,7 +26,8 @@ MPI_Comm update_comm;
 int NumberOfNode;
 int *ranks_update_comm;
 int update_rank;
-MPI_Datatype UpdateInitAccType;
+MPI_Datatype UpdateInitAcc1Type;
+MPI_Datatype UpdateInitAcc2Type;
 #endif
 
 MPI_Datatype QueueType;

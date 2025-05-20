@@ -36,7 +36,8 @@ extern int update_rank;
 extern int NumberOfNode;
 extern int* ranks_update_comm;
 extern MPI_Comm update_comm;
-extern MPI_Datatype UpdateInitAccType;
+extern MPI_Datatype UpdateInitAcc1Type;
+extern MPI_Datatype UpdateInitAcc2Type;
 #endif
 
 extern int *ActiveIndexToOriginalIndex_orginal;
