@@ -128,6 +128,7 @@ void RootRoutines() {
 		int* displs = new int[NumberOfNode];
 		std::vector<int> update_pid_list = queue_scheduler.returnUpdateList(update_rank);
 		update_count_list[update_rank] = update_pid_list.size();
+		fprintf(stderr, "In Root... MyRank: %d. list_size: %d\n", MyRank, update_count_list[update_rank]);
 
 		UpdateInitAcc* update_list = new UpdateInitAcc[update_count_list[update_rank]];
 		for (int i=0; i<update_count_list[update_rank]; i++) {
@@ -139,6 +140,9 @@ void RootRoutines() {
 			update_list[i].acc2[0] = ptcl->a_tot[0][1];
 			update_list[i].acc2[1] = ptcl->a_tot[1][1];
 			update_list[i].acc2[2] = ptcl->a_tot[2][1];
+			fprintf(stderr, "Gathering... MyRank: %d. PID: %d, acc1: %e %e %e, acc2: %e %e %e\n",
+					MyRank, ptcl->PID, ptcl->a_tot[0][0], ptcl->a_tot[1][0], ptcl->a_tot[2][0],
+					ptcl->a_tot[0][1], ptcl->a_tot[1][1], ptcl->a_tot[2][1]);
 		}
 
 		Queue queue;
@@ -160,18 +164,22 @@ void RootRoutines() {
         }
 		UpdateInitAcc* total_update_list = new UpdateInitAcc[total_recv_count];
 		MPI_Allgatherv(update_list, update_count_list[update_rank], UpdateInitAccType, total_update_list, update_count_list, displs, UpdateInitAccType, update_comm);
+		fprintf(stderr, "In Root... MyRank: %d. total_recv_count: %d\n", MyRank, total_recv_count);
 
 		for (int i=0; i<total_recv_count; i++) {
 			if (i >= displs[update_rank] && i < displs[update_rank] + update_count_list[update_rank])
 				continue;
 
-			ptcl = &particles[update_list[i].pid];
-			ptcl->a_tot[0][0] = update_list[i].acc1[0];
-			ptcl->a_tot[1][0] = update_list[i].acc1[1];
-			ptcl->a_tot[2][0] = update_list[i].acc1[2];
-			ptcl->a_tot[0][1] = update_list[i].acc2[0];
-			ptcl->a_tot[1][1] = update_list[i].acc2[1];
-			ptcl->a_tot[2][1] = update_list[i].acc2[2];
+			ptcl = &particles[total_update_list[i].pid];
+			ptcl->a_tot[0][0] = total_update_list[i].acc1[0];
+			ptcl->a_tot[1][0] = total_update_list[i].acc1[1];
+			ptcl->a_tot[2][0] = total_update_list[i].acc1[2];
+			ptcl->a_tot[0][1] = total_update_list[i].acc2[0];
+			ptcl->a_tot[1][1] = total_update_list[i].acc2[1];
+			ptcl->a_tot[2][1] = total_update_list[i].acc2[2];
+			fprintf(stderr, "Receiving... MyRank: %d. PID: %d, acc1: %e %e %e, acc2: %e %e %e\n",
+					MyRank, ptcl->PID, ptcl->a_tot[0][0], ptcl->a_tot[1][0], ptcl->a_tot[2][0],
+					ptcl->a_tot[0][1], ptcl->a_tot[1][1], ptcl->a_tot[2][1]);
 		}
 		delete [] update_count_list;
 		update_count_list = nullptr;

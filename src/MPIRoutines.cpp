@@ -1,4 +1,5 @@
 #include <iostream>
+#include <cstddef>
 #include <vector>
 #include <unistd.h>
 #include "def.h"
@@ -55,7 +56,7 @@ void initializeMPI(int argc, char *argv[]) {
 	MPI_Comm_split_type(MPI_COMM_WORLD, MPI_COMM_TYPE_SHARED, MyRank, MPI_INFO_NULL, &shared_comm);
 
 	// Get rank and size in the shared communicator
-	int shared_rank, shared_size; // (Query MultiNode) shared_rank is global variable by EW 2025.5.13
+	int shared_size; // (Query MultiNode) shared_rank is global variable by EW 2025.5.13
 
 	MPI_Comm_rank(shared_comm, &shared_rank);
 	MPI_Comm_size(shared_comm, &shared_size);

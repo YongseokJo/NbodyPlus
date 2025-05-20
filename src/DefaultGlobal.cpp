@@ -16,6 +16,7 @@ MPI_Win win3;
 
 MPI_Comm shared_comm;
 int MyRank;
+int shared_rank;
 int NumberOfProcessor;
 int NumberOfWorker;
 int NumberOfCommunication;
