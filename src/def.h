@@ -65,7 +65,7 @@ typedef unsigned long long ULL;
 #define ABS(a) static_cast<double>(std::abs(a))
 #define MIN(a,b) std::min(RCAST(a),RCAST(b))
 
-#define CUDA_FLOAT
+// #define CUDA_FLOAT
 #ifdef CUDA_FLOAT
 #define CUDA_REAL float
 #else
