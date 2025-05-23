@@ -16,6 +16,7 @@ void NewFBInitialization3(Group* group);
 #ifdef MultiNode
 void updateInitAcc01(int update_count, int* update_count_list, int* displs);
 void updateInitAcc23(int update_count, int* update_count_list, int* displs);
+void sendNewNeighbors(int update_count, std::vector<int>& neighbors);
 #endif
 
 void WorkerRoutines() {
@@ -27,18 +28,12 @@ void WorkerRoutines() {
 	MPI_Request request;
 	int ptcl_id;
 	double next_time;
-	int NewNumberOfNeighbor;
-	int NewNeighbors[MaxNumNeighbor];
-	int size=0;
-	double new_a[Dim];
-	double new_adot[Dim];
 	Particle *ptcl;
 	Queue queue;
-	std::chrono::high_resolution_clock::time_point start_point;
-	std::chrono::high_resolution_clock::time_point end_point;
 #ifdef MultiNode
 	int* update_count_list = new int[NumberOfNode];
 	int* displs = new int[NumberOfNode];
+	std::vector<int> neighbors;
 #endif
 
 	while (true) {
@@ -152,6 +147,17 @@ void WorkerRoutines() {
 			case UpdateInitAcc23:
 
 				updateInitAcc23(ptcl_id, update_count_list, displs);
+				break;
+
+			case SendNewNeighbors:
+
+				sendNewNeighbors(ptcl_id, neighbors);
+				break;
+
+			case UpdateLastParticleIndex:
+
+				LastParticleIndex = ptcl_id;
+				global_variable->LastParticleIndex = LastParticleIndex;
 				break;
 #endif
 
@@ -308,13 +314,25 @@ void WorkerRoutines() {
 		}
 
 		// return that it's over // (Query) EW: I think there is no need to use MPI_Isend here. Let's use MPI_Send instead. 2025.5.20
-		//task = -1;
-		if (task == IrrForce || task == RegForce || task == IrrUpdate || task == RegUpdate)
-			MPI_Isend(&ptcl_id, 1, MPI_INT, ROOT, TERMINATE_TAG, MPI_COMM_WORLD,&request);
-		else
-			MPI_Isend(&task, 1, MPI_INT, ROOT, TERMINATE_TAG, MPI_COMM_WORLD,&request);
+#ifdef MultiNode
+		if (task == SearchPrimordialGroup) {
+			int return_value[2] = {ptcl_id, ptcl->NewNumberOfNeighbor};
+			MPI_Isend(return_value, 2, MPI_INT, ROOT, TERMINATE_TAG, MPI_COMM_WORLD, &request);
+		}
+		else if (task == SendNewNeighbors) {
+			MPI_Isend(neighbors.data(), neighbors.size(), MPI_INT, ROOT, TERMINATE_TAG, MPI_COMM_WORLD, &request);
+		}
+		else {
+			MPI_Isend(&ptcl_id, 1, MPI_INT, ROOT, TERMINATE_TAG, MPI_COMM_WORLD, &request);
+		}
+#else
+		MPI_Isend(&ptcl_id, 1, MPI_INT, ROOT, TERMINATE_TAG, MPI_COMM_WORLD, &request);
+#endif
 
 		MPI_Wait(&request, &status);
+#ifdef MultiNode
+		neighbors.clear();
+#endif
 		//std::cerr << "Processor " << MyRank << " done." << std::endl;
 	}
 }

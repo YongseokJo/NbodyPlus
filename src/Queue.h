@@ -24,6 +24,8 @@ enum TaskName : int8_t {
 #ifdef MultiNode
     UpdateInitAcc01 = 30,
     UpdateInitAcc23 = 31,
+    SendNewNeighbors = 32,
+    UpdateLastParticleIndex = 33,
 #endif
     Synchronize = 100,
     Ends = -100,

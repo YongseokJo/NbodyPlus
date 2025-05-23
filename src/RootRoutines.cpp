@@ -128,7 +128,7 @@ void RootRoutines() {
 		queue_scheduler.updateMultiNode(UpdateInitAcc01); // (Query MultiNode) Update list: a_tot01, NumberOfNeighbor, Neighbors
 
 		end_point_routine = std::chrono::high_resolution_clock::now();
-		performance.Update += std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
+		// performance.Update += std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
 		std::cout << "Elapsed time during the updateInitAcc01: " 
 			<< std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count()*1e-9 
 			<< " s" << std::endl;
@@ -149,7 +149,7 @@ void RootRoutines() {
 		queue_scheduler.updateMultiNode(UpdateInitAcc23); // (Query MultiNode) Update list: a_tot23
 
 		end_point_routine = std::chrono::high_resolution_clock::now();
-		performance.Update += std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
+		// performance.Update += std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
 		std::cout << "Elapsed time during the updateInitAcc23: " 
 			<< std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count()*1e-9 
 			<< " s" << std::endl;
@@ -167,14 +167,40 @@ void RootRoutines() {
 			queue_scheduler.waitQueue(0); //blocking wait
 		} while(queue_scheduler.isComplete());
 #ifdef MultiNode
-		// (Query MultiNode) Update list: NewNeighbors, NewNumberOfNeighbor to root only!!!
+		start_point_routine = std::chrono::high_resolution_clock::now();
+
+		queue_scheduler.getNewNeighbors(SendNewNeighbors); // (Query MultiNode) Update list: NewNeighbors, NewNumberOfNeighbor to root only!!!
+
+		end_point_routine = std::chrono::high_resolution_clock::now();
+		// performance.Update += std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
+		std::cout << "Elapsed time during the updatePrimordialGroup: " 
+			<< std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count()*1e-9 
+			<< " s" << std::endl;
 #endif
 		std::cout << "Primordial binary search done" << std::endl;
 
 		int rank;
 		int OriginalLastParticleIndex = LastParticleIndex;
-		formPrimordialBinaries(OriginalLastParticleIndex);
-		assert(OriginalLastParticleIndex <= LastParticleIndex); // for debugging by EW 2025.1.4
+		formPrimordialBinaries(OriginalLastParticleIndex); // (Query MultiNode) We have to update LastParticleIndex & global_variable->LastParticleIndex here!!!
+#ifdef MultiNode
+		if (OriginalLastParticleIndex != LastParticleIndex) {
+			_queue.task = UpdateLastParticleIndex;
+			_queue.next_time = -1;
+			for (int i=1; i<NumberOfNode; i++) { // (Query MultiNode) It starts from 1 because 0 is root
+				_queue.pid = LastParticleIndex;
+				MPI_Send(&_queue, 1, QueueType, ranks_update_comm[i], QUEUE_TAG, MPI_COMM_WORLD);
+			}
+
+			int completed = 0;
+			while (completed < NumberOfNode - 1) { // Root node has already completed its job by EW 2025.5.16
+				MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &_status);
+				int completed_rank = _status.MPI_SOURCE;
+				int return_value;
+				MPI_Recv(&return_value, 1, MPI_INT, completed_rank, TERMINATE_TAG, MPI_COMM_WORLD, &_status);
+				completed++;
+			}
+		}
+#endif
 		assert(CMPtclWorker.empty()); // for debugging by EW 2025.1.4
 		if (OriginalLastParticleIndex != LastParticleIndex) {
 			std::cout << "In total, " << LastParticleIndex - OriginalLastParticleIndex

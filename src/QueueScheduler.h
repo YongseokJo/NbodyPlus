@@ -57,10 +57,6 @@ public:
                 (*worker)->addQueue(_queue);
                 WorkersToGo.insert(*worker);
                 _assigned_queues++;
-#ifdef MultiNode
-                int nodenum = getNodeNumber((*worker)->MyRank);
-                _completed_list[nodenum].push_back(_queue.pid);
-#endif
                 worker = _FreeWorkers.erase(worker);
                 //_queue.print();
             }
@@ -156,7 +152,15 @@ public:
             // Retrieve the rank of the source processor
             _rank = _status.MPI_SOURCE;
             //fprintf(stdout, "returned rank = %d\n",_rank);
+#ifdef MultiNode
+            int nodenum = getNodeNumber(_rank);
+            if (_task == SearchPrimordialGroup)
+                workers[_rank].callback(true, _completed_list[nodenum]);
+            else
+                workers[_rank].callback(false, _completed_list[nodenum]);
+#else
             workers[_rank].callback();
+#endif
             if (workers[_rank].NumberOfQueues > 0)
                 WorkersToGo.insert(&workers[_rank]);
             else
@@ -354,7 +358,7 @@ public:
             MPI_Send(_completed_list[i].data(), _completed_list[i].size(), MPI_INT, ranks_update_comm[i], 1, MPI_COMM_WORLD);
         }
 
-        int completed = 0; // Root node has already completed its job by EW 2025.5.16
+        int completed = 0;
         while (completed < NumberOfNode) {
             MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &_status);
             int completed_rank = _status.MPI_SOURCE;
@@ -362,6 +366,61 @@ public:
             MPI_Recv(&return_value, 1, MPI_INT, completed_rank, TERMINATE_TAG, MPI_COMM_WORLD, &_status);
             completed++;
         }
+    }
+
+    // (Query MultiNode) We're going to send NewNeighbors to root processor, so we use world communicator
+    void getNewNeighbors(TaskName task) {
+        _queue.task = task;
+        _queue.next_time = -1;
+
+        if (task == SendNewNeighbors) {
+            bool BinaryFound = false;
+            for (int i=1; i<NumberOfNode; i++) {
+                if (_completed_list[i].size() > 0) {
+                    BinaryFound = true;
+                    break;
+                }
+            }
+            if (!BinaryFound)
+                return;
+        }
+
+        for (int i=1; i<NumberOfNode; i++) { // (Query MultiNode) It starts from 1 because 0 is root
+            _queue.pid = _completed_list[i].size();
+            MPI_Send(&_queue, 1, QueueType, ranks_update_comm[i], QUEUE_TAG, MPI_COMM_WORLD);
+            MPI_Send(_completed_list[i].data(), _completed_list[i].size(), MPI_INT, ranks_update_comm[i], 1, MPI_COMM_WORLD);
+        }
+
+        int* NumberOfNewNeighbors = new int[NumberOfNode-1];
+        for (int i=1; i<NumberOfNode; i++) {
+            int num = 0;
+            for (int j=0; j<_completed_list[i].size(); j++) {
+                int pid = _completed_list[i][j];
+                num += particles[pid].NewNumberOfNeighbor;
+            }
+            NumberOfNewNeighbors[i-1] = num;
+        }
+
+        int completed = 0;
+        while (completed < NumberOfNode - 1) { // Root node has already completed its job by EW 2025.5.16
+            MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &_status);
+            int completed_rank = _status.MPI_SOURCE;
+            int nodenum = getNodeNumber(completed_rank);
+            int count = NumberOfNewNeighbors[nodenum-1];
+            int* return_value = new int[count];
+            MPI_Recv(return_value, count, MPI_INT, completed_rank, TERMINATE_TAG, MPI_COMM_WORLD, &_status);
+
+            int n = 0;
+            for (int i=0; i<_completed_list[nodenum].size(); i++) {
+                Particle *ptcl = &particles[_completed_list[nodenum][i]];
+                for (int j=0; j<ptcl->NewNumberOfNeighbor; j++) {
+                    ptcl->NewNeighbors[j] = return_value[n++];
+                }
+            }
+            delete[] return_value;
+            completed++;
+        }
+        delete[] NumberOfNewNeighbors;
     }
 #endif
 

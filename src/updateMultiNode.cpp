@@ -152,4 +152,21 @@ void updateInitAcc23(int update_count, int* update_count_list, int* displs) {
     total_update_list = nullptr;
 }
 
+void sendNewNeighbors(int update_count, std::vector<int>& neighbors) {
+    
+    std::vector<int> update_pid_list;
+    Particle* ptcl;
+
+    update_pid_list.resize(update_count);
+    MPI_Recv(update_pid_list.data(), update_count, MPI_INT, ROOT, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    fprintf(workerout, "3. After Recv... MyRank: %d. list_size: %d\n", MyRank, update_count);
+
+    neighbors.reserve(10 * update_count);
+
+    for (int i=0; i<update_count; i++) {
+        ptcl = &particles[update_pid_list[i]];
+        neighbors.insert(neighbors.end(), ptcl->NewNeighbors, ptcl->NewNeighbors + ptcl->NewNumberOfNeighbor);
+    }
+}
+
 #endif
