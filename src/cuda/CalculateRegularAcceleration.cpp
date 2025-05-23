@@ -6,6 +6,7 @@
 #include "../global.h"
 #include "../QueueScheduler.h"
 #include "cuda_functions.h"
+#include <cstring>
 
 #ifdef NSIGHT
 #include <nvToolsExt.h>
@@ -168,9 +169,8 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueSch
 		ptcl = &particles[ActiveIndexToOriginalIndex[IndexList[i]]];
 
 		ptcl->NewNumberOfNeighbor = NumNeighborReceive[i];
-		for (int j=0; j<NumNeighborReceive[i]; j++) {
-			ptcl->NewNeighbors[j] = ACListReceive[i*MaxNumNeighbor + j];
-		} 
+		std::memcpy(ptcl->NewNeighbors, &ACListReceive[i * MaxNumNeighbor], NumNeighborReceive[i] * sizeof(int));
+
 		for (int j=0; j<Dim; j++) {
 			ptcl->a_irr[j][0] = AccRegReceive[i][j];		// Just temporarilly save new reg acc here!
 			ptcl->a_irr[j][1] = AccRegDotReceive[i][j];		// Just temporarilly save new reg acc here!

@@ -673,7 +673,28 @@ void RootRoutines() {
 								workers[rank].addQueue(queue);
 								workers[rank].runQueue();
 								workers[rank].callback();
-								
+#ifdef SEVN // This code is updated first in Enzo-Abyss by EW 2025.5.23
+                                Particle* ptcl_erased = donor->Mass < 0.0 ? donor : accretor;
+                                fprintf(stdout, "ptcl_erased... PID: %d\n", ptcl_erased->PID);
+                                if (ptcl_erased->StellarEvolution != nullptr) {
+        
+                                    auto it = SEVNList.begin();
+                                    while (it != SEVNList.end()) {
+                                        if (it->second == ptcl_erased->ParticleIndex) {
+                                            it = SEVNList.erase(it);
+                                            fprintf(stdout, "Merger induced zero mass particle (PID: %d) is deleted from SEVNList\n", ptcl_erased->PID);
+                                            break;
+                                        }
+                                        else
+                                            it++;
+                                    }
+        
+                                    delete ptcl_erased->StellarEvolution;
+                                    ptcl_erased->StellarEvolution = nullptr;
+                                    fprintf(stdout, "Merger induced zero mass particle (PID: %d) SEVN memory is free now\n", ptcl_erased->PID);
+                                }
+                                fflush(stdout);
+#endif
 								continue;
 							}
 						}

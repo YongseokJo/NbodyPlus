@@ -23,15 +23,8 @@ void WorkerRoutines() {
 	MPI_Request request;
 	int ptcl_id;
 	double next_time;
-	int NewNumberOfNeighbor;
-	int NewNeighbors[MaxNumNeighbor];
-	int size=0;
-	double new_a[Dim];
-	double new_adot[Dim];
 	Particle *ptcl;
 	Queue queue;
-	std::chrono::high_resolution_clock::time_point start_point;
-	std::chrono::high_resolution_clock::time_point end_point;
 
 	while (true) {
 
