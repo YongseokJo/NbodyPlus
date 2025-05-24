@@ -17,6 +17,8 @@ void NewFBInitialization3(Group* group);
 void updateInitAcc01(int update_count, int* update_count_list, int* displs);
 void updateInitAcc23(int update_count, int* update_count_list, int* displs);
 void sendNewNeighbors(int update_count, std::vector<int>& neighbors);
+void updateTimeVariables(int update_count, int* update_count_list, int* displs);
+void updateTimeCorrection(int update_count);
 #endif
 
 void WorkerRoutines() {
@@ -158,6 +160,16 @@ void WorkerRoutines() {
 
 				LastParticleIndex = ptcl_id;
 				global_variable->LastParticleIndex = LastParticleIndex;
+				break;
+
+			case UpdateTimeVariables:
+
+				updateTimeVariables(ptcl_id, update_count_list, displs);
+				break;
+
+			case UpdateTimeCorrection:
+
+				updateTimeCorrection(ptcl_id);
 				break;
 #endif
 

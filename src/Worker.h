@@ -93,7 +93,7 @@ struct Worker {
         if (searchBinary) {
             int return_value[2]; // 0: particle index, 1: number of new neighbors
             MPI_Recv(return_value, 2, MPI_INT, this->MyRank, TERMINATE_TAG, MPI_COMM_WORLD, &_status);
-            &particles[return_value[0]]->NewNumberOfNeighbor = return_value[1];
+            particles[return_value[0]].NewNumberOfNeighbor = return_value[1];
             if (return_value[1] > 0)
                 completed_list.push_back(return_value[0]);
         }

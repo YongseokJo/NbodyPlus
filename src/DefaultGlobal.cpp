@@ -28,6 +28,8 @@ int *ranks_update_comm;
 int update_rank;
 MPI_Datatype UpdateInitAcc1Type;
 MPI_Datatype UpdateInitAcc2Type;
+MPI_Datatype UpdateTimeType;
+MPI_Datatype UpdateTimeCorrType;
 #endif
 
 MPI_Datatype QueueType;

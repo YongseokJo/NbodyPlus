@@ -47,6 +47,8 @@
         "typeindex": "cpp",
         "typeinfo": "cpp",
         "algorithm": "cpp",
-        "random": "cpp"
-    }
+        "random": "cpp",
+        "regex": "cpp"
+    },
+    "makefile.configureOnOpen": false
 }

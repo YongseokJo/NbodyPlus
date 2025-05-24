@@ -38,6 +38,8 @@ extern int* ranks_update_comm;
 extern MPI_Comm update_comm;
 extern MPI_Datatype UpdateInitAcc1Type;
 extern MPI_Datatype UpdateInitAcc2Type;
+extern MPI_Datatype UpdateTimeType;
+extern MPI_Datatype UpdateTimeCorrType;
 #endif
 
 extern int *ActiveIndexToOriginalIndex_orginal;

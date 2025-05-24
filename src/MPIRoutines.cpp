@@ -18,6 +18,8 @@ MPI_Datatype createQueueType();
 #ifdef MultiNode
 MPI_Datatype createUpdateInitAcc1Type();
 MPI_Datatype createUpdateInitAcc2Type();
+MPI_Datatype createUpdateTimeType();
+MPI_Datatype createUpdateTimeCorrType();
 #endif
 
 void initializeMPI(int argc, char *argv[]) {
@@ -39,10 +41,12 @@ void initializeMPI(int argc, char *argv[]) {
 		MPI_Finalize();
 	}
 
-	QueueType = createQueueType();
+	QueueType			= createQueueType();
 #ifdef MultiNode
-	UpdateInitAcc1Type = createUpdateInitAcc1Type();
-	UpdateInitAcc2Type = createUpdateInitAcc2Type();
+	UpdateInitAcc1Type	= createUpdateInitAcc1Type();
+	UpdateInitAcc2Type	= createUpdateInitAcc2Type();
+	UpdateTimeType 		= createUpdateTimeType();
+	UpdateTimeCorrType 	= createUpdateTimeCorrType();
 #endif
 	/*
 	// comm for each node
@@ -235,18 +239,20 @@ MPI_Datatype createQueueType() {
 #ifdef MultiNode
 MPI_Datatype createUpdateInitAcc1Type() {
 
-	int block_lengths[4] = {1, 1, 3, 3}; // Number of elements in each field
-	MPI_Aint offsets[4];
-	MPI_Datatype types[4] = {MPI_INT, MPI_INT, MPI_DOUBLE, MPI_DOUBLE}; // Match the types in the struct
+	int block_lengths[6] = {1, 1, 3, 3, 3, 3}; // Number of elements in each field
+	MPI_Aint offsets[6];
+	MPI_Datatype types[6] = {MPI_INT, MPI_INT, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE}; // Match the types in the struct
 
 	// Calculate offsets
 	offsets[0] = offsetof(UpdateInitAcc1, pid);
 	offsets[1] = offsetof(UpdateInitAcc1, numberofneighbors);
-	offsets[2] = offsetof(UpdateInitAcc1, acc1);
-	offsets[3] = offsetof(UpdateInitAcc1, acc2);
+	offsets[2] = offsetof(UpdateInitAcc1, airr0);
+	offsets[3] = offsetof(UpdateInitAcc1, airr1);
+	offsets[4] = offsetof(UpdateInitAcc1, areg0);
+	offsets[5] = offsetof(UpdateInitAcc1, areg1);
 
 	// Create the struct datatype
-	MPI_Type_create_struct(4, block_lengths, offsets, types, &UpdateInitAcc1Type);
+	MPI_Type_create_struct(6, block_lengths, offsets, types, &UpdateInitAcc1Type);
 	MPI_Type_commit(&UpdateInitAcc1Type);
 
 	return UpdateInitAcc1Type;
@@ -254,19 +260,68 @@ MPI_Datatype createUpdateInitAcc1Type() {
 
 MPI_Datatype createUpdateInitAcc2Type() {
 
-	int block_lengths[3] = {1, 3, 3}; // Number of elements in each field
-	MPI_Aint offsets[3];
-	MPI_Datatype types[3] = {MPI_INT, MPI_DOUBLE, MPI_DOUBLE}; // Match the types in the struct
+	int block_lengths[5] = {1, 3, 3, 3, 3}; // Number of elements in each field
+	MPI_Aint offsets[5];
+	MPI_Datatype types[5] = {MPI_INT, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE}; // Match the types in the struct
 
 	// Calculate offsets
-	offsets[0] = offsetof(UpdateInitAcc1, pid);
-	offsets[1] = offsetof(UpdateInitAcc1, acc1);
-	offsets[2] = offsetof(UpdateInitAcc1, acc2);
+	offsets[0] = offsetof(UpdateInitAcc2, pid);
+	offsets[1] = offsetof(UpdateInitAcc2, airr2);
+	offsets[2] = offsetof(UpdateInitAcc2, airr3);
+	offsets[3] = offsetof(UpdateInitAcc2, areg2);
+	offsets[4] = offsetof(UpdateInitAcc2, areg3);
 
 	// Create the struct datatype
-	MPI_Type_create_struct(3, block_lengths, offsets, types, &UpdateInitAcc2Type);
+	MPI_Type_create_struct(5, block_lengths, offsets, types, &UpdateInitAcc2Type);
 	MPI_Type_commit(&UpdateInitAcc2Type);
 
 	return UpdateInitAcc2Type;
+}
+
+MPI_Datatype createUpdateTimeType() {
+
+	int block_lengths[11] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}; // Number of elements in each field
+	MPI_Aint offsets[11];
+	MPI_Datatype types[11] = {MPI_INT, MPI_DOUBLE, MPI_UNSIGNED_LONG_LONG, MPI_INT, 
+								MPI_DOUBLE, MPI_UNSIGNED_LONG_LONG, MPI_INT,
+								MPI_DOUBLE, MPI_DOUBLE, MPI_UNSIGNED_LONG_LONG, MPI_UNSIGNED_LONG_LONG}; // Match the types in the struct
+
+	// Calculate offsets
+	offsets[0] = offsetof(UpdateTime, pid);
+	offsets[1] = offsetof(UpdateTime, timestep_reg);
+	offsets[2] = offsetof(UpdateTime, timeblock_reg);
+	offsets[3] = offsetof(UpdateTime, timelevel_reg);
+	offsets[4] = offsetof(UpdateTime, timestep_irr);
+	offsets[5] = offsetof(UpdateTime, timeblock_irr);
+	offsets[6] = offsetof(UpdateTime, timelevel_irr);
+	offsets[7] = offsetof(UpdateTime, currenttime_irr);
+	offsets[8] = offsetof(UpdateTime, currenttime_reg);
+	offsets[9] = offsetof(UpdateTime, currentblock_irr);
+	offsets[10] = offsetof(UpdateTime, currentblock_reg);
+
+	// Create the struct datatype
+	MPI_Type_create_struct(11, block_lengths, offsets, types, &UpdateTimeType);
+	MPI_Type_commit(&UpdateTimeType);
+
+	return UpdateTimeType;
+}
+
+MPI_Datatype createUpdateTimeCorrType() {
+
+	int block_lengths[4] = {1, 1, 1, 1}; // Number of elements in each field
+	MPI_Aint offsets[4];
+	MPI_Datatype types[4] = {MPI_INT, MPI_DOUBLE, MPI_UNSIGNED_LONG_LONG, MPI_INT}; // Match the types in the struct
+
+	// Calculate offsets
+	offsets[0] = offsetof(UpdateTimeCorr, pid);
+	offsets[1] = offsetof(UpdateTimeCorr, timestep_irr);
+	offsets[2] = offsetof(UpdateTimeCorr, timeblock_irr);
+	offsets[3] = offsetof(UpdateTimeCorr, timelevel_irr);
+
+	// Create the struct datatype
+	MPI_Type_create_struct(4, block_lengths, offsets, types, &UpdateTimeCorrType);
+	MPI_Type_commit(&UpdateTimeCorrType);
+
+	return UpdateTimeCorrType;
 }
 #endif
