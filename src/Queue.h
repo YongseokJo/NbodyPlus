@@ -21,8 +21,12 @@ enum TaskName : int8_t {
     DeleteGroup = 25,
     ARIntegration = 26,
     MergeManyBody = 27,
-    CalcAcc01MPI = 28,
-    CalcAcc23MPI = 29,
+#ifdef MultiNode
+    UpdateInitAcc01 = 30,
+    UpdateInitAcc23 = 31,
+    SendNewNeighbors = 32,
+    UpdateLastParticleIndex = 33,
+#endif
     Synchronize = 100,
     Ends = -100,
     Error = -1
@@ -38,4 +42,19 @@ struct Queue {
         std::cout << "Task: " << task << ", PID: " << pid << ", Next Time: " << next_time << std::endl;
     }
 };
+
+#ifdef MultiNode
+struct UpdateInitAcc1 {
+    int pid;
+    int numberofneighbors;
+    double acc1[3];
+    double acc2[3];
+};
+
+struct UpdateInitAcc2 {
+    int pid;
+    double acc1[3];
+    double acc2[3];
+};
+#endif
 #endif

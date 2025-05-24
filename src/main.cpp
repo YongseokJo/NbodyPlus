@@ -79,13 +79,17 @@ int main(int argc, char *argv[]) {
 	readParameterFile();
 
 	// Write Particles
+	// (Query MultiNode) if (shared_rank == ROOT && readData() == FAIL) // or broadcasting?
+#ifdef MultiNode
+	if (shared_rank == ROOT && readData() == FAIL)
+		fprintf(stderr, "Read Data Failed!\n");
+#else
 	if (MyRank == ROOT && readData() == FAIL)
 		fprintf(stderr, "Read Data Failed!\n");
+#endif
 	
 
 	if (MyRank == ROOT) {
-		global_variable->LastParticleIndex = LastParticleIndex;
-
 		RootRoutines();
 	} else {
 		// /* // by EW 2025.1.27

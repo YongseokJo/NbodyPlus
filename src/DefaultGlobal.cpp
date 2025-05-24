@@ -16,9 +16,19 @@ MPI_Win win3;
 
 MPI_Comm shared_comm;
 int MyRank;
+int shared_rank;
 int NumberOfProcessor;
 int NumberOfWorker;
 int NumberOfCommunication;
+
+#ifdef MultiNode
+MPI_Comm update_comm;
+int NumberOfNode;
+int *ranks_update_comm;
+int update_rank;
+MPI_Datatype UpdateInitAcc1Type;
+MPI_Datatype UpdateInitAcc2Type;
+#endif
 
 MPI_Datatype QueueType;
 

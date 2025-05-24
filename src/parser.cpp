@@ -36,7 +36,8 @@ int Parser(int argc, char *argv[]) {
 	}
 
 
-	return SUCCESS;
+	// return SUCCESS;
+	return 1; // SUCCESS to 1; modified by EW 2025.5.16
 }
 
 

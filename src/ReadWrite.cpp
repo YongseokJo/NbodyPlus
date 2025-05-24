@@ -30,6 +30,7 @@ int readData() {
 	NumberOfParticle = getLineNumber();
 	NewPID = NumberOfParticle;
 	LastParticleIndex = NumberOfParticle - 1;
+	global_variable->LastParticleIndex = LastParticleIndex; // moved from main.cpp to here by EW 2025.5.12
 
 	// Declaration
 	//Particle *particle_temp;	
@@ -85,7 +86,12 @@ int readData() {
 	inputFile.close();
 
 #ifdef SEVN
+#ifdef MultiNode
+	if (MyRank == ROOT)
+		initializeStellarEvolution();
+#else
 	initializeStellarEvolution();
+#endif
 #endif
 
 	/*
@@ -103,7 +109,8 @@ int readData() {
 	delete[] data;
 
 
-	return SUCCESS;
+	// return SUCCESS;
+	return 1; // SUCCESS to 1; modified by EW 2025.5.16
 }
 
 
@@ -130,7 +137,8 @@ int getLineNumber() {
 
 
 int WriteData() {
-	return SUCCESS;
+	// return SUCCESS;
+	return 1; // SUCCESS to 1; modified by EW 2025.5.16
 }
 
 
