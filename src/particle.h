@@ -247,8 +247,9 @@ struct Particle {
 		}
 	}
 	*/
-
+#ifdef CUDA_FLOAT
 	void predictParticleSecondOrder(double dt, CUDA_REAL pos[], CUDA_REAL vel[]);
+#endif
 	void predictParticleSecondOrder(double dt, double pos[], double vel[]);
 	void correctParticleFourthOrder(double dt, double pos[], double vel[], double a[3][4]);
 

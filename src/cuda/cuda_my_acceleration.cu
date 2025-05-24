@@ -287,6 +287,11 @@ void GetAcceleration(
 		#ifdef NSIGHT
 		nvtxRangePushA("h_result to acc and adot");
 		#endif
+		/* // modified code by EW 2025.5.24 // not tested yet!!!
+		memcpy(acc 	+ TargetStart	, h_result					, NumTarget * 3 * sizeof(CUDA_REAL));
+		memcpy(adot + TargetStart	, h_result + NumTarget * 3	, NumTarget * 3 * sizeof(CUDA_REAL));
+		*/
+		// /* // original code
 		for (int i=0; i<NumTarget; i++) {
 			acc[i+TargetStart][0]  = h_result[_six*i];
 			acc[i+TargetStart][1]  = h_result[_six*i+1];
@@ -328,7 +333,7 @@ void GetAcceleration(
 			exit(1);
 			#endif
 		}
-
+		// */
 		#ifdef NSIGHT
 		nvtxRangePop();
 		#endif
@@ -745,6 +750,7 @@ void _ReceiveFromHost(
 #ifdef DEBUG
 	fprintf(stderr, "Allocate for MultiGPU\n");
 #endif
+	// /* // original code
 	for (int j=0; j<NNB; j++) {
 		for (int dim=0; dim<Dim; dim++) {
 			h_ptcl[j + NNB * dim]   = x[j][dim];
@@ -752,6 +758,12 @@ void _ReceiveFromHost(
 		}
 		h_ptcl[j + NNB * 6] = m[j];
 	}
+	// */
+	/* // modified code by EW 2025.5.24 // not tested yet!!!
+	memcpy(h_ptcl			, x, NNB * Dim * sizeof(CUDA_REAL));
+	memcpy(h_ptcl + NNB * 3	, v, NNB * Dim * sizeof(CUDA_REAL));
+	memcpy(h_ptcl + NNB * 6	, m, NNB * sizeof(CUDA_REAL));
+	*/
 	for (int i = 0; i < deviceCount; i++) {
 		cudaSetDevice(i);
 		toDevice(h_ptcl, d_ptcl_array[i], _seven*NNB, streams[i]);
@@ -761,6 +773,7 @@ void _ReceiveFromHost(
 	}
 
 	#else
+	/* // original code
 	for (int j=0; j<NNB; j++) {
 		for (int dim=0; dim<Dim; dim++) {
 			h_ptcl[j + NNB * dim]   = x[j][dim];
@@ -768,6 +781,12 @@ void _ReceiveFromHost(
 		}
 		h_ptcl[j + NNB * 6] = m[j];
 	}
+	*/
+	// /* // modified code by EW 2025.5.24
+	memcpy(h_ptcl			, x, NNB * Dim * sizeof(CUDA_REAL));
+	memcpy(h_ptcl + NNB * 3	, v, NNB * Dim * sizeof(CUDA_REAL));
+	memcpy(h_ptcl + NNB * 6	, m, NNB * sizeof(CUDA_REAL));
+	// */
 
 	toDevice(h_ptcl,d_ptcl, _seven*NNB, stream);
 	toDevice(r2    ,d_r2  ,        NNB, stream);

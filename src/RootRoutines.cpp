@@ -74,8 +74,7 @@ void RootRoutines() {
 
 	MPI_Request request;  // Pointer to the request handle
 	MPI_Status status;    // Pointer to the status object
-
-	int ptcl_id;
+	int return_value;
 
 	workers = new Worker[NumberOfWorker+1];
 
@@ -207,6 +206,7 @@ void RootRoutines() {
 		*/
 #endif
 		assert(CMPtclWorker.empty()); // for debugging by EW 2025.1.4
+		// Let's modify this primordial binary part later!!! by EW 2025.5.24
 		if (OriginalLastParticleIndex != LastParticleIndex) {
 			std::cout << "In total, " << LastParticleIndex - OriginalLastParticleIndex
 					  << " primordial binaries are created." << std::endl;
@@ -572,7 +572,6 @@ void RootRoutines() {
 #endif
 // /*
 				int cm_pid;
-				queue;
 				queue_scheduler.initializeIrr(IrrForce, next_time, ThisLevelNode->ParticleList);
 				auto iter = queue_scheduler.CMPtcls.begin();
 				do
@@ -626,7 +625,6 @@ void RootRoutines() {
 					queue_scheduler.waitQueue(0); // blocking wait
 				} while (queue_scheduler.isComplete());
 
-				Queue queue;
 				for (int ptcl_id : ThisLevelNode->ParticleList)
 				{
 					ptcl = &particles[ptcl_id];
@@ -783,7 +781,28 @@ void RootRoutines() {
 								workers[rank].addQueue(queue);
 								workers[rank].runQueue();
 								workers[rank].callback();
-								
+#ifdef SEVN // This code is updated first in Enzo-Abyss by EW 2025.5.23
+                                Particle* ptcl_erased = donor->Mass < 0.0 ? donor : accretor;
+                                fprintf(stdout, "ptcl_erased... PID: %d\n", ptcl_erased->PID);
+                                if (ptcl_erased->StellarEvolution != nullptr) {
+        
+                                    auto it = SEVNList.begin();
+                                    while (it != SEVNList.end()) {
+                                        if (it->second == ptcl_erased->ParticleIndex) {
+                                            it = SEVNList.erase(it);
+                                            fprintf(stdout, "Merger induced zero mass particle (PID: %d) is deleted from SEVNList\n", ptcl_erased->PID);
+                                            break;
+                                        }
+                                        else
+                                            it++;
+                                    }
+        
+                                    delete ptcl_erased->StellarEvolution;
+                                    ptcl_erased->StellarEvolution = nullptr;
+                                    fprintf(stdout, "Merger induced zero mass particle (PID: %d) SEVN memory is free now\n", ptcl_erased->PID);
+                                }
+                                fflush(stdout);
+#endif
 								continue;
 							}
 						}
