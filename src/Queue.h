@@ -21,6 +21,8 @@ enum TaskName : int8_t {
     DeleteGroup = 25,
     ARIntegration = 26,
     MergeManyBody = 27,
+    CalcAcc01MPI = 28,
+    CalcAcc23MPI = 29,
     Synchronize = 100,
     Ends = -100,
     Error = -1

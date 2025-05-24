@@ -274,7 +274,7 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueSch
 
 
 
-
+// (Query MY) Let's optimize this function later. Copying data to h_ptcl in _ReceiveFromHost of cuda_my_acceleation.cpp seems super inefficient. 2025.5.24
 void sendAllParticlesToGPU(double new_time, std::unordered_set<int> RegularList, int *IndexList) {
 
 	

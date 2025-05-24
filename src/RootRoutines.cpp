@@ -74,8 +74,7 @@ void RootRoutines() {
 
 	MPI_Request request;  // Pointer to the request handle
 	MPI_Status status;    // Pointer to the status object
-
-	int ptcl_id;
+	int return_value;
 
 	workers = new Worker[NumberOfWorker+1];
 
@@ -84,6 +83,7 @@ void RootRoutines() {
 	}
 
 	QueueScheduler queue_scheduler;
+	Queue queue;
 
 #ifdef PERFORMANCETRACE
 	std::chrono::high_resolution_clock::time_point start_point_whole;
@@ -145,12 +145,12 @@ void RootRoutines() {
 		} while(queue_scheduler.isComplete());
 		std::cout << "Primordial binary search done" << std::endl;
 
-		Queue queue;
 		int rank;
 		int OriginalLastParticleIndex = LastParticleIndex;
 		formPrimordialBinaries(OriginalLastParticleIndex);
 		assert(OriginalLastParticleIndex <= LastParticleIndex); // for debugging by EW 2025.1.4
 		assert(CMPtclWorker.empty()); // for debugging by EW 2025.1.4
+		// Let's modify this primordial binary part later!!! by EW 2025.5.24
 		if (OriginalLastParticleIndex != LastParticleIndex) {
 			std::cout << "In total, " << LastParticleIndex - OriginalLastParticleIndex
 					  << " primordial binaries are created." << std::endl;
@@ -248,7 +248,7 @@ void RootRoutines() {
 		std::cout << "Time Step synchronization." << std::endl;
 		task=TimeSync;
 		completed_tasks = 0; total_tasks = NumberOfWorker;
-		Queue queue = {task, -1, -1.0};
+		queue = {task, -1, -1.0};
 		InitialAssignmentOfTasks(queue, NumberOfWorker, QUEUE_TAG);
 		//MPI_Waitall(NumberOfCommunication, requests, statuses);
 		//NumberOfCommunication = 0;
@@ -336,7 +336,7 @@ void RootRoutines() {
 			// end if the global time exceeds the end time
 			if (global_time >= 1) {
 				task=Ends;
-				Queue queue = {task, -1, -1.0};
+				queue = {task, -1, -1.0};
 				InitialAssignmentOfTasks(queue, NumberOfWorker, QUEUE_TAG);
 				MPI_Type_free(&QueueType);
 				//MPI_Waitall(NumberOfCommunication, requests, statuses);
@@ -462,7 +462,6 @@ void RootRoutines() {
 #endif
 // /*
 				int cm_pid;
-				Queue queue;
 				queue_scheduler.initializeIrr(IrrForce, next_time, ThisLevelNode->ParticleList);
 				auto iter = queue_scheduler.CMPtcls.begin();
 				do
@@ -516,7 +515,6 @@ void RootRoutines() {
 					queue_scheduler.waitQueue(0); // blocking wait
 				} while (queue_scheduler.isComplete());
 
-				Queue queue;
 				for (int ptcl_id : ThisLevelNode->ParticleList)
 				{
 					ptcl = &particles[ptcl_id];
@@ -1016,7 +1014,7 @@ void RootRoutines() {
 				// end if the global time exceeds the end time
 				if (current_time_irr >= 1) {
 					task=-100;
-					Queue queue = {task, -1, -1.0};
+					queue = {task, -1, -1.0};
 					InitialAssignmentOfTasks(Queue, NumberOfWorker, QUEUE_TAG);
 					MPI_Waitall(NumberOfCommunication, requests, statuses);
 					NumberOfCommunication = 0;
