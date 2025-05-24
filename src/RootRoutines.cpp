@@ -166,6 +166,7 @@ void RootRoutines() {
 			queue_scheduler.waitQueue(0); //blocking wait
 		} while(queue_scheduler.isComplete());
 #ifdef MultiNode
+		/* // Let's fix this later by EW 2025.5.24
 		start_point_routine = std::chrono::high_resolution_clock::now();
 
 		queue_scheduler.getNewNeighbors(SendNewNeighbors); // (Query MultiNode) Update list: NewNeighbors, NewNumberOfNeighbor to root only!!!
@@ -175,6 +176,7 @@ void RootRoutines() {
 		std::cout << "Elapsed time during the updatePrimordialGroup: " 
 			<< std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count()*1e-9 
 			<< " s" << std::endl;
+		*/
 #endif
 		std::cout << "Primordial binary search done" << std::endl;
 
@@ -182,23 +184,26 @@ void RootRoutines() {
 		int OriginalLastParticleIndex = LastParticleIndex;
 		formPrimordialBinaries(OriginalLastParticleIndex); // (Query MultiNode) We have to update LastParticleIndex & global_variable->LastParticleIndex here!!!
 #ifdef MultiNode
+		assert(LastParticleIndex == OriginalLastParticleIndex); // (Query MultiNode) Promordial binary routine is not yet implemented by EW 2025.5.24
+		/* // Let's fix this later by EW 2025.5.24
 		if (OriginalLastParticleIndex != LastParticleIndex) {
-			_queue.task = UpdateLastParticleIndex;
-			_queue.next_time = -1;
+			queue.task = UpdateLastParticleIndex;
+			queue.next_time = -1;
 			for (int i=1; i<NumberOfNode; i++) { // (Query MultiNode) It starts from 1 because 0 is root
-				_queue.pid = LastParticleIndex;
-				MPI_Send(&_queue, 1, QueueType, ranks_update_comm[i], QUEUE_TAG, MPI_COMM_WORLD);
+				queue.pid = LastParticleIndex;
+				MPI_Send(&queue, 1, QueueType, ranks_update_comm[i], QUEUE_TAG, MPI_COMM_WORLD);
 			}
 
 			int completed = 0;
 			while (completed < NumberOfNode - 1) { // Root node has already completed its job by EW 2025.5.16
-				MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &_status);
-				int completed_rank = _status.MPI_SOURCE;
+				MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+				int completed_rank = status.MPI_SOURCE;
 				int return_value;
-				MPI_Recv(&return_value, 1, MPI_INT, completed_rank, TERMINATE_TAG, MPI_COMM_WORLD, &_status);
+				MPI_Recv(&return_value, 1, MPI_INT, completed_rank, TERMINATE_TAG, MPI_COMM_WORLD, &status);
 				completed++;
 			}
 		}
+		*/
 #endif
 		assert(CMPtclWorker.empty()); // for debugging by EW 2025.1.4
 		// Let's modify this primordial binary part later!!! by EW 2025.5.24
@@ -227,6 +232,7 @@ void RootRoutines() {
 			} while(queue_scheduler.isComplete());
 #ifdef MultiNode
 			// (Query MultiNode) Update list: isActive, isCMptcl, CMPtclIndex, ???
+			// (Query MultiNode) Primordial binary routine for MultiNode is not yet implemented by EW 2025.5.24
 #endif
 		}
 		else {
@@ -247,13 +253,23 @@ void RootRoutines() {
 			queue_scheduler.runQueueAuto();
 			queue_scheduler.waitQueue(0); //blocking wait
 		} while(queue_scheduler.isComplete());
+#ifdef MultiNode
+		start_point_routine = std::chrono::high_resolution_clock::now();
+
+		queue_scheduler.updateMultiNode(UpdateTimeVariables);	// (Query MultiNode) Update list: TimeStepReg, TimeBlockReg, TimeLevelReg, 
+																// TimeStepIrr, TimeBlockIrr, TimeLevelIrr, 
+																// CurrentTimeIrr, CurrentTimeReg, CurrentBlockIrr, CurrentBlockReg
+
+		end_point_routine = std::chrono::high_resolution_clock::now();
+		// performance.Update += std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
+		std::cout << "Elapsed time during the updateTimeVariables: " 
+			<< std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count()*1e-9 
+			<< " s" << std::endl;
+#endif
 	} // Initialization ends
 
 
-	/* Synchronization */
-	//ParticleSynchronization();
-
-	/* Timestep correction */
+	/* Timestep correction & Timestep variable synchronization*/
 	{
 		std::cout << "Time Step correction." << std::endl;
 		for (int i=0; i<=LastParticleIndex; i++) {
@@ -274,10 +290,36 @@ void RootRoutines() {
 			}
 		}
 
+
 		// resetting time_block based on the system
 		time_block = std::max(-60, min_time_level-MIN_LEVEL_BUFFER);
 		block_max = static_cast<ULL>(pow(2, -time_block));
 		time_step = pow(2,time_block);
+
+		std::cout << "Time Step synchronization." << std::endl;
+		task=TimeSync;
+		completed_tasks = 0; total_tasks = NumberOfWorker;
+		queue = {task, -1, -1.0};
+		InitialAssignmentOfTasks(queue, NumberOfWorker, QUEUE_TAG);
+		//MPI_Waitall(NumberOfCommunication, requests, statuses);
+		//NumberOfCommunication = 0;
+		broadcastFromRoot(time_block);
+		broadcastFromRoot(block_max);
+		broadcastFromRoot(time_step);
+		fprintf(stdout, "TimeSync broadcast done.\n");
+		//MPI_Win_sync(win);  // Synchronize memory
+		//MPI_Barrier(shared_comm);
+		while (completed_tasks < total_tasks) {
+			MPI_Irecv(&task, 1, MPI_INT, MPI_ANY_SOURCE, TERMINATE_TAG, MPI_COMM_WORLD, &request);
+			MPI_Wait(&request, &status);
+			completed_tasks++;
+		}
+		fprintf(stderr, "nbody+:time_block = %d, EnzoTimeStep=%e\n", time_block, EnzoTimeStep);
+
+#ifdef MultiNode
+		int num = 0;
+		UpdateTimeCorr* total_update_list = new UpdateTimeCorr[NumberOfParticle];
+#endif
 
 		for (int i=0; i<=LastParticleIndex; i++) {
 			ptcl = &particles[i];
@@ -293,34 +335,42 @@ void RootRoutines() {
 			ptcl->TimeBlockReg = block_max;
 #endif
 			ptcl->NextBlockIrr = ptcl->CurrentBlockIrr + ptcl->TimeBlockIrr; // of this particle
+#ifdef MultiNode
+			total_update_list[num].pid = ptcl->PID;
+			total_update_list[num].timestep_irr = ptcl->TimeStepIrr;
+			total_update_list[num].timeblock_irr = ptcl->TimeBlockIrr;
+			total_update_list[num].timelevel_irr = ptcl->TimeLevelIrr;
+			num++;
+#endif
 		}
+#ifdef MultiNode
+		start_point_routine = std::chrono::high_resolution_clock::now();
+		
+		queue = {UpdateTimeCorrection, NumberOfParticle, -1.0};
+		for (int i=1; i<NumberOfNode; i++) { // (Query MultiNode) It starts from 1 because 0 is root
+			MPI_Send(&queue, 1, QueueType, ranks_update_comm[i], QUEUE_TAG, MPI_COMM_WORLD);
+			MPI_Send(total_update_list, NumberOfParticle, UpdateTimeCorrType, ranks_update_comm[i], 1, MPI_COMM_WORLD);
+		}
+
+		int completed = 0;
+		while (completed < NumberOfNode - 1) { // Root node has already completed its job by EW 2025.5.16
+			MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+			int completed_rank = status.MPI_SOURCE;
+			int return_value;
+			MPI_Recv(&return_value, 1, MPI_INT, completed_rank, TERMINATE_TAG, MPI_COMM_WORLD, &status);
+			completed++;
+		}
+		delete[] total_update_list;
+
+		end_point_routine = std::chrono::high_resolution_clock::now();
+		// performance.Update += std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
+		std::cout << "Elapsed time during the updateTimeCorrection: " 
+			<< std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count()*1e-9 
+			<< " s" << std::endl;
+#endif
 		std::cout << "Time Step done." << std::endl;
 	} // Timestep correction ends
 
-	/* Timestep variable synchronization */
-	{
-		std::cout << "Time Step synchronization." << std::endl;
-		task=TimeSync;
-		completed_tasks = 0; total_tasks = NumberOfWorker;
-		queue = {task, -1, -1.0};
-		InitialAssignmentOfTasks(queue, NumberOfWorker, QUEUE_TAG);
-		//MPI_Waitall(NumberOfCommunication, requests, statuses);
-		//NumberOfCommunication = 0;
-		broadcastFromRoot(time_block);
-		broadcastFromRoot(block_max);
-		broadcastFromRoot(time_step);
-		fprintf(stdout, "TimeSync broadcasd done.\n");
-		fflush(stdout);
-		//MPI_Win_sync(win);  // Synchronize memory
-		//MPI_Barrier(shared_comm);
-		while (completed_tasks < total_tasks) {
-			MPI_Irecv(&task, 1, MPI_INT, MPI_ANY_SOURCE, TERMINATE_TAG, MPI_COMM_WORLD, &request);
-			MPI_Wait(&request, &status);
-			completed_tasks++;
-		}
-		fprintf(stderr, "nbody+:time_block = %d, EnzoTimeStep=%e\n", time_block, EnzoTimeStep);
-		fflush(stderr);
-	}
 
 	/* Particle Initialization Check */
 	// /*
@@ -393,6 +443,12 @@ void RootRoutines() {
 				queue = {task, -1, -1.0};
 				InitialAssignmentOfTasks(queue, NumberOfWorker, QUEUE_TAG);
 				MPI_Type_free(&QueueType);
+#ifdef MultiNode
+				MPI_Type_free(&UpdateInitAcc1Type);
+				MPI_Type_free(&UpdateInitAcc2Type);
+				MPI_Type_free(&UpdateTimeType);
+				MPI_Type_free(&UpdateTimeCorrType);
+#endif
 				//MPI_Waitall(NumberOfCommunication, requests, statuses);
 				//NumberOfCommunication = 0;
 				std::cout << EnzoTimeStep << std::endl;

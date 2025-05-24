@@ -16,9 +16,16 @@ void formPrimordialBinaries(int OriginalLastParticleIndex) {
 	for (int i=0; i<=OriginalLastParticleIndex; i++) {
 		ptcl = &particles[i];
 		if (ptcl->NewNumberOfNeighbor > 0) {
+			fprintf(stdout, "GAR. Num: %d\n", ptcl->NewNumberOfNeighbor + 1); // for debugging by EW 2025.1.23
+			fprintf(stdout, "GAR. PID: %d\n", ptcl->PID); // for debugging by EW 2025.1.23
 			NewCM = &particles[LastParticleIndex+1];
 			NewCM->clear();
-			NewCM->copyNewNeighbor(ptcl);		
+			NewCM->copyNewNeighbor(ptcl);
+			// /* // for debugging by EW 2025.1.23
+			for (int j = 0; j < ptcl->NewNumberOfNeighbor; j++) {
+				fprintf(stdout, "GAR. PID: %d\n", particles[ptcl->NewNeighbors[j]].PID);
+			}
+			// */	
 			NewCM->NewNeighbors[ptcl->NewNumberOfNeighbor] = ptcl->ParticleIndex;
 			NewCM->NewNumberOfNeighbor++;
 

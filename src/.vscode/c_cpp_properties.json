@@ -9,21 +9,22 @@
                 "/data/vinicius/sevn/build/include/sevn"
             ],
             "defines": [
-                "DNSIGHT"
+                "PERFORMANCETRACE",
+                "MultiNode",
+                "AR_TTL",
+                "AR_SLOWDOWN_TREE",
+                "AR_SLOWDOWN_TIMESCALE",
+                "FEWBODY",
+                "CUDA",
+                "SEVN"
             ],
+            "compilerPath": "/mnt/sw/nix/store/qgcgvdlgz6546x6mzjiknvrq218j9nx8-gcc-11.4.0/bin/gcc",
             "compilerPath": "/usr/bin/gcc",
             "cStandard": "c17",
             "cppStandard": "gnu++17",
             "intelliSenseMode": "linux-gcc-x64",
             "configurationProvider": "ms-vscode.makefile-tools",
             "compilerArgs": [
-                "-DPERFORMANCETRACE",
-                "-DAR_TTL ",
-                "-DAR_SLOWDOWN_TREE ",
-                "-DAR_SLOWDOWN_TIMESCALE",
-                "-DFEWBODY",
-                "-DCUDA",
-                "-DSEVN"
             ]
         }
     ],
