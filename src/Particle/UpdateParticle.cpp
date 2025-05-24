@@ -6,10 +6,7 @@
 #include "../def.h"
 
 
-
-
-
-
+#ifdef CUDA_FLOAT
 void Particle::predictParticleSecondOrder(double dt, CUDA_REAL pos[], CUDA_REAL vel[]) {
 	// Doubling check
 	// temporary variables for calculation
@@ -33,6 +30,7 @@ void Particle::predictParticleSecondOrder(double dt, CUDA_REAL pos[], CUDA_REAL 
 	}
 	return;
 }
+#endif
 
 void Particle::predictParticleSecondOrder(double dt, double pos[], double vel[]) {
 	// Doubling check

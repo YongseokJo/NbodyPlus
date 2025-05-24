@@ -6,6 +6,7 @@
 #include "../global.h"
 #include "../QueueScheduler.h"
 #include "cuda_functions.h"
+#include <cstring>
 
 #include <random>
 
@@ -50,11 +51,8 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueSch
 
 	int *ACListReceive;
 	int *NumNeighborReceive;
-	int MassFlag;
-
 
 	Particle *ptcl;
-
 
 	double new_time = NextRegTimeBlock*time_step;  // next regular time
 
@@ -74,6 +72,7 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueSch
 
 	ACListReceive = new int[ListSize * MaxNumNeighbor];
 
+	/* // original code; (Query to MY) Do we have to initialize them to 0?
 	for (int i=0; i<ListSize; i++) {
 		for (int dim=0; dim<Dim; dim++) {
 			AccRegReceive[i][dim]    = 0;
@@ -86,6 +85,17 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueSch
 #endif 
 		}
 	}
+	*/
+	// /* // faster than the above code
+	std::memset(AccRegReceive, 0, ListSize * Dim * sizeof(double));
+	std::memset(AccRegDotReceive, 0, ListSize * Dim * sizeof(double));
+	std::memset(AccIrr, 0, ListSize * Dim * sizeof(double));
+	std::memset(AccIrrDot, 0, ListSize * Dim * sizeof(double));
+#ifdef CUDA_FLOAT
+	std::memset(AccRegReceive_f, 0, ListSize * Dim * sizeof(CUDA_REAL));
+	std::memset(AccRegDotReceive_f, 0, ListSize * Dim * sizeof(CUDA_REAL));
+#endif
+	// */
 
 #ifdef PERFORMANCETRACE
 	start_point_routine = std::chrono::high_resolution_clock::now();
@@ -127,9 +137,9 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueSch
 #endif
   
 #ifdef CUDA_FLOAT
-	CalculateAccelerationOnDevice(&ListSize, IndexList, AccRegReceive_f, AccRegDotReceive_f, NumNeighborReceive, ACListReceive);
+	CalculateAccelerationOnDevice(&ListSize, IndexList, AccRegReceive_f,	AccRegDotReceive_f, NumNeighborReceive, ACListReceive);
 #else
-	CalculateAccelerationOnDevice(&ListSize, IndexList, AccRegReceive, AccRegDotReceive, NumNeighborReceive, ACListReceive);
+	CalculateAccelerationOnDevice(&ListSize, IndexList, AccRegReceive,		AccRegDotReceive,	NumNeighborReceive, ACListReceive);
 #endif
   
 #ifdef NSIGHT
@@ -146,13 +156,14 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueSch
 		std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
 #endif
 
+	/*
 	for (int i=0; i<ListSize; i++) {
 		for (int dim=0; dim<Dim; dim++) {
 			AccRegReceive[i][dim]    = (CUDA_REAL) AccRegReceive_f[i][dim];
 			AccRegDotReceive[i][dim] = (CUDA_REAL) AccRegDotReceive_f[i][dim];
 		}
 	}
-
+	*/
 
 #ifdef PERFORMANCETRACE
 	start_point_routine = std::chrono::high_resolution_clock::now();
@@ -170,12 +181,16 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueSch
 		ptcl = &particles[ActiveIndexToOriginalIndex[IndexList[i]]];
 
 		ptcl->NewNumberOfNeighbor = NumNeighborReceive[i];
-		for (int j=0; j<NumNeighborReceive[i]; j++) {
-			ptcl->NewNeighbors[j] = ACListReceive[i*MaxNumNeighbor + j];
-		} 
-		for (int j=0; j<Dim; j++) {
-			ptcl->a_irr[j][0] = AccRegReceive[i][j];		// Just temporarilly save new reg acc here!
-			ptcl->a_irr[j][1] = AccRegDotReceive[i][j];		// Just temporarilly save new reg acc here!
+		std::memcpy(ptcl->NewNeighbors, &ACListReceive[i * MaxNumNeighbor], NumNeighborReceive[i] * sizeof(int));
+
+		for (int dim=0; dim<Dim; dim++) {
+#ifdef CUDA_FLOAT
+			ptcl->a_irr[dim][0] = static_cast<double>(AccRegReceive_f[i][dim]);		// Just temporarilly save new reg acc here!
+			ptcl->a_irr[dim][1] = static_cast<double>(AccRegDotReceive_f[i][dim]);	// Just temporarilly save new reg acc here!
+#else
+			ptcl->a_irr[dim][0] = AccRegReceive[i][dim];		// Just temporarilly save new reg acc here!
+			ptcl->a_irr[dim][1] = AccRegDotReceive[i][dim];		// Just temporarilly save new reg acc here!
+#endif
 		}
 	}
 
@@ -240,44 +255,6 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueSch
 #endif
 
 
-#ifdef nouse
-	ws.initialize();
-	int return_value, i = 0;
-	ws._setTask(4);
-	ws._total_tasks = RegularList.size();
-	ws._completed_tasks = 0;
-
-	do
-	{
-		if (ws._FreeWorkers.size() == 0 || ws._assigned_tasks == ws._total_tasks)
-		{
-			// have to add check all the sends are recved.
-			// MPI_Waitall(NumberOfCommunication, requests, statuses);
-			// NumberOfCommunication = 0;
-			ws._checkCompletion(return_value);
-			/* we can do something here */
-			ws._Callback();
-			ws._completed_tasks++;
-		}
-		if (ws._FreeWorkers.size() != 0 && ws._assigned_tasks < ws._total_tasks)
-		{
-			ws._WorkerTmp = ws._FreeWorkers.back();
-			ws._FreeWorkers.pop_back();
-			MPI_Send(&ws._WorkerTmp->task, 1, MPI_INT, ws._WorkerTmp->MyRank, TASK_TAG, MPI_COMM_WORLD);
-			MPI_Send(&RegularList[i], 1, MPI_INT, ws._WorkerTmp->MyRank, PTCL_TAG, MPI_COMM_WORLD);
-			MPI_Send(&NumNeighborReceive[i], 1, MPI_INT, ws._WorkerTmp->MyRank, 10, MPI_COMM_WORLD);
-			MPI_Send(&ACListReceive[i * MaxNumNeighbor], NumNeighborReceive[i], MPI_INT, ws._WorkerTmp->MyRank, 11, MPI_COMM_WORLD);
-			MPI_Send(&AccRegReceive[i][0], 3, MPI_DOUBLE, ws._WorkerTmp->MyRank, 12, MPI_COMM_WORLD);
-			MPI_Send(&AccRegDotReceive[i][0], 3, MPI_DOUBLE, ws._WorkerTmp->MyRank, 13, MPI_COMM_WORLD);
-			ws._WorkerTmp->onDuty = true;
-			ws._assigned_tasks++;
-			//fprintf(stdout, "assigned_tasks = %d/%d, number of free worker = %d pid = %d rank = %d\n",
-					//ws._assigned_tasks, ws._total_tasks, ws._FreeWorkers.size(), RegularList[i], ws._WorkerTmp->MyRank);
-		}
-		i++;
-	} while (ws._completed_tasks < ws._total_tasks);
-#endif
-
 	delete[] IndexList;
 
 	delete[] AccRegReceive;
@@ -293,18 +270,13 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueSch
 	delete[] NumNeighborReceive;
 	delete[] ACListReceive;
 
-
-#ifdef time_trace
-	_time.reg_cpu3.markEnd();
-	_time.reg_cpu3.getDuration();
-#endif
 	//CloseDevice();
 } // calculate 0th, 1st derivative of force + neighbors on GPU ends
 
 
 
 
-
+// (Query MY) Let's optimize this function later. Copying data to h_ptcl in _ReceiveFromHost of cuda_my_acceleation.cpp seems super inefficient. 2025.5.24
 void sendAllParticlesToGPU(double new_time, std::unordered_set<int> RegularList, int *IndexList) {
 
 	
@@ -435,5 +407,3 @@ void sendAllParticlesToGPU(double new_time, std::unordered_set<int> RegularList,
 	delete[] Position;
 	delete[] Velocity;
 }
-
-
