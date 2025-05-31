@@ -7,6 +7,9 @@
 #include "mpi.h"
 #include "global.h"
 #include "Queue.h"
+#ifdef MultiNode
+#include <cstring>
+#endif
 
 
 
@@ -75,8 +78,33 @@ struct Worker {
     }
 
     void callback() {
+#ifdef MultiNode
+        if (this->getCurrentQueue()->task == ARIntegration) {
+            int count = particles[this->getCurrentQueue()->pid].NumberOfMember + 1;
+            UpdateBinary* updateBinary_list = new UpdateBinary[count];
+            MPI_Recv(updateBinary_list, count, UpdateBinaryType, this->MyRank, TERMINATE_TAG, MPI_COMM_WORLD, &_status);
+            if (this->MyRank >= ranks_update_comm[1]-1) { // (Query MultiNode) This means that this worker is not in the root node
+                Particle *ptcl;
+                for (int i = 0; i < count; i++) {
+                    ptcl = &particles[updateBinary_list[i].pid];
+                    ptcl->binary_state = updateBinary_list[i].binary_state;
+                    std::memcpy(ptcl->Position, updateBinary_list[i].position, sizeof(double) * 3);
+                    std::memcpy(ptcl->Velocity, updateBinary_list[i].velocity, sizeof(double) * 3);
+                    ptcl->Mass = updateBinary_list[i].mass;
+                    ptcl->CurrentTimeIrr = updateBinary_list[i].currenttime_irr;
+                }
+                
+            }
+            delete [] updateBinary_list;
+        }
+        else {
+            int return_value;
+            MPI_Recv(&return_value, 1, MPI_INT, this->MyRank, TERMINATE_TAG, MPI_COMM_WORLD, &_status);
+        }
+#else
         int return_value;
         MPI_Recv(&return_value, 1, MPI_INT, this->MyRank, TERMINATE_TAG, MPI_COMM_WORLD, &_status);
+#endif
         if (!onDuty) {
             fprintf(stderr, "Something's wrong! the worker %d was not on duty.\n", this->MyRank);
             fprintf(stdout, "Something's wrong! the worker %d was not on duty.\n", this->MyRank);

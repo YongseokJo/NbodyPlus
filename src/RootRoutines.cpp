@@ -189,18 +189,9 @@ void RootRoutines() {
 		if (OriginalLastParticleIndex != LastParticleIndex) {
 			queue.task = UpdateLastParticleIndex;
 			queue.next_time = -1;
+			queue.pid = LastParticleIndex;
 			for (int i=1; i<NumberOfNode; i++) { // (Query MultiNode) It starts from 1 because 0 is root
-				queue.pid = LastParticleIndex;
 				MPI_Send(&queue, 1, QueueType, ranks_update_comm[i], QUEUE_TAG, MPI_COMM_WORLD);
-			}
-
-			int completed = 0;
-			while (completed < NumberOfNode - 1) { // Root node has already completed its job by EW 2025.5.16
-				MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-				int completed_rank = status.MPI_SOURCE;
-				int return_value;
-				MPI_Recv(&return_value, 1, MPI_INT, completed_rank, TERMINATE_TAG, MPI_COMM_WORLD, &status);
-				completed++;
 			}
 		}
 		*/
@@ -448,6 +439,12 @@ void RootRoutines() {
 				MPI_Type_free(&UpdateInitAcc2Type);
 				MPI_Type_free(&UpdateTimeType);
 				MPI_Type_free(&UpdateTimeCorrType);
+				MPI_Type_free(&UpdateIrrForceType);
+				MPI_Type_free(&UpdateBinaryType);
+				MPI_Type_free(&UpdateFBTermType);
+				MPI_Type_free(&UpdateNewCMType);
+				MPI_Type_free(&UpdateRegCudaType);
+				MPI_Type_free(&UpdateRegCudaUpdateType);
 #endif
 				//MPI_Waitall(NumberOfCommunication, requests, statuses);
 				//NumberOfCommunication = 0;
@@ -543,21 +540,21 @@ void RootRoutines() {
 				// print out particlelist
 				fprintf(stdout, "(IRR_FORCE) next_time: %e Myr\n", next_time*EnzoTimeStep*1e4);
 				// /*
-				fprintf(stdout, "PID: %d. CurrentTimeIrr: %e Myr, TimeStepIrr: %e Myr\n", 
-							particles[ThisLevelNode->ParticleList[0]].PID, 
-							particles[ThisLevelNode->ParticleList[0]].CurrentTimeIrr*EnzoTimeStep*1e4, 
-							particles[ThisLevelNode->ParticleList[0]].TimeStepIrr*EnzoTimeStep*1e4);
+				// fprintf(stdout, "PID: %d. CurrentTimeIrr: %e Myr, TimeStepIrr: %e Myr\n", 
+				// 			particles[ThisLevelNode->ParticleList[0]].PID, 
+				// 			particles[ThisLevelNode->ParticleList[0]].CurrentTimeIrr*EnzoTimeStep*1e4, 
+				// 			particles[ThisLevelNode->ParticleList[0]].TimeStepIrr*EnzoTimeStep*1e4);
 
 				// fprintf(stdout, "PID (%d) = ", ThisLevelNode->ParticleList.size());
-				for (int i=0; i<ThisLevelNode->ParticleList.size(); i++) {
-					ptcl = &particles[ThisLevelNode->ParticleList[i]];
-					// fprintf(stdout, "%d, ", ptcl->PID);
-					fprintf(stdout, "PID: %d. %e Myr, %e Myr\n", 
-							ptcl->PID,
-							ptcl->CurrentTimeIrr*EnzoTimeStep*1e4,
-							ptcl->TimeStepIrr*EnzoTimeStep*1e4);
-				}
-				fprintf(stdout, "\n");
+				// for (int i=0; i<ThisLevelNode->ParticleList.size(); i++) {
+				// 	ptcl = &particles[ThisLevelNode->ParticleList[i]];
+				// 	// fprintf(stdout, "%d, ", ptcl->PID);
+				// 	fprintf(stdout, "PID: %d. %e Myr, %e Myr\n", 
+				// 			ptcl->PID,
+				// 			ptcl->CurrentTimeIrr*EnzoTimeStep*1e4,
+				// 			ptcl->TimeStepIrr*EnzoTimeStep*1e4);
+				// }
+				// fprintf(stdout, "\n");
 				// fflush(stdout);
 				// */
 #endif
@@ -684,6 +681,12 @@ void RootRoutines() {
 					queue_scheduler.waitQueue(0); // blocking wait
 				} while (queue_scheduler.isComplete());
 */
+#ifdef MultiNode
+				queue_scheduler.updateMultiNode(UpdateIrregularForce); // (Query MultiNode) Update list: NewNumberOfNeighbor, NewNeighbors,
+																		// NewPosition, NewVelocity, airr, atot
+																		// NewCurrentBlockIrr, TimeLevelIrr, TimeStepIrr, TimeBlockIrr, NextBlockIrr
+																		// + Position, Velocity, CurrentBlockIrr, CurrentTimeIrr for IrrUpdate routine!!!
+#else
 				for (int ptcl_id : ThisLevelNode->ParticleList)
 				{
 					ptcl = &particles[ptcl_id];
@@ -693,6 +696,7 @@ void RootRoutines() {
 					ptcl->CurrentBlockIrr = ptcl->NewCurrentBlockIrr;
 					ptcl->CurrentTimeIrr  = ptcl->CurrentBlockIrr*time_step;
 				}
+#endif
 #ifdef DEBUG
 				for (int i: ThisLevelNode->ParticleList) {
 					ptcl = &particles[i];
@@ -746,6 +750,19 @@ void RootRoutines() {
 									fflush(stdout);
 								}
 #endif
+
+#ifdef MultiNode
+								// (Query MultiNode) We should send information of donor only!!!
+								// Note that CMptclIndex of donor (zero mass particle) should be -1 !!!
+								// CM ptcl? We don't have to send it because CM ptcl is not included in neighbors!!!
+								// accretor? It will be updated later by the end of FBTermination routine
+								queue.task = UpdateBinaryMerger;
+								queue.pid = donor->Mass < 0.0 ? donor->ParticleIndex : accretor->ParticleIndex;
+								queue.next_time = -1.0;
+								for (int j=1; j<NumberOfNode; j++) { // (Query MultiNode) It starts from 1 because 0 is root
+									MPI_Send(&queue, 1, QueueType, ranks_update_comm[j], QUEUE_TAG, MPI_COMM_WORLD);
+								}
+#endif
 							}
 							else { // from NewFBInitialization3
 
@@ -776,7 +793,7 @@ void RootRoutines() {
 								}
 #endif
 								int rank = CMPtclWorker[ptcl->ParticleIndex];
-								queue.task = MergeManyBody;
+								queue.task = MergeManyBody; // (Query) We might have to change this routine... mass update? by EW 2025.5.29
 								queue.pid = ptcl->ParticleIndex;
 								workers[rank].addQueue(queue);
 								workers[rank].runQueue();
@@ -803,6 +820,22 @@ void RootRoutines() {
                                 }
                                 fflush(stdout);
 #endif
+								ptcl->setBinaryInterruptState(BinaryInterruptState::none); // I think this should be updated in stable branch by EW 2025.5.29
+#ifdef MultiNode
+								// (Query MultiNode) This is slightly complex because new binary is created...
+								// We should send information of donor (zero mass particle) & all the members (including accretor) & cm particle (because it is still active)
+								// Note that CMptclIndex of donor (zero mass particle) should be -1 !!!
+								int nodenum = queue_scheduler.getNodeNumber(rank);
+								queue.task = UpdateManybodyMerger;
+								queue.pid = donor->Mass < 0.0 ? donor->ParticleIndex : accretor->ParticleIndex;
+								for (int j = 0; j < NumberOfNode; j++) {
+									if (j == nodenum)
+										continue;
+									else
+										MPI_Send(&queue, 1, QueueType, ranks_update_comm[j], QUEUE_TAG, MPI_COMM_WORLD);
+								}
+
+#endif
 								continue;
 							}
 						}
@@ -813,6 +846,14 @@ void RootRoutines() {
 						if (ptcl->ParticleIndex == LastParticleIndex) {
 							LastParticleIndex--;
 							global_variable->LastParticleIndex == LastParticleIndex;
+#ifdef MultiNode
+							queue.task = UpdateLastParticleIndex;
+							queue.next_time = -1;
+							for (int i=1; i<NumberOfNode; i++) { // (Query MultiNode) It starts from 1 because 0 is root
+								queue.pid = LastParticleIndex;
+								MPI_Send(&queue, 1, QueueType, ranks_update_comm[i], QUEUE_TAG, MPI_COMM_WORLD);
+							}
+#endif
 						}
 						else
 							PrevCMPtclWorker.insert({ptcl->ParticleIndex, CMPtclWorker[ptcl->ParticleIndex]});
@@ -865,11 +906,20 @@ void RootRoutines() {
 							std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_map - start_point_map).count();
 #endif
 #endif // multimap
+#ifdef DEBUG
+						fprintf(stdout, "FBTermination! PID: %d\n", ptcl->PID);
+						fflush(stdout);
+#endif
 						FBTermination(ptcl);
 					}
 				}
 
 				if (bin_termination) {
+#ifdef MultiNode
+					// (Query MultiNode) We should send information of all the particles from OriginalSize to the end of ParticleList
+					UpdateFBTerm* update_list = new UpdateFBTerm[ThisLevelNode->ParticleList.size() - OriginalSize];
+					int num = 0;
+#endif
 					for (int i=OriginalSize; i<ThisLevelNode->ParticleList.size(); i++) {
 						ptcl = &particles[ThisLevelNode->ParticleList[i]];
 #ifdef MULTIMAP
@@ -892,7 +942,56 @@ void RootRoutines() {
 						ptcl->NewNumberOfNeighbor = 0;
 						if (ptcl->TimeStepIrr * EnzoTimeStep * 1e4 < TSEARCH)
 							ptcl->checkNewGroup4();
+#ifdef MultiNode
+						update_list[num].pid = ptcl->PID;
+						update_list[num].binary_state = ptcl->binary_state;
+						update_list[num].currentblock_irr = ptcl->CurrentBlockIrr;
+						update_list[num].currenttime_irr = ptcl->CurrentTimeIrr;
+						update_list[num].currentblock_reg = ptcl->CurrentBlockReg;
+						update_list[num].currenttime_reg = ptcl->CurrentTimeReg;
+						update_list[num].newcurrentblock_irr = ptcl->NewCurrentBlockIrr;
+						update_list[num].nextblock_irr = ptcl->NextBlockIrr;
+						update_list[num].timelevel_irr = ptcl->TimeLevelIrr;
+						update_list[num].timestep_irr = ptcl->TimeStepIrr;
+						update_list[num].timeblock_irr = ptcl->TimeBlockIrr;
+						update_list[num].timelevel_reg = ptcl->TimeLevelReg;
+						update_list[num].timestep_reg = ptcl->TimeStepReg;
+						update_list[num].timeblock_reg = ptcl->TimeBlockReg;
+						update_list[num].radiusofneighbor = ptcl->RadiusOfNeighbor;
+						for (int j=0; j<HERMITE_ORDER; j++) {
+							for (int dim = 0; dim < Dim; dim++) {
+								update_list[num].airr[dim][j] = ptcl->a_irr[dim][j];
+								update_list[num].areg[dim][j] = ptcl->a_reg[dim][j];
+							}
+						}
+						update_list[num].numberofneighbors = ptcl->NumberOfNeighbor;
+						std::memcpy(update_list[num].neighbors, ptcl->Neighbors, sizeof(int) * ptcl->NumberOfNeighbor);
+						std::memcpy(update_list[num].position, ptcl->Position, sizeof(double) * Dim);
+						std::memcpy(update_list[num].velocity, ptcl->Velocity, sizeof(double) * Dim);
+						num++;
+#endif
 					}
+
+#ifdef MultiNode
+					// (Query MultiNode) Send the update_list to all the nodes
+					queue.task = UpdateFBTermination;
+					queue.pid = ThisLevelNode->ParticleList.size() - OriginalSize;
+					queue.next_time = -1.0;
+					for (int j=1; j<NumberOfNode; j++) { // (Query MultiNode) It starts from 1 because 0 is root
+						MPI_Send(&queue, 1, QueueType, ranks_update_comm[j], QUEUE_TAG, MPI_COMM_WORLD);
+						MPI_Send(update_list, ThisLevelNode->ParticleList.size() - OriginalSize, UpdateFBTermType, ranks_update_comm[j], 1, MPI_COMM_WORLD);
+					}
+
+					int completed = 1; // (Query MultiNode) It starts from 1 because 0 is root
+					while (completed < NumberOfNode) {
+						MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+						int completed_rank = status.MPI_SOURCE;
+						int return_value;
+						MPI_Recv(&return_value, 1, MPI_INT, completed_rank, TERMINATE_TAG, MPI_COMM_WORLD, &status);
+						completed++;
+					}
+					delete[] update_list;
+#endif
 
 					// Erase terminated CM particles by EW 2025.1.6
 					ThisLevelNode->ParticleList.erase(
@@ -993,6 +1092,15 @@ void RootRoutines() {
 #ifdef DEBUG
 					std::cout << "New Binary!" << std::endl;
 #endif
+
+#ifdef MultiNode
+					queue.task = UpdateLastParticleIndex;
+					queue.next_time = -1;
+					for (int i=1; i<NumberOfNode; i++) { // (Query MultiNode) It starts from 1 because 0 is root
+						queue.pid = LastParticleIndex;
+						MPI_Send(&queue, 1, QueueType, ranks_update_comm[i], QUEUE_TAG, MPI_COMM_WORLD);
+					}
+#endif
 					new_binaries = true;
 
 					// new code by EW 2025.1.26
@@ -1045,6 +1153,23 @@ void RootRoutines() {
 						workers[rank_new].addQueue(queue);
 						workers[rank_new].runQueue();
 						workers[rank_new].callback();
+#ifdef MultiNode
+						queue.task = UpdateNewGroup;
+						int nodenum = queue_scheduler.getNodeNumber(rank_new);
+						for (int j = 0; j < NumberOfNode; j++) {
+							MPI_Send(&queue, 1, QueueType, ranks_update_comm[j], QUEUE_TAG, MPI_COMM_WORLD);
+							MPI_Send(&nodenum, 1, MPI_INT, ranks_update_comm[j], 1, MPI_COMM_WORLD);
+						}
+						int completed = 0;
+						while (completed < NumberOfNode) {
+							MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+							int completed_rank = status.MPI_SOURCE;
+							int return_value;
+							MPI_Recv(&return_value, 1, MPI_INT, completed_rank, TERMINATE_TAG, MPI_COMM_WORLD, &status);
+							completed++;
+						}
+#endif
+
 #ifdef MULTIMAP
 #ifdef PERFORMANCETRACE
 						start_point_map = std::chrono::high_resolution_clock::now();
@@ -1226,6 +1351,10 @@ void RootRoutines() {
 					queue_scheduler.runQueueAuto();
 					queue_scheduler.waitQueue(0); // blocking wait
 				} while (queue_scheduler.isComplete());
+#ifdef MultiNode
+				queue_scheduler.updateMultiNode(UpdateAfterRegCudaUpdate);
+#endif
+
 #ifdef DEBUG
 				std::cout << "update regular ended" << std::endl;
 #endif
@@ -1290,6 +1419,10 @@ void RootRoutines() {
 					queue_scheduler.runQueueAuto();
 					queue_scheduler.waitQueue(0); // blocking wait
 				} while (queue_scheduler.isComplete());
+#ifdef MultiNode
+				queue_scheduler.updateMultiNode(UpdateAfterRegCuda);
+#endif
+
 #ifdef DEBUG
 				std::cout << "Regular force ended" << std::endl;
 #endif
@@ -1325,6 +1458,9 @@ void RootRoutines() {
 					queue_scheduler.runQueueAuto();
 					queue_scheduler.waitQueue(0); // blocking wait
 				} while (queue_scheduler.isComplete());
+#ifdef MultiNode
+				queue_scheduler.updateMultiNode(UpdateAfterRegCudaUpdate);
+#endif
 #ifdef DEBUG
 				std::cout << "update regular ended" << std::endl;
 #endif

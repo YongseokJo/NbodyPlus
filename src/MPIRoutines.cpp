@@ -20,6 +20,13 @@ MPI_Datatype createUpdateInitAcc1Type();
 MPI_Datatype createUpdateInitAcc2Type();
 MPI_Datatype createUpdateTimeType();
 MPI_Datatype createUpdateTimeCorrType();
+MPI_Datatype createUpdateIrrForceType();
+MPI_Datatype createUpdateBinaryType();
+MPI_Datatype createUpdateFBTermType();
+MPI_Datatype createUpdateNewCMType();
+MPI_Datatype createUpdateRegCudaType();
+MPI_Datatype createUpdateRegCudaUpdateType();
+// void printMPIDatatypeOffsets(MPI_Datatype UpdateNewCMType);
 #endif
 
 void initializeMPI(int argc, char *argv[]) {
@@ -41,12 +48,19 @@ void initializeMPI(int argc, char *argv[]) {
 		MPI_Finalize();
 	}
 
-	QueueType			= createQueueType();
+	QueueType				= createQueueType();
 #ifdef MultiNode
-	UpdateInitAcc1Type	= createUpdateInitAcc1Type();
-	UpdateInitAcc2Type	= createUpdateInitAcc2Type();
-	UpdateTimeType 		= createUpdateTimeType();
-	UpdateTimeCorrType 	= createUpdateTimeCorrType();
+	UpdateInitAcc1Type		= createUpdateInitAcc1Type();
+	UpdateInitAcc2Type		= createUpdateInitAcc2Type();
+	UpdateTimeType 			= createUpdateTimeType();
+	UpdateTimeCorrType 		= createUpdateTimeCorrType();
+	UpdateIrrForceType 		= createUpdateIrrForceType();
+	UpdateBinaryType 		= createUpdateBinaryType();
+	UpdateFBTermType 		= createUpdateFBTermType();
+	UpdateNewCMType 		= createUpdateNewCMType();
+	// printMPIDatatypeOffsets(UpdateNewCMType);
+	UpdateRegCudaType 		= createUpdateRegCudaType();
+	UpdateRegCudaUpdateType = createUpdateRegCudaUpdateType();
 #endif
 	/*
 	// comm for each node
@@ -323,5 +337,325 @@ MPI_Datatype createUpdateTimeCorrType() {
 	MPI_Type_commit(&UpdateTimeCorrType);
 
 	return UpdateTimeCorrType;
+}
+
+MPI_Datatype createUpdateIrrForceType() {
+
+	int block_lengths[12] = {1, 1, 5, 3, 3, 12, 12, 1, 1, 1, 1, 1}; // Number of elements in each field
+	MPI_Aint offsets[12];
+	MPI_Datatype types[12] = {MPI_INT, MPI_INT, MPI_INT, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE,
+								MPI_UNSIGNED_LONG_LONG, MPI_INT, MPI_DOUBLE,
+								MPI_UNSIGNED_LONG_LONG, MPI_UNSIGNED_LONG_LONG}; // Match the types in the struct
+
+	// Calculate offsets
+	offsets[0] = offsetof(UpdateIrrForce, pid);
+	offsets[1] = offsetof(UpdateIrrForce, newnumberofneighbors);
+	offsets[2] = offsetof(UpdateIrrForce, newneighbors);
+	offsets[3] = offsetof(UpdateIrrForce, newposition);
+	offsets[4] = offsetof(UpdateIrrForce, newvelocity);
+	offsets[5] = offsetof(UpdateIrrForce, airr);
+	offsets[6] = offsetof(UpdateIrrForce, atot);
+	offsets[7] = offsetof(UpdateIrrForce, newcurrentblock_irr);
+	offsets[8] = offsetof(UpdateIrrForce, timelevel_irr);
+	offsets[9] = offsetof(UpdateIrrForce, timestep_irr);
+	offsets[10] = offsetof(UpdateIrrForce, timeblock_irr);
+	offsets[11] = offsetof(UpdateIrrForce, nextblock_irr);
+
+	// Create the struct datatype
+	MPI_Type_create_struct(12, block_lengths, offsets, types, &UpdateIrrForceType);
+	MPI_Type_commit(&UpdateIrrForceType);
+
+	return UpdateIrrForceType;
+}
+
+MPI_Datatype createUpdateBinaryType() {
+
+	int block_lengths[6] = {1, 1, 3, 3, 1, 1}; // Number of elements in each field
+	MPI_Aint offsets[6];
+	MPI_Datatype types[6] = {MPI_INT, MPI_LONG_LONG_INT, MPI_DOUBLE, MPI_DOUBLE, MPI_INT, MPI_INT}; // Match the types in the struct
+
+	// Calculate offsets
+	offsets[0] = offsetof(UpdateBinary, pid);
+	offsets[1] = offsetof(UpdateBinary, binary_state);
+	offsets[2] = offsetof(UpdateBinary, position);
+	offsets[3] = offsetof(UpdateBinary, velocity);
+	offsets[4] = offsetof(UpdateBinary, mass);
+	offsets[5] = offsetof(UpdateBinary, currenttime_irr);
+
+	// Create the struct datatype
+	MPI_Type_create_struct(6, block_lengths, offsets, types, &UpdateBinaryType);
+	MPI_Type_commit(&UpdateBinaryType);
+
+	return UpdateBinaryType;
+}
+
+MPI_Datatype createUpdateFBTermType() {
+
+	int block_lengrhs[21] = {
+		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+		12, 12, 1, MaxNumNeighbor, 3, 3
+	}; // Number of elements in each field
+	MPI_Aint offsets[21];
+	MPI_Datatype types[21] = {
+		MPI_INT, MPI_LONG_LONG_INT, MPI_UNSIGNED_LONG_LONG, MPI_DOUBLE, MPI_UNSIGNED_LONG_LONG, MPI_DOUBLE,
+		MPI_UNSIGNED_LONG_LONG, MPI_UNSIGNED_LONG_LONG, MPI_INT, MPI_DOUBLE,
+		MPI_UNSIGNED_LONG_LONG, MPI_INT, MPI_DOUBLE,
+		MPI_UNSIGNED_LONG_LONG, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE,
+		MPI_INT, MPI_INT, MPI_DOUBLE, MPI_DOUBLE
+	}; // Match the types in the struct
+
+	// Calculate offsets
+	offsets[0] = offsetof(UpdateFBTerm, pid);
+	offsets[1] = offsetof(UpdateFBTerm, binary_state);
+	offsets[2] = offsetof(UpdateFBTerm, currentblock_irr);
+	offsets[3] = offsetof(UpdateFBTerm, currenttime_irr);
+	offsets[4] = offsetof(UpdateFBTerm, currentblock_reg);
+	offsets[5] = offsetof(UpdateFBTerm, currenttime_reg);
+	offsets[6] = offsetof(UpdateFBTerm, newcurrentblock_irr);
+	offsets[7] = offsetof(UpdateFBTerm, nextblock_irr);
+	offsets[8] = offsetof(UpdateFBTerm, timelevel_irr);
+	offsets[9] = offsetof(UpdateFBTerm, timestep_irr);
+	offsets[10] = offsetof(UpdateFBTerm, timeblock_irr);
+	offsets[11] = offsetof(UpdateFBTerm, timelevel_reg);
+	offsets[12] = offsetof(UpdateFBTerm, timestep_reg);
+	offsets[13] = offsetof(UpdateFBTerm, timeblock_reg);
+	offsets[14] = offsetof(UpdateFBTerm, radiusofneighbor);
+	offsets[15] = offsetof(UpdateFBTerm, airr);
+	offsets[16] = offsetof(UpdateFBTerm, areg);
+	offsets[17] = offsetof(UpdateFBTerm, numberofneighbors);
+	offsets[18] = offsetof(UpdateFBTerm, neighbors);
+	offsets[19] = offsetof(UpdateFBTerm, position);
+	offsets[20] = offsetof(UpdateFBTerm, velocity);
+
+	// Create the struct datatype
+	MPI_Type_create_struct(21, block_lengrhs, offsets, types, &UpdateFBTermType);
+	MPI_Type_commit(&UpdateFBTermType);
+
+	return UpdateFBTermType;
+}
+
+// MPI_Datatype createUpdateNewCMType() {
+
+// 	int block_lengths[23] = {
+// 		1, 1, 5, 3, 3, 1, 1, 1, 1,
+// 		1, 1, 1, 1, 
+// 		1, 1, 1, 1, 1, 1, 
+// 		1, MaxNumNeighbor, 12, 12
+// 	}; // Number of elements in each field
+// 	MPI_Aint offsets[23];
+// 	MPI_Datatype types[23] = {
+// 		MPI_INT, MPI_INT, MPI_INT, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, 
+// 		MPI_UNSIGNED_LONG_LONG, MPI_UNSIGNED_LONG_LONG, MPI_UNSIGNED_LONG_LONG, MPI_UNSIGNED_LONG_LONG, 
+// 		MPI_DOUBLE, MPI_UNSIGNED_LONG_LONG, MPI_INT, MPI_DOUBLE, MPI_UNSIGNED_LONG_LONG, MPI_INT,
+// 		MPI_INT, MPI_INT, MPI_DOUBLE, MPI_DOUBLE
+// 	}; // Match the types in the struct
+
+// 	// Calculate offsets
+// 	offsets[0] = offsetof(UpdateNewCM, PID);
+// 	offsets[1] = offsetof(UpdateNewCM, numberofmembers);
+// 	offsets[2] = offsetof(UpdateNewCM, members);
+// 	offsets[3] = offsetof(UpdateNewCM, position);
+// 	offsets[4] = offsetof(UpdateNewCM, velocity);
+// 	offsets[5] = offsetof(UpdateNewCM, mass);
+// 	offsets[6] = offsetof(UpdateNewCM, radiusofneighbor);
+// 	offsets[7] = offsetof(UpdateNewCM, currenttime_irr);
+// 	offsets[8] = offsetof(UpdateNewCM, currenttime_reg);
+// 	offsets[9] = offsetof(UpdateNewCM, currentblock_irr);
+// 	offsets[10] = offsetof(UpdateNewCM, currentblock_reg);
+// 	offsets[11] = offsetof(UpdateNewCM, newcurrentblock_irr);
+// 	offsets[12] = offsetof(UpdateNewCM, nextblock_irr);
+// 	offsets[13] = offsetof(UpdateNewCM, timestep_irr);
+// 	offsets[14] = offsetof(UpdateNewCM, timeblock_irr);
+// 	offsets[15] = offsetof(UpdateNewCM, timelevel_irr);
+// 	offsets[16] = offsetof(UpdateNewCM, timestep_reg);
+// 	offsets[17] = offsetof(UpdateNewCM, timeblock_reg);
+// 	offsets[18] = offsetof(UpdateNewCM, timelevel_reg);
+// 	offsets[19] = offsetof(UpdateNewCM, numberofneighbors);
+// 	offsets[20] = offsetof(UpdateNewCM, neighbors);
+// 	offsets[21] = offsetof(UpdateNewCM, airr);
+// 	offsets[22] = offsetof(UpdateNewCM, areg);
+
+// 	printf("Offset of PID: %zu\n", offsetof(UpdateNewCM, PID));
+// 	printf("Offset of numberofmembers: %zu\n", offsetof(UpdateNewCM, numberofmembers));
+// 	printf("Offset of members: %zu\n", offsetof(UpdateNewCM, members));
+// 	printf("Offset of position: %zu\n", offsetof(UpdateNewCM, position));
+// 	printf("Offset of velocity: %zu\n", offsetof(UpdateNewCM, velocity));
+// 	printf("Offset of mass: %zu\n", offsetof(UpdateNewCM, mass));
+// 	printf("Offset of radiusofneighbor: %zu\n", offsetof(UpdateNewCM, radiusofneighbor));
+// 	printf("Offset of currenttime_irr: %zu\n", offsetof(UpdateNewCM, currenttime_irr));
+// 	printf("Offset of currenttime_reg: %zu\n", offsetof(UpdateNewCM, currenttime_reg));
+// 	printf("Offset of currentblock_irr: %zu\n", offsetof(UpdateNewCM, currentblock_irr));
+// 	printf("Offset of currentblock_reg: %zu\n", offsetof(UpdateNewCM, currentblock_reg));
+// 	printf("Offset of newcurrentblock_irr: %zu\n", offsetof(UpdateNewCM, newcurrentblock_irr));
+// 	printf("Offset of nextblock_irr: %zu\n", offsetof(UpdateNewCM, nextblock_irr));
+// 	printf("Offset of timestep_irr: %zu\n", offsetof(UpdateNewCM, timestep_irr));
+// 	printf("Offset of timeblock_irr: %zu\n", offsetof(UpdateNewCM, timeblock_irr));
+// 	printf("Offset of timelevel_irr: %zu\n", offsetof(UpdateNewCM, timelevel_irr));
+// 	printf("Offset of timestep_reg: %zu\n", offsetof(UpdateNewCM, timestep_reg));
+// 	printf("Offset of timeblock_reg: %zu\n", offsetof(UpdateNewCM, timeblock_reg));
+// 	printf("Offset of timelevel_reg: %zu\n", offsetof(UpdateNewCM, timelevel_reg));
+// 	printf("Offset of numberofneighbors: %zu\n", offsetof(UpdateNewCM, numberofneighbors));
+// 	printf("Offset of neighbors: %zu\n", offsetof(UpdateNewCM, neighbors));
+// 	printf("Offset of airr: %zu\n", offsetof(UpdateNewCM, airr));
+// 	printf("Offset of areg: %zu\n", offsetof(UpdateNewCM, areg));
+// 	fflush(stdout);
+
+// 	// Create the struct datatype
+// 	MPI_Type_create_struct(23, block_lengths, offsets, types, &UpdateNewCMType);
+// 	MPI_Type_commit(&UpdateNewCMType);
+
+// 	return UpdateNewCMType;
+// }
+
+MPI_Datatype createUpdateNewCMType() {
+	
+    UpdateNewCM dummy_instance;
+
+	// printf("Offsets in struct UpdateNewCM:\n");
+    // printf("Offset of PID: %zu\n", offsetof(UpdateNewCM, PID));
+    // printf("Offset of numberofmembers: %zu\n", offsetof(UpdateNewCM, numberofmembers));
+    // printf("Offset of members: %zu\n", offsetof(UpdateNewCM, members));
+    // printf("Offset of position: %zu\n", offsetof(UpdateNewCM, position));
+    // printf("Offset of velocity: %zu\n", offsetof(UpdateNewCM, velocity));
+    // printf("Offset of mass: %zu\n", offsetof(UpdateNewCM, mass));
+    // printf("Offset of radiusofneighbor: %zu\n", offsetof(UpdateNewCM, radiusofneighbor));
+    // printf("Offset of currenttime_irr: %zu\n", offsetof(UpdateNewCM, currenttime_irr));
+    // printf("Offset of currenttime_reg: %zu\n", offsetof(UpdateNewCM, currenttime_reg));
+    // printf("Offset of currentblock_irr: %zu\n", offsetof(UpdateNewCM, currentblock_irr));
+    // printf("Offset of currentblock_reg: %zu\n", offsetof(UpdateNewCM, currentblock_reg));
+    // printf("Offset of newcurrentblock_irr: %zu\n", offsetof(UpdateNewCM, newcurrentblock_irr));
+    // printf("Offset of nextblock_irr: %zu\n", offsetof(UpdateNewCM, nextblock_irr));
+    // printf("Offset of timestep_irr: %zu\n", offsetof(UpdateNewCM, timestep_irr));
+    // printf("Offset of timeblock_irr: %zu\n", offsetof(UpdateNewCM, timeblock_irr));
+    // printf("Offset of timelevel_irr: %zu\n", offsetof(UpdateNewCM, timelevel_irr));
+    // printf("Offset of timestep_reg: %zu\n", offsetof(UpdateNewCM, timestep_reg));
+    // printf("Offset of timeblock_reg: %zu\n", offsetof(UpdateNewCM, timeblock_reg));
+    // printf("Offset of timelevel_reg: %zu\n", offsetof(UpdateNewCM, timelevel_reg));
+    // printf("Offset of numberofneighbors: %zu\n", offsetof(UpdateNewCM, numberofneighbors));
+    // printf("Offset of neighbors: %zu\n", offsetof(UpdateNewCM, neighbors));
+    // printf("Offset of airr: %zu\n", offsetof(UpdateNewCM, airr));
+    // printf("Offset of areg: %zu\n", offsetof(UpdateNewCM, areg));
+    // fflush(stdout);
+
+    MPI_Aint base_address;
+    MPI_Aint offsets[23];
+
+    MPI_Get_address(&dummy_instance, &base_address);
+    MPI_Get_address(&dummy_instance.PID, &offsets[0]);
+    MPI_Get_address(&dummy_instance.numberofmembers, &offsets[1]);
+    MPI_Get_address(&dummy_instance.members, &offsets[2]);
+    MPI_Get_address(&dummy_instance.position, &offsets[3]);
+    MPI_Get_address(&dummy_instance.velocity, &offsets[4]);
+    MPI_Get_address(&dummy_instance.mass, &offsets[5]);
+    MPI_Get_address(&dummy_instance.radiusofneighbor, &offsets[6]);
+    MPI_Get_address(&dummy_instance.currenttime_irr, &offsets[7]);
+    MPI_Get_address(&dummy_instance.currenttime_reg, &offsets[8]);
+    MPI_Get_address(&dummy_instance.currentblock_irr, &offsets[9]);
+    MPI_Get_address(&dummy_instance.currentblock_reg, &offsets[10]);
+    MPI_Get_address(&dummy_instance.newcurrentblock_irr, &offsets[11]);
+    MPI_Get_address(&dummy_instance.nextblock_irr, &offsets[12]);
+    MPI_Get_address(&dummy_instance.timestep_irr, &offsets[13]);
+    MPI_Get_address(&dummy_instance.timeblock_irr, &offsets[14]);
+    MPI_Get_address(&dummy_instance.timelevel_irr, &offsets[15]);
+    MPI_Get_address(&dummy_instance.timestep_reg, &offsets[16]);
+    MPI_Get_address(&dummy_instance.timeblock_reg, &offsets[17]);
+    MPI_Get_address(&dummy_instance.timelevel_reg, &offsets[18]);
+    MPI_Get_address(&dummy_instance.numberofneighbors, &offsets[19]);
+    MPI_Get_address(&dummy_instance.neighbors, &offsets[20]);
+    MPI_Get_address(&dummy_instance.airr, &offsets[21]);
+    MPI_Get_address(&dummy_instance.areg, &offsets[22]);
+
+    for (int i = 0; i < 23; i++) {
+        offsets[i] -= base_address;
+    }
+
+    int block_lengths[23] = {
+        1, 1, 5, 3, 3, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, MaxNumNeighbor, 12, 12
+    };
+    MPI_Datatype types[23] = {
+        MPI_INT, MPI_INT, MPI_INT, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE,
+        MPI_UNSIGNED_LONG_LONG, MPI_UNSIGNED_LONG_LONG, MPI_UNSIGNED_LONG_LONG, MPI_UNSIGNED_LONG_LONG,
+        MPI_DOUBLE, MPI_UNSIGNED_LONG_LONG, MPI_INT, MPI_DOUBLE, MPI_UNSIGNED_LONG_LONG, MPI_INT,
+        MPI_INT, MPI_INT, MPI_DOUBLE, MPI_DOUBLE
+    };
+
+    MPI_Datatype UpdateNewCMType;
+    MPI_Type_create_struct(23, block_lengths, offsets, types, &UpdateNewCMType);
+    MPI_Type_commit(&UpdateNewCMType);
+
+    return UpdateNewCMType;
+}
+
+void printMPIDatatypeOffsets(MPI_Datatype UpdateNewCMType) {
+    int num_integers, num_addresses, num_datatypes, combiner;
+    MPI_Type_get_envelope(UpdateNewCMType, &num_integers, &num_addresses, &num_datatypes, &combiner);
+
+    MPI_Aint addresses[num_addresses];
+    int block_lengths[num_integers];
+    MPI_Datatype types[num_datatypes];
+
+    MPI_Type_get_contents(UpdateNewCMType, num_integers, num_addresses, num_datatypes,
+                          block_lengths, addresses, types);
+
+    printf("Offsets in MPI_Datatype UpdateNewCMType:\n");
+    for (int i = 0; i < num_addresses; i++) {
+        printf("Offset[%d]: %ld\n", i, addresses[i]);
+    }
+    fflush(stdout);
+}
+
+MPI_Datatype createUpdateRegCudaType() {
+
+	int block_lengths[8] = {1, 3, 3, 6, 12, 12, 1, MaxNumNeighbor}; // Number of elements in each field
+	MPI_Aint offsets[8];
+	MPI_Datatype types[8] = {MPI_INT, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_INT, MPI_INT}; // Match the types in the struct
+
+	// Calculate offsets
+	offsets[0] = offsetof(UpdateRegCuda, pid);
+	offsets[1] = offsetof(UpdateRegCuda, newposition);
+	offsets[2] = offsetof(UpdateRegCuda, newvelocity);
+	offsets[3] = offsetof(UpdateRegCuda, airr);
+	offsets[4] = offsetof(UpdateRegCuda, areg);
+	offsets[5] = offsetof(UpdateRegCuda, atot);
+	offsets[6] = offsetof(UpdateRegCuda, newnumberofneighbors);
+	offsets[7] = offsetof(UpdateRegCuda, newneighbors);
+
+	// Create the struct datatype
+	MPI_Type_create_struct(8, block_lengths, offsets, types, &UpdateRegCudaType);
+	MPI_Type_commit(&UpdateRegCudaType);
+
+	return UpdateRegCudaType;
+}
+
+MPI_Datatype createUpdateRegCudaUpdateType() {
+
+	int block_lengths[11] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}; // Number of elements in each field
+	MPI_Aint offsets[11];
+	MPI_Datatype types[11] = {MPI_INT, MPI_UNSIGNED_LONG_LONG, MPI_DOUBLE, 
+		MPI_INT, MPI_DOUBLE, MPI_UNSIGNED_LONG_LONG,
+		MPI_INT, MPI_DOUBLE, MPI_UNSIGNED_LONG_LONG,
+		MPI_DOUBLE, MPI_UNSIGNED_LONG_LONG
+	}; // Match the types in the struct
+
+	// Calculate offsets
+	offsets[0] = offsetof(UpdateRegCudaUpdate, pid);
+	offsets[1] = offsetof(UpdateRegCudaUpdate, currentblock_reg);
+	offsets[2] = offsetof(UpdateRegCudaUpdate, currenttime_reg);
+	offsets[3] = offsetof(UpdateRegCudaUpdate, timelevel_reg);
+	offsets[4] = offsetof(UpdateRegCudaUpdate, timestep_reg);
+	offsets[5] = offsetof(UpdateRegCudaUpdate, timeblock_reg);
+	offsets[6] = offsetof(UpdateRegCudaUpdate, timelevel_irr);
+	offsets[7] = offsetof(UpdateRegCudaUpdate, timestep_irr);
+	offsets[8] = offsetof(UpdateRegCudaUpdate, timeblock_irr);
+	offsets[9] = offsetof(UpdateRegCudaUpdate, radiusofneighbor);
+	offsets[10] = offsetof(UpdateRegCudaUpdate, nextblock_irr);
+
+	// Create the struct datatype
+	MPI_Type_create_struct(11, block_lengths, offsets, types, &UpdateRegCudaUpdateType);
+	MPI_Type_commit(&UpdateRegCudaUpdateType);
+
+	return UpdateRegCudaUpdateType;
 }
 #endif

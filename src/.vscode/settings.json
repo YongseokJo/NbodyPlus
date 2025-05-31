@@ -48,7 +48,8 @@
         "typeinfo": "cpp",
         "algorithm": "cpp",
         "random": "cpp",
-        "regex": "cpp"
+        "regex": "cpp",
+        "thread": "cpp"
     },
     "makefile.configureOnOpen": false
 }

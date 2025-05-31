@@ -64,7 +64,7 @@ struct Particle {
 
 	// For SDAR
 	bool isActive;
-	bool isUpdateToDate;
+	bool isUpdateToDate; // not using currently by EW 2025.5.27
 	double radius; // used in SEVN too
 	double dm; // Stellar mass which will be distributed to nearby gas cells // used in SEVN too
 	double time_check; // time to check next interrupt

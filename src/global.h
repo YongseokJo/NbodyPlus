@@ -21,6 +21,7 @@ extern MPI_Win win;
 extern MPI_Win win2;
 extern MPI_Win win3;
 extern MPI_Comm shared_comm;
+extern int shared_rank;
 extern int MyRank;
 extern int NumberOfProcessor;
 extern int NumberOfWorker;
@@ -31,7 +32,6 @@ extern GlobalVariable *global_variable_original;
 extern MPI_Datatype QueueType;
 
 #ifdef MultiNode
-extern int shared_rank;
 extern int update_rank;
 extern int NumberOfNode;
 extern int* ranks_update_comm;
@@ -40,6 +40,12 @@ extern MPI_Datatype UpdateInitAcc1Type;
 extern MPI_Datatype UpdateInitAcc2Type;
 extern MPI_Datatype UpdateTimeType;
 extern MPI_Datatype UpdateTimeCorrType;
+extern MPI_Datatype UpdateIrrForceType;
+extern MPI_Datatype UpdateBinaryType;
+extern MPI_Datatype UpdateFBTermType;
+extern MPI_Datatype UpdateNewCMType;
+extern MPI_Datatype UpdateRegCudaType;
+extern MPI_Datatype UpdateRegCudaUpdateType;
 #endif
 
 extern int *ActiveIndexToOriginalIndex_orginal;

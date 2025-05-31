@@ -28,6 +28,15 @@ enum TaskName : int8_t {
     UpdateLastParticleIndex = 33,
     UpdateTimeVariables = 34,
     UpdateTimeCorrection = 35,
+    UpdateIrregularForce = 36,
+    UpdateBinaryMerger = 37,
+    UpdateFBTermination = 38,
+    UpdateNewGroup = 39,
+    UpdateManybodyMerger = 40,
+    UpdateActiveIndexToOriginalIndex = 41,
+    UpdateBeforeRegCuda = 42,
+    UpdateAfterRegCuda = 43,
+    UpdateAfterRegCudaUpdate = 44,
 #endif
     Synchronize = 100,
     Ends = -100,
@@ -46,6 +55,7 @@ struct Queue {
 };
 
 #ifdef MultiNode
+// #pragma pack(push, 1)
 struct UpdateInitAcc1 {
     int pid;
     int numberofneighbors;
@@ -54,7 +64,9 @@ struct UpdateInitAcc1 {
     double areg0[3];
     double areg1[3];
 };
+// #pragma pack(pop)
 
+// #pragma pack(push, 1)
 struct UpdateInitAcc2 {
     int pid;
     double airr2[3];
@@ -62,7 +74,9 @@ struct UpdateInitAcc2 {
     double areg2[3];
     double areg3[3];
 };
+// #pragma pack(pop)
 
+// #pragma pack(push, 1)
 struct UpdateTime {
     int pid;
     double timestep_reg;
@@ -76,12 +90,126 @@ struct UpdateTime {
     ULL currentblock_irr;
     ULL currentblock_reg;
 };
+// #pragma pack(pop)
 
+// #pragma pack(push, 1)
 struct UpdateTimeCorr {
     int pid;
     double timestep_irr;
     ULL timeblock_irr;
     int timelevel_irr;
 };
+// #pragma pack(pop)
+
+// #pragma pack(push, 1)
+struct UpdateIrrForce {
+    int pid;
+    int newnumberofneighbors;
+    int newneighbors[5];
+    double newposition[3];
+    double newvelocity[3];
+    double airr[3][4];
+    double atot[3][4];
+    ULL newcurrentblock_irr;
+    int timelevel_irr;
+    double timestep_irr;
+    ULL timeblock_irr;
+    ULL nextblock_irr;
+};
+// #pragma pack(pop)
+
+// #pragma pack(push, 1)
+struct UpdateBinary {
+    int pid;
+    long long int binary_state;
+    double position[3];
+    double velocity[3];
+    double mass;
+    double currenttime_irr;
+};
+// #pragma pack(pop)
+
+// #pragma pack(push, 1)
+struct UpdateFBTerm {
+    int pid;
+    long long int binary_state;
+    ULL currentblock_irr;
+    double currenttime_irr;
+    ULL currentblock_reg;
+    double currenttime_reg;
+    ULL newcurrentblock_irr;
+    ULL nextblock_irr;
+    int timelevel_irr;
+    double timestep_irr;
+    ULL timeblock_irr;
+    int timelevel_reg;
+    double timestep_reg;
+    ULL timeblock_reg;
+    double radiusofneighbor;
+    double airr[3][4];
+    double areg[3][4];
+    int numberofneighbors;
+    int neighbors[MaxNumNeighbor];
+    double position[3];
+    double velocity[3];
+};
+// #pragma pack(pop)
+
+// #pragma pack(push, 1)
+struct UpdateNewCM {
+    int PID; // not ParticleIndex, but Particle ID
+    int numberofmembers;
+    int members[5];
+    double position[3];
+    double velocity[3];
+    double mass;
+    double radiusofneighbor;
+    double currenttime_irr;
+    double currenttime_reg;
+    ULL currentblock_irr;
+    ULL currentblock_reg;
+    ULL newcurrentblock_irr;
+    ULL nextblock_irr;
+    double timestep_irr;
+    ULL timeblock_irr;
+    int timelevel_irr;
+    double timestep_reg;
+    ULL timeblock_reg;
+    int timelevel_reg;
+    int numberofneighbors;
+    int neighbors[MaxNumNeighbor];
+    double airr[3][4];
+    double areg[3][4];
+};
+// #pragma pack(pop)
+
+// #pragma pack(push, 1)
+struct UpdateRegCuda {
+    int pid;
+    double newposition[3];
+    double newvelocity[3];
+    double airr[3][2];
+    double areg[3][4];
+    double atot[3][4];
+    int newnumberofneighbors;
+    int newneighbors[MaxNumNeighbor];
+};
+// #pragma pack(pop)
+
+// #pragma pack(push, 1)
+struct UpdateRegCudaUpdate {
+    int pid;
+    ULL currentblock_reg;
+    double currenttime_reg;
+    int timelevel_reg;
+    double timestep_reg;
+    ULL timeblock_reg;
+    int timelevel_irr;
+    double timestep_irr;
+    ULL timeblock_irr;
+    double radiusofneighbor;
+    ULL nextblock_irr;
+};
+// #pragma pack(pop)
 #endif
 #endif

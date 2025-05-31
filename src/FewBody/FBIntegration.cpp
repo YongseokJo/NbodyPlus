@@ -198,8 +198,8 @@ void Group::ARIntegration(double next_time){
         Particle* members = &sym_int.particles[i];
 
         for (int dim=0; dim<Dim; dim++) {
-            particles[members->ParticleIndex].Position[dim] = groupCM->NewPosition[dim] + members->Position[dim];
-            particles[members->ParticleIndex].Velocity[dim] = groupCM->NewVelocity[dim] + members->Velocity[dim];
+            particles[members->ParticleIndex].Position[dim] = groupCM->NewPosition[dim] + members->Position[dim]; // (Query) This might cause issue!!! by EW 2025.5.27
+            particles[members->ParticleIndex].Velocity[dim] = groupCM->NewVelocity[dim] + members->Velocity[dim]; // (Query) This might cause issue!!! by EW 2025.5.27
         }
         particles[members->ParticleIndex].Mass = members->Mass;
         particles[members->ParticleIndex].CurrentTimeIrr = next_time;

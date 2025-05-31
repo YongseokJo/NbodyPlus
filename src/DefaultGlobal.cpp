@@ -30,6 +30,12 @@ MPI_Datatype UpdateInitAcc1Type;
 MPI_Datatype UpdateInitAcc2Type;
 MPI_Datatype UpdateTimeType;
 MPI_Datatype UpdateTimeCorrType;
+MPI_Datatype UpdateIrrForceType;
+MPI_Datatype UpdateBinaryType;
+MPI_Datatype UpdateFBTermType;
+MPI_Datatype UpdateNewCMType;
+MPI_Datatype UpdateRegCudaType;
+MPI_Datatype UpdateRegCudaUpdateType;
 #endif
 
 MPI_Datatype QueueType;

@@ -67,12 +67,12 @@ void Particle::computeAccelerationIrr() {
 			fflush(stderr);
 		}
 
-	 if (ptcl->Position[0]!=ptcl->Position[0]) {
+		if (ptcl->Position[0]!=ptcl->Position[0]) {
 			fprintf(stderr, "Nan occurs, %lf", ptcl->Position[0]);
 			fflush(stderr);
 			assert(this->Position[0] ==  this->Position[0]);
 			exit(EXIT_FAILURE);
-	 }
+		}
 		if (ptcl->PID == this->PID)  {
 			fprintf(stderr, "Myself in neighbor (%d)", PID);
 			fflush(stderr);
@@ -233,7 +233,6 @@ void Particle::computeAccelerationIrr() {
 
 
 // Modified by EW 2025.3.3 for no CUDA version
-
 void Particle::computeAccelerationReg() {
 
 	double dt, mdot, epsilon=1e-6;
@@ -385,6 +384,15 @@ void Particle::computeAccelerationReg() {
 		this->a_reg[dim][3] = a3;
 	}
 
+	// Binary members pos&vel adjustment after regular routine // error fixed by EW 2025.5.29 (This should be updated in the stable version)
+	if (this->isCMptcl) {
+		for (int i = 0; i < this->NumberOfMember; i++) {
+			for (int dim=0; dim<Dim; dim++) {
+				particles[this->Members[i]].Position[dim] += this->NewPosition[dim] - this->Position[dim];
+				particles[this->Members[i]].Velocity[dim] += this->NewVelocity[dim] - this->Velocity[dim];
+			}
+		}
+	}
 
 	for (int dim=0; dim<Dim; dim++) {
 		this->a_reg[dim][0] = a_new[dim];
@@ -402,7 +410,6 @@ void Particle::computeAccelerationReg() {
 
 
 // Modified by EW 2025.1.30
-
 void Particle::updateRegularParticleCuda() {
 
 	double new_a[Dim], new_adot[Dim];
@@ -600,21 +607,26 @@ void Particle::updateRegularParticleCuda() {
 		adot_tmp[dim] = 0.;
 	}
 
+	// Binary members pos&vel adjustment after regular routine // error fixed by EW 2025.5.29 (This should be updated in the stable version)
+	if (this->isCMptcl) {
+		for (int i = 0; i < this->NumberOfMember; i++) {
+			for (int dim=0; dim<Dim; dim++) {
+				particles[this->Members[i]].Position[dim] += this->NewPosition[dim] - this->Position[dim];
+				particles[this->Members[i]].Velocity[dim] += this->NewVelocity[dim] - this->Velocity[dim];
+			}
+		}
+	}
+
 	it = hashTableNew.begin();
 	int _NewNumberOfNeighbor = 0;
-	for (int i=0; i<NewNumberOfNeighborGPU; i++) {
-		ptcl = &particles[*it];
-		if (ptcl->isCMptcl) {
-			for (int j=0; j<ptcl->NumberOfMember; j++) {
-				this->NewNeighbors[_NewNumberOfNeighbor++] = ptcl->Members[j];
-				for (int dim=0; dim<Dim; dim++) {
-					particles[ptcl->Members[j]].Position[dim] += this->NewPosition[dim] - this->Position[dim];
-					particles[ptcl->Members[j]].Velocity[dim] += this->NewVelocity[dim] - this->Velocity[dim];
-				}
+	while (it != hashTableNew.end()) {
+		if (particles[*it].isCMptcl) {
+			for (int j=0; j<particles[*it].NumberOfMember; j++) {
+				this->NewNeighbors[_NewNumberOfNeighbor++] = particles[*it].Members[j];
 			}
 		}
 		else
-			this->NewNeighbors[_NewNumberOfNeighbor++] = ptcl->ParticleIndex;
+			this->NewNeighbors[_NewNumberOfNeighbor++] = particles[*it].ParticleIndex;
 		it++;
 	}
 	this->NewNumberOfNeighbor = _NewNumberOfNeighbor;

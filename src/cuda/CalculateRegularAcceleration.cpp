@@ -177,6 +177,9 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueSch
 	nvtxRangePushA("RegCuda");
 #endif
 
+#ifdef MultiNode
+	queue_scheduler.updateBeforeRegCuda(ListSize, IndexList, NumNeighborReceive, ACListReceive, AccRegReceive_f, AccRegDotReceive_f);
+#else
 	for (int i=0; i<ListSize; i++) {
 		ptcl = &particles[ActiveIndexToOriginalIndex[IndexList[i]]];
 
@@ -193,7 +196,7 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueSch
 #endif
 		}
 	}
-
+#endif
 	queue_scheduler.initialize(RegCuda);
 	queue_scheduler.takeQueueRegularList(RegularList);
 	do
@@ -202,7 +205,9 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueSch
 		queue_scheduler.runQueueAuto();
 		queue_scheduler.waitQueue(0); // blocking wait
 	} while (queue_scheduler.isComplete());
-
+#ifdef MultiNode
+	queue_scheduler.updateMultiNode(UpdateAfterRegCuda);
+#endif
 /*
 	// Adjust Regular Gravity
 	int i=0;
@@ -406,4 +411,21 @@ void sendAllParticlesToGPU(double new_time, std::unordered_set<int> RegularList,
 	delete[] Radius2;
 	delete[] Position;
 	delete[] Velocity;
+
+#ifdef MultiNode
+	Queue queue = {UpdateActiveIndexToOriginalIndex, size, -1.0};
+	for (int i = 1; i < NumberOfNode; i++) {
+		MPI_Send(&queue, 1, QueueType, ranks_update_comm[i], QUEUE_TAG, MPI_COMM_WORLD);
+		MPI_Send(ActiveIndexToOriginalIndex, size, MPI_INT, ranks_update_comm[i], 1, MPI_COMM_WORLD);
+	}
+	int completed = 0;
+	MPI_Status status;
+	while (completed < NumberOfNode - 1) { // Root node has already completed its job by EW 2025.1.20
+		MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+		int completed_rank = status.MPI_SOURCE;
+		int return_value;
+		MPI_Recv(&return_value, 1, MPI_INT, completed_rank, TERMINATE_TAG, MPI_COMM_WORLD, &status);
+		completed++;
+	}
+#endif
 }

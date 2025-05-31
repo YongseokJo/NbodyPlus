@@ -189,7 +189,16 @@ public:
     void callback(Worker* worker) {
         if (worker->getCurrentQueue()->task == ARIntegration) 
             _completed_cm_queues++;
+#ifdef MultiNode
+        if (worker->getCurrentQueue()->task == ARIntegration)
+            worker->callback();
+        else {
+            int nodenum = getNodeNumber(worker->MyRank);
+            worker->callback(false, _completed_list[nodenum]);
+        }
+#else
         worker->callback();
+#endif
         _completed_queues++;
         if (worker->NumberOfQueues > 0)
             WorkersToGo.insert(worker);
@@ -421,6 +430,47 @@ public:
             completed++;
         }
         delete[] NumberOfNewNeighbors;
+    }
+
+    void updateBeforeRegCuda(int ListSize, int* IndexList, int* NumNeighborReceive, int* ACListReceive, float (*AccRegReceive_f)[3], float (*AccRegDotReceive_f)[3]) {
+        _queue.task = UpdateBeforeRegCuda;
+        _queue.pid = ListSize;
+        _queue.next_time = -1;
+
+        for (int i=1; i<NumberOfNode; i++) { // (Query MultiNode) It starts from 1 because 0 is root
+            MPI_Send(&_queue,               1,                          QueueType,  ranks_update_comm[i], QUEUE_TAG,    MPI_COMM_WORLD);
+            MPI_Send(IndexList,             ListSize,                   MPI_INT,    ranks_update_comm[i], 1,            MPI_COMM_WORLD);
+            MPI_Send(NumNeighborReceive,    ListSize,                   MPI_INT,    ranks_update_comm[i], 2,            MPI_COMM_WORLD);
+            MPI_Send(ACListReceive,         ListSize * MaxNumNeighbor,  MPI_INT,    ranks_update_comm[i], 3,            MPI_COMM_WORLD);
+            MPI_Send(AccRegReceive_f,       ListSize * Dim,             MPI_FLOAT,  ranks_update_comm[i], 4,            MPI_COMM_WORLD);
+            MPI_Send(AccRegDotReceive_f,    ListSize * Dim,             MPI_FLOAT,  ranks_update_comm[i], 5,            MPI_COMM_WORLD);
+        }
+
+        for (int i=0; i<ListSize; i++) {
+            Particle* ptcl = &particles[ActiveIndexToOriginalIndex[IndexList[i]]];
+    
+            ptcl->NewNumberOfNeighbor = NumNeighborReceive[i];
+            std::memcpy(ptcl->NewNeighbors, &ACListReceive[i * MaxNumNeighbor], NumNeighborReceive[i] * sizeof(int));
+    
+            for (int dim=0; dim<Dim; dim++) {
+#ifdef CUDA_FLOAT
+                ptcl->a_irr[dim][0] = static_cast<double>(AccRegReceive_f[i][dim]);		// Just temporarilly save new reg acc here!
+                ptcl->a_irr[dim][1] = static_cast<double>(AccRegDotReceive_f[i][dim]);	// Just temporarilly save new reg acc here!
+#else
+                ptcl->a_irr[dim][0] = AccRegReceive[i][dim];		// Just temporarilly save new reg acc here!
+                ptcl->a_irr[dim][1] = AccRegDotReceive[i][dim];		// Just temporarilly save new reg acc here!
+#endif
+            }
+        }
+
+        int completed = 0;
+        while (completed < NumberOfNode - 1) { // Root node has already completed its job by EW 2025.1.20
+            MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &_status);
+            int completed_rank = _status.MPI_SOURCE;
+            int return_value;
+            MPI_Recv(&return_value, 1, MPI_INT, completed_rank, TERMINATE_TAG, MPI_COMM_WORLD, &_status);
+            completed++;
+        }
     }
 #endif
 

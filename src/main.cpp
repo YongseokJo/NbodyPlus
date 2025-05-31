@@ -104,6 +104,8 @@ int main(int argc, char *argv[]) {
 
 	// Finalize the window and MPI environment
 	MPI_Win_free(&win);
+	MPI_Win_free(&win2);
+	MPI_Win_free(&win3);
 	MPI_Finalize();
 	return 0;
 }

@@ -3,6 +3,7 @@
 #include <errno.h>
 #include "global.h"
 #include "Queue.h"
+#include <cstring>
 
 void broadcastFromRoot(double &data);
 void broadcastFromRoot(ULL &data);
@@ -19,6 +20,11 @@ void updateInitAcc23(int update_count, int* update_count_list, int* displs);
 void sendNewNeighbors(int update_count, std::vector<int>& neighbors);
 void updateTimeVariables(int update_count, int* update_count_list, int* displs);
 void updateTimeCorrection(int update_count);
+void updateIrregularForce(int update_count, int* update_count_list, int* displs);
+void updateFBTermination(int update_count);
+void updateNewGroup(int ptcl_id);
+void updateAfterRegCuda(int update_count, int* update_count_list, int* displs);
+void updateAfterRegCudaUpdate(int update_count, int* update_count_list, int* displs);
 #endif
 
 void WorkerRoutines() {
@@ -36,6 +42,7 @@ void WorkerRoutines() {
 	int* update_count_list = new int[NumberOfNode];
 	int* displs = new int[NumberOfNode];
 	std::vector<int> neighbors;
+	UpdateBinary* updateBinary_list;
 #endif
 
 	while (true) {
@@ -75,12 +82,11 @@ void WorkerRoutines() {
 			case RegUpdate: // Regular Update Particle
 
 				ptcl = &particles[ptcl_id];
-				ptcl->updateParticle();
-
-				for (int i=0; i<ptcl->NewNumberOfNeighbor; i++)
-					ptcl->Neighbors[i] = ptcl->NewNeighbors[i];
+#ifndef MultiNode		
+				std::memcpy(ptcl->Neighbors, ptcl->NewNeighbors, sizeof(int) * ptcl->NewNumberOfNeighbor);
 				ptcl->NumberOfNeighbor = ptcl->NewNumberOfNeighbor;
-
+				ptcl->updateParticle();
+#endif
 				ptcl->CurrentBlockReg += ptcl->TimeBlockReg;
 				ptcl->CurrentTimeReg   = ptcl->CurrentBlockReg*time_step;
 				ptcl->calculateTimeStepReg();
@@ -103,12 +109,11 @@ void WorkerRoutines() {
 			case RegCudaUpdate: // Update Regular Particle CUDA II
 
 				ptcl = &particles[ptcl_id];
-
-				for (int j = 0; j < ptcl->NewNumberOfNeighbor; j++)
-					ptcl->Neighbors[j] = ptcl->NewNeighbors[j];
+#ifndef MultiNode
+				std::memcpy(ptcl->Neighbors, ptcl->NewNeighbors, sizeof(int) * ptcl->NewNumberOfNeighbor);
 				ptcl->NumberOfNeighbor = ptcl->NewNumberOfNeighbor;
-
 				ptcl->updateParticle();
+#endif
 				ptcl->CurrentBlockReg = ptcl->CurrentBlockReg + ptcl->TimeBlockReg;
 				ptcl->CurrentTimeReg = ptcl->CurrentBlockReg * time_step;
 				ptcl->calculateTimeStepReg();
@@ -170,6 +175,92 @@ void WorkerRoutines() {
 			case UpdateTimeCorrection:
 
 				updateTimeCorrection(ptcl_id);
+				break;
+
+			case UpdateIrregularForce:
+
+				updateIrregularForce(ptcl_id, update_count_list, displs);
+				break;
+
+			case UpdateBinaryMerger:
+
+				ptcl = &particles[ptcl_id];
+				ptcl->Mass = -1.0;
+				ptcl->CMPtclIndex = -1;
+				break;
+
+			case UpdateFBTermination:
+
+				updateFBTermination(ptcl_id);
+				break;
+
+			case UpdateNewGroup:
+
+				updateNewGroup(ptcl_id);
+				break;
+
+			case UpdateManybodyMerger: {
+
+				ptcl = &particles[ptcl_id]; // This is zero mass particle
+				Particle* ptclCM = &particles[ptcl->CMPtclIndex];
+				for (int i = 0; i < ptclCM->NumberOfMember; i++) {
+					Particle* member_ptcl = &particles[ptclCM->Members[i]];
+					if (member_ptcl->PID == ptcl->PID) {
+						member_ptcl->Mass = -1.0;
+						member_ptcl->CMPtclIndex = -1;
+						ptclCM->Members[i] = ptclCM->Members[ptclCM->NumberOfMember - 1];
+						ptclCM->NumberOfMember--;
+						break;
+					}
+				}
+				break;
+			}
+
+			case UpdateActiveIndexToOriginalIndex:
+
+				MPI_Recv(ActiveIndexToOriginalIndex, ptcl_id, MPI_INT, ROOT, 1, MPI_COMM_WORLD, &status);
+				break;
+
+			case UpdateBeforeRegCuda: {
+
+				int *IndexList = new int[ptcl_id];
+				int *NumNeighborReceive = new int[ptcl_id];
+				int *ACListReceive = new int[ptcl_id * MaxNumNeighbor];
+				CUDA_REAL (*AccRegReceive_f)[Dim] = new CUDA_REAL[ptcl_id][Dim];
+				CUDA_REAL (*AccRegDotReceive_f)[Dim] = new CUDA_REAL[ptcl_id][Dim];
+				MPI_Recv(IndexList, 			ptcl_id, 					MPI_INT, 	ROOT, 1, MPI_COMM_WORLD, &status);
+				MPI_Recv(NumNeighborReceive, 	ptcl_id, 					MPI_INT, 	ROOT, 2, MPI_COMM_WORLD, &status);
+				MPI_Recv(ACListReceive, 		ptcl_id * MaxNumNeighbor, 	MPI_INT, 	ROOT, 3, MPI_COMM_WORLD, &status);
+				MPI_Recv(AccRegReceive_f, 		ptcl_id * Dim, 				MPI_FLOAT,	ROOT, 4, MPI_COMM_WORLD, &status);
+				MPI_Recv(AccRegDotReceive_f, 	ptcl_id * Dim, 				MPI_FLOAT,	ROOT, 5, MPI_COMM_WORLD, &status);
+
+				for (int i=0; i<ptcl_id; i++) {
+					ptcl = &particles[ActiveIndexToOriginalIndex[IndexList[i]]];
+			
+					ptcl->NewNumberOfNeighbor = NumNeighborReceive[i];
+					std::memcpy(ptcl->NewNeighbors, &ACListReceive[i * MaxNumNeighbor], NumNeighborReceive[i] * sizeof(int));
+			
+					for (int dim=0; dim<Dim; dim++) {
+#ifdef CUDA_FLOAT
+						ptcl->a_irr[dim][0] = static_cast<double>(AccRegReceive_f[i][dim]);		// Just temporarilly save new reg acc here!
+						ptcl->a_irr[dim][1] = static_cast<double>(AccRegDotReceive_f[i][dim]);	// Just temporarilly save new reg acc here!
+#else
+						ptcl->a_irr[dim][0] = AccRegReceive[i][dim];		// Just temporarilly save new reg acc here!
+						ptcl->a_irr[dim][1] = AccRegDotReceive[i][dim];		// Just temporarilly save new reg acc here!
+#endif
+					}
+				}
+				break;
+			}
+
+			case UpdateAfterRegCuda:
+
+				updateAfterRegCuda(ptcl_id, update_count_list, displs);
+				break;
+
+			case UpdateAfterRegCudaUpdate:
+
+				updateAfterRegCudaUpdate(ptcl_id, update_count_list, displs);
 				break;
 #endif
 
@@ -286,6 +377,27 @@ void WorkerRoutines() {
 				else
 					std::cout << "(SDAR) Processor " << MyRank<< ": PID= "<<ptcl->PID << " done!" <<std::endl;
 #endif
+
+#ifdef MultiNode
+				updateBinary_list = new UpdateBinary[ptcl->NumberOfMember + 1];
+				updateBinary_list[0].pid = ptcl->PID;
+				updateBinary_list[0].binary_state = ptcl->binary_state;
+				std::memcpy(updateBinary_list[0].position, ptcl->Position, sizeof(double) * Dim);
+				std::memcpy(updateBinary_list[0].velocity, ptcl->Velocity, sizeof(double) * Dim);
+				updateBinary_list[0].mass = ptcl->Mass;
+				updateBinary_list[0].currenttime_irr = ptcl->CurrentTimeIrr;
+
+				for (int i = 0; i < ptcl->NumberOfMember; i++) {
+					int member_index = ptcl->Members[i];
+					Particle* member_ptcl = &particles[member_index];
+					updateBinary_list[i + 1].pid = member_ptcl->PID;
+					updateBinary_list[i + 1].binary_state = member_ptcl->binary_state;
+					std::memcpy(updateBinary_list[i + 1].position, member_ptcl->Position, sizeof(double) * Dim);
+					std::memcpy(updateBinary_list[i + 1].velocity, member_ptcl->Velocity, sizeof(double) * Dim);
+					updateBinary_list[i + 1].mass = member_ptcl->Mass;
+					updateBinary_list[i + 1].currenttime_irr = member_ptcl->CurrentTimeIrr;
+				}
+#endif
 				break;
 			
 			case MergeManyBody: // Merger insided many-body (>2) group
@@ -334,6 +446,11 @@ void WorkerRoutines() {
 		else if (task == SendNewNeighbors) {
 			MPI_Isend(neighbors.data(), neighbors.size(), MPI_INT, ROOT, TERMINATE_TAG, MPI_COMM_WORLD, &request);
 		}
+		else if (task == ARIntegration) {
+			MPI_Isend(updateBinary_list, ptcl->NumberOfMember + 1, UpdateBinaryType, ROOT, TERMINATE_TAG, MPI_COMM_WORLD, &request);
+		}
+		else if (task == UpdateLastParticleIndex || task == UpdateBinaryMerger || task == UpdateManybodyMerger)
+			continue;
 		else {
 			MPI_Isend(&ptcl_id, 1, MPI_INT, ROOT, TERMINATE_TAG, MPI_COMM_WORLD, &request);
 		}
@@ -343,7 +460,13 @@ void WorkerRoutines() {
 
 		MPI_Wait(&request, &status);
 #ifdef MultiNode
-		neighbors.clear();
+		if (task == SendNewNeighbors) {
+			neighbors.clear();
+		}
+		else if (task == ARIntegration) {
+			delete[] updateBinary_list;
+			updateBinary_list = nullptr;
+		}
 #endif
 		//std::cerr << "Processor " << MyRank << " done." << std::endl;
 	}
