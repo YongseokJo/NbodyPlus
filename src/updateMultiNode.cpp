@@ -509,6 +509,8 @@ void updateNewGroup(int ptcl_id) {
         std::memcpy(ptcl->Position, update_new_cm[0].position, sizeof(double) * Dim);
         std::memcpy(ptcl->Velocity, update_new_cm[0].velocity, sizeof(double) * Dim);
         ptcl->Mass = update_new_cm[0].mass;
+        std::memcpy(ptcl->NewPosition, ptcl->Position, sizeof(double) * Dim); // Newly added by EW 2025.6.2
+        std::memcpy(ptcl->NewVelocity, ptcl->Velocity, sizeof(double) * Dim); // Newly added by EW 2025.6.2
         ptcl->RadiusOfNeighbor = update_new_cm[0].radiusofneighbor;
         ptcl->CurrentTimeIrr = update_new_cm[0].currenttime_irr;
         ptcl->CurrentTimeReg = update_new_cm[0].currenttime_reg;

@@ -1,4 +1,5 @@
 #ifdef FEWBODY
+#include <cstring>
 #include "../global.h"
 
 void CalculateAcceleration01(Particle* ptcl1);
@@ -181,11 +182,11 @@ void NewFBInitialization(Particle* ptclCM) {
 	ptclGroup->initialManager();
 	ptclGroup->initialIntegrator(NumberOfMembers); // Binary tree is made and CM particle is made automatically.
 
-	for (int dim=0; dim<Dim; dim++) {
-		ptclCM->Position[dim] = ptclGroup->sym_int.particles.cm.Position[dim];
-		ptclCM->Velocity[dim] = ptclGroup->sym_int.particles.cm.Velocity[dim];
-		ptclCM->Mass = ptclGroup->sym_int.particles.cm.Mass;
-	}
+	std::memcpy(ptclCM->Position, ptclGroup->sym_int.particles.cm.Position, sizeof(double)*Dim);
+	std::memcpy(ptclCM->Velocity, ptclGroup->sym_int.particles.cm.Velocity, sizeof(double)*Dim);
+	ptclCM->Mass = ptclGroup->sym_int.particles.cm.Mass;
+	std::memcpy(ptclCM->NewPosition, ptclCM->Position, sizeof(double)*Dim); // Newly added by EW 2025.6.2
+	std::memcpy(ptclCM->NewVelocity, ptclCM->Velocity, sizeof(double)*Dim); // Newly added by EW 2025.6.2
 
 	// Set ptcl information like time, PID, etc.
 	ptclCM->RadiusOfNeighbor = ptcl->RadiusOfNeighbor; // original by EW 2025.2.4

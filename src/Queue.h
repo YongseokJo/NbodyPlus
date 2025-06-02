@@ -55,7 +55,6 @@ struct Queue {
 };
 
 #ifdef MultiNode
-// #pragma pack(push, 1)
 struct UpdateInitAcc1 {
     int pid;
     int numberofneighbors;
@@ -64,9 +63,7 @@ struct UpdateInitAcc1 {
     double areg0[3];
     double areg1[3];
 };
-// #pragma pack(pop)
 
-// #pragma pack(push, 1)
 struct UpdateInitAcc2 {
     int pid;
     double airr2[3];
@@ -74,9 +71,7 @@ struct UpdateInitAcc2 {
     double areg2[3];
     double areg3[3];
 };
-// #pragma pack(pop)
 
-// #pragma pack(push, 1)
 struct UpdateTime {
     int pid;
     double timestep_reg;
@@ -90,18 +85,14 @@ struct UpdateTime {
     ULL currentblock_irr;
     ULL currentblock_reg;
 };
-// #pragma pack(pop)
 
-// #pragma pack(push, 1)
 struct UpdateTimeCorr {
     int pid;
     double timestep_irr;
     ULL timeblock_irr;
     int timelevel_irr;
 };
-// #pragma pack(pop)
 
-// #pragma pack(push, 1)
 struct UpdateIrrForce {
     int pid;
     int newnumberofneighbors;
@@ -116,9 +107,7 @@ struct UpdateIrrForce {
     ULL timeblock_irr;
     ULL nextblock_irr;
 };
-// #pragma pack(pop)
 
-// #pragma pack(push, 1)
 struct UpdateBinary {
     int pid;
     long long int binary_state;
@@ -127,9 +116,7 @@ struct UpdateBinary {
     double mass;
     double currenttime_irr;
 };
-// #pragma pack(pop)
 
-// #pragma pack(push, 1)
 struct UpdateFBTerm {
     int pid;
     long long int binary_state;
@@ -153,9 +140,7 @@ struct UpdateFBTerm {
     double position[3];
     double velocity[3];
 };
-// #pragma pack(pop)
 
-// #pragma pack(push, 1)
 struct UpdateNewCM {
     int PID; // not ParticleIndex, but Particle ID
     int numberofmembers;
@@ -181,9 +166,7 @@ struct UpdateNewCM {
     double airr[3][4];
     double areg[3][4];
 };
-// #pragma pack(pop)
 
-// #pragma pack(push, 1)
 struct UpdateRegCuda {
     int pid;
     double newposition[3];
@@ -194,9 +177,7 @@ struct UpdateRegCuda {
     int newnumberofneighbors;
     int newneighbors[MaxNumNeighbor];
 };
-// #pragma pack(pop)
 
-// #pragma pack(push, 1)
 struct UpdateRegCudaUpdate {
     int pid;
     ULL currentblock_reg;
@@ -210,6 +191,5 @@ struct UpdateRegCudaUpdate {
     double radiusofneighbor;
     ULL nextblock_irr;
 };
-// #pragma pack(pop)
 #endif
 #endif

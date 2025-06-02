@@ -380,7 +380,7 @@ void WorkerRoutines() {
 
 #ifdef MultiNode
 				updateBinary_list = new UpdateBinary[ptcl->NumberOfMember + 1];
-				updateBinary_list[0].pid = ptcl->PID;
+				updateBinary_list[0].pid = ptcl->ParticleIndex;
 				updateBinary_list[0].binary_state = ptcl->binary_state;
 				std::memcpy(updateBinary_list[0].position, ptcl->Position, sizeof(double) * Dim);
 				std::memcpy(updateBinary_list[0].velocity, ptcl->Velocity, sizeof(double) * Dim);
@@ -390,7 +390,7 @@ void WorkerRoutines() {
 				for (int i = 0; i < ptcl->NumberOfMember; i++) {
 					int member_index = ptcl->Members[i];
 					Particle* member_ptcl = &particles[member_index];
-					updateBinary_list[i + 1].pid = member_ptcl->PID;
+					updateBinary_list[i + 1].pid = member_ptcl->ParticleIndex;
 					updateBinary_list[i + 1].binary_state = member_ptcl->binary_state;
 					std::memcpy(updateBinary_list[i + 1].position, member_ptcl->Position, sizeof(double) * Dim);
 					std::memcpy(updateBinary_list[i + 1].velocity, member_ptcl->Velocity, sizeof(double) * Dim);

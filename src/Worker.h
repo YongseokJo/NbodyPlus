@@ -93,7 +93,6 @@ struct Worker {
                     ptcl->Mass = updateBinary_list[i].mass;
                     ptcl->CurrentTimeIrr = updateBinary_list[i].currenttime_irr;
                 }
-                
             }
             delete [] updateBinary_list;
         }
