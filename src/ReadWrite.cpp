@@ -291,9 +291,11 @@ int writeParticle(double current_time, int outputNum) {
 		std::cout << "Irregular Force: " << performance.IrregularForce*1e-9 << " s";
 		std::cout << " (" << 100.0 * performance.IrregularForce / performance.WholeRoutine << " %)" << std::endl;
 		performance.IrregularForce = 0;
+#ifndef MultiNode
 		std::cout << "Irregular Update: " << performance.IrregularUpdate*1e-9 << " s";
 		std::cout << " (" << 100.0 * performance.IrregularUpdate / performance.WholeRoutine << " %)" << std::endl;
 		performance.IrregularUpdate = 0;
+#endif
 
 		std::cout << "FewBody Termination: " << performance.FewBodyTermination*1e-9 << " s";
 		std::cout << " (" << 100.0 * performance.FewBodyTermination / performance.WholeRoutine << " %)" << std::endl;
@@ -345,6 +347,12 @@ int writeParticle(double current_time, int outputNum) {
 		std::cout << "Stellar Evolution: " << performance.StellarEvolution*1e-9 << " s";
 		std::cout << " (" << 100.0 * performance.StellarEvolution / performance.WholeRoutine << " %)" << std::endl;
 		performance.StellarEvolution = 0;
+#endif
+
+#ifdef MultiNode
+		std::cout << "Update between nodes: " << performance.Update*1e-9 << " s";
+		std::cout << " (" << 100.0 * performance.Update / performance.WholeRoutine << " %)" << std::endl;
+		performance.Update = 0;
 #endif
 		performance.WholeRoutine = 0;
 		std::cout << "-----------------------------------------------" << std::endl;

@@ -32,6 +32,10 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueSch
 #ifdef PERFORMANCETRACE
 	std::chrono::high_resolution_clock::time_point start_point_routine;
 	std::chrono::high_resolution_clock::time_point end_point_routine;
+#ifdef MultiNode
+	std::chrono::high_resolution_clock::time_point start_point_update;
+	std::chrono::high_resolution_clock::time_point end_point_update;
+#endif
 #endif
 
 	int ListSize = RegularList.size();
@@ -178,7 +182,15 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueSch
 #endif
 
 #ifdef MultiNode
+#ifdef PERFORMANCETRACE
+	start_point_update = std::chrono::high_resolution_clock::now();
+#endif
 	queue_scheduler.updateBeforeRegCuda(ListSize, IndexList, NumNeighborReceive, ACListReceive, AccRegReceive_f, AccRegDotReceive_f);
+#ifdef PERFORMANCETRACE
+	end_point_update = std::chrono::high_resolution_clock::now();
+	performance.Update +=
+		std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_update - start_point_update).count();
+#endif
 #else
 	for (int i=0; i<ListSize; i++) {
 		ptcl = &particles[ActiveIndexToOriginalIndex[IndexList[i]]];
@@ -205,9 +217,6 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueSch
 		queue_scheduler.runQueueAuto();
 		queue_scheduler.waitQueue(0); // blocking wait
 	} while (queue_scheduler.isComplete());
-#ifdef MultiNode
-	queue_scheduler.updateMultiNode(UpdateAfterRegCuda);
-#endif
 /*
 	// Adjust Regular Gravity
 	int i=0;
@@ -259,6 +268,18 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueSch
 		std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
 #endif
 
+#ifdef MultiNode
+#ifdef PERFORMANCETRACE
+	start_point_update = std::chrono::high_resolution_clock::now();
+#endif
+	queue_scheduler.updateMultiNode(UpdateAfterRegCuda);
+#ifdef PERFORMANCETRACE
+	end_point_update = std::chrono::high_resolution_clock::now();
+	performance.Update +=
+		std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_update - start_point_update).count();
+#endif
+#endif
+
 
 	delete[] IndexList;
 
@@ -284,6 +305,12 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueSch
 // (Query MY) Let's optimize this function later. Copying data to h_ptcl in _ReceiveFromHost of cuda_my_acceleation.cpp seems super inefficient. 2025.5.24
 void sendAllParticlesToGPU(double new_time, std::unordered_set<int> RegularList, int *IndexList) {
 
+#ifdef MultiNode
+#ifdef PERFORMANCETRACE
+	std::chrono::high_resolution_clock::time_point start_point_update;
+	std::chrono::high_resolution_clock::time_point end_point_update;
+#endif
+#endif
 	
 
 #ifdef CUDA_FLOAT
@@ -413,6 +440,9 @@ void sendAllParticlesToGPU(double new_time, std::unordered_set<int> RegularList,
 	delete[] Velocity;
 
 #ifdef MultiNode
+#ifdef PERFORMANCETRACE
+	start_point_update = std::chrono::high_resolution_clock::now();
+#endif
 	Queue queue = {UpdateActiveIndexToOriginalIndex, size, -1.0};
 	for (int i = 1; i < NumberOfNode; i++) {
 		MPI_Send(&queue, 1, QueueType, ranks_update_comm[i], QUEUE_TAG, MPI_COMM_WORLD);
@@ -427,5 +457,10 @@ void sendAllParticlesToGPU(double new_time, std::unordered_set<int> RegularList,
 		MPI_Recv(&return_value, 1, MPI_INT, completed_rank, TERMINATE_TAG, MPI_COMM_WORLD, &status);
 		completed++;
 	}
+#ifdef PERFORMANCETRACE
+	end_point_update = std::chrono::high_resolution_clock::now();
+	performance.Update +=
+		std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_update - start_point_update).count();
+#endif
 #endif
 }

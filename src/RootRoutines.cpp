@@ -95,6 +95,10 @@ void RootRoutines() {
 	std::chrono::high_resolution_clock::time_point start_point_map;
 	std::chrono::high_resolution_clock::time_point end_point_map;
 #endif
+#ifdef MultiNode
+	std::chrono::high_resolution_clock::time_point start_point_update;
+	std::chrono::high_resolution_clock::time_point end_point_update;
+#endif
 #endif // performance
 
 	/* Initialization */
@@ -132,14 +136,14 @@ void RootRoutines() {
 
 #ifdef MultiNode
 #ifdef PERFORMANCETRACE
-		start_point_routine = std::chrono::high_resolution_clock::now();
+		start_point_update = std::chrono::high_resolution_clock::now();
 #endif
 		queue_scheduler.updateMultiNode(UpdateInitAcc01); // (Query MultiNode) Update list: a_tot01, NumberOfNeighbor, Neighbors
 #ifdef PERFORMANCETRACE
-		end_point_routine = std::chrono::high_resolution_clock::now();
+		end_point_update = std::chrono::high_resolution_clock::now();
 		// performance.Update += std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
 		std::cout << "Elapsed time during the updateInitAcc01: " 
-			<< std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count()*1e-9 
+			<< std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_update - start_point_update).count()*1e-9 
 			<< " s" << std::endl;
 #endif
 #endif // MultiNode
@@ -165,14 +169,14 @@ void RootRoutines() {
 
 #ifdef MultiNode
 #ifdef PERFORMANCETRACE
-		start_point_routine = std::chrono::high_resolution_clock::now();
+		start_point_update = std::chrono::high_resolution_clock::now();
 #endif
 		queue_scheduler.updateMultiNode(UpdateInitAcc23); // (Query MultiNode) Update list: a_tot23
 #ifdef PERFORMANCETRACE
-		end_point_routine = std::chrono::high_resolution_clock::now();
+		end_point_update = std::chrono::high_resolution_clock::now();
 		// performance.Update += std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
 		std::cout << "Elapsed time during the updateInitAcc23: " 
-			<< std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count()*1e-9 
+			<< std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_update - start_point_update).count()*1e-9 
 			<< " s" << std::endl;
 #endif
 #endif // MultiNode
@@ -297,16 +301,16 @@ void RootRoutines() {
 
 #ifdef MultiNode
 #ifdef PERFORMANCETRACE
-		start_point_routine = std::chrono::high_resolution_clock::now();
+		start_point_update = std::chrono::high_resolution_clock::now();
 #endif
 		queue_scheduler.updateMultiNode(UpdateTimeVariables);	// (Query MultiNode) Update list: TimeStepReg, TimeBlockReg, TimeLevelReg, 
 																// TimeStepIrr, TimeBlockIrr, TimeLevelIrr, 
 																// CurrentTimeIrr, CurrentTimeReg, CurrentBlockIrr, CurrentBlockReg
 #ifdef PERFORMANCETRACE
-		end_point_routine = std::chrono::high_resolution_clock::now();
+		end_point_update = std::chrono::high_resolution_clock::now();
 		// performance.Update += std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
 		std::cout << "Elapsed time during the updateTimeVariables: " 
-			<< std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count()*1e-9 
+			<< std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_update - start_point_update).count()*1e-9 
 			<< " s" << std::endl;
 #endif
 #endif // MultiNode
@@ -389,7 +393,7 @@ void RootRoutines() {
 		}
 #ifdef MultiNode
 #ifdef PERFORMANCETRACE
-		start_point_routine = std::chrono::high_resolution_clock::now();
+		start_point_update = std::chrono::high_resolution_clock::now();
 #endif
 		queue = {UpdateTimeCorrection, NumberOfParticle, -1.0};
 		for (int i=1; i<NumberOfNode; i++) { // (Query MultiNode) It starts from 1 because 0 is root
@@ -407,10 +411,10 @@ void RootRoutines() {
 		}
 		delete[] total_update_list;
 #ifdef PERFORMANCETRACE
-		end_point_routine = std::chrono::high_resolution_clock::now();
+		end_point_update = std::chrono::high_resolution_clock::now();
 		// performance.Update += std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
 		std::cout << "Elapsed time during the updateTimeCorrection: " 
-			<< std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count()*1e-9 
+			<< std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_update - start_point_update).count()*1e-9 
 			<< " s" << std::endl;
 #endif
 #endif // MultiNode
@@ -594,24 +598,24 @@ void RootRoutines() {
 #ifdef DEBUG
 				// print out particlelist
 				fprintf(stdout, "(IRR_FORCE) next_time: %e Myr\n", next_time*EnzoTimeStep*1e4);
-				// /*
-				// fprintf(stdout, "PID: %d. CurrentTimeIrr: %e Myr, TimeStepIrr: %e Myr\n", 
-				// 			particles[ThisLevelNode->ParticleList[0]].PID, 
-				// 			particles[ThisLevelNode->ParticleList[0]].CurrentTimeIrr*EnzoTimeStep*1e4, 
-				// 			particles[ThisLevelNode->ParticleList[0]].TimeStepIrr*EnzoTimeStep*1e4);
+				/*
+				fprintf(stdout, "PID: %d. CurrentTimeIrr: %e Myr, TimeStepIrr: %e Myr\n", 
+							particles[ThisLevelNode->ParticleList[0]].PID, 
+							particles[ThisLevelNode->ParticleList[0]].CurrentTimeIrr*EnzoTimeStep*1e4, 
+							particles[ThisLevelNode->ParticleList[0]].TimeStepIrr*EnzoTimeStep*1e4);
 
-				// fprintf(stdout, "PID (%d) = ", ThisLevelNode->ParticleList.size());
-				// for (int i=0; i<ThisLevelNode->ParticleList.size(); i++) {
-				// 	ptcl = &particles[ThisLevelNode->ParticleList[i]];
-				// 	// fprintf(stdout, "%d, ", ptcl->PID);
-				// 	fprintf(stdout, "PID: %d. %e Myr, %e Myr\n", 
-				// 			ptcl->PID,
-				// 			ptcl->CurrentTimeIrr*EnzoTimeStep*1e4,
-				// 			ptcl->TimeStepIrr*EnzoTimeStep*1e4);
-				// }
-				// fprintf(stdout, "\n");
-				// fflush(stdout);
-				// */
+				fprintf(stdout, "PID (%d) = ", ThisLevelNode->ParticleList.size());
+				for (int i=0; i<ThisLevelNode->ParticleList.size(); i++) {
+					ptcl = &particles[ThisLevelNode->ParticleList[i]];
+					// fprintf(stdout, "%d, ", ptcl->PID);
+					fprintf(stdout, "PID: %d. %e Myr, %e Myr\n", 
+							ptcl->PID,
+							ptcl->CurrentTimeIrr*EnzoTimeStep*1e4,
+							ptcl->TimeStepIrr*EnzoTimeStep*1e4);
+				}
+				fprintf(stdout, "\n");
+				fflush(stdout);
+				*/
 #endif
 
 				// Irregular Force
@@ -768,8 +772,13 @@ void RootRoutines() {
 
 #ifdef PERFORMANCETRACE
                 end_point_routine = std::chrono::high_resolution_clock::now();
+#ifdef MultiNode
+				performance.Update +=
+					std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
+#else
                 performance.IrregularUpdate +=
                     std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
+#endif
 #endif
 
 #ifdef FEWBODY
@@ -807,6 +816,9 @@ void RootRoutines() {
 #endif
 
 #ifdef MultiNode
+#ifdef PERFORMANCETRACE
+								start_point_update = std::chrono::high_resolution_clock::now();
+#endif
 								// (Query MultiNode) We should send information of donor only!!!
 								// Note that CMptclIndex of donor (zero mass particle) should be -1 !!!
 								// CM ptcl? We don't have to send it because CM ptcl is not included in neighbors!!!
@@ -817,7 +829,12 @@ void RootRoutines() {
 								for (int j=1; j<NumberOfNode; j++) { // (Query MultiNode) It starts from 1 because 0 is root
 									MPI_Send(&queue, 1, QueueType, ranks_update_comm[j], QUEUE_TAG, MPI_COMM_WORLD);
 								}
+#ifdef PERFORMANCETRACE
+								end_point_update = std::chrono::high_resolution_clock::now();
+								performance.Update +=
+									std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_update - start_point_update).count();
 #endif
+#endif // MultiNode
 							}
 							else { // from NewFBInitialization3
 
@@ -877,6 +894,9 @@ void RootRoutines() {
 #endif
 								ptcl->setBinaryInterruptState(BinaryInterruptState::none); // I think this should be updated in stable branch by EW 2025.5.29
 #ifdef MultiNode
+#ifdef PERFORMANCETRACE
+								start_point_update = std::chrono::high_resolution_clock::now();
+#endif
 								// (Query MultiNode) This is slightly complex because new binary is created...
 								// We should send information of donor (zero mass particle) & all the members (including accretor) & cm particle (because it is still active)
 								// Note that CMptclIndex of donor (zero mass particle) should be -1 !!!
@@ -889,8 +909,12 @@ void RootRoutines() {
 									else
 										MPI_Send(&queue, 1, QueueType, ranks_update_comm[j], QUEUE_TAG, MPI_COMM_WORLD);
 								}
-
+#ifdef PERFORMANCETRACE
+								end_point_update = std::chrono::high_resolution_clock::now();
+								performance.Update +=
+									std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_update - start_point_update).count();
 #endif
+#endif // MultiNode
 								continue;
 							}
 						}
@@ -902,13 +926,21 @@ void RootRoutines() {
 							LastParticleIndex--;
 							global_variable->LastParticleIndex == LastParticleIndex;
 #ifdef MultiNode
+#ifdef PERFORMANCETRACE
+							start_point_update = std::chrono::high_resolution_clock::now();
+#endif
 							queue.task = UpdateLastParticleIndex;
 							queue.next_time = -1;
 							for (int i=1; i<NumberOfNode; i++) { // (Query MultiNode) It starts from 1 because 0 is root
 								queue.pid = LastParticleIndex;
 								MPI_Send(&queue, 1, QueueType, ranks_update_comm[i], QUEUE_TAG, MPI_COMM_WORLD);
 							}
+#ifdef PERFORMANCETRACE
+							end_point_update = std::chrono::high_resolution_clock::now();
+							performance.Update +=
+								std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_update - start_point_update).count();
 #endif
+#endif // MultiNode
 						}
 						else
 							PrevCMPtclWorker.insert({ptcl->ParticleIndex, CMPtclWorker[ptcl->ParticleIndex]});
@@ -971,6 +1003,9 @@ void RootRoutines() {
 
 				if (bin_termination) {
 #ifdef MultiNode
+#ifdef PERFORMANCETRACE
+					start_point_update = std::chrono::high_resolution_clock::now();
+#endif
 					// (Query MultiNode) We should send information of all the particles from OriginalSize to the end of ParticleList
 					UpdateFBTerm* update_list = new UpdateFBTerm[ThisLevelNode->ParticleList.size() - OriginalSize];
 					int num = 0;
@@ -1046,6 +1081,11 @@ void RootRoutines() {
 						completed++;
 					}
 					delete[] update_list;
+#ifdef PERFORMANCETRACE
+					end_point_update = std::chrono::high_resolution_clock::now();
+					performance.Update +=
+						std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_update - start_point_update).count();
+#endif
 #endif
 
 					// Erase terminated CM particles by EW 2025.1.6
@@ -1149,12 +1189,20 @@ void RootRoutines() {
 #endif
 
 #ifdef MultiNode
+#ifdef PERFORMANCETRACE
+					start_point_update = std::chrono::high_resolution_clock::now();
+#endif
 					queue.task = UpdateLastParticleIndex;
 					queue.next_time = -1;
 					for (int i=1; i<NumberOfNode; i++) { // (Query MultiNode) It starts from 1 because 0 is root
 						queue.pid = LastParticleIndex;
 						MPI_Send(&queue, 1, QueueType, ranks_update_comm[i], QUEUE_TAG, MPI_COMM_WORLD);
 					}
+#ifdef PERFORMANCETRACE
+					end_point_update = std::chrono::high_resolution_clock::now();
+					performance.Update +=
+						std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_update - start_point_update).count();
+#endif
 #endif
 					new_binaries = true;
 
@@ -1209,6 +1257,9 @@ void RootRoutines() {
 						workers[rank_new].runQueue();
 						workers[rank_new].callback();
 #ifdef MultiNode
+#ifdef PERFORMANCETRACE
+						start_point_update = std::chrono::high_resolution_clock::now();
+#endif
 						queue.task = UpdateNewGroup;
 						int nodenum = queue_scheduler.getNodeNumber(rank_new);
 						for (int j = 0; j < NumberOfNode; j++) {
@@ -1223,6 +1274,11 @@ void RootRoutines() {
 							MPI_Recv(&return_value, 1, MPI_INT, completed_rank, TERMINATE_TAG, MPI_COMM_WORLD, &status);
 							completed++;
 						}
+#ifdef PERFORMANCETRACE
+						end_point_update = std::chrono::high_resolution_clock::now();
+						performance.Update +=
+							std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_update - start_point_update).count();
+#endif
 #endif
 
 #ifdef MULTIMAP
@@ -1406,10 +1462,6 @@ void RootRoutines() {
 					queue_scheduler.runQueueAuto();
 					queue_scheduler.waitQueue(0); // blocking wait
 				} while (queue_scheduler.isComplete());
-#ifdef MultiNode
-				queue_scheduler.updateMultiNode(UpdateAfterRegCudaUpdate);
-#endif
-
 #ifdef DEBUG
 				std::cout << "update regular ended" << std::endl;
 #endif
@@ -1422,6 +1474,18 @@ void RootRoutines() {
                 end_point_routine = std::chrono::high_resolution_clock::now();
                 performance.RegularUpdate +=
                     std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
+#endif
+
+#ifdef MultiNode
+#ifdef PERFORMANCETRACE
+				start_point_update = std::chrono::high_resolution_clock::now();
+#endif
+				queue_scheduler.updateMultiNode(UpdateAfterRegCudaUpdate);
+#ifdef PERFORMANCETRACE
+				end_point_update = std::chrono::high_resolution_clock::now();
+				performance.Update +=
+					std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_update - start_point_update).count();
+#endif
 #endif
 
 #ifdef MULTIMAP
@@ -1474,10 +1538,6 @@ void RootRoutines() {
 					queue_scheduler.runQueueAuto();
 					queue_scheduler.waitQueue(0); // blocking wait
 				} while (queue_scheduler.isComplete());
-#ifdef MultiNode
-				queue_scheduler.updateMultiNode(UpdateAfterRegCuda);
-#endif
-
 #ifdef DEBUG
 				std::cout << "Regular force ended" << std::endl;
 #endif
@@ -1490,6 +1550,18 @@ void RootRoutines() {
                 end_point_routine = std::chrono::high_resolution_clock::now();
                 performance.RegularForce +=
                     std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
+#endif
+
+#ifdef MultiNode
+#ifdef PERFORMANCETRACE
+				start_point_update = std::chrono::high_resolution_clock::now();
+#endif
+				queue_scheduler.updateMultiNode(UpdateAfterRegCuda);
+#ifdef PERFORMANCETRACE
+				end_point_update = std::chrono::high_resolution_clock::now();
+				performance.Update +=
+					std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_update - start_point_update).count();
+#endif
 #endif
 
 
@@ -1513,9 +1585,6 @@ void RootRoutines() {
 					queue_scheduler.runQueueAuto();
 					queue_scheduler.waitQueue(0); // blocking wait
 				} while (queue_scheduler.isComplete());
-#ifdef MultiNode
-				queue_scheduler.updateMultiNode(UpdateAfterRegCudaUpdate);
-#endif
 #ifdef DEBUG
 				std::cout << "update regular ended" << std::endl;
 #endif
@@ -1528,6 +1597,18 @@ void RootRoutines() {
                 end_point_routine = std::chrono::high_resolution_clock::now();
                 performance.RegularUpdate +=
                     std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
+#endif
+
+#ifdef MultiNode
+#ifdef PERFORMANCETRACE
+				start_point_update = std::chrono::high_resolution_clock::now();
+#endif
+				queue_scheduler.updateMultiNode(UpdateAfterRegCudaUpdate);
+#ifdef PERFORMANCETRACE
+				end_point_update = std::chrono::high_resolution_clock::now();
+				performance.Update +=
+					std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_update - start_point_update).count();
+#endif
 #endif
 
 #ifdef MULTIMAP
@@ -1560,6 +1641,10 @@ void RootRoutines() {
 			end_point_routine = std::chrono::high_resolution_clock::now();
 			performance.StellarEvolution +=
 				std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
+#endif
+
+#ifdef MultiNode
+			// (Query MultiNode) We should update mass, radius, etc.
 #endif
 
 #endif
