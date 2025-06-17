@@ -492,19 +492,6 @@ void RootRoutines() {
 				task=Ends;
 				queue = {task, -1, -1.0};
 				InitialAssignmentOfTasks(queue, NumberOfWorker, QUEUE_TAG);
-				MPI_Type_free(&QueueType);
-#ifdef MultiNode
-				MPI_Type_free(&UpdateInitAcc1Type);
-				MPI_Type_free(&UpdateInitAcc2Type);
-				MPI_Type_free(&UpdateTimeType);
-				MPI_Type_free(&UpdateTimeCorrType);
-				MPI_Type_free(&UpdateIrrForceType);
-				MPI_Type_free(&UpdateBinaryType);
-				MPI_Type_free(&UpdateFBTermType);
-				MPI_Type_free(&UpdateNewCMType);
-				MPI_Type_free(&UpdateRegCudaType);
-				MPI_Type_free(&UpdateRegCudaUpdateType);
-#endif
 				//MPI_Waitall(NumberOfCommunication, requests, statuses);
 				//NumberOfCommunication = 0;
 				std::cout << EnzoTimeStep << std::endl;

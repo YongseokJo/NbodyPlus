@@ -102,11 +102,27 @@ int main(int argc, char *argv[]) {
 		WorkerRoutines();
 	}
 
-	// Finalize the window and MPI environment
+	// Finalize the window and MPI environment // MPI_Type_free is added by EW 2025.6.17
 	MPI_Win_free(&win);
 	MPI_Win_free(&win2);
 	MPI_Win_free(&win3);
+
+	MPI_Type_free(&QueueType);
+#ifdef MultiNode
+	MPI_Type_free(&UpdateInitAcc1Type);
+	MPI_Type_free(&UpdateInitAcc2Type);
+	MPI_Type_free(&UpdateTimeType);
+	MPI_Type_free(&UpdateTimeCorrType);
+	MPI_Type_free(&UpdateIrrForceType);
+	MPI_Type_free(&UpdateBinaryType);
+	MPI_Type_free(&UpdateFBTermType);
+	MPI_Type_free(&UpdateNewCMType);
+	MPI_Type_free(&UpdateRegCudaType);
+	MPI_Type_free(&UpdateRegCudaUpdateType);
+#endif
+
 	MPI_Finalize();
+
 	return 0;
 }
 
