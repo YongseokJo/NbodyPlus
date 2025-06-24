@@ -109,11 +109,11 @@ int main (int argv, char **argc) {
 	 *******************/
 	
 	//Basic physical parameters
-	int N = 0;		     	    //number of stars, Mcl will be set to 0 if specified!
-	double Mcl = 1e5;               //total mass of the cluster, only used when N is set to 0, necessary for usage of maximum stellar mass relation of Weidner & Kroupa 2007
+	int N = 400000;		     	    //number of stars, Mcl will be set to 0 if specified!
+	double Mcl = 0;               //total mass of the cluster, only used when N is set to 0, necessary for usage of maximum stellar mass relation of Weidner & Kroupa 2007
 	int profile = 0;				//density profile; =0 Plummer sphere, =1 King profile
 	double W0 = 9.0;				//King's W0 paramter [0.3-12.0]
-        double Rh = 0.4;			//cluster half mass radius(pc)
+        double Rh = 1.3440;			//cluster half mass radius(pc)
 	double tcrit = 50;			//Simulation time [N-body units (Myr in Nbody6 custom)]
 	int tf = 4;						//tidal field: =1 Near-field approximation, =2 point-mass galaxy, =3 Allen & Santillan (1991) MW potential (or Sverre's version of it)
 	double RG[3] = {8500.0,0.0,0.0}; //Initial Galactic coordinates of the cluster [pc]
@@ -124,7 +124,7 @@ int main (int argv, char **argc) {
 	int mfunc = 1;					//0 = single mass stars; 1 = use Kroupa (2001) mass function; 2 = use multi power law; 3 = three mass component
 	double single_mass = 0.7;		//stellar mass in case of single-mass cluster 
 //==========================================================
-	int N_o = 0;	// # of ordinary star; for mfunc=3
+	int N_o = 400000;	// # of ordinary star; for mfunc=3
 	int N_n = 0;		// # of neutron star; for mfunc=3
         int N_b = 0;		// # of blackhole; for mfunc=3
         if (N_o+N_n+N_b !=N) {
