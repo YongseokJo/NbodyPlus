@@ -37,6 +37,10 @@ enum TaskName : int8_t {
     UpdateBeforeRegCuda = 42,
     UpdateAfterRegCuda = 43,
     UpdateAfterRegCudaUpdate = 44,
+#ifdef SEVN
+    UpdateStellarEvolution0 = 45,
+    UpdateStellarEvolution1 = 46,
+#endif
 #endif
     Synchronize = 100,
     Ends = -100,
@@ -191,5 +195,24 @@ struct UpdateRegCudaUpdate {
     double radiusofneighbor;
     ULL nextblock_irr;
 };
+#ifdef SEVN
+struct UpdateSEVN0 {
+    int pid;
+    int particletype;
+    double mass;
+    double radius;
+};
+
+struct UpdateSEVN1 {
+    int pid;
+    double dm;
+    double mass;
+    double radius;
+    double velocity[3];
+    long long int binary_state;
+    double a_spin[3];
+    char isactive;
+};
+#endif
 #endif
 #endif

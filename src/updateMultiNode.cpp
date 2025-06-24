@@ -711,4 +711,27 @@ void updateAfterRegCudaUpdate(int update_count, int* update_count_list, int* dis
     delete [] total_update_list;
     total_update_list = nullptr;
 }
+#ifdef SEVN
+void updateStellarEvolution(int update_count) {
+
+    Particle* ptcl;
+
+    UpdateSEVN1* total_update_list = new UpdateSEVN1[update_count];
+
+    MPI_Recv(total_update_list, update_count, UpdateSEVN1Type, ROOT, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    for (int i = 0; i < update_count; ++i) {
+        ptcl = &particles[total_update_list[i].pid];
+
+        ptcl->dm = total_update_list[i].dm;
+        ptcl->Mass = total_update_list[i].mass;
+        ptcl->radius = total_update_list[i].radius;
+        std::memcpy(ptcl->Velocity, total_update_list[i].velocity, sizeof(double) * 3);
+        ptcl->binary_state = total_update_list[i].binary_state;
+        std::memcpy(ptcl->a_spin, total_update_list[i].a_spin, sizeof(double) * 3);
+        ptcl->isActive = total_update_list[i].isactive;
+    }
+    delete[] total_update_list;
+    total_update_list = nullptr;
+}
+#endif
 #endif

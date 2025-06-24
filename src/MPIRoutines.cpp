@@ -26,6 +26,10 @@ MPI_Datatype createUpdateFBTermType();
 MPI_Datatype createUpdateNewCMType();
 MPI_Datatype createUpdateRegCudaType();
 MPI_Datatype createUpdateRegCudaUpdateType();
+#ifdef SEVN
+MPI_Datatype createUpdateSEVN0Type();
+MPI_Datatype createUpdateSEVN1Type();
+#endif
 #endif
 
 void initializeMPI(int argc, char *argv[]) {
@@ -59,6 +63,10 @@ void initializeMPI(int argc, char *argv[]) {
 	UpdateNewCMType 		= createUpdateNewCMType();
 	UpdateRegCudaType 		= createUpdateRegCudaType();
 	UpdateRegCudaUpdateType = createUpdateRegCudaUpdateType();
+#ifdef SEVN
+	UpdateSEVN0Type 		= createUpdateSEVN0Type();
+	UpdateSEVN1Type 		= createUpdateSEVN1Type();
+#endif
 #endif
 	/*
 	// comm for each node
@@ -532,4 +540,49 @@ MPI_Datatype createUpdateRegCudaUpdateType() {
 
 	return UpdateRegCudaUpdateType;
 }
+#ifdef SEVN
+MPI_Datatype createUpdateSEVN0Type() {
+
+	int block_lengths[4] = {1, 1, 1, 1}; // Number of elements in each field
+	MPI_Aint offsets[4];
+	MPI_Datatype types[4] = {MPI_INT, MPI_INT, MPI_DOUBLE, MPI_DOUBLE}; // Match the types in the struct
+
+	// Calculate offsets
+	offsets[0] = offsetof(UpdateSEVN0, pid);
+	offsets[1] = offsetof(UpdateSEVN0, particletype);
+	offsets[2] = offsetof(UpdateSEVN0, mass);
+	offsets[3] = offsetof(UpdateSEVN0, radius);
+
+	// Create the struct datatype
+	MPI_Type_create_struct(4, block_lengths, offsets, types, &UpdateSEVN0Type);
+	MPI_Type_commit(&UpdateSEVN0Type);	
+
+	return UpdateSEVN0Type;
+}
+
+MPI_Datatype createUpdateSEVN1Type() {
+
+	int block_lengths[8] = {1, 1, 1, 1, 3, 1, 3, 1}; // Number of elements in each field
+	MPI_Aint offsets[8];
+	MPI_Datatype types[8] = {MPI_INT, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE,
+		MPI_DOUBLE, MPI_LONG_LONG_INT, MPI_DOUBLE, MPI_CHAR
+	}; // Match the types in the struct
+
+	// Calculate offsets
+	offsets[0] = offsetof(UpdateSEVN1, pid);
+	offsets[1] = offsetof(UpdateSEVN1, dm);
+	offsets[2] = offsetof(UpdateSEVN1, mass);
+	offsets[3] = offsetof(UpdateSEVN1, radius);
+	offsets[4] = offsetof(UpdateSEVN1, velocity);
+	offsets[5] = offsetof(UpdateSEVN1, binary_state);
+	offsets[6] = offsetof(UpdateSEVN1, a_spin);
+	offsets[7] = offsetof(UpdateSEVN1, isactive);
+
+	// Create the struct datatype
+	MPI_Type_create_struct(8, block_lengths, offsets, types, &UpdateSEVN1Type);
+	MPI_Type_commit(&UpdateSEVN1Type);	
+
+	return UpdateSEVN1Type;
+}
+#endif
 #endif

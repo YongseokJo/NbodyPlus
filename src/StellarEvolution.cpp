@@ -4,6 +4,10 @@
 #include <random>
 #include <map>
 
+#ifdef MultiNode
+#include "Queue.h"
+#endif
+
 void UpdateEvolution(Particle* ptcl);
 
 // Start SEVN stellar evolution
@@ -17,7 +21,11 @@ void initializeStellarEvolution() {
 	fflush(SEVNout);
 
     assert(SEVNList.empty());
-
+#ifdef MultiNode
+    UpdateSEVN0 update_target;
+    std::vector<UpdateSEVN0> update_list;
+    update_list.reserve(NumberOfParticle);
+#endif
     for (int i=0; i<NumberOfParticle; i++) {
 
         Particle* ptcl = &particles[i];
@@ -43,8 +51,58 @@ void initializeStellarEvolution() {
         SEVNList.insert({ptcl->WorldTime + ptcl->StellarEvolution->getp(Timestep::ID), ptcl->ParticleIndex});
 
 		ptcl->radius = ptcl->StellarEvolution->getp(Radius::ID)/(utilities::parsec_to_Rsun)/position_unit; // stellar radius in code unit
+#ifdef MultiNode
+        update_target.pid = ptcl->ParticleIndex;
+        update_target.particletype = ptcl->ParticleType;
+        update_target.mass = ptcl->Mass;
+        update_target.radius = ptcl->radius;
+        update_list.push_back(update_target);
+#endif
     }
+
+#ifdef MultiNode
+    Queue queue = {UpdateStellarEvolution0, update_list.size(), 0.0};
+    for (int j = 1; j < NumberOfNode; j++) { // (Query MultiNode) It starts from 1 because 0 is root
+        MPI_Send(&queue, 1, QueueType, ranks_update_comm[j], QUEUE_TAG, MPI_COMM_WORLD);
+        if (update_list.size() > 0)
+            MPI_Send(update_list.data(), update_list.size(), UpdateSEVN0Type, ranks_update_comm[j], 1, MPI_COMM_WORLD);
+    }
+
+    MPI_Status status;
+    int completed = 0;
+    while (completed < NumberOfNode - 1) { // Root node has already completed its job by EW 2025.6.23
+        MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+        int completed_rank = status.MPI_SOURCE;
+        int return_value;
+        MPI_Recv(&return_value, 1, MPI_INT, completed_rank, TERMINATE_TAG, MPI_COMM_WORLD, &status);
+        completed++;
+    }
+#endif
 }
+
+#ifdef MultiNode
+void initializeStellarEvolution_Worker() {
+
+    Queue queue;
+    MPI_Status status;
+    std::vector<UpdateSEVN0> update_list;
+    Particle* ptcl;
+
+    MPI_Recv(&queue, 1, QueueType, ROOT, QUEUE_TAG, MPI_COMM_WORLD, &status);
+    if (queue.pid > 0) {
+        update_list.resize(queue.pid);
+        MPI_Recv(update_list.data(), queue.pid, UpdateSEVN0Type, ROOT, 1, MPI_COMM_WORLD, &status);
+        for (int i = 0; i < queue.pid; i++) {
+            ptcl = &particles[update_list[i].pid];
+
+            ptcl->ParticleType = update_list[i].particletype;
+            ptcl->Mass = update_list[i].mass;
+            ptcl->radius = update_list[i].radius;
+        }
+    }
+    MPI_Send(&queue.pid, 1, MPI_INT, ROOT, TERMINATE_TAG, MPI_COMM_WORLD);
+}
+#endif
 
 void setBHspin(Particle* ptcl) {
     std::random_device rd; // Obtain a random number from hardware
@@ -61,6 +119,11 @@ void setBHspin(Particle* ptcl) {
 void StellarEvolution() {
 
     Particle* ptcl;
+#ifdef MultiNode
+    UpdateSEVN1 update_target;
+    std::vector<UpdateSEVN1> update_list;
+    update_list.reserve(NumberOfParticle);
+#endif
     while (!SEVNList.empty()) {
          
         auto it = SEVNList.begin();
@@ -76,11 +139,41 @@ void StellarEvolution() {
 
         it = SEVNList.erase(it);
         UpdateEvolution(ptcl);
+#ifdef MultiNode
+        update_target.pid = ptcl->ParticleIndex;
+        update_target.dm = ptcl->dm;
+        update_target.mass = ptcl->Mass;
+        update_target.radius = ptcl->radius;
+        for (int i=0; i<3; i++)
+            update_target.velocity[i] = ptcl->Velocity[i];
+        update_target.binary_state = ptcl->binary_state;
+        for (int i=0; i<3; i++)
+            update_target.a_spin[i] = ptcl->a_spin[i];
+        update_target.isactive = ptcl->isActive;
 
+        update_list.push_back(update_target);
+#endif
         if (SEVNList.empty() || SEVNList.begin()->first > global_time * EnzoTimeStep * 1e4)
             break;
     }
     fflush(SEVNout);
+#ifdef MultiNode
+    Queue queue = {UpdateStellarEvolution1, update_list.size(), 0.0};
+    for (int j = 1; j < NumberOfNode; j++) { // (Query MultiNode) It starts from 1 because 0 is root
+        MPI_Send(&queue, 1, QueueType, ranks_update_comm[j], QUEUE_TAG, MPI_COMM_WORLD);
+        MPI_Send(update_list.data(), update_list.size(), UpdateSEVN1Type, ranks_update_comm[j], 1, MPI_COMM_WORLD);
+    }
+
+    MPI_Status status;
+    int completed = 0;
+    while (completed < NumberOfNode - 1) { // Root node has already completed its job by EW 2025.6.23
+        MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+        int completed_rank = status.MPI_SOURCE;
+        int return_value;
+        MPI_Recv(&return_value, 1, MPI_INT, completed_rank, TERMINATE_TAG, MPI_COMM_WORLD, &status);
+        completed++;
+    }
+#endif
 }
 
 void UpdateEvolution(Particle* ptcl) {

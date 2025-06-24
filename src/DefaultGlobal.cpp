@@ -36,6 +36,10 @@ MPI_Datatype UpdateFBTermType;
 MPI_Datatype UpdateNewCMType;
 MPI_Datatype UpdateRegCudaType;
 MPI_Datatype UpdateRegCudaUpdateType;
+#ifdef SEVN
+MPI_Datatype UpdateSEVN0Type;
+MPI_Datatype UpdateSEVN1Type;
+#endif
 #endif
 
 MPI_Datatype QueueType;

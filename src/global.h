@@ -46,6 +46,10 @@ extern MPI_Datatype UpdateFBTermType;
 extern MPI_Datatype UpdateNewCMType;
 extern MPI_Datatype UpdateRegCudaType;
 extern MPI_Datatype UpdateRegCudaUpdateType;
+#ifdef SEVN
+extern MPI_Datatype UpdateSEVN0Type;
+extern MPI_Datatype UpdateSEVN1Type;
+#endif
 #endif
 
 extern int *ActiveIndexToOriginalIndex_orginal;

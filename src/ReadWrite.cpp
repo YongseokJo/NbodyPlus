@@ -13,6 +13,9 @@ void write_out_group(std::ofstream& outputFile, const Particle* ptcl, const Part
 void write_neighbor(std::ofstream& outputFile, const Particle* ptcl);
 #ifdef SEVN
 void initializeStellarEvolution();
+#ifdef MultiNode
+void initializeStellarEvolution_Worker();
+#endif
 #endif
 const int NUM_COLUMNS = 7; // Define the number of columns
 const int width = 18;
@@ -86,11 +89,13 @@ int readData() {
 	inputFile.close();
 
 #ifdef SEVN
-#ifdef MultiNode
-	if (MyRank == ROOT)
+	if (MyRank == ROOT) {
 		initializeStellarEvolution();
-#else
-	initializeStellarEvolution();
+	}
+#ifdef MultiNode
+	else {
+		initializeStellarEvolution_Worker();
+	}
 #endif
 #endif
 

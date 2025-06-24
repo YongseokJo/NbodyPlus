@@ -175,9 +175,11 @@ struct Particle {
 		this->isUpdateToDate = true;
 		this->NumberOfMember = 0;
 
-#ifndef SEVN
 		this->ParticleType = NormalStar+SingleStar;
-		this->radius = 2.25461e-8/position_unit*pow(this->Mass*1e9, 1./3); // stellar radius in code unit
+		this->radius = 2.25461e-8/position_unit*pow(this->Mass*1e9, 1./3); // calibrated from solar radius in code unit
+#ifndef SEVN
+		// this->ParticleType = NormalStar+SingleStar;
+		// this->radius = 2.25461e-8/position_unit*pow(this->Mass*1e9, 1./3); // stellar radius in code unit
 		/*
 		if (this->Mass*1e9 > 8) {
 			this->ParticleType = Blackhole+SingleStar;

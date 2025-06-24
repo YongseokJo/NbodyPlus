@@ -25,6 +25,9 @@ void updateFBTermination(int update_count);
 void updateNewGroup(int ptcl_id);
 void updateAfterRegCuda(int update_count, int* update_count_list, int* displs);
 void updateAfterRegCudaUpdate(int update_count, int* update_count_list, int* displs);
+#ifdef SEVN
+void updateStellarEvolution(int update_count);
+#endif
 #endif
 
 void WorkerRoutines() {
@@ -262,6 +265,12 @@ void WorkerRoutines() {
 
 				updateAfterRegCudaUpdate(ptcl_id, update_count_list, displs);
 				break;
+#ifdef SEVN
+			case UpdateStellarEvolution1:
+
+				updateStellarEvolution(ptcl_id);
+				break;
+#endif
 #endif
 
 			case InitAcc2: // Initialize Acceleration(23)
