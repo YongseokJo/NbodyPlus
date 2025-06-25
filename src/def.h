@@ -1,5 +1,5 @@
-#define FAIL    -1
-#define SUCCESS  1
+// #define FAIL    -1 // crash with mpich, so commeted out by EW 2025.6.24
+// #define SUCCESS  1 // crash with mpich, so commeted out by EW 2025.6.24
 
 
 #define NumberOfTask 20

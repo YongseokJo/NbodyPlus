@@ -74,7 +74,7 @@ class Config {
 		std::unordered_map<std::string, std::string> config_data_;
 };
 
-int readParameterFile() {
+void readParameterFile() {
 	try {
 		Config config;
 		config.read(config_file);
@@ -106,8 +106,7 @@ int readParameterFile() {
 
 	} catch (const std::exception& e) {
 		std::cerr << "Error: " << e.what() << std::endl;
+		std::exit(EXIT_FAILURE);
 	}
-
-	return SUCCESS;
 }
 

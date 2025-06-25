@@ -17,14 +17,14 @@ void initializeStellarEvolution();
 const int NUM_COLUMNS = 7; // Define the number of columns
 const int width = 18;
 
-int readData() {
+bool readData() {
 
 	fprintf(stdout, "Opening %s ...\n", fname);
 	std::ifstream inputFile(fname);
 
 	if (!inputFile) {
 		std::cerr << "Error: Could not open the file." << std::endl;
-		return FAIL;
+		return false;
 	}
 
 	NumberOfParticle = getLineNumber();
@@ -103,7 +103,7 @@ int readData() {
 	delete[] data;
 
 
-	return SUCCESS;
+	return true;
 }
 
 
@@ -129,8 +129,8 @@ int getLineNumber() {
 }
 
 
-int WriteData() {
-	return SUCCESS;
+bool WriteData() {
+	return true;
 }
 
 

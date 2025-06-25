@@ -380,7 +380,7 @@ void RootRoutines() {
 			nvtxRangePushA("createSkipList");
 #endif
 			skiplist = new SkipList(max_level, prob);
-			if (createSkipList(skiplist) == FAIL)
+			if (createSkipList(skiplist) == false)
 				fprintf(stderr, "There are no irregular particles!\nBut is it really happening? check skiplist->display()\n");
 #ifdef NSIGHT
 			nvtxRangePop();
@@ -1409,9 +1409,9 @@ bool createSkipList(SkipList *skiplist) {
 	//fflush(stdout);
 
 	if (skiplist->getFirstNode() == nullptr)
-		return FAIL;
+		return false;
 	else
-		return SUCCESS;
+		return true;
 }
 
 

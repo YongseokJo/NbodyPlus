@@ -406,6 +406,12 @@ void NewFBInitialization3(Group* group) {
 
 	ptclGroup->initialManager();
 	ptclGroup->initialIntegrator(ptclCM->NewNumberOfNeighbor); // Binary tree is made and CM particle is made automatically.
+	ptclCM->NewNumberOfNeighbor = 0;
+	/*
+	After NewFBInitialization3, new binary forms and the same particles are detected as new binary members...
+	I suspect this error happens because NewNumberOfNeighbor was not set to 0.
+	Let's see what happens... by EW 2025.6.25
+	*/
 
 	delete group;
 	ptclCM->GroupInfo = ptclGroup;

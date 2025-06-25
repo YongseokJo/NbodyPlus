@@ -112,7 +112,7 @@ void DefaultGlobal() {
 #ifdef SEVN
 	std::vector<std::string> args = {"empty", // Not used
 		// "-myself", "/data/vinicius/NbodyPlus/SEVN",
-		"-tables", "/data/vinicius/sevn/tables/SEVNtracks_parsec_ov04_AGB", 
+		"-tables", "/home/vinicius/install/sevn_enzo/tables/SEVNtracks_parsec_ov04_AGB", 
 		//  "-tables", "/data/vinicius/NbodyPlus/SEVN/tables/SEVNtracks_MIST_AGB",
 		// "-tables_HE", "/data/vinicius/NbodyPlus/SEVN/tables/SEVNtracks_parsec_pureHe36",
 		// "-turn_WR_to_pureHe", "false",

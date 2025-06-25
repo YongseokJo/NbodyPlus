@@ -39,7 +39,7 @@ void initializeStellarEvolution() {
 		std::vector<std::string> init_params{std::to_string(double(ptcl->Mass*mass_unit)), "0.0002", "0.0", "delayed", "zams", "end", "events"};
 
         size_t id = ptcl->PID;
-        ptcl->StellarEvolution = new Star(sevnio, init_params, id, false);
+        ptcl->StellarEvolution = new StarSEVN(sevnio, init_params, id, false);
         SEVNList.insert({ptcl->WorldTime + ptcl->StellarEvolution->getp(Timestep::ID), ptcl->ParticleIndex});
 
 		ptcl->radius = ptcl->StellarEvolution->getp(Radius::ID)/(utilities::parsec_to_Rsun)/position_unit; // stellar radius in code unit
@@ -171,12 +171,12 @@ void UpdateEvolution(Particle* ptcl) {
 }
 
 // Reference: int Mix::special_evolve(Binstar *binstar) in Processes.cpp of SEVN
-void Mix(Star* star1, Star* star2) {
+void Mix(StarSEVN* star1, StarSEVN* star2) {
 
     // utilities::wait("Hey I have to mix",binstar->getp(BWorldtime::ID),__FILE__,__LINE__);
 
-    Star *donor = star1; //Donor is the star that will set to empty
-    Star *accretor = star2; //Accretor is the star that will remain as results of the mix
+    StarSEVN *donor = star1; //Donor is the star that will set to empty
+    StarSEVN *accretor = star2; //Accretor is the star that will remain as results of the mix
 
     ///Choose the star that remains and the one that is set to empty
     //First handle the general case: the accretor is the more evolved star,

@@ -6,6 +6,7 @@
 #include "GlobalVariable.h"
 #include "global.h"
 #include <mpi.h>
+#include <cstddef>
 #include "Queue.h"
 
 

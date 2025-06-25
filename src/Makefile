@@ -41,8 +41,8 @@ ifdef USE_CUDA
 endif
 
 ifdef USE_SEVN
-    CXXFLAGS += -DSEVN -I/data/vinicius/sevn/build/include/sevn
-    LDFLAGS += -L/data/vinicius/sevn/build/lib64/sevn -lsevn_lib_shared
+    CXXFLAGS += -DSEVN -I/home/vinicius/install/sevn_enzo/build_n15/include/sevn
+    LDFLAGS += -L/home/vinicius/install/sevn_enzo/build_n15/lib64/sevn -lsevn_lib_shared
     CXX_SRCS += StellarEvolution.cpp
 endif
 

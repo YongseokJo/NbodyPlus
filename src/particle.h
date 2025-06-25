@@ -78,7 +78,7 @@ struct Particle {
 
 #ifdef SEVN
 	// For SEVN
-	Star* StellarEvolution;
+	StarSEVN* StellarEvolution;
 	double FormationTime; // Myr // for restart
 	double WorldTime; // Myr // FormationTime + EvolutionTime
 #endif

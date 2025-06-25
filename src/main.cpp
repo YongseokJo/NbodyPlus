@@ -24,9 +24,9 @@ void DefaultGlobal();
 void initializeMPI(int argc, char *argv[]);
 void WorkerRoutines();
 void RootRoutines();
-int Parser(int argc, char *argv[]);
-int readData();
-int readParameterFile();
+void Parser(int argc, char *argv[]);
+bool readData();
+void readParameterFile();
 
 
 int main(int argc, char *argv[]) {
@@ -79,7 +79,7 @@ int main(int argc, char *argv[]) {
 	readParameterFile();
 
 	// Write Particles
-	if (MyRank == ROOT && readData() == FAIL)
+	if (MyRank == ROOT && !readData())
 		fprintf(stderr, "Read Data Failed!\n");
 	
 

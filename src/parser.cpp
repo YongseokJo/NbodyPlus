@@ -2,7 +2,7 @@
 #include "global.h"
 
 
-int Parser(int argc, char *argv[]) {
+void Parser(int argc, char *argv[]) {
 	for (int i = 1; i < argc; ++i) {
 
 		std::string arg = argv[i];
@@ -18,13 +18,13 @@ int Parser(int argc, char *argv[]) {
 				i++; // Skip the next argument as it's already processed
 			} else {
 				std::cerr << "Error: Missing argument for -c/--config option" << std::endl;
-				return -1; // Error: Missing argument
+				std::exit(EXIT_FAILURE); // Error: Missing argument
 			}
 
 		} else {
 			// Handle unrecognized arguments
 			std::cerr << "Error: Unrecognized argument: " << arg << std::endl;
-			return -11; // Error: Unrecognized argument
+			std::exit(EXIT_FAILURE); // Error: Unrecognized argument
 		}
 	}
 
@@ -34,9 +34,6 @@ int Parser(int argc, char *argv[]) {
 	if (MyRank == ROOT) {
 		std::cout << "Configuration file " << config_file <<  std::endl;
 	}
-
-
-	return SUCCESS;
 }
 
 

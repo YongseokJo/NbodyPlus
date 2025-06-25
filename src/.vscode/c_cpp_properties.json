@@ -6,7 +6,7 @@
                 "${workspaceFolder}/**",
                 "${workspaceFolder}/../SDAR/src",
                 "/home/vinicius/install/openmpi-4.0.5/include",
-                "/data/vinicius/sevn/build/include/sevn"
+                "/home/vinicius/install/sevn_enzo/build_n14/include/sevn"
             ],
             "defines": [
                 "DNSIGHT"

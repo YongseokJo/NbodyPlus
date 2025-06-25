@@ -4,7 +4,7 @@
 #include <map>
 
 #ifdef SEVN
-void Mix(Star* star1, Star* star2);
+void Mix(StarSEVN* star1, StarSEVN* star2);
 void SetRadius(Particle* ptcl);
 #endif
 
@@ -452,7 +452,7 @@ void Merge(Particle* p1, Particle* p2) { // Stellar merger
                 std::vector<std::string> init_params{std::to_string(double(p1->Mass*mass_unit)), "0.0002", "0.0", "delayed", "zams", "end", "events"};
                 size_t id = p1->PID;
 
-                p1->StellarEvolution = new Star(sevnio, init_params, id, false);
+                p1->StellarEvolution = new StarSEVN(sevnio, init_params, id, false);
                 p1->FormationTime = p1->CurrentTimeIrr*EnzoTimeStep*1e4;
                 p1->WorldTime = p1->CurrentTimeIrr*EnzoTimeStep*1e4;
 
