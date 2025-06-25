@@ -65,7 +65,7 @@ void SkeletonRegularWorker(){
 	// Define h_result, NeighborList, h_num_neighbor_array
 
 
-	sendAllParticlesToGPU();
+	sendAllParticlesToGPU(N_start, N_end); #devide j-particles by the number of GPUs
 	// This function contains SendToDeviceMPI
 	// But this code, only processeses bound to GPUs participate in to the preprocessing
 
@@ -317,7 +317,7 @@ void _CloseDevice() {
 }
 
 
-void sendAllParticlesToGPU(double new_time, std::unordered_set<int> RegularList, int *IndexList) {
+void sendAllParticlesToGPU(double new_time, std::unordered_set<int> RegularList, int *IndexList, int N_start, int N_end) {
 
 	#ifdef MultiNode
 	#ifdef PERFORMANCETRACE
@@ -340,7 +340,7 @@ void sendAllParticlesToGPU(double new_time, std::unordered_set<int> RegularList,
 		CUDA_REAL * h_ptcl_j, h_ptcl_i;
 		CUDA_REAL * Radius2;
 		//int size = NumberOfParticle;
-		int size=0, j=0;
+		int size=0, j=0, i=0;
 		int N_target = RegularList.size();
 
 		// allocate memory to the temporary variables
@@ -353,7 +353,8 @@ void sendAllParticlesToGPU(double new_time, std::unordered_set<int> RegularList,
 		double Velocity[3];
 
 		// copy the data of particles to the arrays to be sent
-		for (int idx: indices) {
+		for (int i = N_start; i < N_end; ++i) {
+			int idx = indices[i];
 			ptcl       = &particles[idx];
 	
 			if (!ptcl->isActive) {
@@ -362,32 +363,46 @@ void sendAllParticlesToGPU(double new_time, std::unordered_set<int> RegularList,
 			}
 	
 			// h_ptcl_j[size + k * NumberOfParticle] = PREDICTED POSITION AND VELCOITY;
-			h_ptcl_j[size + 6 * NumberOfParticle] = (CUDA_REAL)ptcl->Mass;
+			h_ptcl_j[i + 6 * NumberOfParticle] = (CUDA_REAL)ptcl->Mass;
 			ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeReg, Position, Velocity);
-			h_ptcl_j[size] = (CUDA_REAL) Position[0];
-			h_ptcl_j[size + NumberOfParticle] = (CUDA_REAL) Position[1];
-			h_ptcl_j[size + 2 * NumberOfParticle] = (CUDA_REAL) Position[2];
-			h_ptcl_j[size + 3 * NumberOfParticle] = (CUDA_REAL) Velocity[0];
-			h_ptcl_j[size + 4 * NumberOfParticle] = (CUDA_REAL) Velocity[1];
-			h_ptcl_j[size + 5 * NumberOfParticle] = (CUDA_REAL) Velocity[2];
+			h_ptcl_j[i] = (CUDA_REAL) Position[0];
+			h_ptcl_j[i + NumberOfParticle] = (CUDA_REAL) Position[1];
+			h_ptcl_j[i + 2 * NumberOfParticle] = (CUDA_REAL) Position[2];
+			h_ptcl_j[i + 3 * NumberOfParticle] = (CUDA_REAL) Velocity[0];
+			h_ptcl_j[i + 4 * NumberOfParticle] = (CUDA_REAL) Velocity[1];
+			h_ptcl_j[i + 5 * NumberOfParticle] = (CUDA_REAL) Velocity[2];
 
+			ActiveIndexToOriginalIndex[size] = idx;
+		}
+	
+
+		for (int idx: indices) {
+			ptcl       = &particles[idx];
+			size++;
+			if (!ptcl->isActive) {
+				// fprintf(stdout, "Skipping inactive particle (%d)\n", ptcl->PID);
+				continue;
+			}
+	
 			if (RegularList.find(idx) != RegularList.end()) {
 				IndexList[j] = size;
 				Radius2[j] = (CUDA_REAL)ptcl->RadiusOfNeighbor; // mass weight?
+
+				ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeReg, Position, Velocity);
 				h_ptcl_i[j] = (CUDA_REAL) Position[0];
 				h_ptcl_i[j + N_target] = (CUDA_REAL) Position[1];
 				h_ptcl_i[j + 2 * N_target] = (CUDA_REAL) Position[2];
 				h_ptcl_i[j + 3 * N_target] = (CUDA_REAL) Velocity[0];
 				h_ptcl_i[j + 4 * N_target] = (CUDA_REAL) Velocity[1];
 				h_ptcl_i[j + 5 * N_target] = (CUDA_REAL) Velocity[2];
-
 				j++;
 			}
 
 			ActiveIndexToOriginalIndex[size] = idx;
 			size++;
 		}
-	
+
+
 		assert(NumberOfParticle == size); // for debugging by EW 2025.1.25
 		SendToDeviceMPI(&size, h_ptcl_j, h_ptcl_i, Radius2, stream, gpu_id);
 
