@@ -72,6 +72,15 @@ void WorkerRoutines() {
 				ptcl = &particles[ptcl_id];
 				ptcl->computeAccelerationReg();
 				break;
+			
+			// In development by Minyong Jung
+			case SendPtcletoGPU:
+				// predict and send particles to device
+				
+			case RegForceGPU:
+				// ptcl_id is not used
+				if (MyRank not in GPURanks) break; // how to define GPURanks?
+				RegAccelerationWorkThread();			
 
 			case IrrUpdate: // Irregular Update Particle
 

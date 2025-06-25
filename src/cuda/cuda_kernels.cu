@@ -1148,3 +1148,114 @@ __global__ void compute_forces_test2(const CUDA_REAL* __restrict__ ptcl, const C
     }
 }
 #endif
+
+
+__global__ void compute_forces_mpi(const CUDA_REAL* __restrict__ ptcl_i, const CUDA_REAL* __restrict__ r2_i,
+			const CUDA_REAL* __restrict__ ptcl_j, CUDA_REAL* __restrict__ acc, const int* indices_i,
+			 int m, int n, int* __restrict__ neighbor, int* num_neighbor, int i_start, int j_start, int NNB){
+
+	// define i and j. in this code, grid is 2D and block is 1D
+    int i = threadIdx.x + blockIdx.x * blockDim.x; // Unique thread index across all blocks
+	int tid = threadIdx.x;
+	int idx_save_size = gridDim.y * m;
+
+	int j_begin = blockIdx.y * n / gridDim.y;
+	int j_end = (blockIdx.y + 1) * n / gridDim.y;
+	if (blockIdx.y == gridDim.y - 1) j_end = n;  // Ensure the last block covers all remaining elements
+	
+	while (i < m + BatchSize){ // even with i > m, the last block needs to assign the shared memory for each tid
+		if (i < m){
+			CUDA_REAL pi_x = ptcl_i[i];
+			CUDA_REAL pi_y = ptcl_i[i + NNB];
+			CUDA_REAL pi_z = ptcl_i[i + 2 * NNB];
+			CUDA_REAL pi_vx = ptcl_i[i + 3 * NNB];
+			CUDA_REAL pi_vy = ptcl_i[i + 4 * NNB];
+			CUDA_REAL pi_vz = ptcl_i[i + 5 * NNB];
+			CUDA_REAL i_r2 = r2_i[i];	
+		}
+		
+		int NumNeighbor = 0;
+		int idx_save = i * gridDim.y + blockIdx.y;
+		// CUDA_REAL save_acc[6] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+		CUDA_REAL ax=0, ay=0, az=0;
+		CUDA_REAL jx=0, jy=0, jz=0;
+		int* BlockNeighbor = &neighbor[NNB_per_block*idx_save]; // Pointer to the neighbor list of the current block
+
+		for (int j=j_begin; j < j_end; j+=BatchSize){ // total particles
+			int current_batch_size = min(BatchSize, j_end - j);
+			// printf("i, j, j_begin, j_end: %d, %d, %d, %d\n", i, j, j_begin, j_end);
+
+			// assing shared particles for BatchSize particles to each block
+			// __shared__ CUDA_REAL sh_ptcl[BatchSize*7];
+			__shared__ CUDA_REAL sh_pos_x[BatchSize];
+			__shared__ CUDA_REAL sh_pos_y[BatchSize];
+			__shared__ CUDA_REAL sh_pos_z[BatchSize];
+			__shared__ CUDA_REAL sh_vel_x[BatchSize];
+			__shared__ CUDA_REAL sh_vel_y[BatchSize];
+			__shared__ CUDA_REAL sh_vel_z[BatchSize];
+			__shared__ CUDA_REAL sh_mass[BatchSize];
+
+			__syncthreads();
+			if (tid < current_batch_size) {
+				sh_pos_x[tid] = ptcl[j + tid];
+				sh_pos_y[tid] = ptcl[j + tid + NNB];
+				sh_pos_z[tid] = ptcl[j + tid + 2 * NNB];
+				sh_vel_x[tid] = ptcl[j + tid + 3 * NNB];
+				sh_vel_y[tid] = ptcl[j + tid + 4 * NNB];
+				sh_vel_z[tid] = ptcl[j + tid + 5 * NNB];
+				sh_mass[tid]  = ptcl[j + tid + 6 * NNB];
+			}
+			__syncthreads();
+
+            #pragma unroll 4
+			for (int jj=0; jj<current_batch_size; jj++){
+
+				if (i<m){
+					// Calculate forces
+					CUDA_REAL dx = sh_pos_x[jj] - pi_x;
+					CUDA_REAL dy = sh_pos_y[jj] - pi_y;
+					CUDA_REAL dz = sh_pos_z[jj] - pi_z;
+					CUDA_REAL magnitude2 = dx*dx + dy*dy + dz*dz;
+					// int idx = i * n + (j + jj);
+					// neighbor[idx] = isNeighbor;
+
+					if (magnitude2 > i_r2) {
+						// Calculate velocity differences
+						CUDA_REAL dvx = sh_vel_x[jj] - pi_vx;
+						CUDA_REAL dvy = sh_vel_y[jj] - pi_vy;
+						CUDA_REAL dvz = sh_vel_z[jj] - pi_vz;
+						CUDA_REAL inv_sqrt_m2 = rsqrt(magnitude2);
+						CUDA_REAL inv_m2 = inv_sqrt_m2 * inv_sqrt_m2; // or 1 / magnitude2
+						CUDA_REAL scale = sh_mass[jj] * inv_sqrt_m2 * inv_m2;
+						// Calculate adot_temp
+						CUDA_REAL common_factor = 3.0 * (dx*dvx + dy*dvy + dz*dvz) * inv_m2;
+						
+						ax += scale * dx;
+						ay += scale * dy;
+						az += scale * dz;
+						jx += scale * (dvx - common_factor * dx);
+						jy += scale * (dvy - common_factor * dy);
+						jz += scale * (dvz - common_factor * dz);
+
+					}
+					else if (indices_i[i_start + i] != j_start + j + jj) { // checck this if we shuffled the j_ptcl
+						BlockNeighbor[NumNeighbor++] = j_start + j + jj;
+						assert (NumNeighbor < NNB_per_block);
+					}
+				} // end of if (i < m)
+			} // end of jj loop
+		}// end of j loop
+
+		if (i < m){
+			// printf("i, bIdx.y, i_ptcl: (ax, adotx): %d, %d, %d, %.3e, %.3e, %.3e, %d %d %d\n", i, blockIdx.y, i_ptcl, save_acc[2], save_acc[5], pi_x, NumNeighbor, j_begin, j_end);
+			acc[idx_save] = ax;
+			acc[idx_save + idx_save_size] = ay;
+			acc[idx_save + 2 * idx_save_size] = az;
+			acc[idx_save + 3 * idx_save_size] = jx;
+			acc[idx_save + 4 * idx_save_size] = jy;
+			acc[idx_save + 5 * idx_save_size] = jz;
+			num_neighbor[idx_save] = NumNeighbor;
+		}
+		i += gridDim.x * blockDim.x;
+	} //end of i loop
+}
