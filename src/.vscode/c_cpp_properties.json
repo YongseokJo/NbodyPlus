@@ -6,25 +6,23 @@
                 "${workspaceFolder}/**",
                 "${workspaceFolder}/../SDAR/src",
                 "/home/vinicius/install/openmpi-4.0.5/include",
-                "/home/vinicius/install/sevn_enzo/build_n14/include/sevn"
+                "/home/vinicius/install/sevn_enzo/build_n15/include/sevn"
             ],
             "defines": [
-                "DNSIGHT"
+                "PERFORMANCETRACE",
+                "CUDA",
+                "FEWBODY",
+                "AR_TTL",
+                "AR_SLOWDOWN_TREE",
+                "AR_SLOWDOWN_TIMESCALE",
+                "SEVN",
+                "SEVN_BINARY"
             ],
             "compilerPath": "/usr/bin/gcc",
             "cStandard": "c17",
             "cppStandard": "gnu++17",
             "intelliSenseMode": "linux-gcc-x64",
-            "configurationProvider": "ms-vscode.makefile-tools",
-            "compilerArgs": [
-                "-DPERFORMANCETRACE",
-                "-DAR_TTL ",
-                "-DAR_SLOWDOWN_TREE ",
-                "-DAR_SLOWDOWN_TIMESCALE",
-                "-DFEWBODY",
-                "-DCUDA",
-                "-DSEVN"
-            ]
+            "configurationProvider": "ms-vscode.makefile-tools"
         }
     ],
     "version": 4

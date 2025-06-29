@@ -117,13 +117,18 @@ void DefaultGlobal() {
 		// "-tables_HE", "/data/vinicius/NbodyPlus/SEVN/tables/SEVNtracks_parsec_pureHe36",
 		// "-turn_WR_to_pureHe", "false",
 		"-snmode", "delayed",
-		"-Z", "0.0002",
+		// "-Z", "0.0002",
 		"-spin", "0.0",
 		"-tini", "zams", 
 		"-tf", "end",
 		// "-tf", "0.000122",
 		"-dtout", "events",
-		"-xspinmode", "geneva"};
+		"-xspinmode", "geneva",
+		"-hardmode", "disabled", // binary hardening due to external perturbers
+		"-collmode", "disabled", // collision at periastron
+		// "-circmode", "disabled", // orbital circularisation; default: circualise conseving the binary angular momentum
+		// "-tmode", "disabled", // equilibrium tides
+		"-gwmode", "disabled"}; // Peters formula; this is considered in SDAR
 	std::vector<char*> c_args;
 	for (auto& arg : args) {
 		c_args.push_back(&arg[0]);

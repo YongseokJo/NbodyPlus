@@ -3,6 +3,7 @@
 
 #include "def.h"
 #include <cmath>
+#include "cstring"
 
 // SDAR
 #include "Common/Float.h"
@@ -10,6 +11,9 @@
 #include <iomanip>
 #ifdef SEVN
 #include "star.h" // Eunwoo added for SEVN
+#ifdef SEVN_BINARY
+#include "binstar.h"
+#endif
 #endif
 
 extern double InitialNeighborRadius;
@@ -79,6 +83,9 @@ struct Particle {
 #ifdef SEVN
 	// For SEVN
 	StarSEVN* StellarEvolution;
+#ifdef SEVN_BINARY
+	Binstar* BinaryEvolution;
+#endif
 	double FormationTime; // Myr // for restart
 	double WorldTime; // Myr // FormationTime + EvolutionTime
 #endif
@@ -129,6 +136,9 @@ struct Particle {
 		NumberOfMember = 0;
 #ifdef SEVN
 		StellarEvolution = nullptr;
+#ifdef SEVN_BINARY
+		BinaryEvolution = nullptr;
+#endif
 		FormationTime = 0.0; // Myr
 		WorldTime = 0.0; // Myr
 #endif
@@ -346,8 +356,7 @@ struct Particle {
 	// made by EW 2025.1.6
 	void copyNewNeighbor(Particle* ptcl) {
 		this->NewNumberOfNeighbor = ptcl->NewNumberOfNeighbor;
-		for (int i = 0; i < ptcl->NewNumberOfNeighbor; i++)
-			this->NewNeighbors[i] = ptcl->NewNeighbors[i];
+		std::memcpy(this->NewNeighbors, ptcl->NewNeighbors, sizeof(int)*ptcl->NewNumberOfNeighbor);
 	}
 	
 };

@@ -4,7 +4,12 @@
 #include <random>
 #include <map>
 
+#ifdef SEVN_BINARY
+void UpdateEvolution(Particle* ptcl, bool from_BSE);
+void UpdateBinaryEvolution(Particle* ptcl);
+#else
 void UpdateEvolution(Particle* ptcl);
+#endif
 
 // Start SEVN stellar evolution
 // Set stellar radii, BH spin, etc
@@ -65,7 +70,31 @@ void StellarEvolution() {
          
         auto it = SEVNList.begin();
         ptcl = &particles[it->second];
+#ifdef SEVN_BINARY
+        if (ptcl->isCMptcl) {
+            ptcl->WorldTime += ptcl->BinaryEvolution->getp(BTimestep::ID);
+            for (int i=0; i<ptcl->NumberOfMember; i++) {
+                Particle* member = &particles[ptcl->Members[i]];
+                member->WorldTime += ptcl->BinaryEvolution->getp(BTimestep::ID);
+            }
+            ptcl->BinaryEvolution->evolve();
 
+            while (ptcl->WorldTime + ptcl->BinaryEvolution->getp(BTimestep::ID) <= global_time * EnzoTimeStep * 1e4) {
+                ptcl->WorldTime += ptcl->BinaryEvolution->getp(BTimestep::ID);
+                for (int i=0; i<ptcl->NumberOfMember; i++) {
+                    Particle* member = &particles[ptcl->Members[i]];
+                    member->WorldTime += ptcl->BinaryEvolution->getp(BTimestep::ID);
+                }
+                ptcl->BinaryEvolution->evolve();
+            }
+
+            it = SEVNList.erase(it);
+            UpdateBinaryEvolution(ptcl);
+
+            if (SEVNList.empty() || SEVNList.begin()->first > global_time * EnzoTimeStep * 1e4)
+                break;
+        }
+#endif
         ptcl->WorldTime += ptcl->StellarEvolution->getp(Timestep::ID);
         ptcl->StellarEvolution->evolve();
 
@@ -75,7 +104,11 @@ void StellarEvolution() {
         }
 
         it = SEVNList.erase(it);
+#ifdef SEVN_BINARY
+        UpdateEvolution(ptcl, false);
+#else
         UpdateEvolution(ptcl);
+#endif
 
         if (SEVNList.empty() || SEVNList.begin()->first > global_time * EnzoTimeStep * 1e4)
             break;
@@ -83,10 +116,19 @@ void StellarEvolution() {
     fflush(SEVNout);
 }
 
+#ifdef SEVN_BINARY
+void UpdateEvolution(Particle* ptcl, bool from_BSE) {
+#else
 void UpdateEvolution(Particle* ptcl) {
+#endif
 
     if (!ptcl->StellarEvolution->amiremnant()) {
+#ifdef SEVN_BINARY
+        if (!from_BSE)
+            SEVNList.insert({ptcl->WorldTime + ptcl->StellarEvolution->getp(Timestep::ID), ptcl->ParticleIndex});
+#else
         SEVNList.insert({ptcl->WorldTime + ptcl->StellarEvolution->getp(Timestep::ID), ptcl->ParticleIndex});
+#endif
         // fprintf(SEVNout, "PID: %d, Phase: %d, Mass: %e Msol, Radius: %e pc, Time: %e Myr, Worldtime: %e Myr\n", ptcl->PID, int(ptcl->StellarEvolution->getp(Phase::ID)), ptcl->StellarEvolution->getp(Mass::ID), ptcl->StellarEvolution->getp(Radius::ID)/(utilities::parsec_to_Rsun), ptcl->WorldTime, ptcl->StellarEvolution->getp(Worldtime::ID));
         ptcl->dm += ptcl->Mass - ptcl->StellarEvolution->getp(Mass::ID)/mass_unit; // Eunwoo: dm should be 0 after it distributes its mass to the nearby gas cells.
         ptcl->Mass = ptcl->StellarEvolution->getp(Mass::ID)/mass_unit;
@@ -322,5 +364,262 @@ void SetRadius(Particle* ptcl) {
     else if (ptcl->StellarEvolution->amiBH())
         ptcl->radius = 2*ptcl->Mass/pow(299752.458/(velocity_unit/yr*pc/1e5), 2); // Schwartzschild radius in code unit
 }
+
+#ifdef SEVN_BINARY
+/* by EW 2025.6.27
+    Important note: In current version, binary members are DELETED in the SEVNList.
+    + CM ptcl will be added in the SEVNList.
+    If this takes too much time, we should consider to use a different approach.
+    How about not using SEVNList at all, and applying stellar evolution at every irregular timestep?
+*/
+// Return false if (P)PISN happens
+bool makeSEVNBinary(Particle* ptclCM) {
+
+    assert(!ptclCM->isActive);
+
+    // Activate binary stellar evolution iff there are two members in the binary
+	int NumberOfMembers=0;
+    Particle* ptcl1 = &particles[ptclCM->NewNeighbors[0]];
+	for (int i = 0; i < ptclCM->NewNumberOfNeighbor; ++i) {
+		Particle* members = &particles[ptclCM->NewNeighbors[i]];
+        if (members->CurrentTimeIrr > ptcl1->CurrentTimeIrr) {
+        	ptcl1 = members;
+    	}
+		if (!members->isCMptcl)
+			NumberOfMembers++;
+		else {
+			NumberOfMembers += members->NewNumberOfNeighbor;
+            if (members->BinaryEvolution != nullptr) {
+
+                assert(members->NewNumberOfNeighbor == 2);
+
+                fprintf(SEVNout, "SEVN BSE... BSE can't be applied to many-body case. Binary object (PID: %d) should be deleted!!!\n", members->PID);
+
+                auto it = SEVNList.begin();
+                while (it != SEVNList.end()) {
+                    if (it->second == members->ParticleIndex) {
+                        it = SEVNList.erase(it);
+                        fprintf(SEVNout, "Binary object (PID: %d) is deleted from SEVNList\n", members->PID);
+                        break;
+                    }
+                    else
+                        it++;
+                }
+                members->BinaryEvolution->custom_destructor();
+                fprintf(SEVNout, "Binary object (PID: %d) SEVN memory is free now\n", members->PID);
+
+                for (int j=0; j<members->NewNumberOfNeighbor; j++) {
+                    Particle* ptcl = &particles[members->NewNeighbors[j]];
+                    if (!ptcl->StellarEvolution->amiremnant())
+                        SEVNList.insert({ptcl->WorldTime + ptcl->StellarEvolution->getp(Timestep::ID), ptcl->ParticleIndex});
+                }
+                return true;
+            }
+        }
+    }
+    if (NumberOfMembers != 2)
+        return true;
+
+    double BinaryFormationTime = ptcl1->CurrentTimeIrr; // in code unit
+    
+    ptcl1 = &particles[ptclCM->NewNeighbors[0]];
+    StarSEVN* star1 = ptcl1->StellarEvolution;
+
+    Particle* ptcl2 = &particles[ptclCM->NewNeighbors[1]];
+    StarSEVN* star2 = ptcl2->StellarEvolution;
+
+    // Make BSE object iff both members have StellarEvolution objects
+    if (star1 == nullptr || star2 == nullptr)
+        return true;
+
+    double pos1[3], pos2[3], vel1[3], vel2[3]; // position and velocity vectors at BinaryFormationTime
+    double dr[3], dv[3], M; // relative position and velocity vectors, total mass
+    double energy; // specific orbital energy
+    double semi, ecc; // semi-major axis and eccentricity
+    double h[3]; // specific angular momentum vector
+
+    ptcl1->predictParticleSecondOrder(BinaryFormationTime, pos1, vel1);
+    ptcl2->predictParticleSecondOrder(BinaryFormationTime, pos2, vel2);
+
+    for (int dim=0; dim<Dim; dim++) {
+        dr[dim] = pos2[dim] - pos1[dim];
+        dv[dim] = vel2[dim] - vel1[dim];
+    }
+    M = ptcl1->Mass + ptcl2->Mass;
+    energy = 0.5 * mag(dv) - M / sqrt(mag(dr));
+    semi = - M / (2.0 * energy); // semi-major axis in code unit
+
+    h[0] = dr[1] * dv[2] - dr[2] * dv[1];
+    h[1] = dr[2] * dv[0] - dr[0] * dv[2];
+    h[2] = dr[0] * dv[1] - dr[1] * dv[0];
+
+    ecc = sqrt(1 + (2 * energy * mag(h)) / (M * M));
+
+    // Apply binary stellar evolution iff the binary orbit is bound
+    if (ecc < 0.0)
+        return true;
+
+    // for debugging by EW 2025.6.26
+    fprintf(SEVNout, "SEVN BSE... CM PID: %d. semi: %e pc, ecc: %e\n", ptclCM->PID, semi * position_unit, ecc);
+
+    semi = semi * position_unit * utilities::parsec_to_Rsun; // semi-major axis in Rsun
+
+    BinaryFormationTime *= EnzoTimeStep*1e4; // in Myr unit
+    double dt; // timestep in Myr
+
+    if (BinaryFormationTime > ptcl1->WorldTime) {
+
+        dt = BinaryFormationTime - ptcl1->WorldTime;
+        star1->sync_with(dt);
+        star1->evolve();
+        ptcl1->WorldTime = BinaryFormationTime;
+        UpdateEvolution(ptcl1, true);
+
+        if (star1->amiremnant()) {
+            auto it = SEVNList.begin();
+            while (it != SEVNList.end()) {
+                if (it->second == ptcl1->ParticleIndex) {
+                    it = SEVNList.erase(it);
+                    fprintf(SEVNout, "Remnant particle (PID: %d) is deleted from SEVNList\n", ptcl1->PID);
+                    break;
+                }
+                else
+                    it++;
+            }
+            if (star1->amiempty() || (star1->vkick[3] > 0.0)) {
+                fprintf(SEVNout, "SEVN BSE... No binary is created!!!\n");
+                ptclCM->NewNumberOfNeighbor = 0;
+                return false;
+            }
+        }
+    }
+    if (BinaryFormationTime > ptcl2->WorldTime) {
+
+        dt = BinaryFormationTime - ptcl2->WorldTime;
+        star2->sync_with(dt);
+        star2->evolve();
+        ptcl2->WorldTime = BinaryFormationTime;
+        UpdateEvolution(ptcl2, true);
+
+        if (star2->amiremnant()) {
+            auto it = SEVNList.begin();
+            while (it != SEVNList.end()) {
+                if (it->second == ptcl2->ParticleIndex) {
+                    it = SEVNList.erase(it);
+                    fprintf(SEVNout, "Remnant particle (PID: %d) is deleted from SEVNList\n", ptcl2->PID);
+                    break;
+                }
+                else
+                    it++;
+            }
+            if (star2->amiempty() || (star2->vkick[3] > 0.0)) {
+                fprintf(SEVNout, "SEVN BSE... No binary is created!!!\n");
+                ptclCM->NewNumberOfNeighbor = 0;
+                return false;
+            }
+        }
+    }
+
+    std::stringstream star1_percent;
+    star1_percent << "%" << static_cast<int>(star1->plife() * 100) 
+        << ":" << static_cast<int>(star1->getp(Phase::ID));
+
+    std::stringstream star2_percent;
+    star2_percent << "%" << static_cast<int>(star2->plife() * 100)
+        << ":" << static_cast<int>(star2->getp(Phase::ID));
+
+    // Mass, metallicity, spin, sn model, tini for star1
+    // Mass, metallicity, spin, sn model, tini for star2
+    // Semi-major axis (Rsun), eccentricity, tf, dtout, random seed(optional)
+    std::vector<std::string> init_params_bin{
+        std::to_string(star1->get_zams()), std::to_string(star1->get_Z()), "0.0", "delayed", star1_percent.str(), 
+        std::to_string(star2->get_zams()), std::to_string(star2->get_Z()), "0.0", "delayed", star2_percent.str(), 
+        std::to_string(semi), std::to_string(ecc), "broken", "all"
+    };
+
+    size_t id = ptclCM->PID;
+    Binstar* binstar = new Binstar(sevnio, init_params_bin, star1, star2, id);
+    fprintf(SEVNout, "SEVN BSE... New Binstar is successfully created. CM PID: %d\n");
+
+    ptclCM->BinaryEvolution = binstar;
+    ptclCM->FormationTime = BinaryFormationTime; // in Myr unit
+    ptclCM->WorldTime = BinaryFormationTime; // in Myr unit
+
+    int total = 0;
+    if (!star1->amiremnant())
+        total++;
+    if (!star2->amiremnant())
+        total++;
+    if (total > 0) {
+        fprintf(SEVNout, "SEVN BSE... %d objects should be deleted from SEVNList\n", total);
+
+        int num_del = 0;
+        auto it = SEVNList.begin();
+        while (it != SEVNList.end()) {
+            if (it->second == ptcl1->ParticleIndex || it->second == ptcl2->ParticleIndex) {
+                Particle* ptcl = &particles[it->second];
+                it = SEVNList.erase(it);
+                num_del++;
+                fprintf(SEVNout, "PISN induced zero mass particle (PID: %d) is deleted from SEVNList\n", ptcl->PID);
+                if (num_del == total)
+                    break;
+            }
+            else
+                it++;
+        }
+        assert(num_del == total); // we should delete two particles from the SEVNList
+    }
+
+    SEVNList.insert({ptclCM->WorldTime + binstar->getp(Timestep::ID), ptclCM->ParticleIndex}); // (BSE Query) This should be treated very carefully!!! by EW 2025.6.27
+    fprintf(SEVNout, "SEVN BSE... BSE object (PID: %d) is inserted into SEVNList\n", ptclCM->PID);
+
+    return true;
+}
+
+void deleteSEVNBinary(Particle* ptclCM) {
+
+    if (ptclCM->BinaryEvolution == nullptr)
+        return;
+
+    assert(ptclCM->NumberOfMember == 2);
+
+    fprintf(SEVNout, "SEVN BSE... Binary object (PID: %d) should be deleted\n", ptclCM->PID);
+
+    auto it = SEVNList.begin();
+    while (it != SEVNList.end()) {
+        if (it->second == ptclCM->ParticleIndex) {
+            it = SEVNList.erase(it);
+            fprintf(SEVNout, "Binary object (PID: %d) is deleted from SEVNList\n", ptclCM->PID);
+            break;
+        }
+        else
+            it++;
+    }
+    ptclCM->BinaryEvolution->custom_destructor();
+    fprintf(SEVNout, "Binary object (PID: %d) SEVN memory is free now\n", ptclCM->PID);
+
+    for (int j=0; j<ptclCM->NumberOfMember; j++) {
+        Particle* ptcl = &particles[ptclCM->Members[j]];
+        assert(ptcl->StellarEvolution != nullptr);
+        if (!ptcl->StellarEvolution->amiremnant())
+            SEVNList.insert({ptcl->WorldTime + ptcl->StellarEvolution->getp(Timestep::ID), ptcl->ParticleIndex});
+    }
+    return;
+}
+
+void UpdateBinaryEvolution(Particle* ptclCM) {
+    
+    /*
+    There are 20 binary events...
+    Let's check what happens to Binstar if PISN happen for a member -> broken or not?
+    How about merger/CE driven merger/RLOF driven merger -> broken or not / what happens to donor? 
+
+    If merger-like things happen, we should delete Binstar, and terminate SDAR too! -> FBTermination?
+    After binary evolution, let's correct semi-major axis and eccentricity by calculating orbital parameters
+    */
+
+    
+}
+#endif
 
 #endif

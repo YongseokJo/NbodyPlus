@@ -41,6 +41,10 @@ void updateNextRegTime(std::unordered_set<int>& RegularList);
 
 #ifdef SEVN
 void StellarEvolution();
+#ifdef SEVN_BINARY
+bool makeSEVNBinary(Particle* ptclCM);
+void deleteSEVNBinary(Particle* ptclCM);
+#endif
 #endif
 
 Worker* workers;
@@ -755,6 +759,10 @@ void RootRoutines() {
 							std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_map - start_point_map).count();
 #endif
 #endif // multimap
+
+#ifdef SEVN_BINARY
+						deleteSEVNBinary(ptcl);
+#endif
 						FBTermination(ptcl);
 					}
 				}
@@ -929,6 +937,11 @@ void RootRoutines() {
 						rank_new = CMPtclWorker[ptclCM->ParticleIndex];
 #ifdef DEBUG
 						fprintf(stdout, "Rank of CM ptcl %d: %d\n", ptclCM->PID, rank_new);
+#endif
+
+#ifdef SEVN_BINARY
+						if (!makeSEVNBinary(ptclCM))
+							continue;
 #endif
 						queue.task = MakeGroup;
 						queue.pid = ptclCM->ParticleIndex;
