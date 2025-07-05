@@ -68,8 +68,10 @@ typedef unsigned long long ULL;
 #define CUDA_FLOAT
 #ifdef CUDA_FLOAT
 #define CUDA_REAL float
+#define MPI_CUDA MPI_FLOAT
 #else
 #define CUDA_REAL double
+#define MPI_CUDA MPI_DOUBLE
 #endif
 
 #define nbodymax 100000000 //100000000 for node14
@@ -80,3 +82,4 @@ typedef unsigned long long ULL;
 //#define BatchSize 32 // each thread calculates BatchSize particles
 //#define GridDimY 16 // each block calcuates NNB/GridDimY particles
 //#define NNB_per_block 128
+

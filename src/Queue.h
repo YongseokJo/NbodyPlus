@@ -42,6 +42,8 @@ enum TaskName : int8_t {
     UpdateStellarEvolution1 = 46,
 #endif
 #endif
+    RegSend = 60,
+    RegCal = 61,
     Synchronize = 100,
     Ends = -100,
     Error = -1

@@ -6,7 +6,6 @@
 #include "./FewBody/Group.h"
 #include "performance.h"
 #include <mpi.h>
-
 #ifdef SEVN
 #include "IO.h"
 #include <map>

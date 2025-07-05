@@ -282,7 +282,6 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueSch
 
 
 	delete[] IndexList;
-
 	delete[] AccRegReceive;
 	delete[] AccRegDotReceive;
 	delete[] AccIrr;

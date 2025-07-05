@@ -37,7 +37,7 @@ ifdef USE_CUDA
 	NVCC_FLAGS_DEBUG = -g -G --device-debug -lineinfo
 	LDFLAGS += -L/usr/local/cuda/lib64/ -lcudart -lcublas -lnvToolsExt -lcuda
 	CXX_SRCS += cuda/CalculateRegularAcceleration.cpp
-	CU_SRCS = cuda/cuda_my_acceleration.cu cuda/cuda_kernels.cu
+	CU_SRCS = cuda/cuda_my_acceleration.cu cuda/cuda_kernels.cu cuda/regular_worker.cu
 endif
 
 ifdef USE_SEVN

@@ -30,6 +30,7 @@ void formPrimordialBinaries(int beforeLastParticleIndex);
 void formBinaries(std::vector<int>& ParticleList, std::vector<int>& newCMptcls, std::unordered_map<int, int>& existing, std::unordered_map<int, int>& terminated);
 void FBTermination(Particle* ptclCM);
 void Merge(Particle* p1, Particle* p2);
+void RegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueScheduler &queue_scheduler);
 
 #ifdef MULTIMAP
 void createRegularMap(std::multimap<ULL,int>& RegularMap);
@@ -1419,7 +1420,9 @@ void RootRoutines() {
 				std::cout << "RegularList size: " << RegularList.size() << std::endl;
 #endif
 
-				calculateRegAccelerationOnGPU(RegularList, queue_scheduler);
+				// calculateRegAccelerationOnGPU(RegularList, queue_scheduler); //original code
+				RegAccelerationOnGPU(RegularList, queue_scheduler);
+				
 
 #ifdef DEBUG
 				std::cout << "calculateRegAccelerationOnGPU ended" << std::endl;

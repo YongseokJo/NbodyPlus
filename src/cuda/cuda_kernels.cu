@@ -1152,7 +1152,7 @@ __global__ void compute_forces_test2(const CUDA_REAL* __restrict__ ptcl, const C
 
 __global__ void compute_forces_mpi(const CUDA_REAL* __restrict__ ptcl_i, const CUDA_REAL* __restrict__ r2_i,
 			const CUDA_REAL* __restrict__ ptcl_j, CUDA_REAL* __restrict__ acc, const int* indices_i,
-			 int m, int n, int* __restrict__ neighbor, int* num_neighbor, int i_start, int j_start, int NNB){
+			 int m, int n, int* __restrict__ neighbor, int* num_neighbor, int i_start, int j_start, int N_j){
 
 	// define i and j. in this code, grid is 2D and block is 1D
     int i = threadIdx.x + blockIdx.x * blockDim.x; // Unique thread index across all blocks
@@ -1163,15 +1163,16 @@ __global__ void compute_forces_mpi(const CUDA_REAL* __restrict__ ptcl_i, const C
 	int j_end = (blockIdx.y + 1) * n / gridDim.y;
 	if (blockIdx.y == gridDim.y - 1) j_end = n;  // Ensure the last block covers all remaining elements
 	
+	CUDA_REAL pi_x, pi_y, pi_z, pi_vx, pi_vy, pi_vz, i_r2;
 	while (i < m + BatchSize){ // even with i > m, the last block needs to assign the shared memory for each tid
 		if (i < m){
-			CUDA_REAL pi_x = ptcl_i[i];
-			CUDA_REAL pi_y = ptcl_i[i + NNB];
-			CUDA_REAL pi_z = ptcl_i[i + 2 * NNB];
-			CUDA_REAL pi_vx = ptcl_i[i + 3 * NNB];
-			CUDA_REAL pi_vy = ptcl_i[i + 4 * NNB];
-			CUDA_REAL pi_vz = ptcl_i[i + 5 * NNB];
-			CUDA_REAL i_r2 = r2_i[i];	
+			pi_x = ptcl_i[i];
+			pi_y = ptcl_i[i + m];
+			pi_z = ptcl_i[i + 2 * m];
+			pi_vx = ptcl_i[i + 3 * m];
+			pi_vy = ptcl_i[i + 4 * m];
+			pi_vz = ptcl_i[i + 5 * m];
+			i_r2 = r2_i[i];	
 		}
 		
 		int NumNeighbor = 0;
@@ -1197,13 +1198,13 @@ __global__ void compute_forces_mpi(const CUDA_REAL* __restrict__ ptcl_i, const C
 
 			__syncthreads();
 			if (tid < current_batch_size) {
-				sh_pos_x[tid] = ptcl[j + tid];
-				sh_pos_y[tid] = ptcl[j + tid + NNB];
-				sh_pos_z[tid] = ptcl[j + tid + 2 * NNB];
-				sh_vel_x[tid] = ptcl[j + tid + 3 * NNB];
-				sh_vel_y[tid] = ptcl[j + tid + 4 * NNB];
-				sh_vel_z[tid] = ptcl[j + tid + 5 * NNB];
-				sh_mass[tid]  = ptcl[j + tid + 6 * NNB];
+				sh_pos_x[tid] = ptcl_j[j + tid];
+				sh_pos_y[tid] = ptcl_j[j + tid + N_j];
+				sh_pos_z[tid] = ptcl_j[j + tid + 2 * N_j];
+				sh_vel_x[tid] = ptcl_j[j + tid + 3 * N_j];
+				sh_vel_y[tid] = ptcl_j[j + tid + 4 * N_j];
+				sh_vel_z[tid] = ptcl_j[j + tid + 5 * N_j];
+				sh_mass[tid]  = ptcl_j[j + tid + 6 * N_j];
 			}
 			__syncthreads();
 

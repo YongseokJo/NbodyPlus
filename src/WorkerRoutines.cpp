@@ -4,6 +4,8 @@
 #include "global.h"
 #include "Queue.h"
 #include <cstring>
+// #include <unordered_set> // for sendAllParticlesToGPU
+#include "cuda/cuda_functions.h"
 
 void broadcastFromRoot(double &data);
 void broadcastFromRoot(ULL &data);
@@ -14,6 +16,12 @@ void makePrimordialGroup(Particle* ptclCM);
 void NewFBInitialization(Particle* ptclCM);
 void deleteGroup(Particle* ptclCM);
 void NewFBInitialization3(Group* group);
+
+void RegularWorker(int NumTargetTotal, int Jstart, int Jend, int gpu_id);
+// void sendAllParticlesToGPU(double new_time, std::unordered_set<int> RegularList, int *IndexList, int N_start, int N_end, int gpu_id);
+void AllocateDeviceMemory(int N_i,int N_j,int gpu_id);
+void SendToDeviceMPI(int N_i, int N_j, int gpu_id);
+
 #ifdef MultiNode
 void updateInitAcc01(int update_count, int* update_count_list, int* displs);
 void updateInitAcc23(int update_count, int* update_count_list, int* displs);
@@ -74,13 +82,27 @@ void WorkerRoutines() {
 				break;
 			
 			// In development by Minyong Jung
-			case SendPtcletoGPU:
-				// predict and send particles to device
+			case RegSend:
+				int N_j, N_i;
 				
-			case RegForceGPU:
-				// ptcl_id is not used
-				if (MyRank not in GPURanks) break; // how to define GPURanks?
-				RegAccelerationWorkThread();			
+				MPI_Recv(&N_i, 1, MPI_INT, ROOT, 1010, MPI_COMM_WORLD, &status);
+				MPI_Recv(&N_j, 1, MPI_INT, ROOT, 1011, MPI_COMM_WORLD, &status);
+
+				AllocateDeviceMemory(N_i, N_j, ptcl_id); // this part cannot be parallelized
+				SendToDeviceMPI(N_i, N_j, ptcl_id); //this part should be parallelized
+
+				// sendAllParticlesToGPU(next_time, RegularList, IndexList, N_start, N_end, ptcl_id);
+				// predict and send particles to device
+				break;
+				
+			case RegCal: {
+
+				int* int_lists = new int[3];
+				MPI_Recv(int_lists, 3, MPI_INT, ROOT, 1, MPI_COMM_WORLD, &status);
+				RegularWorker(int_lists[0], int_lists[1], int_lists[2], ptcl_id);
+				delete int_lists;
+				break;
+			}
 
 			case IrrUpdate: // Irregular Update Particle
 
