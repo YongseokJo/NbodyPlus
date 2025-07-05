@@ -441,7 +441,7 @@ bool makeSEVNBinary(Particle* ptclCM) {
     ecc = sqrt(1 + (2 * energy * mag(h)) / (M * M));
 
     // Apply binary stellar evolution iff the binary orbit is elliptical
-    if (ecc < 0.0)
+    if (ecc >= 1.0)
         return true;
 
     // for debugging by EW 2025.6.26
