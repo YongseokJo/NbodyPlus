@@ -14,19 +14,31 @@
 // #define ACRadius 0.0105634 // 0.013 // 0.11 -> 0.05 modified by EW 2025.1.11
 
 
-//#define FixNumNeighbor 100 // 500 -> 100 modified by EW 2025.1.11
-//#define MaxNumNeighbor 1000 // 10000 -> 2000 modified by EW 2025.1.11
-//#define ACRadius 0.013 // 0.11 -> 0.05 modified by EW 2025.1.11
-
-
-
 // SDAR
 #define RSEARCH 1e-4 // 1e-4 // pc
 #define TSEARCH 1e-6 // 1e-6 // Myr
 
-#define NormalStar 1
-#define Blackhole 32
-#define SingleStar 64
+
+
+// Particle Type in line with SEVN by EW 2025.7.5
+#define NO_FEEDBACK_STAR            0
+#define MAIN_SEQUENCE               1
+#define TERMINAL_MAIN_SEQUENCE      2
+#define SHELL_H_BURNING             3
+#define CORE_HE_BURNING             4
+#define TERMINAL_CORE_HE_BURNING    5
+#define SHELL_HE_BURNING            6
+
+#define EMPTY                       7
+#define REMNANT                     8
+
+#define WHITE_DWARF_HE              9
+#define WHITE_DWARF_CO              10
+#define WHITE_DWARF_ONE             11
+#define NEUTRON_STAR_ECSN           12
+#define NEUTRON_STAR_CCSN           13
+#define BLACK_HOLE                  14
+#define MASSIVE_BLACK_HOLE          15
 
 
 #define MIN_LEVEL_BUFFER 30

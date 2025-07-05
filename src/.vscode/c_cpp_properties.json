@@ -6,7 +6,7 @@
                 "${workspaceFolder}/**",
                 "${workspaceFolder}/../SDAR/src",
                 "/home/vinicius/install/openmpi-4.0.5/include",
-                "/home/vinicius/install/sevn_enzo/build_n15/include/sevn"
+                "/home/vinicius/install/sevn_custom/build_n15/include/sevn"
             ],
             "defines": [
                 "PERFORMANCETRACE",

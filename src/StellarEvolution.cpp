@@ -7,6 +7,8 @@
 #ifdef SEVN_BINARY
 void UpdateEvolution(Particle* ptcl, bool from_BSE);
 void UpdateBinaryEvolution(Particle* ptcl);
+void convertBinaryToSingle(Particle* ptclCM);
+std::vector<std::string> getCustomInitParams(Particle* ptcl);
 #else
 void UpdateEvolution(Particle* ptcl);
 #endif
@@ -27,7 +29,7 @@ void initializeStellarEvolution() {
 
         Particle* ptcl = &particles[i];
 
-        ptcl->ParticleType = NormalStar+SingleStar;
+        ptcl->ParticleType = NO_FEEDBACK_STAR;
         ptcl->FormationTime = 0.0;
         ptcl->WorldTime = 0.0;
 
@@ -41,13 +43,20 @@ void initializeStellarEvolution() {
 		}
 
         // Mass, metallicity, spin, sn model, tini, tf, dtout, random seed(optional)
-		std::vector<std::string> init_params{std::to_string(double(ptcl->Mass*mass_unit)), "0.0002", "0.0", "delayed", "zams", "end", "events"};
+        std::stringstream mass;
+        mass << std::setprecision(17) << ptcl->Mass*mass_unit; // convert to Msun
+
+		std::vector<std::string> init_params{mass.str(), "0.0002", "0.0", "delayed", "zams", "end", "events"};
 
         size_t id = ptcl->PID;
         ptcl->StellarEvolution = new StarSEVN(sevnio, init_params, id, false);
         SEVNList.insert({ptcl->WorldTime + ptcl->StellarEvolution->getp(Timestep::ID), ptcl->ParticleIndex});
 
 		ptcl->radius = ptcl->StellarEvolution->getp(Radius::ID)/(utilities::parsec_to_Rsun)/position_unit; // stellar radius in code unit
+        if (ptcl->StellarEvolution->amiremnant())
+            ptcl->ParticleType = REMNANT + (int)ptcl->StellarEvolution->getp(RemnantType::ID);
+        else
+            ptcl->ParticleType = (int)ptcl->StellarEvolution->getp(Phase::ID);
     }
 }
 
@@ -70,31 +79,6 @@ void StellarEvolution() {
          
         auto it = SEVNList.begin();
         ptcl = &particles[it->second];
-#ifdef SEVN_BINARY
-        if (ptcl->isCMptcl) {
-            ptcl->WorldTime += ptcl->BinaryEvolution->getp(BTimestep::ID);
-            for (int i=0; i<ptcl->NumberOfMember; i++) {
-                Particle* member = &particles[ptcl->Members[i]];
-                member->WorldTime += ptcl->BinaryEvolution->getp(BTimestep::ID);
-            }
-            ptcl->BinaryEvolution->evolve();
-
-            while (ptcl->WorldTime + ptcl->BinaryEvolution->getp(BTimestep::ID) <= global_time * EnzoTimeStep * 1e4) {
-                ptcl->WorldTime += ptcl->BinaryEvolution->getp(BTimestep::ID);
-                for (int i=0; i<ptcl->NumberOfMember; i++) {
-                    Particle* member = &particles[ptcl->Members[i]];
-                    member->WorldTime += ptcl->BinaryEvolution->getp(BTimestep::ID);
-                }
-                ptcl->BinaryEvolution->evolve();
-            }
-
-            it = SEVNList.erase(it);
-            UpdateBinaryEvolution(ptcl);
-
-            if (SEVNList.empty() || SEVNList.begin()->first > global_time * EnzoTimeStep * 1e4)
-                break;
-        }
-#endif
         ptcl->WorldTime += ptcl->StellarEvolution->getp(Timestep::ID);
         ptcl->StellarEvolution->evolve();
 
@@ -121,6 +105,11 @@ void UpdateEvolution(Particle* ptcl, bool from_BSE) {
 #else
 void UpdateEvolution(Particle* ptcl) {
 #endif
+
+    if (ptcl->StellarEvolution->amiremnant())
+        ptcl->ParticleType = REMNANT + (int)ptcl->StellarEvolution->getp(RemnantType::ID);
+    else
+        ptcl->ParticleType = (int)ptcl->StellarEvolution->getp(Phase::ID);
 
     if (!ptcl->StellarEvolution->amiremnant()) {
 #ifdef SEVN_BINARY
@@ -179,7 +168,6 @@ void UpdateEvolution(Particle* ptcl) {
         // ptcl->WorldTime = NUMERIC_FLOAT_MAX;
         fprintf(SEVNout, "BH. PID: %d, Mass: %e Msol, ZAMS Mass: %e Msol, Radius: %e pc, Time: %e Myr, Worldtime: %e Myr\n", ptcl->PID, ptcl->Mass*mass_unit, ptcl->StellarEvolution->get_zams(), ptcl->radius*position_unit, ptcl->WorldTime, ptcl->StellarEvolution->getp(Worldtime::ID));
         fprintf(SEVNout, "\tDimless spin. mag: %e, (%e, %e, %e)\n", ptcl->StellarEvolution->getp(Xspin::ID), ptcl->a_spin[0], ptcl->a_spin[1], ptcl->a_spin[2]);
-        ptcl->ParticleType = Blackhole+SingleStar;
         if (ptcl->StellarEvolution->vkick[3] > 0.0) {
             fprintf(SEVNout, "\tKicked velocity: (%e, %e, %e) [km/s]\n", ptcl->StellarEvolution->vkick[0], ptcl->StellarEvolution->vkick[1], ptcl->StellarEvolution->vkick[2]);
             for(int i=0; i<Dim; i++)
@@ -210,6 +198,20 @@ void UpdateEvolution(Particle* ptcl) {
         delete ptcl->StellarEvolution;
         ptcl->StellarEvolution = nullptr;
     }
+#ifdef SEVN_BINARY
+    if (from_BSE && ptcl->StellarEvolution->amiremnant()) {
+        auto it = SEVNList.begin();
+        while (it != SEVNList.end()) {
+            if (it->second == ptcl->ParticleIndex) {
+                it = SEVNList.erase(it);
+                fprintf(SEVNout, "Remnant particle (PID: %d) is deleted from SEVNList\n", ptcl->PID);
+                break;
+            }
+            else
+                it++;
+        }
+    }
+#endif
 }
 
 // Reference: int Mix::special_evolve(Binstar *binstar) in Processes.cpp of SEVN
@@ -347,21 +349,21 @@ void Mix(StarSEVN* star1, StarSEVN* star2) {
 // Use this function when merger happened
 void SetRadius(Particle* ptcl) {
 
-    if (!ptcl->StellarEvolution->amiremnant()) {
+    if (ptcl->ParticleType < REMNANT) {
         ptcl->radius = ptcl->StellarEvolution->getp(Radius::ID)/(utilities::parsec_to_Rsun)/position_unit;
         if (ptcl->Mass*mass_unit > ptcl->StellarEvolution->get_max_zams()) // VMS correction; constant stellar density is assumed
             ptcl->radius *= pow(ptcl->Mass*mass_unit/ptcl->StellarEvolution->get_max_zams(), 1./3);
     }
-    else if (ptcl->StellarEvolution->amiWD()) {
+    else if (ptcl->ParticleType <= WHITE_DWARF_ONE) {
         double RNS = 11/(velocity_unit/yr*pc/1e5); // 11 km/s in code unit
         double Mch = 1.41/mass_unit;
         double RWD = 0.0115*std::sqrt(pow(Mch/ptcl->Mass,0.6666666667) -  pow(ptcl->Mass/Mch,0.6666666667));
         
         ptcl->radius = std::max(RNS,RWD);
     }
-    else if (ptcl->StellarEvolution->amiNS())
+    else if (ptcl->ParticleType <= NEUTRON_STAR_CCSN)
         ptcl->radius = 11/(velocity_unit/yr*pc/1e5); // 11 km/s in code unit
-    else if (ptcl->StellarEvolution->amiBH())
+    else
         ptcl->radius = 2*ptcl->Mass/pow(299752.458/(velocity_unit/yr*pc/1e5), 2); // Schwartzschild radius in code unit
 }
 
@@ -372,7 +374,7 @@ void SetRadius(Particle* ptcl) {
     If this takes too much time, we should consider to use a different approach.
     How about not using SEVNList at all, and applying stellar evolution at every irregular timestep?
 */
-// Return false if (P)PISN happens
+// Return false if a member is empty or kicked
 bool makeSEVNBinary(Particle* ptclCM) {
 
     assert(!ptclCM->isActive);
@@ -390,30 +392,8 @@ bool makeSEVNBinary(Particle* ptclCM) {
 		else {
 			NumberOfMembers += members->NewNumberOfNeighbor;
             if (members->BinaryEvolution != nullptr) {
-
-                assert(members->NewNumberOfNeighbor == 2);
-
                 fprintf(SEVNout, "SEVN BSE... BSE can't be applied to many-body case. Binary object (PID: %d) should be deleted!!!\n", members->PID);
-
-                auto it = SEVNList.begin();
-                while (it != SEVNList.end()) {
-                    if (it->second == members->ParticleIndex) {
-                        it = SEVNList.erase(it);
-                        fprintf(SEVNout, "Binary object (PID: %d) is deleted from SEVNList\n", members->PID);
-                        break;
-                    }
-                    else
-                        it++;
-                }
-                members->BinaryEvolution->custom_destructor();
-                fprintf(SEVNout, "Binary object (PID: %d) SEVN memory is free now\n", members->PID);
-
-                for (int j=0; j<members->NewNumberOfNeighbor; j++) {
-                    Particle* ptcl = &particles[members->NewNeighbors[j]];
-                    if (!ptcl->StellarEvolution->amiremnant())
-                        SEVNList.insert({ptcl->WorldTime + ptcl->StellarEvolution->getp(Timestep::ID), ptcl->ParticleIndex});
-                }
-                return true;
+                convertBinaryToSingle(members);
             }
         }
     }
@@ -427,6 +407,11 @@ bool makeSEVNBinary(Particle* ptclCM) {
 
     Particle* ptcl2 = &particles[ptclCM->NewNeighbors[1]];
     StarSEVN* star2 = ptcl2->StellarEvolution;
+
+    // Make BSE object iff both members are not remnants
+    // If they are remnants, let's consider orbit-shrinking, TDE, GW_merge in SDAR
+    if ((ptcl1->ParticleType > REMNANT) || (ptcl2->ParticleType > REMNANT))
+        return true;
 
     // Make BSE object iff both members have StellarEvolution objects
     if (star1 == nullptr || star2 == nullptr)
@@ -455,7 +440,7 @@ bool makeSEVNBinary(Particle* ptclCM) {
 
     ecc = sqrt(1 + (2 * energy * mag(h)) / (M * M));
 
-    // Apply binary stellar evolution iff the binary orbit is bound
+    // Apply binary stellar evolution iff the binary orbit is elliptical
     if (ecc < 0.0)
         return true;
 
@@ -464,147 +449,217 @@ bool makeSEVNBinary(Particle* ptclCM) {
 
     semi = semi * position_unit * utilities::parsec_to_Rsun; // semi-major axis in Rsun
 
+    fprintf(SEVNout, "SEVN BSE... Binary candidate members should be deleted from SEVNList\n");
+    int num_del = 0;
+    auto it = SEVNList.begin();
+    while (it != SEVNList.end()) {
+        if (it->second == ptcl1->ParticleIndex || it->second == ptcl2->ParticleIndex) {
+            Particle* ptcl = &particles[it->second];
+            it = SEVNList.erase(it);
+            num_del++;
+            fprintf(SEVNout, "BSE candidate member (PID: %d) is deleted from SEVNList\n", ptcl->PID);
+            if (num_del == 2)
+                break;
+        }
+        else
+            it++;
+    }
+    assert(num_del == 2); // we should delete two particles from the SEVNList
+
     BinaryFormationTime *= EnzoTimeStep*1e4; // in Myr unit
-    double dt; // timestep in Myr
-
-    if (BinaryFormationTime > ptcl1->WorldTime) {
-
-        dt = BinaryFormationTime - ptcl1->WorldTime;
-        star1->sync_with(dt);
-        star1->evolve();
-        ptcl1->WorldTime = BinaryFormationTime;
+    bool evolve = false;
+    while (ptcl1->WorldTime + ptcl1->StellarEvolution->getp(Timestep::ID) <= BinaryFormationTime) {
+        ptcl1->WorldTime += ptcl1->StellarEvolution->getp(Timestep::ID);
+        ptcl1->StellarEvolution->evolve();
+        evolve = true;
+    }
+    if (evolve) {
         UpdateEvolution(ptcl1, true);
-
-        if (star1->amiremnant()) {
-            auto it = SEVNList.begin();
-            while (it != SEVNList.end()) {
-                if (it->second == ptcl1->ParticleIndex) {
-                    it = SEVNList.erase(it);
-                    fprintf(SEVNout, "Remnant particle (PID: %d) is deleted from SEVNList\n", ptcl1->PID);
-                    break;
-                }
-                else
-                    it++;
-            }
+        if (ptcl1->ParticleType > REMNANT) {
             if (star1->amiempty() || (star1->vkick[3] > 0.0)) {
                 fprintf(SEVNout, "SEVN BSE... No binary is created!!!\n");
                 ptclCM->NewNumberOfNeighbor = 0;
                 return false;
             }
+            return true;
         }
     }
-    if (BinaryFormationTime > ptcl2->WorldTime) {
+    ptcl1->WorldTime = BinaryFormationTime;
 
-        dt = BinaryFormationTime - ptcl2->WorldTime;
-        star2->sync_with(dt);
-        star2->evolve();
-        ptcl2->WorldTime = BinaryFormationTime;
+    evolve = false;
+    while (ptcl2->WorldTime + ptcl2->StellarEvolution->getp(Timestep::ID) <= BinaryFormationTime) {
+        ptcl2->WorldTime += ptcl2->StellarEvolution->getp(Timestep::ID);
+        ptcl2->StellarEvolution->evolve();
+        evolve = true;
+    }
+    if (evolve) {
         UpdateEvolution(ptcl2, true);
-
-        if (star2->amiremnant()) {
-            auto it = SEVNList.begin();
-            while (it != SEVNList.end()) {
-                if (it->second == ptcl2->ParticleIndex) {
-                    it = SEVNList.erase(it);
-                    fprintf(SEVNout, "Remnant particle (PID: %d) is deleted from SEVNList\n", ptcl2->PID);
-                    break;
-                }
-                else
-                    it++;
-            }
+        if (ptcl2->ParticleType > REMNANT) {
             if (star2->amiempty() || (star2->vkick[3] > 0.0)) {
                 fprintf(SEVNout, "SEVN BSE... No binary is created!!!\n");
                 ptclCM->NewNumberOfNeighbor = 0;
                 return false;
             }
+            return true;
         }
     }
+    ptcl2->WorldTime = BinaryFormationTime;
 
-    std::stringstream star1_percent;
-    star1_percent << "%" << static_cast<int>(star1->plife() * 100) 
-        << ":" << static_cast<int>(star1->getp(Phase::ID));
+    std::vector<std::string> init1 = getCustomInitParams(ptcl1);
+    std::vector<std::string> init2 = getCustomInitParams(ptcl2);
 
-    std::stringstream star2_percent;
-    star2_percent << "%" << static_cast<int>(star2->plife() * 100)
-        << ":" << static_cast<int>(star2->getp(Phase::ID));
+    std::vector<std::string> init_binstar_params(init1.begin(), init1.begin()+5);
+    init_binstar_params.insert(init_binstar_params.end(), init2.begin(), init2.begin() + 5);
 
-    // Mass, metallicity, spin, sn model, tini for star1
-    // Mass, metallicity, spin, sn model, tini for star2
-    // Semi-major axis (Rsun), eccentricity, tf, dtout, random seed(optional)
-    std::vector<std::string> init_params_bin{
-        std::to_string(star1->get_zams()), std::to_string(star1->get_Z()), "0.0", "delayed", star1_percent.str(), 
-        std::to_string(star2->get_zams()), std::to_string(star2->get_Z()), "0.0", "delayed", star2_percent.str(), 
-        std::to_string(semi), std::to_string(ecc), "broken", "all"
-    };
+    std::stringstream semi_str;
+    semi_str << std::setprecision(17) << semi; // semi-major axis in Rsun
+
+    std::stringstream ecc_str;
+    ecc_str << std::setprecision(17) << ecc; // eccentricity
+
+    init_binstar_params.insert(init_binstar_params.end(), {semi_str.str(), ecc_str.str(), "broken", "all"});
 
     size_t id = ptclCM->PID;
-    Binstar* binstar = new Binstar(sevnio, init_params_bin, star1, star2, id);
-    fprintf(SEVNout, "SEVN BSE... New Binstar is successfully created. CM PID: %d\n");
+    Binstar* binstar = new Binstar(sevnio, init_binstar_params, id);
+    fprintf(SEVNout, "SEVN BSE... New Binstar is successfully created. CM PID: %d at %e Myr\n", 
+            ptclCM->PID, BinaryFormationTime);
 
     ptclCM->BinaryEvolution = binstar;
-    ptclCM->FormationTime = BinaryFormationTime; // in Myr unit
-    ptclCM->WorldTime = BinaryFormationTime; // in Myr unit
-
-    int total = 0;
-    if (!star1->amiremnant())
-        total++;
-    if (!star2->amiremnant())
-        total++;
-    if (total > 0) {
-        fprintf(SEVNout, "SEVN BSE... %d objects should be deleted from SEVNList\n", total);
-
-        int num_del = 0;
-        auto it = SEVNList.begin();
-        while (it != SEVNList.end()) {
-            if (it->second == ptcl1->ParticleIndex || it->second == ptcl2->ParticleIndex) {
-                Particle* ptcl = &particles[it->second];
-                it = SEVNList.erase(it);
-                num_del++;
-                fprintf(SEVNout, "PISN induced zero mass particle (PID: %d) is deleted from SEVNList\n", ptcl->PID);
-                if (num_del == total)
-                    break;
-            }
-            else
-                it++;
-        }
-        assert(num_del == total); // we should delete two particles from the SEVNList
-    }
-
-    SEVNList.insert({ptclCM->WorldTime + binstar->getp(Timestep::ID), ptclCM->ParticleIndex}); // (BSE Query) This should be treated very carefully!!! by EW 2025.6.27
-    fprintf(SEVNout, "SEVN BSE... BSE object (PID: %d) is inserted into SEVNList\n", ptclCM->PID);
+    ptclCM->FormationTime   = BinaryFormationTime;    // in Myr unit
+    ptclCM->WorldTime       = BinaryFormationTime;    // in Myr unit
 
     return true;
 }
 
-void deleteSEVNBinary(Particle* ptclCM) {
-
-    if (ptclCM->BinaryEvolution == nullptr)
-        return;
+void convertBinaryToSingle(Particle* ptclCM) {
 
     assert(ptclCM->NumberOfMember == 2);
 
-    fprintf(SEVNout, "SEVN BSE... Binary object (PID: %d) should be deleted\n", ptclCM->PID);
+    Particle* ptcl1 = &particles[ptclCM->Members[0]];
+    Particle* ptcl2 = &particles[ptclCM->Members[1]];
+    
+    assert(ptcl1->StellarEvolution == nullptr);
+    assert(ptcl2->StellarEvolution == nullptr);
 
-    auto it = SEVNList.begin();
-    while (it != SEVNList.end()) {
-        if (it->second == ptclCM->ParticleIndex) {
-            it = SEVNList.erase(it);
-            fprintf(SEVNout, "Binary object (PID: %d) is deleted from SEVNList\n", ptclCM->PID);
-            break;
-        }
-        else
-            it++;
+    StarSEVN* star1 = ptclCM->BinaryEvolution->getstar(0);
+    StarSEVN* star2 = ptclCM->BinaryEvolution->getstar(1);
+    if ((int)star1->get_ID() != 0){
+        fprintf(SEVNout, "In convertBinaryToSingle.. star1->get_ID(): %d, star2->get_ID(): %d\n", (int)star1->get_ID(), (int)star2->get_ID());
+        assert((int)star1->get_ID() == 1);
+        std::swap(star1, star2);
     }
+
+    ptcl1->StellarEvolution = star1;
+    ptcl2->StellarEvolution = star2;
+
     ptclCM->BinaryEvolution->custom_destructor();
+    ptclCM->BinaryEvolution = nullptr;
     fprintf(SEVNout, "Binary object (PID: %d) SEVN memory is free now\n", ptclCM->PID);
 
-    for (int j=0; j<ptclCM->NumberOfMember; j++) {
-        Particle* ptcl = &particles[ptclCM->Members[j]];
-        assert(ptcl->StellarEvolution != nullptr);
-        if (!ptcl->StellarEvolution->amiremnant())
-            SEVNList.insert({ptcl->WorldTime + ptcl->StellarEvolution->getp(Timestep::ID), ptcl->ParticleIndex});
+    if (!star1->amiremnant())
+        SEVNList.insert({ptcl1->WorldTime + ptcl1->StellarEvolution->getp(Timestep::ID), ptcl1->ParticleIndex});
+    else if (star1->amiempty()) {
+        delete star1;
+        ptcl1->StellarEvolution = nullptr;
     }
+    if (!star2->amiremnant())
+        SEVNList.insert({ptcl2->WorldTime + ptcl2->StellarEvolution->getp(Timestep::ID), ptcl2->ParticleIndex});
+    else if (star2->amiempty()) {
+        delete star2;
+        ptcl2->StellarEvolution = nullptr;
+    }
+
+}
+
+std::vector<std::string> getCustomInitParams(Particle* ptcl) {
+
+    StarSEVN* star = ptcl->StellarEvolution;
+    
+    std::stringstream Mass;
+    if (star->amiremnant()) {
+        int remnant_type = int(star->getp(RemnantType::ID));
+        std::string remnant_suffix;
+
+        if (remnant_type == 1)
+            remnant_suffix = "HEWD";
+        else if (remnant_type == 2)
+            remnant_suffix = "COWD";
+        else if (remnant_type == 3)
+            remnant_suffix = "ONEWD";
+        else if (remnant_type == 4)
+            remnant_suffix = "NSEC";
+        else if (remnant_type == 5)
+            remnant_suffix = "NS";
+        else if (remnant_type == 6)
+            remnant_suffix = "BH";
+
+        Mass << std::setprecision(17) << star->getp(Mass::ID) << remnant_suffix;
+    }
+    else if (star->aminakedhelium()) { // This includes naked helium stars and naked CO stars by EW 2025.7.3 // MHE always includes MCO in SEVN
+        Mass << std::setprecision(17) << "(" << star->get_zams() << "," 
+            << star->getp(Mass::ID) << "," 
+            << star->getp(MCO::ID) << ")HE";
+    }
+    else {
+        Mass << std::setprecision(17) << "(" << star->get_zams() << "," 
+            << star->getp(Mass::ID) << "," 
+            << star->getp(MHE::ID) << "," 
+            << star->getp(MCO::ID) << ")";
+    }
+    
+
+    std::stringstream Z;
+    Z << std::setprecision(17) << star->get_Z();
+
+    std::stringstream tini;
+    if (star->amiremnant())
+        tini << "zams";
+    else {
+        tini << std::setprecision(17) << "%" << star->plife() * 100
+            << ":" << static_cast<int>(star->getp(Phase::ID));
+    }
+    
+    std::vector<std::string> init_params{Mass.str(), Z.str(), "0.0", "delayed", tini.str(), "end", "all"};
+
+    return init_params;
+}
+
+void deleteSEVNBinary(Particle* ptclCM) {
+
+    convertBinaryToSingle(ptclCM);
     return;
+}
+
+void BinaryEvolution(Particle* ptclCM) {
+
+    Binstar* binary = ptclCM->BinaryEvolution;
+    
+    if (ptclCM->WorldTime + binary->getp(BTimestep::ID) > ptclCM->NewCurrentBlockIrr * time_step * EnzoTimeStep * 1e4)
+        return;
+
+    if (ptclCM->getBinaryInterruptState() == BinaryInterruptState::merger) {
+        convertBinaryToSingle(ptclCM);
+        return;
+    }
+
+    if (ptclCM->a_spin[1] >= 1.0) {
+        fprintf(SEVNout, "In BinaryEvolution... Initial binary orbit became hyperbolic in SDAR!!!\n");
+        convertBinaryToSingle(ptclCM);
+        return;
+    }
+
+    while ((ptclCM->WorldTime + binary->getp(BTimestep::ID) <= ptclCM->NewCurrentBlockIrr * time_step * EnzoTimeStep * 1e4) &&
+            !binary->getstar(0)->amiremnant() &&
+            !binary->getstar(1)->amiremnant()) {
+
+        ptclCM->WorldTime += binary->getp(BTimestep::ID);
+        for (int i=0; i<ptclCM->NumberOfMember; i++) {
+            Particle* member = &particles[ptclCM->Members[i]];
+            member->WorldTime += binary->getp(BTimestep::ID);
+        }
+        binary->evolve();
+    }
+    UpdateBinaryEvolution(ptclCM);
 }
 
 void UpdateBinaryEvolution(Particle* ptclCM) {
@@ -616,9 +671,106 @@ void UpdateBinaryEvolution(Particle* ptclCM) {
 
     If merger-like things happen, we should delete Binstar, and terminate SDAR too! -> FBTermination?
     After binary evolution, let's correct semi-major axis and eccentricity by calculating orbital parameters
+
+    Let's store newly calculated semi-major axis and eccentricity in ptclCM->a_spin (+ CM ptcl mass?)
     */
 
-    
+    Binstar* binary = ptclCM->BinaryEvolution;
+
+    StarSEVN* star1 = binary->getstar(0);
+    Particle* ptcl1 = &particles[ptclCM->Members[0]];
+
+    StarSEVN* star2 = binary->getstar(1);
+    Particle* ptcl2 = &particles[ptclCM->Members[1]];
+
+    if ((int)star1->get_ID() != 0){
+        fprintf(SEVNout, "In UpdateBinaryEvolution... star1->get_ID(): %d, star2->get_ID(): %d\n", (int)star1->get_ID(), (int)star2->get_ID());
+        assert((int)star1->get_ID() == 1);
+        std::swap(star1, star2);
+    }
+
+    double dm = 0.0; // ejected mass by stellar wind to nearby gas cells
+
+    fprintf(SEVNout, "BSE... CM PID: %d, BEvent: %d, WorldTime: %e Myr, GW merger time: %e Myr, semi: %e pc, ecc: %e\n",
+            ptclCM->PID, binary->getp(BEvent::ID), ptclCM->WorldTime, 
+            binary->getp(GWtime::ID), binary->getp(Semimajor::ID)/utilities::parsec_to_Rsun, binary->getp(Eccentricity::ID));
+    fprintf(SEVNout, "\tPhase1: %d, Mass1: %e Msol, Radius1: %e pc, T_eff1: %e K\n", 
+            star1->getp(Phase::ID), star1->getp(Mass::ID), star1->getp(Radius::ID)/(utilities::parsec_to_Rsun), star1->getp(Temperature::ID));
+    fprintf(SEVNout, "\tPhase2: %d, Mass2: %e Msol, Radius2: %e pc, T_eff2: %e K\n", 
+            star2->getp(Phase::ID), star2->getp(Mass::ID), star2->getp(Radius::ID)/(utilities::parsec_to_Rsun), star2->getp(Temperature::ID));
+
+    // Let's update ParticleType
+    if (star1->amiremnant())
+        ptcl1->ParticleType = REMNANT + (int)star1->getp(RemnantType::ID);
+    else
+        ptcl1->ParticleType = (int)star1->getp(Phase::ID);
+
+    if (star2->amiremnant())
+        ptcl2->ParticleType = REMNANT + (int)star2->getp(RemnantType::ID);
+    else
+        ptcl2->ParticleType = (int)star2->getp(Phase::ID);
+
+    // Let's store the semi-major axis and eccentricity in ptclCM->a_spin if RLOF is triggered
+    // a_spin[2] > 0.0: RLOF is triggered, and applied to SDAR
+    // a_spin[2] = 0.0: RLOF is not triggered yet
+    // a_spin[2] < 0.0: RLOF is triggered, but not applied to SDAR yet
+    if (binary->getp(Eccentricity::ID) == 0.0 && ptclCM->a_spin[2] == 0.0) {
+        ptclCM->a_spin[0] = binary->getp(Semimajor::ID)/utilities::parsec_to_Rsun/position_unit; // in code unit
+        ptclCM->a_spin[1] = binary->getp(Eccentricity::ID);
+        ptclCM->a_spin[2] = -1.0;
+    }
+
+    if (star1->amiempty()) {
+        fprintf(SEVNout, "\tPID: %d. Empty!\n", ptcl1->PID);
+        ptcl1->dm += ptcl1->Mass;
+        ptcl1->Mass = -1.0;
+        ptcl1->setBinaryInterruptState(BinaryInterruptState::kicked);
+        ptclCM->setBinaryInterruptState(BinaryInterruptState::terminated);
+    } else {
+
+        ptcl1->Mass = star1->getp(Mass::ID)/mass_unit;
+        ptcl1->radius = star1->getp(Radius::ID)/(utilities::parsec_to_Rsun)/position_unit;
+
+        if (!star2->amiempty()) {
+            dm = ptclCM->Mass - (ptcl1->Mass + star2->getp(Mass::ID)/mass_unit);
+            ptclCM->Mass = ptcl1->Mass + star2->getp(Mass::ID)/mass_unit;
+        }
+
+        if (star1->vkick[3] > 0.0) {
+            fprintf(SEVNout, "\tPID: %d. Kicked velocity1: (%e, %e, %e) [km/s]\n", ptcl1->PID, star1->vkick[0], star1->vkick[1], star1->vkick[2]);
+            ptcl1->setBinaryInterruptState(BinaryInterruptState::kicked);
+            ptclCM->setBinaryInterruptState(BinaryInterruptState::terminated);
+            for (int dim = 0; dim < Dim; dim++)
+                ptcl1->Velocity[dim] += star1->vkick[dim]/(velocity_unit/yr*pc/1e5);
+
+            ptcl2->dm += dm;
+        } else
+            ptcl1->dm += dm;
+    }
+
+    if (star2->amiempty()) {
+        fprintf(SEVNout, "\tPID: %d. Empty!\n", ptcl2->PID);
+        ptcl2->dm += ptcl2->Mass;
+        ptcl2->Mass = -1.0;
+        ptcl2->setBinaryInterruptState(BinaryInterruptState::kicked);
+        ptclCM->setBinaryInterruptState(BinaryInterruptState::terminated);
+    } else {
+
+        ptcl2->Mass = star2->getp(Mass::ID)/mass_unit;
+        ptcl2->radius = star2->getp(Radius::ID)/(utilities::parsec_to_Rsun)/position_unit;
+
+        if (star2->vkick[3] > 0.0) {
+            fprintf(SEVNout, "\tPID: %d. Kicked velocity2: (%e, %e, %e) [km/s]\n", ptcl2->PID, star2->vkick[0], star2->vkick[1], star2->vkick[2]);
+            ptcl2->setBinaryInterruptState(BinaryInterruptState::kicked);
+            ptclCM->setBinaryInterruptState(BinaryInterruptState::terminated);
+            for (int dim = 0; dim < Dim; dim++)
+                ptcl2->Velocity[dim] += star2->vkick[dim]/(velocity_unit/yr*pc/1e5);
+        }
+    }
+
+    if (star1->amiremnant() || star2->amiremnant())
+        convertBinaryToSingle(ptclCM);
+
 }
 #endif
 
