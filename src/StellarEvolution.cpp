@@ -418,27 +418,26 @@ bool makeSEVNBinary(Particle* ptclCM) {
         return true;
 
     double pos1[3], pos2[3], vel1[3], vel2[3]; // position and velocity vectors at BinaryFormationTime
-    double dr[3], dv[3], M; // relative position and velocity vectors, total mass
-    double energy; // specific orbital energy
+    double dr[3], dv[3], m_tot; // relative position and velocity vectors, total mass
     double semi, ecc; // semi-major axis and eccentricity
-    double h[3]; // specific angular momentum vector
+    double rv; // inner product of relative position and velocity vectors
 
-    ptcl1->predictParticleSecondOrder(BinaryFormationTime, pos1, vel1);
-    ptcl2->predictParticleSecondOrder(BinaryFormationTime, pos2, vel2);
+    ptcl1->predictParticleSecondOrder(BinaryFormationTime - ptcl1->CurrentTimeIrr, pos1, vel1);
+    ptcl2->predictParticleSecondOrder(BinaryFormationTime - ptcl2->CurrentTimeIrr, pos2, vel2);
 
     for (int dim=0; dim<Dim; dim++) {
         dr[dim] = pos2[dim] - pos1[dim];
         dv[dim] = vel2[dim] - vel1[dim];
     }
-    M = ptcl1->Mass + ptcl2->Mass;
-    energy = 0.5 * mag(dv) - M / sqrt(mag(dr));
-    semi = - M / (2.0 * energy); // semi-major axis in code unit
+    double r = sqrt(mag(dr));
+    rv = dr[0]*dv[0] + dr[1]*dv[1] + dr[2]*dv[2];
 
-    h[0] = dr[1] * dv[2] - dr[2] * dv[1];
-    h[1] = dr[2] * dv[0] - dr[0] * dv[2];
-    h[2] = dr[0] * dv[1] - dr[1] * dv[0];
+    m_tot = ptcl1->Mass + ptcl2->Mass;
+    semi = 1.0 / (2.0 / r - mag(dv) / m_tot); // semi-major axis in code unit
 
-    ecc = sqrt(1 + (2 * energy * mag(h)) / (M * M));
+    double p = 1.0 - r/semi;
+
+    ecc = sqrt(p*p + rv*rv/semi/m_tot);
 
     // Apply binary stellar evolution iff the binary orbit is elliptical
     if (ecc >= 1.0)
@@ -620,6 +619,9 @@ std::vector<std::string> getCustomInitParams(Particle* ptcl) {
     }
     
     std::vector<std::string> init_params{Mass.str(), Z.str(), "0.0", "delayed", tini.str(), "end", "all"};
+
+    delete star;
+    ptcl->StellarEvolution = nullptr;
 
     return init_params;
 }
