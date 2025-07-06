@@ -411,6 +411,7 @@ void NewFBInitialization3(Group* group) {
 	After NewFBInitialization3, new binary forms and the same particles are detected as new binary members...
 	I suspect this error happens because NewNumberOfNeighbor was not set to 0.
 	Let's see what happens... by EW 2025.6.25
+	It seems that this is right solution! by EW 2025.7.6
 	*/
 
 	delete group;

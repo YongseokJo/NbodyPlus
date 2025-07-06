@@ -94,6 +94,18 @@ void StellarEvolution() {
         UpdateEvolution(ptcl);
 #endif
 
+        if (ptcl->CMPtclIndex != -1) {
+            Particle* ptclCM = &particles[ptcl->CMPtclIndex];
+            double CMPtclMass = 0.0;
+            bool kicked = true;
+            for (int i=0; i<ptclCM->NumberOfMember; i++) {
+                Particle* member = &particles[ptclCM->Members[i]];
+                if (member->Mass > 0.0)
+                    CMPtclMass += member->Mass;
+            }
+            ptclCM->Mass = CMPtclMass;
+        }
+
         if (SEVNList.empty() || SEVNList.begin()->first > global_time * EnzoTimeStep * 1e4)
             break;
     }
