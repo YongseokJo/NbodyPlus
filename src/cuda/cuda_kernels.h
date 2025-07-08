@@ -24,6 +24,9 @@ __global__ void reduce_forces_kernel(const CUDA_REAL *diff,  // [6 * m * n] tota
                                      int n, // "rows" in each component
                                      int m  // "columns"
                                     );
+__global__ void compute_forces_mpi(const CUDA_REAL* __restrict__ ptcl_i, const CUDA_REAL* __restrict__ r2_i,
+			const CUDA_REAL* __restrict__ ptcl_j, CUDA_REAL* __restrict__ acc, const int* indices_i,
+			 int m, int n, int N_i_total, int* __restrict__ neighbor, int* num_neighbor, int i_start, int j_start);
 /*
 __device__ void _addition(Result &result, const Result res);
 __device__ void _copy(Result &result, const Result res);

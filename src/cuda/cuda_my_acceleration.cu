@@ -76,8 +76,8 @@ extern CUDA_REAL *h_r2;
 CUDA_REAL *h_r2=nullptr; //only for verification
 #endif
 
-extern cudaStream_t stream;
-cudaStream_t stream;
+// extern cudaStream_t stream;
+// cudaStream_t stream;
 
 #ifdef MultiGPU
 cudaStream_t streams[4]; //Maximum 4 GPUs
@@ -823,7 +823,7 @@ void _InitializeDevice(int irank){
 	for (int deviceNum = 0; deviceNum < deviceCount; deviceNum++) {
 		cudaSetDevice(deviceNum);
 		cudaStreamCreate(&streams[deviceNum]);
-		initializeCudaAndCublas(&cublasHandles[deviceNum]);	
+		// initializeCudaAndCublas(&cublasHandles[deviceNum]);	
 	    cublasSetStream(cublasHandles[deviceNum], streams[deviceNum]);
 
         // Force runtime to initialize driver context for this device

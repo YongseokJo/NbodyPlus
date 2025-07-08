@@ -47,7 +47,7 @@ void initializeMPI(int argc, char *argv[]) {
 	NumberOfWorker = NumberOfProcessor - 1;
 
 	if (NumberOfProcessor < 2) {
-		std::cerr << "This program requires at least 2 processes.\n";
+		std::cerr << "This program requires at least 2 processes. but we have " << NumberOfProcessor<< "\n";
 		MPI_Finalize();
 	}
 

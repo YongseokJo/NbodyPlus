@@ -85,22 +85,25 @@ void WorkerRoutines() {
 			case RegSend:
 				int N_j, N_i;
 				
+				fprintf(stderr, "Processor %d: RegSend task received for ptcl_id %d\n", MyRank, ptcl_id);
 				MPI_Recv(&N_i, 1, MPI_INT, ROOT, 1010, MPI_COMM_WORLD, &status);
 				MPI_Recv(&N_j, 1, MPI_INT, ROOT, 1011, MPI_COMM_WORLD, &status);
 
 				AllocateDeviceMemory(N_i, N_j, ptcl_id); // this part cannot be parallelized
 				SendToDeviceMPI(N_i, N_j, ptcl_id); //this part should be parallelized
-
+				fprintf(stderr, "Processor %d: RegSend task completed for ptcl_id %d\n", MyRank, ptcl_id);
 				// sendAllParticlesToGPU(next_time, RegularList, IndexList, N_start, N_end, ptcl_id);
 				// predict and send particles to device
 				break;
 				
 			case RegCal: {
-
+				fprintf(stderr, "Processor %d: RegCal task received for ptcl_id %d\n", MyRank, ptcl_id);
 				int* int_lists = new int[3];
 				MPI_Recv(int_lists, 3, MPI_INT, ROOT, 1, MPI_COMM_WORLD, &status);
 				RegularWorker(int_lists[0], int_lists[1], int_lists[2], ptcl_id);
 				delete int_lists;
+
+				fprintf(stderr, "Processor %d: RegCal task completed for ptcl_id %d\n", MyRank, ptcl_id);
 				break;
 			}
 

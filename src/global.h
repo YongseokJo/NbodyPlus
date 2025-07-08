@@ -118,3 +118,6 @@ extern Performance performance;
 #endif
 
 #endif
+
+
+extern int deviceCount;

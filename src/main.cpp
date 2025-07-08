@@ -27,7 +27,7 @@ void RootRoutines();
 int Parser(int argc, char *argv[]);
 int readData();
 int readParameterFile();
-
+void InitializeGPU(int gpu_id);
 
 int main(int argc, char *argv[]) {
 
@@ -52,8 +52,13 @@ int main(int argc, char *argv[]) {
 #ifdef CUDA
 	int root_proc = 0;
 	//if (MyRank == ROOT)
-	OpenDevice(&root_proc);
-	cudaDeviceSynchronize(); 
+	cudaGetDeviceCount(&deviceCount);
+	if ((MyRank > 0) && (MyRank < deviceCount)){
+		InitializeGPU(MyRank - 1);
+		cudaDeviceSynchronize(); 
+	}
+	// OpenDevice(&root_proc);
+	// cudaDeviceSynchronize(); 
 #endif
 
 	/*

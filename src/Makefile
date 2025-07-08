@@ -4,7 +4,7 @@ CXX = mpic++
 #CXX = g++
 
 # Compiler flags
-CXXFLAGS  = -O2 -march=native -ftree-vectorize -std=c++11 -Wall -Wextra -Wuninitialized -I./Particle -I./ -g -DPERFORMANCETRACE -DMultiNode #-DDEBUG #-DMULTIMAP #-DDEBUG #-fopenmp  -fsanitize=thread
+CXXFLAGS  = -O2 -march=native -ftree-vectorize -std=c++11 -Wall -Wextra -Wuninitialized -I./Particle -I./ -g -DPERFORMANCETRACE #-DMultiNode #-DDEBUG #-DMULTIMAP #-DDEBUG #-fopenmp  -fsanitize=thread
 #CXXFLAGS  = -O0 -std=c++11 -Wall -Wextra -Wuninitialized -I./Particle -I./ -g -qopenmp  #-fopenmp  -fsanitize=thread
 #CXXFLAGS  = -O0 -std=c++11 -Wall -Wextra -Wuninitialized -I./Particle -I./ -g -fopenmp  -fsanitize=thread
 #CXXFLAGS  = -O2 -std=c++11 -Wall -Wextra -Wuninitialized -I./Particle -I./ -g -fopenmp  #-fsanitize=thread
@@ -33,11 +33,12 @@ CXX_SRCS += FewBody/FBCheck.cpp FewBody/FBInitialization.cpp FewBody/FBIntegrati
 ifdef USE_CUDA
 	CXXFLAGS += -I./cuda -DCUDA -DNSIGHT
 	NVCC = nvcc
-	NVCCFLAGS = -O2 --std=c++11 -G -Xcompiler -rdynamic -g -lineinfo -Xptxas=-v -lcuda -lcudart -lcompute-sanitizer
+	NVCCFLAGS = -I./../SDAR/src -O2 -std=c++11 -G -Xcompiler -rdynamic -g -lineinfo -Xptxas=-v -lcuda -lcudart -lcompute-sanitizer
 	NVCC_FLAGS_DEBUG = -g -G --device-debug -lineinfo
 	LDFLAGS += -L/usr/local/cuda/lib64/ -lcudart -lcublas -lnvToolsExt -lcuda
 	CXX_SRCS += cuda/CalculateRegularAcceleration.cpp
 	CU_SRCS = cuda/cuda_my_acceleration.cu cuda/cuda_kernels.cu cuda/regular_worker.cu
+	NVCCFLAGS += -I/home/vinicius/install/mpich-3.3.2/mpich3/include -lmpi
 endif
 
 ifdef USE_SEVN

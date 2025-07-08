@@ -5,7 +5,7 @@
 #include <iostream>
 #include <cuda_runtime.h>
 
-
+/*
 void initializeCudaAndCublas(cublasHandle_t* handle) {
 	cudaError_t cudaStat = cudaSetDevice(0);
 	if (cudaStat != cudaSuccess) {
@@ -19,14 +19,13 @@ void initializeCudaAndCublas(cublasHandle_t* handle) {
 		exit(1);
 	}
 }
-
-void checkCudaError(cudaError_t result) {
-	if (result != cudaSuccess) {
-		std::cerr << "CUDA Runtime Error: " << cudaGetErrorString(result) << std::endl;
-		exit(EXIT_FAILURE);
-	}
+*/
+inline void checkCudaError(cudaError_t result) {
+    if (result != cudaSuccess) {
+        std::cerr << "CUDA Runtime Error: " << cudaGetErrorString(result) << std::endl;
+        exit(EXIT_FAILURE);
+    }
 }
-
 
 
 template <typename T>

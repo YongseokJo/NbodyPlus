@@ -11,4 +11,5 @@ extern "C" {
 	void RegularWorker(int NumTargetTotal, int Jstart, int Jend, int gpu_id);
 	void AllocateDeviceMemory(int N_i,int N_j,int gpu_id);
 	void SendToDeviceMPI(int N_i, int N_j, int gpu_id);
+	void InitializeGPU(int gpu_id);
 }
