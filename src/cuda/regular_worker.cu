@@ -67,7 +67,7 @@ int deviceCount;
 // void AllocateDeviceMemory(int N_i, int N_j, int gpu_id);
 void sendAllParticlesToGPU(double new_time, std::unordered_set<int> RegularList, int *IndexList, int ListSize);
 void RegularRoot(int NumTargetTotal, CUDA_REAL Acceleration[], int NumNeighbor[], int *NeighborList);
-
+void SetSize(int N_i, int N_j);
 
 
 void RegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueScheduler &queue_scheduler){
@@ -108,14 +108,15 @@ void RegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueScheduler &q
 		int_lists[0] = ListSize;
 		int_lists[1] = J_start;
 		int_lists[2] = J_end;
-		MPI_Send(int_lists, 3, MPI_INT, p, 1, MPI_COMM_WORLD);
+		MPI_Send(int_lists, 3, MPI_INT, p, 1, MPI_COMM_DEVICE);
 	}
 	delete int_lists;
 	// Start RegularWorker in the queue_scheduler
 	// RegularWorker(ListSize, J_start, J_end, gpu_id);
-
+	fprintf(stderr, "Processor %d: RegularWorker started with %d particles\n", MyRank, ListSize);
+	SetSize(ListSize, NumberOfParticle);
 	RegularRoot(ListSize, Acceleration, NumNeighborReceive, ACListReceive);
-
+	fprintf(stderr, "Processor %d: RegularRoot completed with %d particles\n", MyRank, ListSize);
 	int completed = 0;
 	MPI_Status status;
 	while (completed < deviceCount) {
@@ -223,6 +224,7 @@ void sendAllParticlesToGPU(double new_time, std::unordered_set<int> RegularList,
 		J_start = (gpu_id * NumberOfParticle) / deviceCount;
 		J_end = ((gpu_id + 1) * NumberOfParticle) / deviceCount;
 		int N_j = J_end - J_start;
+		j = 0; // reset j for each GPU
 
 		for (int i = J_start; i < J_end; ++i) {
 			int idx = indices[i];
@@ -234,27 +236,29 @@ void sendAllParticlesToGPU(double new_time, std::unordered_set<int> RegularList,
 			}
 
 			// h_ptcl_j[size + k * NumberOfParticle] = PREDICTED POSITION AND VELCOITY;
-			h_ptcl_j[i + 6 * N_j] = (CUDA_REAL)ptcl->Mass;
+			h_ptcl_j[j + 6 * N_j] = (CUDA_REAL)ptcl->Mass;
 			ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeReg, Position, Velocity);
-			h_ptcl_j[i] 			= (CUDA_REAL) Position[0];
-			h_ptcl_j[i + 	 N_j]	= (CUDA_REAL) Position[1];
-			h_ptcl_j[i + 2 * N_j]	= (CUDA_REAL) Position[2];
-			h_ptcl_j[i + 3 * N_j]	= (CUDA_REAL) Velocity[0];
-			h_ptcl_j[i + 4 * N_j]	= (CUDA_REAL) Velocity[1];
-			h_ptcl_j[i + 5 * N_j]	= (CUDA_REAL) Velocity[2];
+			h_ptcl_j[j] 			= (CUDA_REAL) Position[0];
+			h_ptcl_j[j + 	 N_j]	= (CUDA_REAL) Position[1];
+			h_ptcl_j[j + 2 * N_j]	= (CUDA_REAL) Position[2];
+			h_ptcl_j[j + 3 * N_j]	= (CUDA_REAL) Velocity[0];
+			h_ptcl_j[j + 4 * N_j]	= (CUDA_REAL) Velocity[1];
+			h_ptcl_j[j + 5 * N_j]	= (CUDA_REAL) Velocity[2];
+			j++;
 		}
+
 		fprintf(stderr, "Processor %d: Sending %d particles to GPU %d\n", MyRank, N_target, gpu_id);
 		// write this for me
 		queue.pid = gpu_id;
 		MPI_Send(&queue, 1, QueueType, p, QUEUE_TAG, MPI_COMM_WORLD);
-		MPI_Send(&N_target, 1, MPI_INT, p, 1010, MPI_COMM_WORLD);
-		MPI_Send(&N_j, 1, MPI_INT, p, 1011, MPI_COMM_WORLD);
-		MPI_Send(h_ptcl_i, 7 * N_target, MPI_CUDA, p, 1001, MPI_COMM_WORLD);
+		MPI_Send(&N_target, 1, MPI_INT, p, 1010, MPI_COMM_DEVICE);
+		MPI_Send(&N_j, 1, MPI_INT, p, 1011, MPI_COMM_DEVICE);
+		MPI_Send(h_ptcl_i, 7 * N_target, MPI_CUDA, p, 1001, MPI_COMM_DEVICE);
 
 		// send the “j”‐particles block
-		MPI_Send(h_ptcl_j, 7 * N_j, MPI_CUDA, p, 1002, MPI_COMM_WORLD);
-		MPI_Send(IndexList, N_target, MPI_INT, p, 1003, MPI_COMM_WORLD);
-		MPI_Send(Radius2, N_target, MPI_CUDA, p, 1004, MPI_COMM_WORLD);
+		MPI_Send(h_ptcl_j, 7 * N_j, MPI_CUDA, p, 1002, MPI_COMM_DEVICE);
+		MPI_Send(IndexList, N_target, MPI_INT, p, 1003, MPI_COMM_DEVICE);
+		MPI_Send(Radius2, N_target, MPI_CUDA, p, 1004, MPI_COMM_DEVICE);
 
 		fprintf(stderr, "Processor %d: Sent %d particles to GPU %d\n", MyRank, N_target, gpu_id);
 	}
@@ -303,21 +307,30 @@ void RegularRoot(
         h_num_neighbor_array[i] = new int[i_size];
         NeighborList_array[i] = new int[i_size * MaxNumNeighbor];
     }
-    
+
+	fprintf(stderr, "Processor %d: i_size_loop = %d, NumTargetTotal = %d \n",	
+			MyRank, i_size_loop, NumTargetTotal);
 
     // The root loops through the particle chunks, receiving and aggregating data for each.
     for (int TargetStart = 0; TargetStart < NumTargetTotal; TargetStart += i_size_loop) {
         int NumTarget = std::min(i_size_loop, NumTargetTotal - TargetStart);
         
+		//check MPI_COMM_DEVICE != MPI_COMM_NULL
+		fprintf(stderr, "Processor %d: RegularRoot started with %d targets from %d to %d\n", 
+				MyRank, NumTarget, TargetStart, TargetStart + NumTarget - 1);
+
         // The root process does not compute. It acts as the destination for the reduction.
-        MPI_Reduce(nullptr, // sendbuf is ignored on the root if not using MPI_IN_PLACE
+        MPI_Reduce(MPI_IN_PLACE,
                    Acceleration + TargetStart*_six, // receive buffer
                    _six * NumTarget,
 				   MPI_CUDA,
                    MPI_SUM, 
                    0, // root rank
-                   MPI_COMM_WORLD);
+                   MPI_COMM_DEVICE);
         
+		fprintf(stderr, "Processor %d: Reduced results for %d targets from %d to %d\n", 
+				MyRank, NumTarget, TargetStart, TargetStart + NumTarget - 1);
+				
         // Receive neighbor counts and lists from all worker ranks.
         // Workers are assumed to be ranks 1, 2, ..., deviceCount-1.
         for (int p = 1; p <= deviceCount; p++) {
@@ -326,14 +339,14 @@ void RegularRoot(
                      MPI_INT,
                      p, // Receive from worker rank p
                      NEIGHBOR_COUNT_TAG,
-                     MPI_COMM_WORLD,
+                     MPI_COMM_DEVICE,
                      MPI_STATUS_IGNORE);
             MPI_Recv(NeighborList_array[p-1],
                      NumTarget * MaxNumNeighbor,
                      MPI_INT,
                      p, // Receive from worker rank p
                      NEIGHBOR_LIST_TAG,
-                     MPI_COMM_WORLD,
+                     MPI_COMM_DEVICE,
                      MPI_STATUS_IGNORE);
         }
 
@@ -381,17 +394,35 @@ void _RegularWorker(int NumTargetTotal, int Jstart, int Jend, int gpu_id){
 
     for (int TargetStart = 0; TargetStart < NumTargetTotal; TargetStart += i_size_loop) {
 		NumTarget = std::min(i_size_loop, NumTargetTotal-TargetStart);
-		
+		fprintf(stderr, "Processor %d: RegularWorker started with %d targets from %d to %d on GPU %d\n", 
+				MyRank, NumTarget, TargetStart, TargetStart + NumTarget - 1, gpu_id);
+
 		RegAccelerationWorkThread(TargetStart, NumTarget, NumTargetTotal, Jstart, Jend, gpu_id, stream); //, h_result, NeighborList, h_num_neighbor_array
 		cudaStreamSynchronize(stream);
 		// Contribute h_result to the global sum on root
+
+		fprintf(stderr, "Processor %d: RegularWorker completed with %d targets from %d to %d on GPU %d\n", 
+				MyRank, NumTarget, TargetStart, TargetStart + NumTarget - 1, gpu_id);
+		fprintf(stderr, "Processor %d: for debug, MPI_COMM_DEVICE != MPI_COMM_NULL is %d\n", 
+			MyRank,
+			MPI_COMM_DEVICE != MPI_COMM_NULL);
+		if (MPI_COMM_DEVICE != MPI_COMM_NULL) {
+			int local_size, local_rank;
+			MPI_Comm_rank(MPI_COMM_DEVICE, &local_rank);
+			MPI_Comm_size(MPI_COMM_DEVICE, &local_size);
+			fprintf(stderr, "Global Rank %d: Local Rank %d in MPI_COMM_DEVICE (size %d)\n",
+					MyRank, local_rank, local_size);
+		}
         MPI_Reduce(h_result,
                    nullptr,
                    _six * NumTarget,
 				   MPI_CUDA,
                    MPI_SUM,
                    0,
-                   MPI_COMM_WORLD);
+                   MPI_COMM_DEVICE);
+
+		fprintf(stderr, "Processor %d: Reduced results for %d targets\n", 
+				MyRank, NumTarget);
 
         // Send neighbor counts to root
         MPI_Send(h_num_neighbor,
@@ -399,7 +430,7 @@ void _RegularWorker(int NumTargetTotal, int Jstart, int Jend, int gpu_id){
                  MPI_INT,
                  0,
                  NEIGHBOR_COUNT_TAG,
-                 MPI_COMM_WORLD);
+                 MPI_COMM_DEVICE);
 
         // Send neighbor lists to root
         MPI_Send(h_neighbor,
@@ -407,8 +438,9 @@ void _RegularWorker(int NumTargetTotal, int Jstart, int Jend, int gpu_id){
                  MPI_INT,
                  0,
                  NEIGHBOR_LIST_TAG,
-                 MPI_COMM_WORLD);
-
+                 MPI_COMM_DEVICE);
+		fprintf(stderr, "Processor %d: Sent neighbor data for %d targets to root\n", 
+				MyRank, NumTarget);
         // Ensure GPU work is complete
 	}
 }
@@ -500,6 +532,12 @@ void _SendToDeviceMPI(
 	cudaDeviceSynchronize();
 }
 
+void SetSize(int N_i, int N_j) {
+	// size of device memory for i and j
+	j_size = new_size(N_j);
+	i_size = new_size(N_i);
+	i_size_loop = i_size; // temporary
+}
 
 void _AllocateDeviceMemory(
 	int N_i,
@@ -514,15 +552,11 @@ void _AllocateDeviceMemory(
 
 	if ((first) || (new_size(N_j) > j_size) || (new_size(N_i) > i_size)) {
 		//varaiable_size should be the number of j, and target size be the number of i
-		
+		SetSize(N_i, N_j);
 		// size of device memory for i and j
-		j_size = new_size(N_j);
-		i_size = new_size(N_i);
-		i_size_loop = i_size; // temporary
 
 
 		fprintf(stderr, "background_size=%d, target_size=%d\n", j_size, i_size);
-
 		if (!first) {
 			fprintf(stderr, "Releasing device memory for GPU %d: i_size=%d, j_size=%d\n", gpu_id, i_size, j_size);
 			my_free(h_ptcl_i, d_ptcl_i);
@@ -557,14 +591,14 @@ void _AllocateDeviceMemory(
 
 	cudaDeviceSynchronize();
 
-	MPI_Recv(h_ptcl_i, 7 * N_i, MPI_CUDA, ROOT, 1001, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+	MPI_Recv(h_ptcl_i, 7 * N_i, MPI_CUDA, ROOT, 1001, MPI_COMM_DEVICE, MPI_STATUS_IGNORE);
 	MPI_Recv(
 		h_ptcl_j,                // buffer
 		7 * N_j,                 // count (7 fields per j‐particle)
 		MPI_CUDA,
 		ROOT,
 		1002,
-		MPI_COMM_WORLD,
+		MPI_COMM_DEVICE,
 		MPI_STATUS_IGNORE
 	);
 	MPI_Recv(
@@ -573,7 +607,7 @@ void _AllocateDeviceMemory(
 		MPI_INT,
 		ROOT,
 		1003,
-		MPI_COMM_WORLD,
+		MPI_COMM_DEVICE,
 		MPI_STATUS_IGNORE
 	);
 	MPI_Recv(
@@ -582,7 +616,7 @@ void _AllocateDeviceMemory(
 		MPI_CUDA,
 		ROOT,
 		1004,
-		MPI_COMM_WORLD,
+		MPI_COMM_DEVICE,
 		MPI_STATUS_IGNORE
 	);
 

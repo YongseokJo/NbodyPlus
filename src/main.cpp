@@ -53,10 +53,17 @@ int main(int argc, char *argv[]) {
 	int root_proc = 0;
 	//if (MyRank == ROOT)
 	cudaGetDeviceCount(&deviceCount);
-	if ((MyRank > 0) && (MyRank < deviceCount)){
+	if ((MyRank > 0) && (MyRank <= deviceCount)){
+		fprintf(stderr, "Processor %d: Initializing GPU %d\n", MyRank, MyRank - 1);
 		InitializeGPU(MyRank - 1);
 		cudaDeviceSynchronize(); 
 	}
+	// create MPI_COMM_DEVICE communicator for CUDA devices
+	int color;
+	if (MyRank <= deviceCount) color = 1;
+	else color = MPI_UNDEFINED;	
+
+	MPI_Comm_split(MPI_COMM_WORLD, color, MyRank, &MPI_COMM_DEVICE);
 	// OpenDevice(&root_proc);
 	// cudaDeviceSynchronize(); 
 #endif

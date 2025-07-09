@@ -21,6 +21,7 @@ int NumberOfProcessor;
 int NumberOfWorker;
 int NumberOfCommunication;
 
+MPI_Comm MPI_COMM_DEVICE; // For CUDA devices
 #ifdef MultiNode
 MPI_Comm update_comm;
 int NumberOfNode;

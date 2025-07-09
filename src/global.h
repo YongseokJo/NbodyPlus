@@ -29,6 +29,7 @@ extern int NumberOfCommunication;
 extern GlobalVariable *global_variable;
 extern GlobalVariable *global_variable_original;
 extern MPI_Datatype QueueType;
+extern MPI_Comm MPI_COMM_DEVICE; // For CUDA devices
 
 #ifdef MultiNode
 extern int update_rank;
