@@ -65,7 +65,7 @@ int deviceCount;
 
 // void RegularWorker(int NumTargetTotal, int Jstart, int Jend, int gpu_id);
 // void AllocateDeviceMemory(int N_i, int N_j, int gpu_id);
-void sendAllParticlesToGPU(double new_time, std::unordered_set<int> RegularList, int *IndexList, int ListSize);
+void sendAllParticlesToGPU(double new_time, std::unordered_set<int>& RegularList, int *IndexList, int ListSize);
 void RegularRoot(int NumTargetTotal, CUDA_REAL Acceleration[], int NumNeighbor[], int *NeighborList);
 void SetSize(int N_i, int N_j);
 
@@ -110,7 +110,7 @@ void RegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueScheduler &q
 		int_lists[2] = J_end;
 		MPI_Send(int_lists, 3, MPI_INT, p, 1, MPI_COMM_DEVICE);
 	}
-	delete int_lists;
+	delete [] int_lists;
 	// Start RegularWorker in the queue_scheduler
 	// RegularWorker(ListSize, J_start, J_end, gpu_id);
 	fprintf(stderr, "Processor %d: RegularWorker started with %d particles\n", MyRank, ListSize);
@@ -155,7 +155,7 @@ void RegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueScheduler &q
 }
 
 
-void sendAllParticlesToGPU(double new_time, std::unordered_set<int> RegularList, int *IndexList, int ListSize) {
+void sendAllParticlesToGPU(double new_time, std::unordered_set<int>& RegularList, int *IndexList, int ListSize) {
 
 	// Create a vector of indices from 0 to LastParticleIndex
 	std::vector<int> indices(global_variable->LastParticleIndex + 1);

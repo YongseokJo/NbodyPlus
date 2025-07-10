@@ -111,6 +111,8 @@ public:
 
 
     void takeQueueRegularList(std::unordered_set<int> &queue_list) {
+        assert(_queue_list_.empty());
+        assert(!_queue_list_.empty());
         _queue_list_ = queue_list;
         _total_queues = _queue_list_.size();
     }
@@ -500,6 +502,7 @@ private:
     void _initialize() {
         WorkersToGo.clear();
         _FreeWorkers.clear();
+        _queue_list_. clear(); // Debug 
         for (int i = 1; i <= NumberOfWorker; i++) {
             workers[i].initialize();
             _FreeWorkers.insert(&workers[i]);

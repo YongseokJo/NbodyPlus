@@ -16,6 +16,8 @@ void SendToDeviceMPI(int N_i, int N_j, int gpu_id);
 void sendAllParticlesToGPU(double new_time, std::unordered_set<int> RegularList, int *IndexList);
 void RegularRoot(int NumTargetTotal, CUDA_REAL Acceleration[], int NumNeighbor[], int *NeighborList);
 
+#ifdef Unuse
+
 void RegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueScheduler &queue_scheduler){
 	int ListSize = RegularList.size();
 	int *IndexList = new int[ListSize];
@@ -67,7 +69,7 @@ void RegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueScheduler &q
 	sendAllParticlesToGPU(new_time, RegularList, IndexList);
 
 
-	// queue_scheduler.initialize(RegCal);
+	queue_scheduler.initialize(RegCal);
 	queue.task = RegCal;
 	queue.next_time = -1;
 	int* int_lists = new int[3];
@@ -245,3 +247,5 @@ void sendAllParticlesToGPU(double new_time, std::unordered_set<int> RegularList,
 	delete[] h_ptcl_i;
 	delete[] Radius2;
 }
+
+#endif
