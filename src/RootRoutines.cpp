@@ -1423,6 +1423,15 @@ void RootRoutines() {
 				// calculateRegAccelerationOnGPU(RegularList, queue_scheduler); //original code
 				RegAccelerationOnGPU(RegularList, queue_scheduler);
 				
+				queue_scheduler.initialize(RegCuda);
+				queue_scheduler.takeQueueRegularList(RegularList);
+				do
+				{
+					queue_scheduler.assignQueueAutoRegularList();
+					queue_scheduler.runQueueAuto();
+					queue_scheduler.waitQueue(0); // blocking wait
+				} while (queue_scheduler.isComplete());
+				
 
 #ifdef DEBUG
 				std::cout << "calculateRegAccelerationOnGPU ended" << std::endl;

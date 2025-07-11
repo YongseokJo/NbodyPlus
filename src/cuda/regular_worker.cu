@@ -139,15 +139,6 @@ void RegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueScheduler &q
 	}
 
 
-	queue_scheduler.initialize(RegCuda);
-	queue_scheduler.takeQueueRegularList(RegularList);
-	do
-	{
-		queue_scheduler.assignQueueAutoRegularList();
-		queue_scheduler.runQueueAuto();
-		queue_scheduler.waitQueue(0); // blocking wait
-	} while (queue_scheduler.isComplete());
-
 	delete[] IndexList;
 	delete[] Acceleration;
 	delete[] NumNeighborReceive;
