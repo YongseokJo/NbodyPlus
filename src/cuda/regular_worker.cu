@@ -186,7 +186,6 @@ void sendAllParticlesToGPU(double new_time, std::unordered_set<int> RegularList,
 
 	for (int idx: indices) {
 		ptcl       = &particles[idx];
-		size++;
 		if (!ptcl->isActive) {
 			// fprintf(stderr, "Skipping inactive particle (%d)\n", ptcl->PID);
 			continue;
@@ -207,6 +206,7 @@ void sendAllParticlesToGPU(double new_time, std::unordered_set<int> RegularList,
 		}
 
 		ActiveIndexToOriginalIndex[size] = idx;
+		size++;
 	}
 	assert(NumberOfParticle == size); // for debugging by EW 2025.1.25
 
