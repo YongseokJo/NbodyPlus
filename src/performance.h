@@ -32,6 +32,7 @@ struct Performance {
 
 #ifdef SEVN
 	long StellarEvolution = 0;
+	long BinaryStellarEvolution = 0;
 #endif
 
 };
