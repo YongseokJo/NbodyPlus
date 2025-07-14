@@ -382,7 +382,6 @@ void SetRadius(Particle* ptcl) {
 #ifdef SEVN_BINARY
 /* by EW 2025.6.27
     Important note: In current version, binary members are DELETED in the SEVNList.
-    + CM ptcl will be added in the SEVNList.
     If this takes too much time, we should consider to use a different approach.
     How about not using SEVNList at all, and applying stellar evolution at every irregular timestep?
 */
@@ -456,11 +455,11 @@ bool makeSEVNBinary(Particle* ptclCM) {
         return true;
 
     // for debugging by EW 2025.6.26
-    fprintf(SEVNout, "SEVN BSE... CM PID: %d. semi: %e pc, ecc: %e\n", ptclCM->PID, semi * position_unit, ecc);
+    // fprintf(SEVNout, "SEVN BSE... CM PID: %d. semi: %e pc, ecc: %e\n", ptclCM->PID, semi * position_unit, ecc);
 
     semi = semi * position_unit * utilities::parsec_to_Rsun; // semi-major axis in Rsun
 
-    fprintf(SEVNout, "SEVN BSE... Binary candidate members should be deleted from SEVNList\n");
+    // fprintf(SEVNout, "SEVN BSE... Binary candidate members should be deleted from SEVNList\n");
     int num_del = 0;
     auto it = SEVNList.begin();
     while (it != SEVNList.end()) {
@@ -478,6 +477,7 @@ bool makeSEVNBinary(Particle* ptclCM) {
     assert(num_del == 2); // we should delete two particles from the SEVNList
 
     BinaryFormationTime *= EnzoTimeStep*1e4; // in Myr unit
+    /*
     bool evolve = false;
     while (ptcl1->WorldTime + ptcl1->StellarEvolution->getp(Timestep::ID) <= BinaryFormationTime) {
         ptcl1->WorldTime += ptcl1->StellarEvolution->getp(Timestep::ID);
@@ -515,6 +515,7 @@ bool makeSEVNBinary(Particle* ptclCM) {
         }
     }
     ptcl2->WorldTime = BinaryFormationTime;
+    */
 
     std::vector<std::string> init1 = getCustomInitParams(ptcl1);
     std::vector<std::string> init2 = getCustomInitParams(ptcl2);
@@ -532,8 +533,8 @@ bool makeSEVNBinary(Particle* ptclCM) {
 
     size_t id = ptclCM->PID;
     Binstar* binstar = new Binstar(sevnio, init_binstar_params, id);
-    fprintf(SEVNout, "SEVN BSE... New Binstar is successfully created. CM PID: %d at %e Myr\n", 
-            ptclCM->PID, BinaryFormationTime);
+    fprintf(SEVNout, "SEVN BSE... New Binstar is successfully created. CM PID: %d at %e Myr (semi: %e pc, ecc: %e, GWtime: %e Myr)\n", 
+            ptclCM->PID, BinaryFormationTime, binstar->getp(Semimajor::ID) / utilities::parsec_to_Rsun, binstar->getp(Eccentricity::ID), binstar->getp(GWtime::ID));
 
     ptclCM->BinaryEvolution = binstar;
     ptclCM->FormationTime   = BinaryFormationTime;    // in Myr unit
@@ -565,7 +566,7 @@ void convertBinaryToSingle(Particle* ptclCM) {
 
     ptclCM->BinaryEvolution->custom_destructor();
     ptclCM->BinaryEvolution = nullptr;
-    fprintf(SEVNout, "Binary object (PID: %d) SEVN memory is free now\n", ptclCM->PID);
+    fprintf(SEVNout, "In convertBinaryToSingle... Binary object (PID: %d) SEVN memory is free now\n", ptclCM->PID);
 
     if (!star1->amiremnant())
         SEVNList.insert({ptcl1->WorldTime + ptcl1->StellarEvolution->getp(Timestep::ID), ptcl1->ParticleIndex});
