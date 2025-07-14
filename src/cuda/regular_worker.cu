@@ -183,7 +183,7 @@ void sendAllParticlesToGPU(double new_time, std::unordered_set<int> RegularList,
 	for (int idx: indices) {
 		ptcl       = &particles[idx];
 		if (!ptcl->isActive) {
-			fprintf(stderr, "Skipping inactive particle (%d)\n", ptcl->PID);
+			// fprintf(stderr, "Skipping inactive particle (%d)\n", ptcl->PID);
 			continue;
 		}
 
@@ -206,15 +206,16 @@ void sendAllParticlesToGPU(double new_time, std::unordered_set<int> RegularList,
 	}
 	assert(NumberOfParticle ==size ); // for debugging by EW 2025.1.25
 
+	
 	for (int p = 1; p <= deviceCount; p++) {
-		int gpu_id = p - 1;
-		J_start = (gpu_id * NumberOfParticle) / deviceCount;
-		J_end = ((gpu_id + 1) * NumberOfParticle) / deviceCount;
-		int N_j = J_end - J_start;
+		int gpu_id = p - 1; // change this in the future
+		
+		J_start = 0; // (gpu_id * NumberOfParticle) / deviceCount;
+		int N_j = std::min(NumberOfParticle / deviceCount, (LastParticleIndex + 1) - J_start);
 		j = 0; // reset j for each GPU
 
-		for (int i = J_start; i < J_end; ++i) {
-			int idx = indices[i];
+		while (j < N_j) {
+			int idx = indices[J_start + j];
 			ptcl = &particles[idx];
 
 			if (!ptcl->isActive) {
@@ -234,7 +235,8 @@ void sendAllParticlesToGPU(double new_time, std::unordered_set<int> RegularList,
 			j++;
 		}
 
-		// write this for me
+		assert(N_j == j);
+
 		queue.pid = gpu_id;
 		MPI_Send(&queue, 1, QueueType, p, QUEUE_TAG, MPI_COMM_WORLD);
 		MPI_Send(&N_target, 1, MPI_INT, p, 1010, MPI_COMM_DEVICE);
@@ -246,7 +248,7 @@ void sendAllParticlesToGPU(double new_time, std::unordered_set<int> RegularList,
 		MPI_Send(IndexList, N_target, MPI_INT, p, 1003, MPI_COMM_DEVICE);
 		MPI_Send(Radius2, N_target, MPI_CUDA, p, 1004, MPI_COMM_DEVICE);
 
-
+		J_start += N_j; // Update J_start for the next GPU
 	}
 	int completed = 0;
 	MPI_Status status;
