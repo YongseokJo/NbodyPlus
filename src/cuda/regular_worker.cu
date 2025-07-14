@@ -97,8 +97,9 @@ void RegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueScheduler &q
 	int* int_lists = new int[3];
 	for (int p = 1; p <= deviceCount; p++) {
 		int gpu_id = p - 1;
-		J_start = (gpu_id * NumberOfParticle) / deviceCount;
-		J_end = ((gpu_id + 1) * NumberOfParticle) / deviceCount;
+		J_start = (gpu_id * NumberOfParticle + deviceCount - 1) / deviceCount;
+		J_end = ((gpu_id + 1) * NumberOfParticle + deviceCount - 1) / deviceCount;
+		J_end = std::min(J_end, NumberOfParticle);
 
 		queue.pid = gpu_id;
 		MPI_Send(&queue, 1, QueueType, p, QUEUE_TAG, MPI_COMM_WORLD);
@@ -157,7 +158,7 @@ void sendAllParticlesToGPU(double new_time, std::unordered_set<int> RegularList,
 	
 	CUDA_REAL * Radius2;
 	//int size = NumberOfParticle;
-	int size=0, j=0, i=0;
+	int size=0, j=0, i=0, raw_idx=0;
 	int N_target = RegularList.size();
 	int N_j_max = (NumberOfParticle + deviceCount - 1) / deviceCount; // As N_j can be differnt among devices
 
@@ -183,7 +184,7 @@ void sendAllParticlesToGPU(double new_time, std::unordered_set<int> RegularList,
 	for (int idx: indices) {
 		ptcl       = &particles[idx];
 		if (!ptcl->isActive) {
-			// fprintf(stderr, "Skipping inactive particle (%d)\n", ptcl->PID);
+			fprintf(stderr, "Skipping inactive particle (%d)\n", ptcl->PID);
 			continue;
 		}
 
@@ -204,45 +205,35 @@ void sendAllParticlesToGPU(double new_time, std::unordered_set<int> RegularList,
 		ActiveIndexToOriginalIndex[size] = idx;
 		size++;
 	}
-	assert(NumberOfParticle ==size ); // for debugging by EW 2025.1.25
+	assert(NumberOfParticle ==size); // for debugging by EW 2025.1.25
 
 	
+	J_start = 0;
 	for (int p = 1; p <= deviceCount; p++) {
 		int gpu_id = p - 1; // change this in the future
-		
-		J_start = 0; // (gpu_id * NumberOfParticle) / deviceCount;
 		// int N_j = std::min(NumberOfParticle / deviceCount, (LastParticleIndex + 1) - J_start);
-		int N_j = std::min(NumberOfParticle / deviceCount, NumberOfParticle - J_start);
+		int N_j = std::min(N_j_max, NumberOfParticle - J_start);
 		j = 0; // reset j for each GPU
+		raw_idx = 0;
 
-		int debug_int = 0;
 		while (j < N_j) {
-			int idx = indices[J_start + j];
+			int idx = indices[J_start + raw_idx];
 			ptcl = &particles[idx];
 
-			if (!ptcl->isActive) {
-				fprintf(stderr, "Skipping inactive particle (%d)\n", ptcl->PID);
-				debug_int++;
-				if (debug_int > 1000) {
-					fprintf(stderr, "Too many inactive particles, breaking to avoid infinite loop.\n");
-					exit(1);
-				}
-				continue;
+			if (ptcl->isActive) {
+				h_ptcl_j[j + 6 * N_j] = (CUDA_REAL)ptcl->Mass;
+				ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeReg, Position, Velocity);
+				h_ptcl_j[j] 			= (CUDA_REAL) Position[0];
+				h_ptcl_j[j + 	 N_j]	= (CUDA_REAL) Position[1];
+				h_ptcl_j[j + 2 * N_j]	= (CUDA_REAL) Position[2];
+				h_ptcl_j[j + 3 * N_j]	= (CUDA_REAL) Velocity[0];
+				h_ptcl_j[j + 4 * N_j]	= (CUDA_REAL) Velocity[1];
+				h_ptcl_j[j + 5 * N_j]	= (CUDA_REAL) Velocity[2];
+				j++;
 			}
-
-			// h_ptcl_j[size + k * NumberOfParticle] = PREDICTED POSITION AND VELCOITY;
-			h_ptcl_j[j + 6 * N_j] = (CUDA_REAL)ptcl->Mass;
-			ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeReg, Position, Velocity);
-			h_ptcl_j[j] 			= (CUDA_REAL) Position[0];
-			h_ptcl_j[j + 	 N_j]	= (CUDA_REAL) Position[1];
-			h_ptcl_j[j + 2 * N_j]	= (CUDA_REAL) Position[2];
-			h_ptcl_j[j + 3 * N_j]	= (CUDA_REAL) Velocity[0];
-			h_ptcl_j[j + 4 * N_j]	= (CUDA_REAL) Velocity[1];
-			h_ptcl_j[j + 5 * N_j]	= (CUDA_REAL) Velocity[2];
-			j++;
+			raw_idx++;
 		}
 
-		assert(N_j == j);
 
 		queue.pid = gpu_id;
 		MPI_Send(&queue, 1, QueueType, p, QUEUE_TAG, MPI_COMM_WORLD);
@@ -257,6 +248,9 @@ void sendAllParticlesToGPU(double new_time, std::unordered_set<int> RegularList,
 
 		J_start += N_j; // Update J_start for the next GPU
 	}
+
+	assert(J_start == NumberOfParticle);
+
 	int completed = 0;
 	MPI_Status status;
 	while (completed < deviceCount) {
@@ -414,7 +408,8 @@ void _RegularWorker(int NumTargetTotal, int Jstart, int Jend, int gpu_id){
                  MPI_COMM_DEVICE);
         // Ensure GPU work is complete
 
-		#ifdef UNUSE
+#define UNUSE
+#ifdef UNUSE
         // =================================================================
         // START: CPU VERIFICATION OF GPU NEIGHBOR LIST
         // =================================================================
@@ -506,7 +501,7 @@ void _RegularWorker(int NumTargetTotal, int Jstart, int Jend, int gpu_id){
         // =================================================================
         // END: CPU VERIFICATION
         // =================================================================
-		#endif
+#endif
 	}
 }
 
