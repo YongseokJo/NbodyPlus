@@ -112,18 +112,23 @@ void DefaultGlobal() {
 #ifdef SEVN
 	std::vector<std::string> args = {"empty", // Not used
 		// "-myself", "/data/vinicius/NbodyPlus/SEVN",
-		"-tables", "/home/vinicius/install/sevn_enzo/tables/SEVNtracks_parsec_ov04_AGB", 
+		"-tables", "/home/vinicius/install/sevn_custom/tables/SEVNtracks_parsec_ov04_AGB", 
 		//  "-tables", "/data/vinicius/NbodyPlus/SEVN/tables/SEVNtracks_MIST_AGB",
 		// "-tables_HE", "/data/vinicius/NbodyPlus/SEVN/tables/SEVNtracks_parsec_pureHe36",
 		// "-turn_WR_to_pureHe", "false",
-		"-snmode", "delayed",
-		"-Z", "0.0002",
-		"-spin", "0.0",
-		"-tini", "zams", 
-		"-tf", "end",
-		// "-tf", "0.000122",
-		"-dtout", "events",
-		"-xspinmode", "geneva"};
+		// "-snmode", "delayed",
+		// "-Z", "0.0002",
+		// "-spin", "0.0",
+		// "-tini", "zams", 
+		// "-tf", "end",
+		// "-dtout", "events",
+		"-xspinmode", "geneva",
+		"-hardmode", "disabled", // binary hardening due to external perturbers
+		// "-collmode", "disabled", // collision at periastron // If this is disabled, no common envelope or stellar merger in SEVN
+		// "-circmode", "disabled", // orbital circularisation; default: circualise conseving the binary angular momentum
+		"-tmode", "disabled" // equilibrium tides // Currently, we're not considering stellar rotation, so let's disable this
+		// "-gwmode", "disabled"}; // Peters formula; this is considered in SDAR but let's turn this on
+	};
 	std::vector<char*> c_args;
 	for (auto& arg : args) {
 		c_args.push_back(&arg[0]);

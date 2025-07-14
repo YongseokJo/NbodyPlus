@@ -3,6 +3,7 @@
 
 #include "def.h"
 #include <cmath>
+#include "cstring"
 
 // SDAR
 #include "Common/Float.h"
@@ -10,6 +11,9 @@
 #include <iomanip>
 #ifdef SEVN
 #include "star.h" // Eunwoo added for SEVN
+#ifdef SEVN_BINARY
+#include "binstar.h"
+#endif
 #endif
 
 extern double InitialNeighborRadius;
@@ -79,6 +83,9 @@ struct Particle {
 #ifdef SEVN
 	// For SEVN
 	StarSEVN* StellarEvolution;
+#ifdef SEVN_BINARY
+	Binstar* BinaryEvolution;
+#endif
 	double FormationTime; // Myr // for restart
 	double WorldTime; // Myr // FormationTime + EvolutionTime
 #endif
@@ -91,7 +98,7 @@ struct Particle {
 		RadiusOfNeighbor= -1;
 		NumberOfNeighbor= 0;
 		NewNumberOfNeighbor= 0;
-		ParticleType    = -9999;
+		ParticleType    = NO_FEEDBACK_STAR;
 		CurrentTimeIrr  = 0.; // consistent with actual current time
 		CurrentTimeReg  = 0.;
 		CurrentBlockIrr = 0; // consistent with actual current time
@@ -129,6 +136,9 @@ struct Particle {
 		NumberOfMember = 0;
 #ifdef SEVN
 		StellarEvolution = nullptr;
+#ifdef SEVN_BINARY
+		BinaryEvolution = nullptr;
+#endif
 		FormationTime = 0.0; // Myr
 		WorldTime = 0.0; // Myr
 #endif
@@ -151,7 +161,7 @@ struct Particle {
 		this->Velocity[1]  = data[4];
 		this->Velocity[2]  = data[5];
 		this->Mass         = data[6];
-		// this->ParticleType = 0; //NormalStar+SingleParticle;
+		this->ParticleType = NO_FEEDBACK_STAR;
 		//this->NextParticleInEnzo = NextParticleInEnzo;
 		this->CurrentTimeReg		= 0;
 		this->CurrentTimeIrr		= 0;
@@ -176,7 +186,7 @@ struct Particle {
 		this->NumberOfMember = 0;
 
 #ifndef SEVN
-		this->ParticleType = NormalStar+SingleStar;
+		this->ParticleType = NO_FEEDBACK_STAR;
 		this->radius = 2.25461e-8/position_unit*pow(this->Mass*1e9, 1./3); // stellar radius in code unit
 		/*
 		if (this->Mass*1e9 > 8) {
@@ -207,6 +217,11 @@ struct Particle {
 		CMPtclIndex = -1;
 		NumberOfMember = 0;
 		setBinaryInterruptState(BinaryInterruptState::none);
+		ParticleType = NO_FEEDBACK_STAR;
+
+		a_spin[0] = 0.;
+		a_spin[1] = 0.;
+		a_spin[2] = 0.;
     }
 
 	void normalizeParticle() {
@@ -346,8 +361,7 @@ struct Particle {
 	// made by EW 2025.1.6
 	void copyNewNeighbor(Particle* ptcl) {
 		this->NewNumberOfNeighbor = ptcl->NewNumberOfNeighbor;
-		for (int i = 0; i < ptcl->NewNumberOfNeighbor; i++)
-			this->NewNeighbors[i] = ptcl->NewNeighbors[i];
+		std::memcpy(this->NewNeighbors, ptcl->NewNeighbors, sizeof(int)*ptcl->NewNumberOfNeighbor);
 	}
 	
 };

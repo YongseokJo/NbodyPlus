@@ -41,6 +41,11 @@ void updateNextRegTime(std::unordered_set<int>& RegularList);
 
 #ifdef SEVN
 void StellarEvolution();
+#ifdef SEVN_BINARY
+bool makeSEVNBinary(Particle* ptclCM);
+void deleteSEVNBinary(Particle* ptclCM);
+void BinaryEvolution(Particle* ptclCM);
+#endif
 #endif
 
 Worker* workers;
@@ -91,6 +96,12 @@ void RootRoutines() {
 
 	std::chrono::high_resolution_clock::time_point start_point_routine;
 	std::chrono::high_resolution_clock::time_point end_point_routine;
+
+#ifdef SEVN_BINARY
+	std::chrono::high_resolution_clock::time_point start_point_BSE;
+	std::chrono::high_resolution_clock::time_point end_point_BSE;
+#endif
+
 #ifdef MULTIMAP
 	std::chrono::high_resolution_clock::time_point start_point_map;
 	std::chrono::high_resolution_clock::time_point end_point_map;
@@ -163,7 +174,26 @@ void RootRoutines() {
 				CMPtclWorker.insert({ptcl->ParticleIndex, CMPtclWorker.size() % NumberOfWorker + 1});
 				PIDs.push_back(ptcl->ParticleIndex);
 				rank = CMPtclWorker[ptcl->ParticleIndex];
-
+#ifdef SEVN_BINARY
+#ifdef PERFORMANCETRACE
+				start_point_BSE = std::chrono::high_resolution_clock::now();
+#endif
+				if (!makeSEVNBinary(ptcl)) {
+					if (ptcl->ParticleIndex == LastParticleIndex) {
+						LastParticleIndex--;
+						global_variable->LastParticleIndex == LastParticleIndex;
+					}
+					else
+						PrevCMPtclWorker.insert({ptcl->ParticleIndex, CMPtclWorker[ptcl->ParticleIndex]});
+					CMPtclWorker.erase(ptcl->ParticleIndex);
+					continue;
+				}
+#ifdef PERFORMANCETRACE
+				end_point_BSE = std::chrono::high_resolution_clock::now();
+				performance.BinaryStellarEvolution +=
+					std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_BSE - start_point_BSE).count();
+#endif
+#endif
 				queue.task = MakePrimordialGroup;
 				queue.pid = ptcl->ParticleIndex;
 				workers[rank].addQueue(queue);
@@ -408,20 +438,7 @@ void RootRoutines() {
 					skiplist->deleteFirstNode();
 					continue;
 				}
-				/* // Test for KISTI optimization
-				if ((global_time*EnzoTimeStep*1e10/1e6 >= 0 && global_time*EnzoTimeStep*1e10/1e6 <= 0.1) ||
-						(global_time*EnzoTimeStep*1e10/1e6 >= 20 && global_time*EnzoTimeStep*1e10/1e6 <= 20.1)) {
-					
-					fprintf(stdout, "N_irr: %d\n", ThisLevelNode->ParticleList.size());
-					if ((global_time*EnzoTimeStep*1e10/1e6 >= 0 && global_time*EnzoTimeStep*1e10/1e6 <= 0.0001) ||
-						(global_time*EnzoTimeStep*1e10/1e6 >= 20 && global_time*EnzoTimeStep*1e10/1e6 <= 20.0001)) {
-						for (int i=0; i<ThisLevelNode->ParticleList.size(); i++) {
-							fprintf(stdout, "NN: %d\n", particles[ThisLevelNode->ParticleList[i]].NumberOfNeighbor);
-						}
-					}
-					fflush(stdout);
-				}
-				*/
+
 				next_time     = particles[ThisLevelNode->ParticleList[0]].CurrentTimeIrr\
 									 	    + particles[ThisLevelNode->ParticleList[0]].TimeStepIrr;
 
@@ -464,6 +481,9 @@ void RootRoutines() {
 				int cm_pid;
 				queue_scheduler.initializeIrr(IrrForce, next_time, ThisLevelNode->ParticleList);
 				auto iter = queue_scheduler.CMPtcls.begin();
+#ifdef SEVN_BINARY
+				std::vector<int> CMPtclsForSEVN;
+#endif
 				do
 				{
 					queue_scheduler.assignQueueAuto();
@@ -495,6 +515,10 @@ void RootRoutines() {
 							workers[CMPtclWorker[cm_pid]].addQueue(queue);
 							queue_scheduler.assignWorker(&workers[CMPtclWorker[cm_pid]]);
 							iter = queue_scheduler.CMPtcls.erase(iter);
+#ifdef SEVN_BINARY
+							if (ptcl->BinaryEvolution != nullptr)
+								CMPtclsForSEVN.push_back(cm_pid);
+#endif
 						// skip_to_next:;
 						}
 						if (worker != nullptr) 
@@ -504,6 +528,21 @@ void RootRoutines() {
 					} while (worker == nullptr);
 					queue_scheduler.callback(worker);
 				} while (queue_scheduler.isComplete());
+
+#ifdef SEVN_BINARY
+#ifdef PERFORMANCETRACE
+				start_point_BSE = std::chrono::high_resolution_clock::now();
+#endif
+				for (int cm_index: CMPtclsForSEVN) {
+					ptcl = &particles[cm_index];
+					BinaryEvolution(ptcl);
+				}
+#ifdef PERFORMANCETRACE
+				end_point_BSE = std::chrono::high_resolution_clock::now();
+				performance.BinaryStellarEvolution +=
+					std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_BSE - start_point_BSE).count();
+#endif
+#endif
 // */
 /*
 				queue_scheduler.initialize(IrrForce, next_time);
@@ -563,8 +602,7 @@ void RootRoutines() {
 #ifdef NSIGHT
 				nvtxRangePushA("IrregularUpdate");
 #endif
-/*
-				// Irregular Update
+				/* // For this kind of simple work, using queue_scheduler is slower
 				queue_scheduler.initialize(IrrUpdate);
 				queue_scheduler.takeQueue(ThisLevelNode->ParticleList);
 				do
@@ -573,7 +611,7 @@ void RootRoutines() {
 					queue_scheduler.runQueueAuto();
 					queue_scheduler.waitQueue(0); // blocking wait
 				} while (queue_scheduler.isComplete());
-*/
+				*/
 				for (int ptcl_id : ThisLevelNode->ParticleList)
 				{
 					ptcl = &particles[ptcl_id];
@@ -755,6 +793,20 @@ void RootRoutines() {
 							std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_map - start_point_map).count();
 #endif
 #endif // multimap
+
+#ifdef SEVN_BINARY
+						if (ptcl->BinaryEvolution != nullptr) {
+#ifdef PERFORMANCETRACE
+							start_point_BSE = std::chrono::high_resolution_clock::now();
+#endif
+							deleteSEVNBinary(ptcl);
+#ifdef PERFORMANCETRACE
+							end_point_BSE = std::chrono::high_resolution_clock::now();
+							performance.BinaryStellarEvolution +=
+								std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_BSE - start_point_BSE).count();
+#endif
+						}
+#endif
 						FBTermination(ptcl);
 					}
 				}
@@ -816,7 +868,7 @@ void RootRoutines() {
 #ifdef DEBUG
 				std::cout << "FB search starts" << std::endl;
 #endif
-/*
+				/* // FB search is united with IrrForce, so we don't need to do this again.
 				// std::cerr << "FB search starts" << std::endl;
 				// Few-body group search
 				queue_scheduler.initialize(SearchGroup);
@@ -830,7 +882,7 @@ void RootRoutines() {
 				} while (queue_scheduler.isComplete());
 
 				// std::cerr << "FB search ended" << std::endl;
-*/
+				*/
 				for (int ptcl_id : ThisLevelNode->ParticleList)
 				{
 					ptcl = &particles[ptcl_id];
@@ -921,7 +973,12 @@ void RootRoutines() {
 								workers[rank_delete].runQueue();
 								workers[rank_delete].callback();
 
-								PrevCMPtclWorker.insert({mem_ptclCM->ParticleIndex, CMPtclWorker[mem_ptclCM->ParticleIndex]});
+								if (mem_ptclCM->ParticleIndex == LastParticleIndex) {
+									LastParticleIndex--;
+									global_variable->LastParticleIndex == LastParticleIndex;
+								}
+								else
+									PrevCMPtclWorker.insert({mem_ptclCM->ParticleIndex, CMPtclWorker[mem_ptclCM->ParticleIndex]});
 								CMPtclWorker.erase(mem_ptclCM->ParticleIndex);
 							}
 						}
@@ -929,6 +986,27 @@ void RootRoutines() {
 						rank_new = CMPtclWorker[ptclCM->ParticleIndex];
 #ifdef DEBUG
 						fprintf(stdout, "Rank of CM ptcl %d: %d\n", ptclCM->PID, rank_new);
+#endif
+
+#ifdef SEVN_BINARY
+#ifdef PERFORMANCETRACE
+						start_point_BSE = std::chrono::high_resolution_clock::now();
+#endif
+						if (!makeSEVNBinary(ptclCM)) {
+							if (ptclCM->ParticleIndex == LastParticleIndex) {
+								LastParticleIndex--;
+								global_variable->LastParticleIndex == LastParticleIndex;
+							}
+							else
+								PrevCMPtclWorker.insert({ptclCM->ParticleIndex, CMPtclWorker[ptclCM->ParticleIndex]});
+							CMPtclWorker.erase(ptclCM->ParticleIndex);
+							continue;
+						}
+#ifdef PERFORMANCETRACE
+						end_point_BSE = std::chrono::high_resolution_clock::now();
+						performance.BinaryStellarEvolution +=
+							std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_BSE - start_point_BSE).count();
+#endif
 #endif
 						queue.task = MakeGroup;
 						queue.pid = ptclCM->ParticleIndex;

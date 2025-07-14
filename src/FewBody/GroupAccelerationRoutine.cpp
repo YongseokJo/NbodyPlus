@@ -5,7 +5,6 @@
 
 void CalculateAcceleration01(Particle* ptcl1);
 void CalculateAcceleration23(Particle* ptcl1);
-void deleteNeighbors(int newOrder);
 void mergeGroupCandidates(int OriginalLastParticleIndex);
 
 void formPrimordialBinaries(int OriginalLastParticleIndex) {
@@ -175,62 +174,6 @@ void mergeGroupCandidates(int OriginalLastParticleIndex) {
     }
 }
 
-
-void deleteNeighbors(int newOrder) {
-
-	Particle* ptclCM;
-
-	std::cout << "New particle index is " << newOrder << std::endl;
-	ptclCM = &particles[newOrder];
-	ptclCM->PID = NewPID;
-	NewPID++;
-	ptclCM->isActive = true;
-	ptclCM->isCMptcl = true;
-	ptclCM->setBinaryInterruptState(BinaryInterruptState::none);
-
-	Particle* members;
-
-	for (int i=0; i<ptclCM->NewNumberOfNeighbor; i++) {
-		members = &particles[ptclCM->NewNeighbors[i]];
-		members->isActive = false;
-	}
-	NumberOfParticle += 1 - ptclCM->NewNumberOfNeighbor;
-
-	// Erase members and put CM particle in neighbors
-	for (int i=0; i<=LastParticleIndex; i++) {
-
-		Particle* ptcl = &particles[i];
-		if (!ptcl->isActive)
-			continue;
-
-		auto newEnd = std::remove_if(
-			ptcl->Neighbors, 
-			ptcl->Neighbors + ptcl->NumberOfNeighbor, 
-			/* // for debugging by EW 2025.1.22
-			[ptcl, &particles](int j) {
-				if (!particles[j].isActive) {
-					std::cout << "Inactive neighbor PID: " << particles[j].PID << " of particle PID: " << ptcl->PID << std::endl;
-					return true;
-				}
-				return false;
-			*/
-			// /* // original code by EW 2025.1.22
-			[&particles](int j) {
-				return !particles[j].isActive;
-			// */
-			}
-		);
-
-		if (newEnd != ptcl->Neighbors + ptcl->NumberOfNeighbor) {
-			// std::cout << "Original NumberOfNeighbor: " << ptcl->NumberOfNeighbor << std::endl; // for debugging by EW 2025.1.22
-			ptcl->NumberOfNeighbor = newEnd - ptcl->Neighbors;
-			ptcl->Neighbors[ptcl->NumberOfNeighbor] = ptclCM->ParticleIndex;
-			// std::cout << "newly added CM ptcl PID: " << ptclCM->PID << std::endl; // for debugging by EW 2025.1.22
-			ptcl->NumberOfNeighbor++;
-			// std::cout << "New NumberOfNeighbor: " <<ptcl->NumberOfNeighbor << std::endl; // for debugging by EW 2025.1.22
-		}
-	}
-}
 
 void makePrimordialGroup(Particle* ptclCM) {
 

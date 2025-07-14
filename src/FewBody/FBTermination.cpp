@@ -4,36 +4,6 @@
 void CalculateAcceleration01(Particle* ptcl1);
 void CalculateAcceleration23(Particle* ptcl1);
 
-void insertNeighbors(Particle* ptclCM) {
-
-	// std::cout << "CM ptcl PID: " << ptclCM->PID << ", NewNumberOfNeighbor: " << ptclCM->NewNumberOfNeighbor << std::endl; // for debugging by EW 2025.1.22
-
-	for (int i=0; i<=LastParticleIndex; i++) {
-		Particle* ptcl = &particles[i];
-		if (!ptcl->isActive)
-			continue;
-		
-		for (int j = 0; j < ptcl->NumberOfNeighbor; ++j) {
-			if (ptcl->Neighbors[j] == ptclCM->ParticleIndex) {
-				// std::cout << "Terminated neighbor PID: " << particles[ptcl->Neighbors[j]].PID << " of particle PID: " << ptcl->PID << std::endl; // for debugging by EW 2025.1.22
-				// std::cout << "Original NumberOfNeighbor: " << ptcl->NumberOfNeighbor << std::endl; // for debugging by EW 2025.1.22
-				ptcl->Neighbors[j] = ptcl->Neighbors[ptcl->NumberOfNeighbor - 1];
-				ptcl->NumberOfNeighbor--;
-
-				for (int k=0; k<ptclCM->NewNumberOfNeighbor; k++) {
-					if (particles[ptclCM->NewNeighbors[k]].Mass == 0.0)
-						continue;
-					ptcl->Neighbors[ptcl->NumberOfNeighbor] = ptclCM->NewNeighbors[k];
-					// std::cout << "Newly added neighbor PID: " << particles[ptclCM->NewNeighbors[k]].PID << std::endl; // for debugging by EW 2025.1.22
-					ptcl->NumberOfNeighbor++;
-				}
-				// std::cout << "After NumberOfNeighbor: " << ptcl->NumberOfNeighbor << std::endl; // for debugging by EW 2025.1.22
-				break;
-			}
-		}
-	}
-}
-
 void FBTermination(Particle* ptclCM) {
 
 	fprintf(binout,"--------------------------------------\n");

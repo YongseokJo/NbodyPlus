@@ -337,6 +337,11 @@ int writeParticle(double current_time, int outputNum) {
 		std::cout << "Stellar Evolution: " << performance.StellarEvolution*1e-9 << " s";
 		std::cout << " (" << 100.0 * performance.StellarEvolution / performance.WholeRoutine << " %)" << std::endl;
 		performance.StellarEvolution = 0;
+#ifdef SEVN_BINARY
+		std::cout << "Binary Stellar Evolution: " << performance.BinaryStellarEvolution*1e-9 << " s";
+		std::cout << " (" << 100.0 * performance.BinaryStellarEvolution / performance.WholeRoutine << " %)" << std::endl;
+		performance.BinaryStellarEvolution = 0;
+#endif
 #endif
 		performance.WholeRoutine = 0;
 		std::cout << "-----------------------------------------------" << std::endl;
