@@ -211,15 +211,22 @@ void sendAllParticlesToGPU(double new_time, std::unordered_set<int> RegularList,
 		int gpu_id = p - 1; // change this in the future
 		
 		J_start = 0; // (gpu_id * NumberOfParticle) / deviceCount;
-		int N_j = std::min(NumberOfParticle / deviceCount, (LastParticleIndex + 1) - J_start);
+		// int N_j = std::min(NumberOfParticle / deviceCount, (LastParticleIndex + 1) - J_start);
+		int N_j = std::min(NumberOfParticle / deviceCount, NumberOfParticle - J_start);
 		j = 0; // reset j for each GPU
 
+		int debug_int = 0;
 		while (j < N_j) {
 			int idx = indices[J_start + j];
 			ptcl = &particles[idx];
 
 			if (!ptcl->isActive) {
-				// fprintf(stderr, "Skipping inactive particle (%d)\n", ptcl->PID);
+				fprintf(stderr, "Skipping inactive particle (%d)\n", ptcl->PID);
+				debug_int++;
+				if (debug_int > 1000) {
+					fprintf(stderr, "Too many inactive particles, breaking to avoid infinite loop.\n");
+					exit(1);
+				}
 				continue;
 			}
 
