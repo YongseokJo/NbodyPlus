@@ -68,6 +68,7 @@ int deviceCount;
 void sendAllParticlesToGPU(double new_time, std::unordered_set<int> RegularList, int *IndexList, int ListSize);
 void RegularRoot(int NumTargetTotal, CUDA_REAL Acceleration[], int NumNeighbor[], int *NeighborList);
 void SetSize(int N_i, int N_j);
+void RegAccelerationWorkThread(int TargetStart, int NumTarget, int NumTargetTotal, int JStart, int Jend, int gpu_id, cudaStream_t stream);
 
 
 void RegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueScheduler &queue_scheduler){
@@ -88,10 +89,7 @@ void RegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueScheduler &q
 	std::memset(Acceleration, 0, ListSize * 6 * sizeof(CUDA_REAL));
 
 	Queue queue;
-	fprintf(stderr, "Processor %d: sendAllParticlesToGPU started with %d particles\n", MyRank, ListSize);
 	sendAllParticlesToGPU(new_time, RegularList, IndexList, ListSize);
-
-	fprintf(stderr, "Processor %d: sendAllParticlesToGPU completed with %d particles\n", MyRank, ListSize);
 
 	// queue_scheduler.initialize(RegCal);
 	queue.task = RegCal;
@@ -113,10 +111,8 @@ void RegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueScheduler &q
 	delete [] int_lists;
 	// Start RegularWorker in the queue_scheduler
 	// RegularWorker(ListSize, J_start, J_end, gpu_id);
-	fprintf(stderr, "Processor %d: RegularWorker started with %d particles\n", MyRank, ListSize);
 	SetSize(ListSize, NumberOfParticle);
 	RegularRoot(ListSize, Acceleration, NumNeighborReceive, ACListReceive);
-	fprintf(stderr, "Processor %d: RegularRoot completed with %d particles\n", MyRank, ListSize);
 	int completed = 0;
 	MPI_Status status;
 	while (completed < deviceCount) {
@@ -187,7 +183,7 @@ void sendAllParticlesToGPU(double new_time, std::unordered_set<int> RegularList,
 	for (int idx: indices) {
 		ptcl       = &particles[idx];
 		if (!ptcl->isActive) {
-			// fprintf(stderr, "Skipping inactive particle (%d)\n", ptcl->PID);
+			fprintf(stderr, "Skipping inactive particle (%d)\n", ptcl->PID);
 			continue;
 		}
 
@@ -208,7 +204,7 @@ void sendAllParticlesToGPU(double new_time, std::unordered_set<int> RegularList,
 		ActiveIndexToOriginalIndex[size] = idx;
 		size++;
 	}
-	assert(NumberOfParticle == size); // for debugging by EW 2025.1.25
+	assert(NumberOfParticle ==size ); // for debugging by EW 2025.1.25
 
 	for (int p = 1; p <= deviceCount; p++) {
 		int gpu_id = p - 1;
@@ -238,7 +234,6 @@ void sendAllParticlesToGPU(double new_time, std::unordered_set<int> RegularList,
 			j++;
 		}
 
-		fprintf(stderr, "Processor %d: Sending %d particles to GPU %d\n", MyRank, N_target, gpu_id);
 		// write this for me
 		queue.pid = gpu_id;
 		MPI_Send(&queue, 1, QueueType, p, QUEUE_TAG, MPI_COMM_WORLD);
@@ -251,9 +246,8 @@ void sendAllParticlesToGPU(double new_time, std::unordered_set<int> RegularList,
 		MPI_Send(IndexList, N_target, MPI_INT, p, 1003, MPI_COMM_DEVICE);
 		MPI_Send(Radius2, N_target, MPI_CUDA, p, 1004, MPI_COMM_DEVICE);
 
-		fprintf(stderr, "Processor %d: Sent %d particles to GPU %d\n", MyRank, N_target, gpu_id);
+
 	}
-	fprintf(stderr, "Processor %d: All particles sent to GPUs\n", MyRank);
 	int completed = 0;
 	MPI_Status status;
 	while (completed < deviceCount) {
@@ -263,7 +257,6 @@ void sendAllParticlesToGPU(double new_time, std::unordered_set<int> RegularList,
 		MPI_Recv(&return_value, 1, MPI_INT, completed_rank, TERMINATE_TAG, MPI_COMM_WORLD, &status);
 		completed++;
 	}
-	fprintf(stderr, "Processor %d: All GPUs completed their tasks\n", MyRank);
 	delete[] h_ptcl_j;
 	delete[] h_ptcl_i;
 	delete[] Radius2;
@@ -272,7 +265,6 @@ void sendAllParticlesToGPU(double new_time, std::unordered_set<int> RegularList,
 
 
 
-void RegAccelerationWorkThread(int TargetStart, int NumTarget, int NumTargetTotal, int JStart, int Jend, int gpu_id, cudaStream_t stream);
 // To Do list
 // 1) Add Global Variable: DeviceCount, list of workers that bound to GPUs
 // 2) Write Root Routine: SkeletonRegularWorker
@@ -299,16 +291,11 @@ void RegularRoot(
         NeighborList_array[i] = new int[i_size * MaxNumNeighbor];
     }
 
-	fprintf(stderr, "Processor %d: i_size_loop = %d, NumTargetTotal = %d \n",	
-			MyRank, i_size_loop, NumTargetTotal);
 
     // The root loops through the particle chunks, receiving and aggregating data for each.
     for (int TargetStart = 0; TargetStart < NumTargetTotal; TargetStart += i_size_loop) {
         int NumTarget = std::min(i_size_loop, NumTargetTotal - TargetStart);
         
-		//check MPI_COMM_DEVICE != MPI_COMM_NULL
-		fprintf(stderr, "Processor %d: RegularRoot started with %d targets from %d to %d\n", 
-				MyRank, NumTarget, TargetStart, TargetStart + NumTarget - 1);
 
         // The root process does not compute. It acts as the destination for the reduction.
         MPI_Reduce(MPI_IN_PLACE,
@@ -319,8 +306,6 @@ void RegularRoot(
                    0, // root rank
                    MPI_COMM_DEVICE);
         
-		fprintf(stderr, "Processor %d: Reduced results for %d targets from %d to %d\n", 
-				MyRank, NumTarget, TargetStart, TargetStart + NumTarget - 1);
 				
         // Receive neighbor counts and lists from all worker ranks.
         // Workers are assumed to be ranks 1, 2, ..., deviceCount-1.
@@ -347,24 +332,24 @@ void RegularRoot(
             NumNeighbor[current_target_idx] = 0;
             
             // Accumulate neighbor counts from each worker for the current target.
-            for (int p = 1; p <= deviceCount; p++) {
-                NumNeighbor[current_target_idx] += h_num_neighbor_array[p-1][j];
+            for (int l = 0; l < deviceCount; l++) {
+                NumNeighbor[current_target_idx] += h_num_neighbor_array[l][j];
             }
         }
 
         for (int k = 0; k < NumTarget; k++) {
             int offset = 0;
             // Merge neighbor lists from all workers for the current target.
-            for (int p = 1; p <= deviceCount; p++) {
-                int count = h_num_neighbor_array[p-1][k];
+            for (int l = 0; l < deviceCount; l++) {
+                int count = h_num_neighbor_array[l][k];
                 if (offset + count > MaxNumNeighbor) {
                     fprintf(stderr, "ERROR: Sum of neighbors exceeds MaxNumNeighbor for target %d!\n", k);
                     // Handle error, e.g. break or throw
                 }
                 memcpy(&NeighborList[(TargetStart + k) * MaxNumNeighbor + offset],
-                       &NeighborList_array[p-1][k * MaxNumNeighbor],
+                       &NeighborList_array[l][k * MaxNumNeighbor],
                        count * sizeof(int));
-                offset += count; 
+                offset += count;
             }
         }
         
@@ -385,24 +370,15 @@ void _RegularWorker(int NumTargetTotal, int Jstart, int Jend, int gpu_id){
 
     for (int TargetStart = 0; TargetStart < NumTargetTotal; TargetStart += i_size_loop) {
 		NumTarget = std::min(i_size_loop, NumTargetTotal-TargetStart);
-		fprintf(stderr, "Processor %d: RegularWorker started with %d targets from %d to %d on GPU %d\n", 
-				MyRank, NumTarget, TargetStart, TargetStart + NumTarget - 1, gpu_id);
 
 		RegAccelerationWorkThread(TargetStart, NumTarget, NumTargetTotal, Jstart, Jend, gpu_id, stream); //, h_result, NeighborList, h_num_neighbor_array
 		cudaStreamSynchronize(stream);
 		// Contribute h_result to the global sum on root
 
-		fprintf(stderr, "Processor %d: RegularWorker completed with %d targets from %d to %d on GPU %d\n", 
-				MyRank, NumTarget, TargetStart, TargetStart + NumTarget - 1, gpu_id);
-		fprintf(stderr, "Processor %d: for debug, MPI_COMM_DEVICE != MPI_COMM_NULL is %d\n", 
-			MyRank,
-			MPI_COMM_DEVICE != MPI_COMM_NULL);
 		if (MPI_COMM_DEVICE != MPI_COMM_NULL) {
 			int local_size, local_rank;
 			MPI_Comm_rank(MPI_COMM_DEVICE, &local_rank);
 			MPI_Comm_size(MPI_COMM_DEVICE, &local_size);
-			fprintf(stderr, "Global Rank %d: Local Rank %d in MPI_COMM_DEVICE (size %d)\n",
-					MyRank, local_rank, local_size);
 		}
         MPI_Reduce(h_result,
                    nullptr,
@@ -411,9 +387,6 @@ void _RegularWorker(int NumTargetTotal, int Jstart, int Jend, int gpu_id){
                    MPI_SUM,
                    0,
                    MPI_COMM_DEVICE);
-
-		fprintf(stderr, "Processor %d: Reduced results for %d targets\n", 
-				MyRank, NumTarget);
 
         // Send neighbor counts to root
         MPI_Send(h_num_neighbor,
@@ -430,9 +403,101 @@ void _RegularWorker(int NumTargetTotal, int Jstart, int Jend, int gpu_id){
                  0,
                  NEIGHBOR_LIST_TAG,
                  MPI_COMM_DEVICE);
-		fprintf(stderr, "Processor %d: Sent neighbor data for %d targets to root\n", 
-				MyRank, NumTarget);
         // Ensure GPU work is complete
+
+		#ifdef UNUSE
+        // =================================================================
+        // START: CPU VERIFICATION OF GPU NEIGHBOR LIST
+        // =================================================================
+        // This block recalculates the neighbor list on the CPU and compares
+        // it against the list generated by the GPU. This is for debugging.
+        // It compares the lists of *shuffled indices*.
+        int NumJ = Jend - Jstart;
+        bool verification_passed = true;
+
+        for (int i = 0; i < NumTarget; ++i) {
+            // This is the target particle we are checking
+            int current_target_global_idx = TargetStart + i;
+
+            // Get target particle's data
+            CUDA_REAL i_px = h_ptcl_i[current_target_global_idx];
+            CUDA_REAL i_py = h_ptcl_i[current_target_global_idx + NumTargetTotal];
+            CUDA_REAL i_pz = h_ptcl_i[current_target_global_idx + 2 * NumTargetTotal];
+            CUDA_REAL i_r2 = h_r2[current_target_global_idx];
+            int target_original_shuffled_idx = h_indices[current_target_global_idx];
+
+            // This vector will store the neighbors found by the CPU
+            std::vector<int> cpu_neighbors;
+            std::vector<CUDA_REAL> cpu_radii;
+
+            // Iterate over all source particles assigned to this worker
+            for (int j_local = 0; j_local < NumJ; ++j_local) {
+                int j_global = Jstart + j_local; // The shuffled index of the source particle
+
+                // Get source particle's position
+                CUDA_REAL j_px = h_ptcl_j[j_local];
+                CUDA_REAL j_py = h_ptcl_j[j_local + NumJ];
+                CUDA_REAL j_pz = h_ptcl_j[j_local + 2 * NumJ];
+
+                // Calculate squared distance
+                CUDA_REAL dx = j_px - i_px;
+                CUDA_REAL dy = j_py - i_py;
+                CUDA_REAL dz = j_pz - i_pz;
+                CUDA_REAL dist_sq = dx * dx + dy * dy + dz * dz;
+
+                // Avoid self-interaction
+                if (target_original_shuffled_idx == j_global) {
+                    continue;
+                }
+
+                // Check if it's a neighbor (using the correct < condition)
+                if (dist_sq < i_r2) {
+                    cpu_neighbors.push_back(j_global);
+					cpu_radii.push_back(dist_sq / i_r2);
+                }
+            }
+
+            // Now, compare the CPU-generated list with the GPU-generated list
+            int gpu_neighbor_count = h_num_neighbor[i];
+            int* gpu_neighbor_list_start = &h_neighbor[i * MaxNumNeighbor];
+
+            if (cpu_neighbors.size() != (size_t)gpu_neighbor_count) {
+                fprintf(stderr, "[GPU VERIFY FAIL] Rank %d, Target %d: Neighbor count mismatch! CPU: %zu, GPU: %d\n",
+                        gpu_id, target_original_shuffled_idx, cpu_neighbors.size(), gpu_neighbor_count);
+                verification_passed = false;
+				for (size_t l = 0; l < cpu_neighbors.size(); ++l) {
+					fprintf(stderr, "%d, ", cpu_neighbors[l]);
+				}
+				fprintf(stderr, "\n");
+				for (int l = 0; l < gpu_neighbor_count; ++l) {
+					fprintf(stderr, "%d, ", gpu_neighbor_list_start[l]);
+				}
+				fprintf(stderr, "\n");
+                continue; // No point in comparing lists if counts differ
+            }
+
+            // Sort both lists to perform a consistent comparison
+            std::sort(cpu_neighbors.begin(), cpu_neighbors.end());
+            std::sort(gpu_neighbor_list_start, gpu_neighbor_list_start + gpu_neighbor_count);
+
+            for (size_t k = 0; k < cpu_neighbors.size(); ++k) {
+                if (cpu_neighbors[k] != gpu_neighbor_list_start[k]) {
+                    fprintf(stderr, "[GPU VERIFY FAIL] Rank %d, Target %d: Mismatch at neighbor index %zu. (%d, %d) CPU found %d, GPU found %d.\n",
+                            gpu_id, target_original_shuffled_idx, k, cpu_neighbors.size(), gpu_neighbor_count, cpu_neighbors[k], gpu_neighbor_list_start[k]);
+                    verification_passed = false;		
+                    break; // Found a mismatch, no need to check further for this particle
+                }
+            }
+        }
+
+        if (verification_passed) {
+            fprintf(stdout, "[GPU VERIFY OK] Rank %d: Neighbor lists for %d targets (starting %d) are correct.\n",
+                    gpu_id, NumTarget, TargetStart);
+        }
+        // =================================================================
+        // END: CPU VERIFICATION
+        // =================================================================
+		#endif
 	}
 }
 
@@ -546,10 +611,7 @@ void _AllocateDeviceMemory(
 		SetSize(N_i, N_j);
 		// size of device memory for i and j
 
-
-		fprintf(stderr, "background_size=%d, target_size=%d\n", j_size, i_size);
 		if (!first) {
-			fprintf(stderr, "Releasing device memory for GPU %d: i_size=%d, j_size=%d\n", gpu_id, i_size, j_size);
 			my_free(h_ptcl_i, d_ptcl_i);
 			my_free(h_ptcl_j, d_ptcl_j);
 			my_free(h_result, d_result);
@@ -565,7 +627,6 @@ void _AllocateDeviceMemory(
 		else {
 			first = false;
 		}
-		fprintf(stderr, "Allocating device memory for GPU %d: i_size=%d, j_size=%d\n", gpu_id, i_size, j_size);
 		my_allocate(&h_ptcl_i, &d_ptcl_i, _seven*i_size); // x,v,m
 		my_allocate(&h_ptcl_j, &d_ptcl_j, _seven*j_size); // x,v,m
 		my_allocate(&h_result, &d_result,           _six*i_size);
@@ -610,8 +671,6 @@ void _AllocateDeviceMemory(
 		MPI_COMM_DEVICE,
 		MPI_STATUS_IGNORE
 	);
-
-	fprintf(stderr, "Allocated device memory for GPU %d: i_size=%d, j_size=%d\n", gpu_id, i_size, j_size);
 }
 
 void _InitializeGPU(int gpu_id){

@@ -1237,7 +1237,6 @@ __global__ void compute_forces_mpi(const CUDA_REAL* __restrict__ ptcl_i, const C
 						jx += scale * (dvx - common_factor * dx);
 						jy += scale * (dvy - common_factor * dy);
 						jz += scale * (dvz - common_factor * dz);
-
 					}
 					else if (indices_i[i_start + i] != j_start + j + jj) { // checck this if we shuffled the j_ptcl
 						BlockNeighbor[NumNeighbor++] = j_start + j + jj;
