@@ -7,6 +7,7 @@
 
 
 #ifdef CUDA_FLOAT
+/*	// commented out by EW 2025.7.15 to define this function as inline function
 void Particle::predictParticleSecondOrder(double dt, CUDA_REAL pos[], CUDA_REAL vel[]) {
 	// Doubling check
 	// temporary variables for calculation
@@ -30,8 +31,10 @@ void Particle::predictParticleSecondOrder(double dt, CUDA_REAL pos[], CUDA_REAL 
 	}
 	return;
 }
+*/
 #endif
 
+/* // commented out by EW 2025.7.15 to define this function as inline function
 void Particle::predictParticleSecondOrder(double dt, double pos[], double vel[]) {
 	// Doubling check
 	// temporary variables for calculation
@@ -55,6 +58,7 @@ void Particle::predictParticleSecondOrder(double dt, double pos[], double vel[])
 	}
 	return;
 }
+*/
 
 
 /*
