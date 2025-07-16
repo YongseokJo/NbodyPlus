@@ -13,6 +13,7 @@ void makePrimordialGroup(Particle* ptclCM);
 void NewFBInitialization(Particle* ptclCM);
 void deleteGroup(Particle* ptclCM);
 void NewFBInitialization3(Group* group);
+void FBTerminationWorker(Particle* ptclCM);
 
 void WorkerRoutines() {
 
@@ -261,6 +262,12 @@ void WorkerRoutines() {
 
 				std::cout << "(SDAR) Processor " << MyRank<< ": PID= "<<ptcl->PID << " NewFBInitialization3 done!" <<std::endl;
 				break;
+
+			case FBTerminationMPI:
+
+				ptcl = &particles[ptcl_id];
+				FBTerminationWorker(ptcl);
+				break;
 #endif 
 
 			case Synchronize: // Synchronize
@@ -285,6 +292,8 @@ void WorkerRoutines() {
 		//task = -1;
 		if (task == IrrForce || task == RegForce || task == IrrUpdate || task == RegUpdate)
 			MPI_Isend(&ptcl_id, 1, MPI_INT, ROOT, TERMINATE_TAG, MPI_COMM_WORLD,&request);
+		else if (task == FBTerminationMPI)
+			continue;
 		else
 			MPI_Isend(&task, 1, MPI_INT, ROOT, TERMINATE_TAG, MPI_COMM_WORLD,&request);
 

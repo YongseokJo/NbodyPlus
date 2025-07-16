@@ -29,6 +29,7 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueSch
 void formPrimordialBinaries(int beforeLastParticleIndex);
 void formBinaries(std::vector<int>& ParticleList, std::vector<int>& newCMptcls, std::unordered_map<int, int>& existing, std::unordered_map<int, int>& terminated);
 void FBTermination(Particle* ptclCM);
+void FBTerminationRoot(Particle* ptclCM);
 void Merge(Particle* p1, Particle* p2);
 
 #ifdef MULTIMAP
@@ -807,7 +808,8 @@ void RootRoutines() {
 #endif
 						}
 #endif
-						FBTermination(ptcl);
+						// FBTermination(ptcl);
+						FBTerminationRoot(ptcl);
 					}
 				}
 
