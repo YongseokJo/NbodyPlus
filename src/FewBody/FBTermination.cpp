@@ -5,8 +5,8 @@
 
 void CalculateAcceleration01(Particle* ptcl1);
 void CalculateAcceleration23(Particle* ptcl1);
-void CalculateAcceleration01MPI(Particle* ptcl1, std::unordered_set<int>& neighborSet, std::vector<double>& accIrrReg_send);
-void CalculateAcceleration23MPI(Particle* ptcl1, std::unordered_set<int>& neighborSet, std::vector<double>& accIrrReg_send);
+void CalculateAcceleration01MPI(Particle* ptcl1, std::vector<double>& accIrrReg_send);
+void CalculateAcceleration23MPI(Particle* ptcl1, std::vector<double>& accIrrReg_send);
 
 void FBTermination(Particle* ptclCM) {
 
@@ -222,8 +222,7 @@ void FBTerminationRoot(Particle* ptclCM) {
 		members->TimeLevelIrr		= ptclCM->TimeLevelIrr; // test by EW 2025.1.29
 		members->TimeLevelReg		= ptclCM->TimeLevelReg;
 
-		// members->RadiusOfNeighbor = ACRadius*ACRadius; // added by EW 2025.1.16
-		members->RadiusOfNeighbor = ptclCM->RadiusOfNeighbor; // modified by EW 2025.1.30
+		// members->RadiusOfNeighbor = ptclCM->RadiusOfNeighbor; // modified by EW 2025.1.30 // This was done in RootRoutines.cpp by EW 2025.7.16
 
 		members->NumberOfNeighbor = ptclCM->NumberOfNeighbor;
 		std::memcpy(members->Neighbors, ptclCM->Neighbors, sizeof(int) * ptclCM->NumberOfNeighbor);
@@ -326,39 +325,26 @@ void FBTerminationRoot(Particle* ptclCM) {
 void FBTerminationWorker(Particle* ptclCM) {
 	
 	Particle* members;
-	std::unordered_set<int> neighborSet;
-	for (int i=0; i<ptclCM->NumberOfNeighbor; i++)
-		neighborSet.insert(ptclCM->Neighbors[i]);
-
 	for (int i=0; i<ptclCM->NumberOfMember; i++) {
 		members = &particles[ptclCM->Members[i]];
 
 		if (members->Mass < 0.0)
 			continue;
 
-		for (int j = 0; j < ptclCM->NumberOfMember; j++) {
-			Particle* members_members = &particles[ptclCM->Members[j]];
-			if (members_members->Mass > 0.0 && members_members->PID != members->PID)
-				neighborSet.insert(members_members->ParticleIndex);
-		}
-
 		std::vector<double> accIrrReg_send(Dim * HERMITE_ORDER * 2); // all the members are initialized as 0.0 by EW 2025/7/16
 		std::vector<double> accIrrReg_recv(Dim * HERMITE_ORDER * 2); // all the members are initialized as 0.0 by EW 2025/7/16
 
-		CalculateAcceleration01MPI(members, neighborSet, accIrrReg_send);
-		CalculateAcceleration23MPI(members, neighborSet, accIrrReg_send);
+		CalculateAcceleration01MPI(members, accIrrReg_send);
+		CalculateAcceleration23MPI(members, accIrrReg_send);
 
 		MPI_Request request;
 		MPI_Ireduce(accIrrReg_send.data(), accIrrReg_recv.data(), Dim * HERMITE_ORDER * 2, MPI_DOUBLE, MPI_SUM, ROOT, MPI_COMM_WORLD, &request);
-
-		for (int j = 0; j < ptclCM->NumberOfMember; j++)
-			neighborSet.erase(ptclCM->Members[j]);
 		
 		MPI_Wait(&request, MPI_STATUS_IGNORE);
 	}
 }
 
-void CalculateAcceleration01MPI(Particle* ptcl1, std::unordered_set<int>& neighborSet, std::vector<double>& accIrrReg_send) {
+void CalculateAcceleration01MPI(Particle* ptcl1, std::vector<double>& accIrrReg_send) {
 
 	double x[Dim], v[Dim];
 	double m_r3;
@@ -401,8 +387,7 @@ void CalculateAcceleration01MPI(Particle* ptcl1, std::unordered_set<int>& neighb
 
 		m_r3 = ptcl2->Mass/r2/sqrt(r2); 
 
-		// if (r2 > ptcl1->RadiusOfNeighbor) {
-		if (neighborSet.find(ptcl2->ParticleIndex) != neighborSet.end()) {
+		if (r2 < ptcl1->RadiusOfNeighbor) {
 			for (int dim=0; dim<Dim; dim++) {
 				accIrrReg_send[dim * HERMITE_ORDER + 0] += m_r3*x[dim];
 				accIrrReg_send[dim * HERMITE_ORDER + 1] += m_r3*(v[dim] - 3*x[dim]*vx/r2);
@@ -419,7 +404,7 @@ void CalculateAcceleration01MPI(Particle* ptcl1, std::unordered_set<int>& neighb
 	return;
 }
 
-void CalculateAcceleration23MPI(Particle* ptcl1, std::unordered_set<int>& neighborSet, std::vector<double>& accIrrReg_send) {
+void CalculateAcceleration23MPI(Particle* ptcl1, std::vector<double>& accIrrReg_send) {
 
 	double x[Dim], v[Dim], a21[Dim], a21dot[Dim], a1[Dim], a2[Dim], a1dot[Dim], a2dot[Dim];
 	double a, b, c;
@@ -483,7 +468,7 @@ void CalculateAcceleration23MPI(Particle* ptcl1, std::unordered_set<int>& neighb
 		b = v2/r2 + rdf_r2 + a*a;
 		c = 3*vdf_r2 + rdfdot_r2 + a*(3*b-4*a*a);
 
-		if (neighborSet.find(ptcl2->ParticleIndex) != neighborSet.end()) {
+		if (r2 < ptcl1->RadiusOfNeighbor) {
 			for (int dim=0; dim<Dim; dim++) {
 				adot2 = -ptcl2->Mass*(a1[dim]-a2[dim])/r3-6*a*a21dot[dim]-3*b*a21[dim];
 				adot3 = -ptcl2->Mass*(a1dot[dim]-a2dot[dim])/r3-9*a*adot2-9*b*a21dot[dim]-3*c*a21[dim];

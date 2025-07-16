@@ -342,7 +342,7 @@ void RootRoutines() {
 
 	/* Actual Loop */
 	{
-		int max_level = 5;
+		int max_level = 20;
 		double prob = 0.5;
 		SkipList *skiplist;
 		Node* ThisLevelNode;
@@ -749,6 +749,7 @@ void RootRoutines() {
 
 						for (int j=0; j < ptcl->NumberOfMember; j++) {
 							particles[ptcl->Members[j]].CMPtclIndex = -1;
+							particles[ptcl->Members[j]].RadiusOfNeighbor = ptcl->RadiusOfNeighbor; // for FBTerminationMPI added by EW 2025.7.16
 							if (particles[ptcl->Members[j]].Mass < 0.0) {
 #ifdef SEVN
 								Particle* ptcl_erased = &particles[ptcl->Members[j]];
