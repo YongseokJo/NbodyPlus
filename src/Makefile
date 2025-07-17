@@ -4,7 +4,7 @@ CXX = mpic++
 #CXX = g++
 
 # Compiler flags
-CXXFLAGS  = -O2 -march=native -ftree-vectorize -std=c++11 -Wall -Wextra -Wuninitialized -I./Particle -I./ -g -DPERFORMANCETRACE #-DMultiNode #-DDEBUG #-DMULTIMAP #-DDEBUG #-fopenmp  -fsanitize=thread
+CXXFLAGS  = -O2 -march=native -ftree-vectorize -std=c++11 -Wall -Wextra -Wuninitialized -I./Particle -I./ -g -DPERFORMANCETRACE -DDEBUG #-DMultiNode #-DDEBUG #-DMULTIMAP #-DDEBUG #-fopenmp  -fsanitize=thread
 #CXXFLAGS  = -O0 -std=c++11 -Wall -Wextra -Wuninitialized -I./Particle -I./ -g -qopenmp  #-fopenmp  -fsanitize=thread
 #CXXFLAGS  = -O0 -std=c++11 -Wall -Wextra -Wuninitialized -I./Particle -I./ -g -fopenmp  -fsanitize=thread
 #CXXFLAGS  = -O2 -std=c++11 -Wall -Wextra -Wuninitialized -I./Particle -I./ -g -fopenmp  #-fsanitize=thread
@@ -13,8 +13,8 @@ CXXFLAGS  = -O2 -march=native -ftree-vectorize -std=c++11 -Wall -Wextra -Wuninit
 
 # Libraries
 #LDFLAGS = -L/usr/local/cuda-11.8/lib64/ -lcudart -lcublas -lnvToolsExt -lm -lcuda -lmpi #node14
-LDFLAGS = -lm -lmpi
-# LDFLAGS = -L/usr/local/cuda/lib64/ -lm -lmpi #node15
+#LDFLAGS = -lm -lmpi
+LDFLAGS = -L/usr/local/cuda/lib64/ -lm -lmpi #node15
 #add -lnvToolsExt for <nvToolsExt.h>
 #LDFLAGS = -L/mnt/sw/nix/store/zi2wc26znf75csf5hhz77p0d2bbz53ih-cuda-11.8.0/lib64/ -lcudart
 
@@ -31,14 +31,14 @@ CXXFLAGS += -I./../SDAR/src -DAR_TTL -DAR_SLOWDOWN_TREE -DAR_SLOWDOWN_TIMESCALE 
 CXX_SRCS += FewBody/FBCheck.cpp FewBody/FBInitialization.cpp FewBody/FBIntegration.cpp FewBody/FBTermination.cpp FewBody/GroupAccelerationRoutine.cpp
 
 ifdef USE_CUDA
-	CXXFLAGS += -I./cuda -DCUDA -DNSIGHT
+	CXXFLAGS += -I./cuda -I/usr/local/cuda-11.5/include -DCUDA -DNSIGHT
 	NVCC = nvcc
 	NVCCFLAGS = -I./../SDAR/src -O2 -std=c++11 -G -Xcompiler -rdynamic -g -lineinfo -Xptxas=-v -lcuda -lcudart -lcompute-sanitizer
 	NVCC_FLAGS_DEBUG = -g -G --device-debug -lineinfo
 	LDFLAGS += -L/usr/local/cuda/lib64/ -lcudart -lcublas -lnvToolsExt -lcuda
 	CXX_SRCS += cuda/CalculateRegularAcceleration.cpp
 	CU_SRCS = cuda/cuda_my_acceleration.cu cuda/cuda_kernels.cu cuda/regular_worker.cu
-	NVCCFLAGS += -I/home/vinicius/install/mpich-3.3.2/mpich3/include -lmpi
+	NVCCFLAGS += -I/home/vinicius/install/mpich-3.3.2/mpich3_15/include -lmpi
 endif
 
 ifdef USE_SEVN
