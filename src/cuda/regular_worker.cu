@@ -22,6 +22,7 @@
 #include "cuda_routines.h"
 #include "QueueScheduler.h"
 
+// #define TEST1
 
 #ifndef NEIGHBOR_COUNT_TAG
 #define NEIGHBOR_COUNT_TAG 100
@@ -66,7 +67,8 @@ int deviceCount;
 // void RegularWorker(int NumTargetTotal, int Jstart, int Jend, int gpu_id);
 // void AllocateDeviceMemory(int N_i, int N_j, int gpu_id);
 void sendAllParticlesToGPU(double new_time, std::unordered_set<int> RegularList, int *IndexList, int ListSize);
-void RegularRoot(int NumTargetTotal, CUDA_REAL Acceleration[], int NumNeighbor[], int *NeighborList);
+// void RegularRoot(int NumTargetTotal, CUDA_REAL Acceleration[], int NumNeighbor[], int *NeighborList);
+void RegularRoot(int NumTargetTotal, std::vector<CUDA_REAL>& Acceleration, int NumNeighbor[], int *NeighborList);
 void SetSize(int N_i, int N_j);
 void RegAccelerationWorkThread(int TargetStart, int NumTarget, int NumTargetTotal, int JStart, int Jend, int gpu_id, cudaStream_t stream);
 
@@ -76,17 +78,18 @@ void RegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueScheduler &q
 	int *IndexList = new int[ListSize];
     
 	int *ACListReceive, *NumNeighborReceive;
-	CUDA_REAL *Acceleration;
+	// CUDA_REAL *Acceleration;
 	int J_start, J_end; // indices of J particles in the gpu devices 
 
 	Particle *ptcl;
 	double new_time = NextRegTimeBlock*time_step;  // next regular time
 
-	Acceleration		= new CUDA_REAL[6*ListSize];
+	// Acceleration		= new CUDA_REAL[6*ListSize];
+	std::vector<CUDA_REAL> Acceleration(6*ListSize);
 	NumNeighborReceive  = new int[ListSize];
 	ACListReceive		= new int[ListSize * MaxNumNeighbor];
 
-	std::memset(Acceleration, 0, ListSize * 6 * sizeof(CUDA_REAL));
+	// std::memset(Acceleration, 0, ListSize * 6 * sizeof(CUDA_REAL));
 
 	Queue queue;
 	sendAllParticlesToGPU(new_time, RegularList, IndexList, ListSize);
@@ -97,9 +100,11 @@ void RegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueScheduler &q
 	int* int_lists = new int[3];
 	for (int p = 1; p <= deviceCount; p++) {
 		int gpu_id = p - 1;
-		J_start = (gpu_id * NumberOfParticle + deviceCount - 1) / deviceCount;
-		J_end = ((gpu_id + 1) * NumberOfParticle + deviceCount - 1) / deviceCount;
-		J_end = std::min(J_end, NumberOfParticle);
+		// J_start = (gpu_id * NumberOfParticle + deviceCount - 1) / deviceCount;
+		// J_end = ((gpu_id + 1) * NumberOfParticle + deviceCount - 1) / deviceCount;
+		// J_end = std::min(J_end, NumberOfParticle);
+		J_start = (NumberOfParticle * gpu_id) / deviceCount;
+		J_end = ((NumberOfParticle * (gpu_id + 1)) / deviceCount);
 
 		queue.pid = gpu_id;
 		MPI_Send(&queue, 1, QueueType, p, QUEUE_TAG, MPI_COMM_WORLD);
@@ -124,6 +129,15 @@ void RegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueScheduler &q
 		completed++;
 	}
 
+#ifdef TEST1
+	fprintf(stdout, "GPU neighbor: ");
+	int I_test = ListSize-1;
+	for (int i = 0; i < NumNeighborReceive[I_test]; i++) {
+		fprintf(stdout, "%d,", ACListReceive[I_test * MaxNumNeighbor + i]);
+	}
+	fprintf(stdout, "\n");
+	fprintf(stdout, "GPU N_neighbor: %d, accx: %e, accy: %e\n\n", NumNeighborReceive[I_test], Acceleration[I_test * _six], Acceleration[I_test * _six + 1]);
+#endif
 	for (int i=0; i<ListSize; i++) {
 		ptcl = &particles[ActiveIndexToOriginalIndex[IndexList[i]]];
 		ptcl->NewNumberOfNeighbor = NumNeighborReceive[i];
@@ -136,7 +150,7 @@ void RegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueScheduler &q
 	}
 
 	delete[] IndexList;
-	delete[] Acceleration;
+	// delete[] Acceleration;
 	delete[] NumNeighborReceive;
 	delete[] ACListReceive;
 }
@@ -159,11 +173,18 @@ void sendAllParticlesToGPU(double new_time, std::unordered_set<int> RegularList,
 	//int size = NumberOfParticle;
 	int size=0, j=0, i=0, raw_idx=0;
 	int N_target = RegularList.size();
-	int N_j_max = (NumberOfParticle + deviceCount - 1) / deviceCount; // As N_j can be differnt among devices
+	// int N_j_max = (NumberOfParticle + deviceCount - 1) / deviceCount; // As N_j can be differnt among devices
+	int N_j_max = 0;
+	for (int p = 1; p <= deviceCount; p++) {
+		int gpu_id = p - 1;
+		int start = (NumberOfParticle * gpu_id) / deviceCount;
+		int end = ((NumberOfParticle * (gpu_id + 1)) / deviceCount);
+		N_j_max = std::max(N_j_max, end - start);
+	}
 
 	// allocate memory to the temporary variables
 	h_ptcl_j     = new CUDA_REAL[N_j_max*7];
-	h_ptcl_i     = new CUDA_REAL[N_target*7];
+	h_ptcl_i     = new CUDA_REAL[N_target*6];
 	Radius2  = new CUDA_REAL[N_target];		
 	
 	Particle *ptcl;
@@ -178,12 +199,17 @@ void sendAllParticlesToGPU(double new_time, std::unordered_set<int> RegularList,
 	queue.task = RegSend;
 	queue.next_time = -1;
 	// queue.pid = N_j;
+#ifdef TEST1
+	int I_test = -1;
+#endif
 
 	for (int idx: indices) {
 		ptcl       = &particles[idx];
 		if (!ptcl->isActive) {
-			// fprintf(stderr, "Skipping inactive particle (%d)\n", ptcl->PID);
+#ifdef TEST1
+			fprintf(stdout, "Skipping inactive particle (%d)\n", ptcl->PID);
 			// is_inactive = true;
+#endif
 			continue;
 		}
 
@@ -191,7 +217,12 @@ void sendAllParticlesToGPU(double new_time, std::unordered_set<int> RegularList,
 			IndexList[j] = size;
 			Radius2[j] = (CUDA_REAL)ptcl->RadiusOfNeighbor; // mass weight?
 
-			ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeReg, Position, Velocity);
+			if (ptcl->NumberOfNeighbor == 0) {
+				ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeReg, Position, Velocity);
+			}
+			else {
+				ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeIrr, Position, Velocity);
+			}
 			h_ptcl_i[j] = (CUDA_REAL) Position[0];
 			h_ptcl_i[j + N_target] = (CUDA_REAL) Position[1];
 			h_ptcl_i[j + 2 * N_target] = (CUDA_REAL) Position[2];
@@ -199,6 +230,12 @@ void sendAllParticlesToGPU(double new_time, std::unordered_set<int> RegularList,
 			h_ptcl_i[j + 4 * N_target] = (CUDA_REAL) Velocity[1];
 			h_ptcl_i[j + 5 * N_target] = (CUDA_REAL) Velocity[2];
 			j++;
+
+#ifdef TEST1
+			if (ptcl->PID == 58855){
+				I_test = j - 1;
+			}
+#endif
 		}
 
 		ActiveIndexToOriginalIndex[size] = idx;
@@ -207,12 +244,15 @@ void sendAllParticlesToGPU(double new_time, std::unordered_set<int> RegularList,
 	assert(NumberOfParticle ==size); // for debugging by EW 2025.1.25
 	
 	J_start = 0;
+
 	for (int p = 1; p <= deviceCount; p++) {
 		int gpu_id = p - 1; // change this in the future
 		
-		J_start = (gpu_id * NumberOfParticle + deviceCount - 1) / deviceCount;
-		J_end = ((gpu_id + 1) * NumberOfParticle + deviceCount - 1) / deviceCount;
-		J_end = std::min(J_end, NumberOfParticle);
+		// J_start = (gpu_id * NumberOfParticle + deviceCount - 1) / deviceCount;
+		J_start = (NumberOfParticle * gpu_id) / deviceCount;
+		J_end = ((NumberOfParticle * (gpu_id + 1)) / deviceCount);
+		// J_end = ((gpu_id + 1) * NumberOfParticle + deviceCount - 1) / deviceCount;
+		// J_end = std::min(J_end, NumberOfParticle);
 		int N_j = J_end - J_start;
 
 		// N_j = std::min(NumberOfParticle / deviceCount, (LastParticleIndex + 1) - J_start);
@@ -221,13 +261,20 @@ void sendAllParticlesToGPU(double new_time, std::unordered_set<int> RegularList,
 		j = 0; // reset j for each GPU
 		// raw_idx = 0;
 
-		while ((j < N_j) && (raw_idx < LastParticleIndex + 1)){
+		while (j < N_j) {
 			int idx = indices[raw_idx];
 			ptcl = &particles[idx];
 
 			if (ptcl->isActive) {
 				h_ptcl_j[j + 6 * N_j] = (CUDA_REAL)ptcl->Mass;
-				ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeReg, Position, Velocity);
+				// ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeReg, Position, Velocity);
+				if (ptcl->NumberOfNeighbor == 0) {
+					ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeReg, Position, Velocity);
+				}
+				else {
+					ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeIrr, Position, Velocity);
+				}
+	
 				h_ptcl_j[j] 			= (CUDA_REAL) Position[0];
 				h_ptcl_j[j + 	 N_j]	= (CUDA_REAL) Position[1];
 				h_ptcl_j[j + 2 * N_j]	= (CUDA_REAL) Position[2];
@@ -239,21 +286,59 @@ void sendAllParticlesToGPU(double new_time, std::unordered_set<int> RegularList,
 			raw_idx++;
 		}
 
+#ifdef TEST1
+		if (I_test < 0){
+			I_test = 0;
+			fprintf(stdout, "I_test is not set, setting to 0\n");
+		}
+		// int I_test = N_target - 1;
+		double test_x = h_ptcl_i[I_test];
+		double test_y = h_ptcl_i[I_test + N_target];
+		double test_z = h_ptcl_i[I_test + 2 * N_target];
+		double test_radi = Radius2[I_test];
+		double test_x1, test_y1, test_z1, test_r2;
+		double test_acc = 0;
+		int test_N = 0;
+		fprintf(stdout, "Neighbor, CPU: ");
+		for (int j = 0; j < N_j; j++) {
+			test_x1 = h_ptcl_j[j];
+			test_y1 = h_ptcl_j[j + N_j];
+			test_z1 = h_ptcl_j[j + 2 * N_j];
+			test_r2 = (test_x - test_x1) * (test_x - test_x1) +
+					(test_y - test_y1) * (test_y - test_y1) +
+					(test_z - test_z1) * (test_z - test_z1);
+			if (test_r2 < test_radi) {
+				if (IndexList[I_test] != j) {
+					fprintf(stdout, "%d,", j + J_start, test_r2 / test_radi);
+					test_N++;	
+				}
+			}
+			else {
+				double inv_sqrt_m2 = rsqrt(test_r2);
+				double inv_m2 = inv_sqrt_m2*inv_sqrt_m2;
+				test_acc += (test_x1 - test_x) * inv_sqrt_m2 * inv_m2 * h_ptcl_j[j + 6 * N_j];
+			}
+		}
+		fprintf(stdout, "\n");
+		fprintf(stdout, "N_neighbor %d, Test accx: %e (%d)\n", test_N, test_acc, p);
+
+#endif
+
 		queue.pid = gpu_id;
 		MPI_Send(&queue, 1, QueueType, p, QUEUE_TAG, MPI_COMM_WORLD);
 		MPI_Send(&N_target, 1, MPI_INT, p, 1010, MPI_COMM_DEVICE);
 		MPI_Send(&N_j, 1, MPI_INT, p, 1011, MPI_COMM_DEVICE);
-		MPI_Send(h_ptcl_i, 7 * N_target, MPI_CUDA, p, 1001, MPI_COMM_DEVICE);
+		MPI_Send(h_ptcl_i, 6 * N_target, MPI_CUDA, p, 1001, MPI_COMM_DEVICE);
 
 		// send the “j”‐particles block
 		MPI_Send(h_ptcl_j, 7 * N_j, MPI_CUDA, p, 1002, MPI_COMM_DEVICE);
 		MPI_Send(IndexList, N_target, MPI_INT, p, 1003, MPI_COMM_DEVICE);
 		MPI_Send(Radius2, N_target, MPI_CUDA, p, 1004, MPI_COMM_DEVICE);
 
-		J_start += N_j; // Update J_start for the next GPU
+		// J_start += N_j; // Update J_start for the next GPU
 	}
 
-	assert(J_start == NumberOfParticle);
+	assert(J_end == NumberOfParticle);
 	
 	int completed = 0;
 	MPI_Status status;
@@ -281,7 +366,8 @@ void sendAllParticlesToGPU(double new_time, std::unordered_set<int> RegularList,
 // Return acc, adot
 void RegularRoot(
     int NumTargetTotal,
-    CUDA_REAL Acceleration[],
+    // CUDA_REAL Acceleration[],
+	std::vector<CUDA_REAL>& Acceleration,
     int NumNeighbor[],
     int *NeighborList
     ){
@@ -296,8 +382,7 @@ void RegularRoot(
         h_num_neighbor_array[i] = new int[i_size];
         NeighborList_array[i] = new int[i_size * MaxNumNeighbor];
     }
-
-
+	
     // The root loops through the particle chunks, receiving and aggregating data for each.
     for (int TargetStart = 0; TargetStart < NumTargetTotal; TargetStart += i_size_loop) {
         int NumTarget = std::min(i_size_loop, NumTargetTotal - TargetStart);
@@ -305,7 +390,8 @@ void RegularRoot(
 
         // The root process does not compute. It acts as the destination for the reduction.
         MPI_Reduce(MPI_IN_PLACE,
-                   Acceleration + TargetStart*_six, // receive buffer
+                //    Acceleration + TargetStart*_six, // receive buffer
+					Acceleration.data() + TargetStart*_six, // receive buffer,
                    _six * NumTarget,
 				   MPI_CUDA,
                    MPI_SUM, 
@@ -418,7 +504,8 @@ void _RegularWorker(int NumTargetTotal, int Jstart, int Jend, int gpu_id){
         // =================================================================
         // This block recalculates the neighbor list on the CPU and compares
         // it against the list generated by the GPU. This is for debugging.
-        // It compares the lists of *shuffled indices*.
+        // It compares the lists of *shuffled indices*
+		// is_inactive = true;
 		if (is_inactive){
 
 			int NumJ = Jend - Jstart;
@@ -518,10 +605,15 @@ void RegAccelerationWorkThread(int TargetStart, int NumTarget, int NumTargetTota
 
 	// 1) Launch a kernel on each GPU with an offset
 	cudaSetDevice(gpu_id);
+	// Zero partial and final result buffers
+	cudaMemsetAsync(d_result_block, 0, sizeof(CUDA_REAL) * _six * GridDimY * i_size_loop, stream);
+	cudaMemsetAsync(d_result,       0, sizeof(CUDA_REAL) * _six * i_size_loop, stream);
+
 	dim3 gridDim2(NumTarget, 1);
 	dim3 blockDim2(GridDimY, 1);
 
 	int NumJ = Jend - JStart;
+	
 
 	dim3 blockDim(BatchSize, 1, 1);
 	dim3 gridDim(
@@ -591,7 +683,7 @@ void _SendToDeviceMPI(
 	cudaSetDevice(gpu_id);
 
 	toDevice(h_ptcl_j, d_ptcl_j, _seven*N_j, stream);
-	toDevice(h_ptcl_i, d_ptcl_i, _seven*N_i, stream);
+	toDevice(h_ptcl_i, d_ptcl_i, _six*N_i, stream);
 	toDevice(h_r2, d_r2, N_i, stream);
 	toDevice(h_indices, d_indices, N_i, stream);
 
@@ -637,7 +729,7 @@ void _AllocateDeviceMemory(
 		else {
 			first = false;
 		}
-		my_allocate(&h_ptcl_i, &d_ptcl_i, _seven*i_size); // x,v,m
+		my_allocate(&h_ptcl_i, &d_ptcl_i, _six*i_size); // x,v,m
 		my_allocate(&h_ptcl_j, &d_ptcl_j, _seven*j_size); // x,v,m
 		my_allocate(&h_result, &d_result,           _six*i_size);
 		my_allocate(&h_num_neighbor, &d_num_neighbor, GridDimY * i_size);
@@ -653,7 +745,7 @@ void _AllocateDeviceMemory(
 
 	cudaDeviceSynchronize();
 
-	MPI_Recv(h_ptcl_i, 7 * N_i, MPI_CUDA, ROOT, 1001, MPI_COMM_DEVICE, MPI_STATUS_IGNORE);
+	MPI_Recv(h_ptcl_i, 6 * N_i, MPI_CUDA, ROOT, 1001, MPI_COMM_DEVICE, MPI_STATUS_IGNORE);
 	MPI_Recv(
 		h_ptcl_j,                // buffer
 		7 * N_j,                 // count (7 fields per j‐particle)

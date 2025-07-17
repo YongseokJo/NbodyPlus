@@ -1461,6 +1461,21 @@ void RootRoutines() {
 					queue_scheduler.runQueueAuto();
 					queue_scheduler.waitQueue(0); // blocking wait
 				} while (queue_scheduler.isComplete());
+				/*
+				auto it = RegularList.begin();
+				while (it != RegularList.end()) {
+					Particle* ptcl = &particles[*it];
+					fprintf(stderr, "PID: %d (NN: %d)\n", ptcl->PID, ptcl->NumberOfNeighbor);
+					fprintf(stderr, "irrx: (%e, %e, %e, %e)\n", ptcl->a_irr[0][0], ptcl->a_irr[0][1], ptcl->a_irr[0][2], ptcl->a_irr[0][3]);
+					fprintf(stderr, "regx: (%e, %e, %e, %e)\n", ptcl->a_reg[0][0], ptcl->a_reg[0][1], ptcl->a_reg[0][2], ptcl->a_reg[0][3]);
+					fprintf(stderr, "(");
+					for (int nn = 0; nn < ptcl->NumberOfNeighbor; nn++) {
+						fprintf(stderr, "%d ", ptcl->Neighbors[nn]);
+					}
+					fprintf(stderr, ")");
+					it++;
+				}
+				*/
 #ifdef DEBUG
 				std::cout << "update regular ended" << std::endl;
 #endif
