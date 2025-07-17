@@ -23,6 +23,7 @@ enum TaskName : int8_t {
     MergeManyBody = 27,
 
     FBTerminationMPI = 28,
+    MakeGroupMPI = 29,
     
     Synchronize = 100,
     Ends = -100,

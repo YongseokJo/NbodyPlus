@@ -50,6 +50,7 @@ struct Group
 	bool CheckBreak();
 	void initialManager();
 	void initialIntegrator(int NumMembers);
+	void initialIntegrator();
 
 };
 #endif

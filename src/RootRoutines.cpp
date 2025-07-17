@@ -30,6 +30,7 @@ void formPrimordialBinaries(int beforeLastParticleIndex);
 void formBinaries(std::vector<int>& ParticleList, std::vector<int>& newCMptcls, std::unordered_map<int, int>& existing, std::unordered_map<int, int>& terminated);
 void FBTermination(Particle* ptclCM);
 void FBTerminationRoot(Particle* ptclCM);
+void makeGroupRoot(Particle* ptclCM, int rank_new);
 void Merge(Particle* p1, Particle* p2);
 
 #ifdef MULTIMAP
@@ -1011,11 +1012,14 @@ void RootRoutines() {
 							std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_BSE - start_point_BSE).count();
 #endif
 #endif
+						/*
 						queue.task = MakeGroup;
 						queue.pid = ptclCM->ParticleIndex;
 						workers[rank_new].addQueue(queue);
 						workers[rank_new].runQueue();
 						workers[rank_new].callback();
+						*/
+						makeGroupRoot(ptclCM, rank_new);
 #ifdef MULTIMAP
 #ifdef PERFORMANCETRACE
 						start_point_map = std::chrono::high_resolution_clock::now();
@@ -1028,7 +1032,7 @@ void RootRoutines() {
 #endif
 #else // no multimap
 						if (ptclCM->CurrentBlockReg + ptclCM->TimeBlockReg == NextRegTimeBlock)
-							RegularList.insert(ptcl->ParticleIndex);
+							RegularList.insert(ptclCM->ParticleIndex); // VERY IMPORTANT BUG FIXED!!!!! by EW 2025.7.17
 #endif
 					}
 #ifdef DEBUG

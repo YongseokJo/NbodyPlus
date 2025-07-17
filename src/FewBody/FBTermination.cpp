@@ -187,6 +187,7 @@ void FBTerminationRoot(Particle* ptclCM) {
 	Queue queue{FBTerminationMPI, ptclCM->ParticleIndex, -1.0};
 	std::vector<MPI_Request> requests;
 
+	// (Query) I think using MPI_Send is better here by EW 2025.7.17
 	for (int rank = 1; rank < NumberOfProcessor; rank++) {
 		MPI_Request req;
 		MPI_Isend(&queue, 1, QueueType, rank, QUEUE_TAG, MPI_COMM_WORLD, &req);
