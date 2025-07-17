@@ -4,8 +4,8 @@
 
 void CalculateAcceleration01(Particle* ptcl1);
 void CalculateAcceleration23(Particle* ptcl1);
-void CalculateAcceleration01MPI(Particle* ptcl1, std::vector<double>& accIrrReg_send);
-void CalculateAcceleration23MPI(Particle* ptcl1, std::vector<double>& accIrrReg_send);
+void CalculateAcceleration01MPI(Particle* ptcl1, std::vector<double>& accIrrReg, bool joinRoot);
+void CalculateAcceleration23MPI(Particle* ptcl1, std::vector<double>& accIrrReg, bool joinRoot);
 
 void deleteGroup(Particle* ptclCM) {
 
@@ -651,14 +651,13 @@ void makeGroupRoot(Particle* ptclCM, int rank_new) {
 	}
 	MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
 
-	std::vector<double> accIrrReg_send(Dim * HERMITE_ORDER * 2); // all the members are initialized as 0.0 by EW 2025/7/17
-	std::vector<double> accIrrReg_recv(Dim * HERMITE_ORDER * 2); // all the members are initialized as 0.0 by EW 2025/7/17
+	std::vector<double> accIrrReg(Dim * HERMITE_ORDER * 2); // all the members are initialized as 0.0 by EW 2025/7/17
 
-	// CalculateAcceleration01MPI(ptclCM, accIrrReg_send);
-	// CalculateAcceleration23MPI(ptclCM, accIrrReg_send);
+	CalculateAcceleration01MPI(ptclCM, accIrrReg, true);
+	CalculateAcceleration23MPI(ptclCM, accIrrReg, true);
 
 	MPI_Request request;
-	MPI_Ireduce(accIrrReg_send.data(), accIrrReg_recv.data(), Dim * HERMITE_ORDER * 2, MPI_DOUBLE, MPI_SUM, rank_new, MPI_COMM_WORLD, &request);
+	MPI_Ireduce(accIrrReg.data(), nullptr, Dim * HERMITE_ORDER * 2, MPI_DOUBLE, MPI_SUM, rank_new, MPI_COMM_WORLD, &request);
 	MPI_Wait(&request, MPI_STATUS_IGNORE);
 
 	int terminate;
@@ -669,16 +668,16 @@ void makeGroupWorker(Particle* ptclCM, double rank_new) {
 
 	int rank = static_cast<int>(rank_new);
 
-	std::vector<double> accIrrReg_send(Dim * HERMITE_ORDER * 2); // all the members are initialized as 0.0 by EW 2025/7/17
-	std::vector<double> accIrrReg_recv(Dim * HERMITE_ORDER * 2); // all the members are initialized as 0.0 by EW 2025/7/17
+	std::vector<double> accIrrReg(Dim * HERMITE_ORDER * 2); // all the members are initialized as 0.0 by EW 2025/7/17
 
-	CalculateAcceleration01MPI(ptclCM, accIrrReg_send);
-	CalculateAcceleration23MPI(ptclCM, accIrrReg_send);
+	CalculateAcceleration01MPI(ptclCM, accIrrReg, true);
+	CalculateAcceleration23MPI(ptclCM, accIrrReg, true);
 
 	MPI_Request request;
-	MPI_Ireduce(accIrrReg_send.data(), accIrrReg_recv.data(), Dim * HERMITE_ORDER * 2, MPI_DOUBLE, MPI_SUM, rank, MPI_COMM_WORLD, &request);
-	
+
 	if (MyRank == rank) {
+
+		MPI_Ireduce(MPI_IN_PLACE, accIrrReg.data(), Dim * HERMITE_ORDER * 2, MPI_DOUBLE, MPI_SUM, rank, MPI_COMM_WORLD, &request);
 
 		for (int i = 0; i < ptclCM->NumberOfNeighbor; i++) {
 			Particle* neighbor = &particles[ptclCM->Neighbors[i]];
@@ -729,8 +728,8 @@ void makeGroupWorker(Particle* ptclCM, double rank_new) {
 		MPI_Wait(&request, MPI_STATUS_IGNORE);
 		for (int dim = 0; dim < Dim; dim++) {
 			for (int order = 0; order < HERMITE_ORDER; order++) {
-				ptclCM->a_irr[dim][order] = accIrrReg_recv[dim * HERMITE_ORDER + order];
-				ptclCM->a_reg[dim][order] = accIrrReg_recv[dim * HERMITE_ORDER + order + Dim * HERMITE_ORDER];
+				ptclCM->a_irr[dim][order] = accIrrReg[dim * HERMITE_ORDER + order];
+				ptclCM->a_reg[dim][order] = accIrrReg[dim * HERMITE_ORDER + order + Dim * HERMITE_ORDER];
 				ptclCM->a_tot[dim][order] = ptclCM->a_irr[dim][order] + ptclCM->a_reg[dim][order];
 
 				ptclGroup->sym_int.particles.cm.a_irr[dim][order] = ptclCM->a_irr[dim][order];
@@ -828,8 +827,10 @@ void makeGroupWorker(Particle* ptclCM, double rank_new) {
 		fprintf(workerout, "---------------------END-OF-NEW-GROUP---------------------\n\n");
 		fflush(workerout);
 
-	} else
+	} else {
+		MPI_Ireduce(accIrrReg.data(), nullptr, Dim * HERMITE_ORDER * 2, MPI_DOUBLE, MPI_SUM, rank, MPI_COMM_WORLD, &request);
 		MPI_Wait(&request, MPI_STATUS_IGNORE);
+	}
 }
 // */
 #endif

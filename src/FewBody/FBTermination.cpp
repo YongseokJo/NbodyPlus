@@ -5,8 +5,8 @@
 
 void CalculateAcceleration01(Particle* ptcl1);
 void CalculateAcceleration23(Particle* ptcl1);
-void CalculateAcceleration01MPI(Particle* ptcl1, std::vector<double>& accIrrReg_send);
-void CalculateAcceleration23MPI(Particle* ptcl1, std::vector<double>& accIrrReg_send);
+void CalculateAcceleration01MPI(Particle* ptcl1, std::vector<double>& accIrrReg, bool joinRoot);
+void CalculateAcceleration23MPI(Particle* ptcl1, std::vector<double>& accIrrReg, bool joinRoot);
 
 void FBTermination(Particle* ptclCM) {
 
@@ -202,10 +202,9 @@ void FBTerminationRoot(Particle* ptclCM) {
 		if (members->Mass < 0.0)
 			continue;
 
-		std::vector<double> accIrrReg_send(Dim * HERMITE_ORDER * 2); // all the members are initialized as 0.0 by EW 2025/7/16
-		std::vector<double> accIrrReg_recv(Dim * HERMITE_ORDER * 2); // all the members are initialized as 0.0 by EW 2025/7/16
+		std::vector<double> accIrrReg(Dim * HERMITE_ORDER * 2); // all the members are initialized as 0.0 by EW 2025/7/16
 		MPI_Request request;
-		MPI_Ireduce(accIrrReg_send.data(), accIrrReg_recv.data(), Dim * HERMITE_ORDER * 2, MPI_DOUBLE, MPI_SUM, ROOT, MPI_COMM_WORLD, &request);
+		MPI_Ireduce(MPI_IN_PLACE, accIrrReg.data(), Dim * HERMITE_ORDER * 2, MPI_DOUBLE, MPI_SUM, ROOT, MPI_COMM_WORLD, &request);
 
 		NumberOfParticle++; // by EW 2025.1.20
 
@@ -236,8 +235,8 @@ void FBTerminationRoot(Particle* ptclCM) {
 		MPI_Wait(&request, MPI_STATUS_IGNORE);
 		for (int dim = 0; dim < Dim; dim++) {
 			for (int order = 0; order < HERMITE_ORDER; order++) {
-				members->a_irr[dim][order] = accIrrReg_recv[dim * HERMITE_ORDER + order];
-				members->a_reg[dim][order] = accIrrReg_recv[dim * HERMITE_ORDER + order + Dim * HERMITE_ORDER];
+				members->a_irr[dim][order] = accIrrReg[dim * HERMITE_ORDER + order];
+				members->a_reg[dim][order] = accIrrReg[dim * HERMITE_ORDER + order + Dim * HERMITE_ORDER];
 				members->a_tot[dim][order] = members->a_irr[dim][order] + members->a_reg[dim][order];
 			}
 		}
@@ -332,20 +331,19 @@ void FBTerminationWorker(Particle* ptclCM) {
 		if (members->Mass < 0.0)
 			continue;
 
-		std::vector<double> accIrrReg_send(Dim * HERMITE_ORDER * 2); // all the members are initialized as 0.0 by EW 2025/7/16
-		std::vector<double> accIrrReg_recv(Dim * HERMITE_ORDER * 2); // all the members are initialized as 0.0 by EW 2025/7/16
+		std::vector<double> accIrrReg(Dim * HERMITE_ORDER * 2); // all the members are initialized as 0.0 by EW 2025/7/16
 
-		CalculateAcceleration01MPI(members, accIrrReg_send);
-		CalculateAcceleration23MPI(members, accIrrReg_send);
+		CalculateAcceleration01MPI(members, accIrrReg, false);
+		CalculateAcceleration23MPI(members, accIrrReg, false);
 
 		MPI_Request request;
-		MPI_Ireduce(accIrrReg_send.data(), accIrrReg_recv.data(), Dim * HERMITE_ORDER * 2, MPI_DOUBLE, MPI_SUM, ROOT, MPI_COMM_WORLD, &request);
+		MPI_Ireduce(accIrrReg.data(), nullptr, Dim * HERMITE_ORDER * 2, MPI_DOUBLE, MPI_SUM, ROOT, MPI_COMM_WORLD, &request);
 		
 		MPI_Wait(&request, MPI_STATUS_IGNORE);
 	}
 }
 
-void CalculateAcceleration01MPI(Particle* ptcl1, std::vector<double>& accIrrReg_send) {
+void CalculateAcceleration01MPI(Particle* ptcl1, std::vector<double>& accIrrReg, bool joinRoot) {
 
 	double x[Dim], v[Dim];
 	double m_r3;
@@ -359,9 +357,15 @@ void CalculateAcceleration01MPI(Particle* ptcl1, std::vector<double>& accIrrReg_
 	}
 
 	int size = global_variable->LastParticleIndex + 1;
+	int start, end;
 
-	int start = (size * (MyRank - 1)) / NumberOfWorker;
-	int end   = (size * MyRank) / NumberOfWorker;
+	if (joinRoot) {
+		start = (size * MyRank) / NumberOfProcessor;
+		end   = (size * (MyRank + 1)) / NumberOfProcessor;
+	} else {
+		start = (size * (MyRank - 1)) / NumberOfWorker;
+		end   = (size * MyRank) / NumberOfWorker;
+	}
 
 	Particle *ptcl2;
 	for (int i = start; i < end; i++) {
@@ -390,22 +394,22 @@ void CalculateAcceleration01MPI(Particle* ptcl1, std::vector<double>& accIrrReg_
 
 		if (r2 < ptcl1->RadiusOfNeighbor) {
 			for (int dim=0; dim<Dim; dim++) {
-				accIrrReg_send[dim * HERMITE_ORDER + 0] += m_r3*x[dim];
-				accIrrReg_send[dim * HERMITE_ORDER + 1] += m_r3*(v[dim] - 3*x[dim]*vx/r2);
+				accIrrReg[dim * HERMITE_ORDER + 0] += m_r3*x[dim];
+				accIrrReg[dim * HERMITE_ORDER + 1] += m_r3*(v[dim] - 3*x[dim]*vx/r2);
 			}
 		}
 		else {
 			for (int dim=0; dim<Dim; dim++) {
 				// Calculate 0th and 1st derivatives of acceleration
-				accIrrReg_send[dim * HERMITE_ORDER + 0 + Dim * HERMITE_ORDER] += m_r3*x[dim];
-				accIrrReg_send[dim * HERMITE_ORDER + 1 + Dim * HERMITE_ORDER] += m_r3*(v[dim] - 3*x[dim]*vx/r2);
+				accIrrReg[dim * HERMITE_ORDER + 0 + Dim * HERMITE_ORDER] += m_r3*x[dim];
+				accIrrReg[dim * HERMITE_ORDER + 1 + Dim * HERMITE_ORDER] += m_r3*(v[dim] - 3*x[dim]*vx/r2);
 			}
 		} // endfor dim
 	} // endfor ptcl2
 	return;
 }
 
-void CalculateAcceleration23MPI(Particle* ptcl1, std::vector<double>& accIrrReg_send) {
+void CalculateAcceleration23MPI(Particle* ptcl1, std::vector<double>& accIrrReg, bool joinRoot) {
 
 	double x[Dim], v[Dim], a21[Dim], a21dot[Dim], a1[Dim], a2[Dim], a1dot[Dim], a2dot[Dim];
 	double a, b, c;
@@ -422,12 +426,18 @@ void CalculateAcceleration23MPI(Particle* ptcl1, std::vector<double>& accIrrReg_
 	}
 
 	int size = global_variable->LastParticleIndex + 1;
+	int start, end;
 
-	int start = (size * (MyRank - 1)) / NumberOfWorker;
-	int end   = (size * MyRank) / NumberOfWorker;
+	if (joinRoot) {
+		start = (size * MyRank) / NumberOfProcessor;
+		end   = (size * (MyRank + 1)) / NumberOfProcessor;
+	} else {
+		start = (size * (MyRank - 1)) / NumberOfWorker;
+		end   = (size * MyRank) / NumberOfWorker;
+	}
 
 	Particle *ptcl2;
-	for (int i = start; i <= end; i++) {
+	for (int i = start; i < end; i++) {
 		ptcl2 = &particles[i];
 
 		if (!ptcl2->isActive || ptcl1->PID == ptcl2->PID) {
@@ -445,8 +455,8 @@ void CalculateAcceleration23MPI(Particle* ptcl1, std::vector<double>& accIrrReg_
 		// updated the predicted positions and velocities just in case
 		// if current time = the time we need, then PredPosition and PredVelocity is same as Position and Velocity
 		for (int dim=0; dim<Dim; dim++) {
-			a2[dim]	   = accIrrReg_send[dim * HERMITE_ORDER + 0 + dim * HERMITE_ORDER + 0 + Dim * HERMITE_ORDER];
-			a2dot[dim] = accIrrReg_send[dim * HERMITE_ORDER + 1 + dim * HERMITE_ORDER + 1 + Dim * HERMITE_ORDER];
+			a2[dim]	   = accIrrReg[dim * HERMITE_ORDER + 0] + accIrrReg[dim * HERMITE_ORDER + 0 + Dim * HERMITE_ORDER];
+			a2dot[dim] = accIrrReg[dim * HERMITE_ORDER + 1] + accIrrReg[dim * HERMITE_ORDER + 1 + Dim * HERMITE_ORDER];
 			x[dim]     = ptcl2->Position[dim] - ptcl1->Position[dim];
 			v[dim]     = ptcl2->Velocity[dim] - ptcl1->Velocity[dim];
 			r2        += x[dim]*x[dim];
@@ -473,16 +483,16 @@ void CalculateAcceleration23MPI(Particle* ptcl1, std::vector<double>& accIrrReg_
 			for (int dim=0; dim<Dim; dim++) {
 				adot2 = -ptcl2->Mass*(a1[dim]-a2[dim])/r3-6*a*a21dot[dim]-3*b*a21[dim];
 				adot3 = -ptcl2->Mass*(a1dot[dim]-a2dot[dim])/r3-9*a*adot2-9*b*a21dot[dim]-3*c*a21[dim];
-				accIrrReg_send[dim * HERMITE_ORDER + 2] += adot2;
-				accIrrReg_send[dim * HERMITE_ORDER + 3] += adot3;
+				accIrrReg[dim * HERMITE_ORDER + 2] += adot2;
+				accIrrReg[dim * HERMITE_ORDER + 3] += adot3;
 			}
 		}
 		else {
 			for (int dim=0; dim<Dim; dim++) {
 				adot2 = -ptcl2->Mass*(a1[dim]-a2[dim])/r3-6*a*a21dot[dim]-3*b*a21[dim];
 				adot3 = -ptcl2->Mass*(a1dot[dim]-a2dot[dim])/r3-9*a*adot2-9*b*a21dot[dim]-3*c*a21[dim];
-				accIrrReg_send[dim * HERMITE_ORDER + 2 + Dim * HERMITE_ORDER] += adot2;
-				accIrrReg_send[dim * HERMITE_ORDER + 3 + Dim * HERMITE_ORDER] += adot3;
+				accIrrReg[dim * HERMITE_ORDER + 2 + Dim * HERMITE_ORDER] += adot2;
+				accIrrReg[dim * HERMITE_ORDER + 3 + Dim * HERMITE_ORDER] += adot3;
 			}
 		} // endfor if
 	} //endfor ptcl2
