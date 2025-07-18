@@ -173,6 +173,7 @@ void Group::ARIntegration(double next_time) {
 
         if (sym_int.particles.getSize() == 2) {
 
+            /* // Let's re-calculate member & CM pos/vel in FBTermination!
             double pos[Dim], vel[Dim];
 
             groupCM->predictParticleSecondOrder(bin_interrupt.time_now/EnzoTimeStep - CurrentTime, pos, vel);
@@ -183,6 +184,7 @@ void Group::ARIntegration(double next_time) {
                 groupCM->Position[dim] = pos[dim];
                 groupCM->Velocity[dim] = vel[dim];
             }
+            */
             CurrentTime = bin_interrupt.time_now/EnzoTimeStep;
             groupCM->CurrentTimeIrr = CurrentTime;
 
@@ -230,8 +232,8 @@ void Group::ARIntegration(double next_time) {
         Particle* members = &sym_int.particles[i];
 
         for (int dim=0; dim<Dim; dim++) {
-            particles[members->ParticleIndex].Position[dim] = groupCM->NewPosition[dim] + members->Position[dim];
-            particles[members->ParticleIndex].Velocity[dim] = groupCM->NewVelocity[dim] + members->Velocity[dim];
+            particles[members->ParticleIndex].Position[dim] = groupCM->Position[dim] + members->Position[dim];
+            particles[members->ParticleIndex].Velocity[dim] = groupCM->Velocity[dim] + members->Velocity[dim];
         }
         particles[members->ParticleIndex].Mass = members->Mass;
         particles[members->ParticleIndex].CurrentTimeIrr = next_time;
