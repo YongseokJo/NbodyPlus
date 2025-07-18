@@ -9,6 +9,7 @@ extern Particle *particles;
 
 #include "ar_perturber.hpp"
 #include <cassert>
+#include <unordered_set>
 
 #define ASSERT(x) assert(x)
 
@@ -191,6 +192,7 @@ public:
         // perturber force
         // const int n_pert = _perturber.neighbor_address.getSize();
         const int n_pert = _particle_cm.NumberOfNeighbor;
+        int n_pert_active = 0;
         // const int n_pert_single = _perturber.n_neighbor_single;
         // const int n_pert_group = _perturber.n_neighbor_group;
 
@@ -205,12 +207,20 @@ public:
             // ChangeOver* changeover[n_pert_single];
             // H4::NBAdr<Particle>::Group* ptclgroup[n_pert_group];
 
+            std::unordered_set<int> CMPtclsSet;
+
             // int n_single_count=0;
             // int n_group_count=0;
             for (int j=0; j<n_pert; j++) {
                 // H4::NBAdr<Particle>::Single* pertj;
                 Particle* pertj;
                 pertj = &particles[pert_adr[j]];
+                if (!pertj->isActive) {
+                    if (pertj->CMPtclIndex != -1) {
+                        CMPtclsSet.insert(pertj->CMPtclIndex);
+                    }
+                    continue;
+                }
                 // int k; // index of predicted data
                 // if (pert_adr[j].type==H4::NBType::group) {
                 //     pertj = &(((H4::NBAdr<Particle>::Group*)pert_adr[j].adr)->cm);
@@ -228,12 +238,35 @@ public:
                 Float dt = time - pertj->CurrentTimeIrr*EnzoTimeStep;
                 // ASSERT(dt>=0.0); // Eunwoo debug // Is this right?
                 //ASSERT(dt>=-1e-7);
-                xp[j][0] = pertj->Position[0] + dt*(pertj->Velocity[0] + 0.5*dt*(pertj->a_irr[0][0] + inv3*dt*pertj->a_irr[0][1]));
-                xp[j][1] = pertj->Position[1] + dt*(pertj->Velocity[1] + 0.5*dt*(pertj->a_irr[1][0] + inv3*dt*pertj->a_irr[1][1]));
-                xp[j][2] = pertj->Position[2] + dt*(pertj->Velocity[2] + 0.5*dt*(pertj->a_irr[2][0] + inv3*dt*pertj->a_irr[2][1]));
+                xp[n_pert_active][0] = pertj->Position[0] + dt*(pertj->Velocity[0] + 0.5*dt*(pertj->a_tot[0][0] + inv3*dt*pertj->a_tot[0][1]));
+                xp[n_pert_active][1] = pertj->Position[1] + dt*(pertj->Velocity[1] + 0.5*dt*(pertj->a_tot[1][0] + inv3*dt*pertj->a_tot[1][1]));
+                xp[n_pert_active][2] = pertj->Position[2] + dt*(pertj->Velocity[2] + 0.5*dt*(pertj->a_tot[2][0] + inv3*dt*pertj->a_tot[2][1]));
 
+                m[n_pert_active] = pertj->Mass;
+                n_pert_active++;
+            }
+            for (int j: CMPtclsSet) {
+                Particle* pertj;
+                pertj = &particles[j];
 
-                m[j] = pertj->Mass;
+                if (_particle_cm.PID == pertj->PID) {
+                    continue;
+                }
+
+                if (!pertj->isActive) {
+                    fprintf(stderr, "Why inactive CM ptcl? this PID: %d, neighbor PID: %d\n", _particle_cm.PID, pertj->PID);
+                    assert(pertj->isActive);
+                }
+
+                Float dt = time - pertj->CurrentTimeIrr*EnzoTimeStep;
+                // ASSERT(dt>=0.0); // Eunwoo debug // Is this right?
+                //ASSERT(dt>=-1e-7);
+                xp[n_pert_active][0] = pertj->Position[0] + dt*(pertj->Velocity[0] + 0.5*dt*(pertj->a_tot[0][0] + inv3*dt*pertj->a_tot[0][1]));
+                xp[n_pert_active][1] = pertj->Position[1] + dt*(pertj->Velocity[1] + 0.5*dt*(pertj->a_tot[1][0] + inv3*dt*pertj->a_tot[1][1]));
+                xp[n_pert_active][2] = pertj->Position[2] + dt*(pertj->Velocity[2] + 0.5*dt*(pertj->a_tot[2][0] + inv3*dt*pertj->a_tot[2][1]));
+
+                m[n_pert_active] = pertj->Mass;
+                n_pert_active++;
             }
             // ASSERT(n_single_count == n_pert_single);
             // ASSERT(n_group_count == n_pert_group);
@@ -241,9 +274,9 @@ public:
             Float dt = time - _particle_cm.CurrentTimeIrr*EnzoTimeStep;
             // ASSERT(dt>=0.0); // Eunwoo debug // Is this right?
 
-            xcm[0] = _particle_cm.Position[0] + dt*(_particle_cm.Velocity[0] + 0.5*dt*(_particle_cm.a_irr[0][0] + inv3*dt*_particle_cm.a_irr[0][1]));
-            xcm[1] = _particle_cm.Position[1] + dt*(_particle_cm.Velocity[1] + 0.5*dt*(_particle_cm.a_irr[1][0] + inv3*dt*_particle_cm.a_irr[1][1]));
-            xcm[2] = _particle_cm.Position[2] + dt*(_particle_cm.Velocity[2] + 0.5*dt*(_particle_cm.a_irr[2][0] + inv3*dt*_particle_cm.a_irr[2][1]));
+            xcm[0] = _particle_cm.Position[0] + dt*(_particle_cm.Velocity[0] + 0.5*dt*(_particle_cm.a_tot[0][0] + inv3*dt*_particle_cm.a_tot[0][1]));
+            xcm[1] = _particle_cm.Position[1] + dt*(_particle_cm.Velocity[1] + 0.5*dt*(_particle_cm.a_tot[1][0] + inv3*dt*_particle_cm.a_tot[1][1]));
+            xcm[2] = _particle_cm.Position[2] + dt*(_particle_cm.Velocity[2] + 0.5*dt*(_particle_cm.a_tot[2][0] + inv3*dt*_particle_cm.a_tot[2][1]));
 
 
             Float acc_pert_cm[3]={0.0, 0.0, 0.0};
@@ -264,7 +297,7 @@ public:
                 xi[2] = pi.Position[2] + xcm[2];
 
                 // single perturber
-                for (int j=0; j<n_pert; j++) {
+                for (int j=0; j<n_pert_active; j++) {
                     Float dr[3] = {xp[j][0] - xi[0],
                                    xp[j][1] - xi[1],
                                    xp[j][2] - xi[2]};
@@ -459,12 +492,14 @@ public:
 
             auto pert_adr = _particle_cm.Neighbors;
 
+            std::unordered_set<int> CMPtclsSet;
+
             Float xp[3], xcm[3];
             Float dt = _time - _particle_cm.CurrentTimeIrr*EnzoTimeStep;
             // ASSERT(dt>=0.0); // Eunwoo debug // Is this necessary?
-            xcm[0] = _particle_cm.Position[0] + dt*(_particle_cm.Velocity[0] + 0.5*dt*(_particle_cm.a_irr[0][0] + inv3*dt*_particle_cm.a_irr[0][1]));
-            xcm[1] = _particle_cm.Position[1] + dt*(_particle_cm.Velocity[1] + 0.5*dt*(_particle_cm.a_irr[1][0] + inv3*dt*_particle_cm.a_irr[1][1]));
-            xcm[2] = _particle_cm.Position[2] + dt*(_particle_cm.Velocity[2] + 0.5*dt*(_particle_cm.a_irr[2][0] + inv3*dt*_particle_cm.a_irr[2][1]));
+            xcm[0] = _particle_cm.Position[0] + dt*(_particle_cm.Velocity[0] + 0.5*dt*(_particle_cm.a_tot[0][0] + inv3*dt*_particle_cm.a_tot[0][1]));
+            xcm[1] = _particle_cm.Position[1] + dt*(_particle_cm.Velocity[1] + 0.5*dt*(_particle_cm.a_tot[1][0] + inv3*dt*_particle_cm.a_tot[1][1]));
+            xcm[2] = _particle_cm.Position[2] + dt*(_particle_cm.Velocity[2] + 0.5*dt*(_particle_cm.a_tot[2][0] + inv3*dt*_particle_cm.a_tot[2][1]));
 
             Float mcm = _particle_cm.Mass;
             // auto& chi = _particle_cm.changeover;
@@ -473,20 +508,26 @@ public:
             // velocity dependent method 
             Float vp[3], vcm[3];
 
-            vcm[0] = _particle_cm.Velocity[0] + dt*(_particle_cm.a_irr[0][0] + 0.5*dt*_particle_cm.a_irr[0][1]);
-            vcm[1] = _particle_cm.Velocity[1] + dt*(_particle_cm.a_irr[1][0] + 0.5*dt*_particle_cm.a_irr[1][1]);
-            vcm[2] = _particle_cm.Velocity[2] + dt*(_particle_cm.a_irr[2][0] + 0.5*dt*_particle_cm.a_irr[2][1]);
+            vcm[0] = _particle_cm.Velocity[0] + dt*(_particle_cm.a_tot[0][0] + 0.5*dt*_particle_cm.a_tot[0][1]);
+            vcm[1] = _particle_cm.Velocity[1] + dt*(_particle_cm.a_tot[1][0] + 0.5*dt*_particle_cm.a_tot[1][1]);
+            vcm[2] = _particle_cm.Velocity[2] + dt*(_particle_cm.a_tot[2][0] + 0.5*dt*_particle_cm.a_tot[2][1]);
 #endif
 
             for (int j=0; j<n_pert; j++) {
                 Particle* pertj;
                 pertj = &particles[pert_adr[j]];
+                if (!pertj->isActive) {
+                    if (pertj->CMPtclIndex != -1) {
+                        CMPtclsSet.insert(pertj->CMPtclIndex);
+                    }
+                    continue;
+                }
 
                 Float dt = _time - pertj->CurrentTimeIrr*EnzoTimeStep;
                 // ASSERT(dt>=0.0); // Eunwoo debug // Is this necessary?
-                xp[0] = pertj->Position[0] + dt*(pertj->Velocity[0] + 0.5*dt*(pertj->a_irr[0][0] + inv3*dt*pertj->a_irr[0][1]));
-                xp[1] = pertj->Position[1] + dt*(pertj->Velocity[1] + 0.5*dt*(pertj->a_irr[1][0] + inv3*dt*pertj->a_irr[1][1]));
-                xp[2] = pertj->Position[2] + dt*(pertj->Velocity[2] + 0.5*dt*(pertj->a_irr[2][0] + inv3*dt*pertj->a_irr[2][1]));
+                xp[0] = pertj->Position[0] + dt*(pertj->Velocity[0] + 0.5*dt*(pertj->a_tot[0][0] + inv3*dt*pertj->a_tot[0][1]));
+                xp[1] = pertj->Position[1] + dt*(pertj->Velocity[1] + 0.5*dt*(pertj->a_tot[1][0] + inv3*dt*pertj->a_tot[1][1]));
+                xp[2] = pertj->Position[2] + dt*(pertj->Velocity[2] + 0.5*dt*(pertj->a_tot[2][0] + inv3*dt*pertj->a_tot[2][1]));
 
                 Float mj = pertj->Mass;
 
@@ -504,9 +545,9 @@ public:
 
 #ifdef AR_SLOWDOWN_TIMESCALE
                 // velocity dependent method 
-                vp[0] = pertj->Velocity[0] + dt*(pertj->a_irr[0][0] + 0.5*dt*pertj->a_irr[0][1]);
-                vp[1] = pertj->Velocity[1] + dt*(pertj->a_irr[1][0] + 0.5*dt*pertj->a_irr[1][1]);
-                vp[2] = pertj->Velocity[2] + dt*(pertj->a_irr[2][0] + 0.5*dt*pertj->a_irr[2][1]);
+                vp[0] = pertj->Velocity[0] + dt*(pertj->a_tot[0][0] + 0.5*dt*pertj->a_tot[0][1]);
+                vp[1] = pertj->Velocity[1] + dt*(pertj->a_tot[1][0] + 0.5*dt*pertj->a_tot[1][1]);
+                vp[2] = pertj->Velocity[2] + dt*(pertj->a_tot[2][0] + 0.5*dt*pertj->a_tot[2][1]);
 
                 Float dv[3] = {vp[0] - vcm[0],
                                vp[1] - vcm[1],
@@ -517,6 +558,55 @@ public:
 
                 calcSlowDownTimeScale(_t_min_sq, dv, dr, r, gm);
 #endif
+            }
+            for (int j: CMPtclsSet) {
+                Particle* pertj;
+                pertj = &particles[j];
+
+                if (_particle_cm.PID == pertj->PID) {
+                    continue;
+                }
+
+                if (!pertj->isActive) {
+                    fprintf(stderr, "Why inactive CM ptcl? this PID: %d, neighbor PID: %d\n", _particle_cm.PID, pertj->PID);
+                    assert(pertj->isActive);
+                }
+
+                Float dt = _time - pertj->CurrentTimeIrr*EnzoTimeStep;
+                // ASSERT(dt>=0.0); // Eunwoo debug // Is this necessary?
+                xp[0] = pertj->Position[0] + dt*(pertj->Velocity[0] + 0.5*dt*(pertj->a_tot[0][0] + inv3*dt*pertj->a_tot[0][1]));
+                xp[1] = pertj->Position[1] + dt*(pertj->Velocity[1] + 0.5*dt*(pertj->a_tot[1][0] + inv3*dt*pertj->a_tot[1][1]));
+                xp[2] = pertj->Position[2] + dt*(pertj->Velocity[2] + 0.5*dt*(pertj->a_tot[2][0] + inv3*dt*pertj->a_tot[2][1]));
+
+                Float mj = pertj->Mass;
+
+                // auto& chj = pertj->changeover;
+
+                Float dr[3] = {xp[0] - xcm[0],
+                               xp[1] - xcm[1],
+                               xp[2] - xcm[2]};
+
+                Float r2 = dr[0]*dr[0] + dr[1]*dr[1] + dr[2]*dr[2];
+                Float r = sqrt(r2);
+                // Float k  = ChangeOver::calcAcc0WTwo(chi, chj, r);
+                // _pert_out += calcPertFromMR(r, mcm, k*mj);
+                _pert_out += calcPertFromMR(r, mcm, mj);
+
+#ifdef AR_SLOWDOWN_TIMESCALE
+                // velocity dependent method 
+                vp[0] = pertj->Velocity[0] + dt*(pertj->a_tot[0][0] + 0.5*dt*pertj->a_tot[0][1]);
+                vp[1] = pertj->Velocity[1] + dt*(pertj->a_tot[1][0] + 0.5*dt*pertj->a_tot[1][1]);
+                vp[2] = pertj->Velocity[2] + dt*(pertj->a_tot[2][0] + 0.5*dt*pertj->a_tot[2][1]);
+
+                Float dv[3] = {vp[0] - vcm[0],
+                               vp[1] - vcm[1],
+                               vp[2] - vcm[2]};
+
+                // identify whether hyperbolic or closed orbit
+                Float gm = gravitational_constant*(mcm+mj);
+
+                calcSlowDownTimeScale(_t_min_sq, dv, dr, r, gm);
+#endif                
             }
         }
         else {

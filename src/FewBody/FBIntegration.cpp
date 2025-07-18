@@ -23,7 +23,7 @@ void Group::ARIntegration(double next_time) {
         sym_int.particles.cm.Position[dim] = groupCM->Position[dim];
         sym_int.particles.cm.Velocity[dim] = groupCM->Velocity[dim];
         for (int j=0; j<HERMITE_ORDER; j++)
-            sym_int.particles.cm.a_irr[dim][j] = groupCM->a_irr[dim][j];
+            sym_int.particles.cm.a_tot[dim][j] = groupCM->a_tot[dim][j];
     }
 // /*
     if (groupCM->CurrentTimeReg >= groupCM->CurrentTimeIrr) { // Neighbors were updated in regular routine

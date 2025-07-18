@@ -105,8 +105,8 @@ void FBTermination(Particle* ptclCM) {
 		*/
 
 		if (members->NumberOfNeighbor != 0) {
-			// members->calculateTimeStepIrr2();
-			members->calculateTimeStepIrr();
+			members->calculateTimeStepIrr2();
+			// members->calculateTimeStepIrr();
 
 			if (ptclCM->NumberOfMember > 2) {
 				members->TimeLevelIrr--;

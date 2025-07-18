@@ -276,8 +276,9 @@ void NewFBInitialization(Particle* ptclCM) {
 
 	for (int dim=0; dim<Dim; dim++) {
         for (int j=0; j<HERMITE_ORDER; j++)
-            ptclGroup->sym_int.particles.cm.a_irr[dim][j] = ptclCM->a_irr[dim][j];
+            ptclGroup->sym_int.particles.cm.a_tot[dim][j] = ptclCM->a_tot[dim][j];
     }
+	ptclGroup->sym_int.particles.cm.PID = ptclCM->PID; // added for ar_interaction.hpp by EW 2025.7.19
     
     ptclGroup->sym_int.particles.cm.NumberOfNeighbor = ptclCM->NumberOfNeighbor;
 	std::memcpy(ptclGroup->sym_int.particles.cm.Neighbors, ptclCM->Neighbors, sizeof(int)*ptclCM->NumberOfNeighbor);
@@ -438,12 +439,12 @@ void NewFBInitialization3(Group* group) {
 
 	for (int dim=0; dim<Dim; dim++) {
         for (int j=0; j<HERMITE_ORDER; j++)
-            ptclGroup->sym_int.particles.cm.a_irr[dim][j] = ptclCM->a_irr[dim][j];
+            ptclGroup->sym_int.particles.cm.a_tot[dim][j] = ptclCM->a_tot[dim][j];
     }
+	ptclGroup->sym_int.particles.cm.PID = ptclCM->PID; // added for ar_interaction.hpp by EW 2025.7.19
     
     ptclGroup->sym_int.particles.cm.NumberOfNeighbor = ptclCM->NumberOfNeighbor;
-    for (int i=0; i<ptclCM->NumberOfNeighbor; i++)
-    	ptclGroup->sym_int.particles.cm.Neighbors[i] = ptclCM->Neighbors[i];
+	std::memcpy(ptclGroup->sym_int.particles.cm.Neighbors, ptclCM->Neighbors, sizeof(int)*ptclCM->NumberOfNeighbor);
 
 	ptclGroup->sym_int.initialIntegration(ptclGroup->CurrentTime*EnzoTimeStep);
     ptclGroup->sym_int.info.calcDsAndStepOption(ptclGroup->manager.step.getOrder(), ptclGroup->manager.interaction.gravitational_constant, ptclGroup->manager.ds_scale);
