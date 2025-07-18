@@ -1,8 +1,10 @@
 #ifdef FEWBODY
 #include "../global.h"
+#include "unordered_set"
 
 void CalculateAcceleration01(Particle* ptcl1);
 void CalculateAcceleration23(Particle* ptcl1);
+void computeCMAcceleration(Particle* ptclCM);
 
 void deleteGroup(Particle* ptclCM) {
 
@@ -205,6 +207,13 @@ void NewFBInitialization(Particle* ptclCM) {
 	ptclCM->TimeBlockReg    = ptcl->TimeBlockReg;
 	ptclCM->TimeLevelReg    = ptcl->TimeLevelReg;
 
+	for (int dim = 0; dim < Dim; dim++) {
+		for (int order = 0; order < HERMITE_ORDER; order++) 
+			ptclCM->a_reg[dim][order] = ptcl->a_reg[dim][order];
+	}
+	ptclCM->NumberOfNeighbor = ptcl->NumberOfNeighbor;
+	std::memcpy(ptclCM->Neighbors, ptcl->Neighbors, sizeof(int)*ptcl->NumberOfNeighbor); // this will be adjusted soon! we should delete members...
+	computeCMAcceleration(ptclCM); // neighbors are adjusted here!
 
 	fprintf(workerout, "The ID of CM is %d.\n",ptclCM->PID);
 
@@ -262,8 +271,8 @@ void NewFBInitialization(Particle* ptclCM) {
 	}
 
 	// Find neighbors for CM particle and calculate the 0th, 1st, 2nd, 3rd derivative of accleration accurately 
-	CalculateAcceleration01(ptclCM);
-	CalculateAcceleration23(ptclCM);
+	// CalculateAcceleration01(ptclCM);
+	// CalculateAcceleration23(ptclCM);
 
 	for (int dim=0; dim<Dim; dim++) {
         for (int j=0; j<HERMITE_ORDER; j++)
@@ -271,12 +280,12 @@ void NewFBInitialization(Particle* ptclCM) {
     }
     
     ptclGroup->sym_int.particles.cm.NumberOfNeighbor = ptclCM->NumberOfNeighbor;
-    for (int i=0; i<ptclCM->NumberOfNeighbor; i++)
-    	ptclGroup->sym_int.particles.cm.Neighbors[i] = ptclCM->Neighbors[i];
+	std::memcpy(ptclGroup->sym_int.particles.cm.Neighbors, ptclCM->Neighbors, sizeof(int)*ptclCM->NumberOfNeighbor);
 
 	ptclGroup->sym_int.initialIntegration(ptclGroup->CurrentTime*EnzoTimeStep);
     ptclGroup->sym_int.info.calcDsAndStepOption(ptclGroup->manager.step.getOrder(), ptclGroup->manager.interaction.gravitational_constant, ptclGroup->manager.ds_scale);
 
+	/* // Currently, we use a_reg of ptcl, so we don't need to newly set TimeLevelReg, TimeStepReg, TimeBlockReg by EW 2025.7.18
 	ptclCM->calculateTimeStepReg();
 	if (ptclCM->TimeLevelReg <= ptcl->TimeLevelReg-1 
 			&& ptcl->TimeBlockReg/2+ptcl->CurrentBlockReg >= global_variable->NextRegTimeBlock)  { // this ensures that irr time of any particles is smaller than adjusted new reg time.
@@ -290,6 +299,7 @@ void NewFBInitialization(Particle* ptclCM) {
 
 	ptclCM->TimeStepReg  = static_cast<double>(pow(2, ptclCM->TimeLevelReg));
 	ptclCM->TimeBlockReg = static_cast<ULL>(pow(2, ptclCM->TimeLevelReg-time_block));
+	*/
 
 	if (ptclCM->NumberOfNeighbor != 0) {	
 
@@ -307,28 +317,11 @@ void NewFBInitialization(Particle* ptclCM) {
 		ptclCM->TimeBlockIrr = ptclCM->NextBlockIrr - ptclCM->CurrentBlockIrr;
 
 		ptclCM->CurrentBlockReg = ptclCM->CurrentBlockIrr;
-
-		ptclCM->correctParticleFourthOrder(ptclCM->CurrentTimeIrr - ptclCM->CurrentTimeReg, ptclCM->Position, ptclCM->Velocity, ptclCM->a_tot);
-		ptclCM->updateParticle();
+		// I think fourth order correction is already done in computeAccelerationIrr function! by EW 2025.7.18
+		// ptclCM->correctParticleFourthOrder(ptclCM->CurrentTimeIrr - ptclCM->CurrentTimeReg, ptclCM->Position, ptclCM->Velocity, ptclCM->a_tot);
+		// ptclCM->updateParticle();
 		ptclCM->CurrentTimeReg = ptclCM->CurrentTimeIrr;
 	}
-
-/*
-	while (ptclCM->CurrentBlockIrr+ptclCM->TimeBlockIrr <= global_time_irr 
-			&& ptclCM->TimeLevelIrr <= ptcl->TimeLevelIrr) { //first condition guarantees that ptclcm is small than ptcl
-		ptclCM->TimeLevelIrr++;
-		ptclCM->TimeStepIrr  = static_cast<double>(pow(2, ptclCM->TimeLevelIrr));
-		ptclCM->TimeBlockIrr = static_cast<ULL>(pow(2, ptclCM->TimeLevelIrr-time_block));
-	}
-*/
-
-/* // Eunwoo added
-	while (ptclCM->TimeStepIrr*EnzoTimeStep*1e4 < 1e-7) {
-		ptclCM->TimeLevelIrr += 1;
-		ptclCM->TimeStepIrr = static_cast<REAL>(pow(2, ptclCM->TimeLevelIrr));
-		ptclCM->TimeBlockIrr = static_cast<ULL>(pow(2, ptclCM->TimeLevelIrr-time_block));
-	}
-*/
 
 	auto& bin_root = ptclGroup->sym_int.info.getBinaryTreeRoot();
 	if (bin_root.semi>0.0) {
@@ -502,5 +495,246 @@ void NewFBInitialization3(Group* group) {
 
 	fprintf(workerout, "---------------------END-OF-NEW-GROUP---------------------\n\n");
 	fflush(workerout);
+}
+
+void computeCMAcceleration(Particle* ptclCM) {
+
+	double new_time = ptclCM->CurrentTimeIrr; // the time to be advanced to
+
+	double x[Dim], v[Dim]; // 0 for current and 1 for predicted positions and velocities
+	double r2, vx; // 0 for current and 1 for predicted values
+	double a_tmp[Dim], adot_tmp[Dim]; // 0 for current and 1 for predicted accelerations
+	double pos_neighbor[Dim], vel_neighbor[Dim];
+	double m_r3;
+	Particle* ptcl;
+
+	// initialize irregular force terms for ith particle just in case
+	for (int dim=0; dim<Dim; dim++){
+		a_tmp[dim]    = 0.0;
+		adot_tmp[dim] = 0.0;
+		ptclCM->a_irr[dim][0] = 0.0;
+		ptclCM->a_irr[dim][1] = 0.0;
+		ptclCM->a_irr[dim][2] = 0.0;
+		ptclCM->a_irr[dim][3] = 0.0;
+	}
+
+	std::unordered_set<int> CMPtclsSet;
+
+	/*******************************************************
+	 * Irregular Acceleartion 01 Calculation
+	 ********************************************************/
+
+	for (int i = 0; i < ptclCM->NumberOfNeighbor; i++) {
+
+		ptcl = &particles[ptclCM->Neighbors[i]];
+
+		if (!ptcl->isActive) {
+			if (ptcl->CMPtclIndex != -1) {
+				if (ptcl->CMPtclIndex == ptclCM->ParticleIndex) {
+					if (i != ptclCM->NumberOfNeighbor - 1)
+						ptclCM->Neighbors[i] = ptclCM->Neighbors[ptclCM->NumberOfNeighbor - 1];
+					ptclCM->NumberOfNeighbor--;
+					i--;
+				}
+				else 
+					CMPtclsSet.insert(ptcl->CMPtclIndex);
+			}
+			continue;
+		}
+
+		// reset temporary variables at the start of a new calculation
+		r2 = 0.0;
+		vx = 0.0;
+
+		ptcl->predictParticleSecondOrder(new_time - ptcl->CurrentTimeIrr, pos_neighbor, vel_neighbor);
+
+		for (int dim=0; dim<Dim; dim++) {
+			// calculate position and velocity differences for current time
+			x[dim] = pos_neighbor[dim] - ptclCM->Position[dim];
+			v[dim] = vel_neighbor[dim] - ptclCM->Velocity[dim];
+
+			// calculate the square of radius and inner product of r and v for each case
+			r2 += x[dim]*x[dim];
+			vx += v[dim]*x[dim];
+		}
+
+		m_r3 = ptcl->Mass/(r2*sqrt(r2));
+
+		for (int dim=0; dim<Dim; dim++){
+			a_tmp[dim]    += m_r3*x[dim];
+			adot_tmp[dim] += m_r3*(v[dim] - 3*x[dim]*vx/r2);
+		}
+	}
+	assert(ptclCM->NumberOfNeighbor >= 0);
+
+	for (int i: CMPtclsSet) {
+		ptcl = &particles[i];
+
+		if (!ptcl->isActive) {
+			fprintf(stderr, "Why inactive CM ptcl? this PID: %d, neighbor PID: %d\n", ptclCM->PID, ptcl->PID);
+			assert(ptcl->isActive);
+		}
+
+		// reset temporary variables at the start of a new calculation
+		r2 = 0.0;
+		vx = 0.0;
+
+		ptcl->predictParticleSecondOrder(new_time - ptcl->CurrentTimeIrr, pos_neighbor, vel_neighbor);
+
+		for (int dim=0; dim<Dim; dim++) {
+			// calculate position and velocity differences for current time
+			x[dim] = pos_neighbor[dim] - ptclCM->Position[dim];
+			v[dim] = vel_neighbor[dim] - ptclCM->Velocity[dim];
+
+			// calculate the square of radius and inner product of r and v for each case
+			r2 += x[dim]*x[dim];
+			vx += v[dim]*x[dim];
+		}
+
+		m_r3 = ptcl->Mass/(r2*sqrt(r2));
+
+		for (int dim=0; dim<Dim; dim++){
+			a_tmp[dim]    += m_r3*x[dim];
+			adot_tmp[dim] += m_r3*(v[dim] - 3*x[dim]*vx/r2);
+		}
+	}
+
+	double dt_ex = (ptclCM->NumberOfNeighbor == 0) ? 0.0 : (new_time - ptclCM->CurrentTimeReg)*EnzoTimeStep;
+	for (int dim=0; dim<Dim; dim++) {
+		ptclCM->a_irr[dim][0] = a_tmp[dim];
+		ptclCM->a_irr[dim][1] = adot_tmp[dim];
+		ptclCM->a_tot[dim][0] = ptclCM->a_reg[dim][0] + ptclCM->a_irr[dim][0] + ptclCM->a_reg[dim][1]*dt_ex; // affect the next
+		ptclCM->a_tot[dim][1] = ptclCM->a_reg[dim][1] + ptclCM->a_irr[dim][1];
+	}
+
+	/*******************************************************
+	 * Irregular Acceleartion 23 Calculation
+	 ********************************************************/
+
+	double a21[Dim], a21dot[Dim], a1[Dim], a2[Dim], a1dot[Dim], a2dot[Dim];
+	double a, b, c;
+	double rdf_r2, vdf_r2, rdfdot_r2, v2, r3;
+	double adot2, adot3;
+
+	for (int dim=0; dim<Dim; dim++) {
+		x[dim]      = 0.;
+		v[dim]      = 0.;
+		a21[dim]    = 0.;
+		a21dot[dim] = 0.;
+		a1[dim]     = ptclCM->a_tot[dim][0];
+		a1dot[dim]  = ptclCM->a_tot[dim][1];
+	}
+ 
+	for (int i = 0; i < ptclCM->NumberOfNeighbor; i++) {
+
+		ptcl = &particles[ptclCM->Neighbors[i]];
+
+		if (!ptcl->isActive) // CMPtclsSet already contains all active CM particles
+			continue;
+
+		r2 = 0;
+		v2 = 0;
+		vx = 0;
+		rdf_r2 = 0;
+		vdf_r2 = 0;
+		rdfdot_r2 = 0;
+
+		ptcl->predictParticleSecondOrder(new_time - ptcl->CurrentTimeIrr, pos_neighbor, vel_neighbor);
+
+		// updated the predicted positions and velocities just in case
+		// if current time = the time we need, then PredPosition and PredVelocity is same as Position and Velocity
+		for (int dim=0; dim<Dim; dim++) {
+
+			double dt = (new_time - ptcl->CurrentTimeIrr)*EnzoTimeStep;
+			a2[dim] = (dt == 0) ? ptcl->a_tot[dim][0] : ptcl->a_tot[dim][1]*dt + ptcl->a_tot[dim][0];
+			a2dot[dim] = ptcl->a_tot[dim][1];
+
+			x[dim]     = pos_neighbor[dim] - ptclCM->Position[dim];
+			v[dim]     = vel_neighbor[dim] - ptclCM->Velocity[dim];
+			r2        += x[dim]*x[dim];
+			vx        += v[dim]*x[dim];
+			v2        += v[dim]*v[dim];
+		}
+
+		r3   = r2*sqrt(r2);
+		m_r3 = ptcl->Mass/r3; 
+
+		for (int dim=0; dim<Dim; dim++) {
+			a21[dim]    = m_r3*x[dim];
+			a21dot[dim] = m_r3*(v[dim] - 3*x[dim]*vx/r2);
+			rdf_r2     += x[dim]*(a1[dim]-a2[dim])/r2;
+			vdf_r2     += v[dim]*(a1[dim]-a2[dim])/r2;
+			rdfdot_r2  += x[dim]*(a1dot[dim]-a2dot[dim])/r2;
+		}
+
+		a = vx/r2;
+		b = v2/r2 + rdf_r2 + a*a;
+		c = 3*vdf_r2 + rdfdot_r2 + a*(3*b-4*a*a);
+
+		for (int dim=0; dim<Dim; dim++) {
+			adot2 = -ptcl->Mass*(a1[dim]-a2[dim])/r3-6*a*a21dot[dim]-3*b*a21[dim];
+			adot3 = -ptcl->Mass*(a1dot[dim]-a2dot[dim])/r3-9*a*adot2-9*b*a21dot[dim]-3*c*a21[dim];
+			ptclCM->a_irr[dim][2] += adot2;
+			ptclCM->a_irr[dim][3] += adot3;
+		}
+	}
+
+	for (int i: CMPtclsSet) {
+		ptcl = &particles[i];
+
+		if (!ptcl->isActive) {
+			fprintf(stderr, "Why inactive CM ptcl? this PID: %d, neighbor PID: %d\n", ptclCM->PID, ptcl->PID);
+			assert(ptcl->isActive);
+		}
+
+		r2 = 0;
+		v2 = 0;
+		vx = 0;
+		rdf_r2 = 0;
+		vdf_r2 = 0;
+		rdfdot_r2 = 0;
+
+		ptcl->predictParticleSecondOrder(new_time - ptcl->CurrentTimeIrr, pos_neighbor, vel_neighbor);
+
+		for (int dim=0; dim<Dim; dim++) {
+
+			double dt = (new_time - ptcl->CurrentTimeIrr)*EnzoTimeStep;
+			a2[dim] = (dt == 0) ? ptcl->a_tot[dim][0] : ptcl->a_tot[dim][1]*dt + ptcl->a_tot[dim][0];
+			a2dot[dim] = ptcl->a_tot[dim][1];
+
+			x[dim]     = pos_neighbor[dim] - ptclCM->Position[dim];
+			v[dim]     = vel_neighbor[dim] - ptclCM->Velocity[dim];
+			r2        += x[dim]*x[dim];
+			vx        += v[dim]*x[dim];
+			v2        += v[dim]*v[dim];
+		}
+
+		r3   = r2*sqrt(r2);
+		m_r3 = ptcl->Mass/r3; 
+
+		for (int dim=0; dim<Dim; dim++) {
+			a21[dim]    = m_r3*x[dim];
+			a21dot[dim] = m_r3*(v[dim] - 3*x[dim]*vx/r2);
+			rdf_r2     += x[dim]*(a1[dim]-a2[dim])/r2;
+			vdf_r2     += v[dim]*(a1[dim]-a2[dim])/r2;
+			rdfdot_r2  += x[dim]*(a1dot[dim]-a2dot[dim])/r2;
+		}
+
+		a = vx/r2;
+		b = v2/r2 + rdf_r2 + a*a;
+		c = 3*vdf_r2 + rdfdot_r2 + a*(3*b-4*a*a);
+
+		for (int dim=0; dim<Dim; dim++) {
+			adot2 = -ptcl->Mass*(a1[dim]-a2[dim])/r3-6*a*a21dot[dim]-3*b*a21[dim];
+			adot3 = -ptcl->Mass*(a1dot[dim]-a2dot[dim])/r3-9*a*adot2-9*b*a21dot[dim]-3*c*a21[dim];
+			ptclCM->a_irr[dim][2] += adot2;
+			ptclCM->a_irr[dim][3] += adot3;
+		}
+	}
+
+	for (int dim=0; dim<Dim; dim++)	 {
+		ptclCM->a_tot[dim][2] = ptclCM->a_reg[dim][2] + ptclCM->a_irr[dim][2];
+		ptclCM->a_tot[dim][3] = ptclCM->a_reg[dim][3] + ptclCM->a_irr[dim][3];
+	}
 }
 #endif

@@ -166,7 +166,7 @@ void Particle::computeAccelerationIrr() {
 	dt2 = dt*dt;
 	dt3 = dt2*dt;
 	dt4 = dt3*dt;
-	//dt5 = dt4*dt;
+	dt5 = dt4*dt; // VERY IMPORTANT BUG FIXED by EW 2025.7.18
 
 	/*******************************************************
 	 * Position and velocity correction due to 4th order correction

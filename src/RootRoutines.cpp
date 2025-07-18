@@ -1025,7 +1025,7 @@ void RootRoutines() {
 #endif
 #else // no multimap
 						if (ptclCM->CurrentBlockReg + ptclCM->TimeBlockReg == NextRegTimeBlock)
-							RegularList.insert(ptcl->ParticleIndex);
+							RegularList.insert(ptclCM->ParticleIndex); // VERY IMPORTANT BUG FIXED by EW 2025.7.18
 #endif
 					}
 #ifdef DEBUG
