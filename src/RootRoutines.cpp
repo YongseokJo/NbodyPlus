@@ -167,13 +167,13 @@ void RootRoutines() {
 					  << " primordial binaries are created." << std::endl;
 			queue_scheduler.initialize(MakePrimordialGroup);
 			for (int i=OriginalLastParticleIndex+1; i<=LastParticleIndex; i++) {
-				std::cout << "New Primordial Binary of PID="
-						  << i << " is created with being assigned to a worker of rank "
-						  << rank << "." << std::endl;
 				ptcl = &particles[i];
 				CMPtclWorker.insert({ptcl->ParticleIndex, CMPtclWorker.size() % NumberOfWorker + 1});
 				PIDs.push_back(ptcl->ParticleIndex);
 				rank = CMPtclWorker[ptcl->ParticleIndex];
+				std::cout << "New Primordial Binary of PID="
+						  << ptcl->PID << " is created with being assigned to a worker of rank "
+						  << rank << "." << std::endl;
 #ifdef SEVN_BINARY
 #ifdef PERFORMANCETRACE
 				start_point_BSE = std::chrono::high_resolution_clock::now();
