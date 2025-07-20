@@ -341,7 +341,7 @@ void RootRoutines() {
 
 	/* Actual Loop */
 	{
-		int max_level = 5;
+		int max_level = 20;
 		double prob = 0.5;
 		SkipList *skiplist;
 		Node* ThisLevelNode;
@@ -1025,7 +1025,7 @@ void RootRoutines() {
 #endif
 #else // no multimap
 						if (ptclCM->CurrentBlockReg + ptclCM->TimeBlockReg == NextRegTimeBlock)
-							RegularList.insert(ptcl->ParticleIndex);
+							RegularList.insert(ptclCM->ParticleIndex); // VERY IMPORTANT BUG FIXED by EW 2025.7.18
 #endif
 					}
 #ifdef DEBUG

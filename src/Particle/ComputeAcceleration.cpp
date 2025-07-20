@@ -166,7 +166,7 @@ void Particle::computeAccelerationIrr() {
 	dt2 = dt*dt;
 	dt3 = dt2*dt;
 	dt4 = dt3*dt;
-	//dt5 = dt4*dt;
+	dt5 = dt4*dt; // VERY IMPORTANT BUG FIXED by EW 2025.7.18
 
 	/*******************************************************
 	 * Position and velocity correction due to 4th order correction
@@ -605,13 +605,8 @@ void Particle::updateRegularParticleCuda() {
 	for (int i=0; i<NewNumberOfNeighborGPU; i++) {
 		ptcl = &particles[*it];
 		if (ptcl->isCMptcl) {
-			for (int j=0; j<ptcl->NumberOfMember; j++) {
+			for (int j=0; j<ptcl->NumberOfMember; j++)
 				this->NewNeighbors[_NewNumberOfNeighbor++] = ptcl->Members[j];
-				for (int dim=0; dim<Dim; dim++) {
-					particles[ptcl->Members[j]].Position[dim] += this->NewPosition[dim] - this->Position[dim];
-					particles[ptcl->Members[j]].Velocity[dim] += this->NewVelocity[dim] - this->Velocity[dim];
-				}
-			}
 		}
 		else
 			this->NewNeighbors[_NewNumberOfNeighbor++] = ptcl->ParticleIndex;

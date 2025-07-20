@@ -18,6 +18,8 @@
 
 extern double InitialNeighborRadius;
 extern double EnzoTimeStep;
+struct Particle;
+extern Particle *particles;
 
 enum class BinaryInterruptState:int {
 	none = 0, 
@@ -241,6 +243,17 @@ struct Particle {
 
 	// void updateParticle(); 
 	void updateParticle() { // inline function by EW 2025.3.3 to reduce function call time
+
+		if (this->isCMptcl) {
+			Particle* members;
+			for (int i = 0; i < this->NumberOfMember; i++) {
+				members = &particles[this->Members[i]];
+				for (int dim = 0; dim < Dim; dim++) {
+					members->Position[dim] += this->NewPosition[dim] - this->Position[dim];
+					members->Velocity[dim] += this->NewVelocity[dim] - this->Velocity[dim];
+				}
+			}
+		}
 	
 		for (int dim=0; dim<Dim; dim++) {
 			this->Position[dim] = this->NewPosition[dim];
