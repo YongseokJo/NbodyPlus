@@ -605,13 +605,8 @@ void Particle::updateRegularParticleCuda() {
 	for (int i=0; i<NewNumberOfNeighborGPU; i++) {
 		ptcl = &particles[*it];
 		if (ptcl->isCMptcl) {
-			for (int j=0; j<ptcl->NumberOfMember; j++) {
+			for (int j=0; j<ptcl->NumberOfMember; j++)
 				this->NewNeighbors[_NewNumberOfNeighbor++] = ptcl->Members[j];
-				for (int dim=0; dim<Dim; dim++) {
-					particles[ptcl->Members[j]].Position[dim] += this->NewPosition[dim] - this->Position[dim];
-					particles[ptcl->Members[j]].Velocity[dim] += this->NewVelocity[dim] - this->Velocity[dim];
-				}
-			}
 		}
 		else
 			this->NewNeighbors[_NewNumberOfNeighbor++] = ptcl->ParticleIndex;

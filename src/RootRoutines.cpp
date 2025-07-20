@@ -341,7 +341,7 @@ void RootRoutines() {
 
 	/* Actual Loop */
 	{
-		int max_level = 5;
+		int max_level = 20;
 		double prob = 0.5;
 		SkipList *skiplist;
 		Node* ThisLevelNode;

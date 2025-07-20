@@ -19,20 +19,6 @@ void FBTermination(Particle* ptclCM) {
 	NumberOfParticle--; // CM particle should be inactive by EW 2025.1.20
 	
 	Particle* members = &particles[ptclCM->Members[0]];
-	if (ptclCM->CurrentTimeIrr != members->CurrentTimeIrr) {
-		double CM_current_time = ptclCM->CurrentTimeIrr;
-		computeMemberAccelerationIrr(ptclCM, members->CurrentTimeIrr); // Backward integration to the merger time!!!
-		ptclCM->CurrentTimeIrr = CM_current_time; // Set this back for the later use...
-		for (int i = 0; i < ptclCM->NumberOfMember; i++) {
-			members = &particles[ptclCM->Members[i]];
-			if (members->Mass < 0.0)
-				continue;
-			for (int dim = 0; dim < Dim; dim++) {
-				members->Position[dim] += ptclCM->Position[dim] - ptclCM->NewPosition[dim];
-				members->Velocity[dim] += ptclCM->Velocity[dim] - ptclCM->NewVelocity[dim];
-			}
-		}
-	}
 
 	// Set member information from CM ptcl; isActive = true & CMPtclIndex = -1 in RootRoutines.cpp
 	for (int i = 0; i < ptclCM->NumberOfMember; i++) {
@@ -80,14 +66,32 @@ void FBTermination(Particle* ptclCM) {
 			if (members_members->Mass > 0.0 && members_members->PID != members->PID) 
 				members->Neighbors[members->NumberOfNeighbor++] = members_members->ParticleIndex;
 		}
-		computeMemberAcceleration01(members);
+		if (members->CurrentTimeIrr == ptclCM->CurrentTimeIrr)
+			computeMemberAcceleration01(members);
+		else {
+			for (int dim = 0; dim < Dim; dim++) {
+				for (int order = 0; order < 2; order++) {
+					members->a_irr[dim][order] = ptclCM->a_irr[dim][order];
+					members->a_tot[dim][order] = ptclCM->a_tot[dim][order];
+				}
+			}
+		}
 	}
 	for (int i = 0; i < ptclCM->NumberOfMember; i++) {
 		members = &particles[ptclCM->Members[i]];
 		if (members->Mass < 0.0)
 			continue;
 
-		computeMemberAcceleration23(members);
+		if (members->CurrentTimeIrr == ptclCM->CurrentTimeIrr)
+			computeMemberAcceleration23(members);
+		else {
+			for (int dim = 0; dim < Dim; dim++) {
+				for (int order = 2; order < 4; order++) {
+					members->a_irr[dim][order] = ptclCM->a_irr[dim][order];
+					members->a_tot[dim][order] = ptclCM->a_tot[dim][order];
+				}
+			}
+		}
 	}
 	
 	for (int i = 0; i < ptclCM->NumberOfMember; i++) {
@@ -95,10 +99,6 @@ void FBTermination(Particle* ptclCM) {
 		if (members->Mass < 0.0)
 			continue;
 
-		if (members->CurrentTimeIrr != ptclCM->CurrentTimeIrr) {
-			assert(members->CurrentTimeIrr < ptclCM->CurrentTimeIrr); // for debugging by EW
-			computeMemberAccelerationIrr(members, ptclCM->CurrentTimeIrr); // Let's check I can really use this function!!!
-		}
 		members->CurrentTimeIrr = ptclCM->CurrentTimeIrr;
 
 		// Update members' remaining properties...
