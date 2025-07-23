@@ -16,9 +16,17 @@ void FBTermination(Particle* ptclCM) {
 	fprintf(binout, "CurrentTimeIrr of the first member (Myr): %e\n", particles[ptclCM->Members[0]].CurrentTimeIrr*EnzoTimeStep*1e4);
 	fprintf(binout, "N_member: %d\n", ptclCM->NumberOfMember);
 
+	Particle* members;
+
+	ptclCM->isActive = false;
+	for (int i = 0; i < ptclCM->NumberOfMember; i++) {
+		members = &particles[ptclCM->Members[i]];
+		members->CMPtclIndex = -1;
+		if (members->Mass > 0.0)
+			members->isActive = true;
+	}
+
 	NumberOfParticle--; // CM particle should be inactive by EW 2025.1.20
-	
-	Particle* members = &particles[ptclCM->Members[0]];
 
 	// Set member information from CM ptcl; isActive = true & CMPtclIndex = -1 in RootRoutines.cpp
 	for (int i = 0; i < ptclCM->NumberOfMember; i++) {
@@ -145,26 +153,7 @@ void FBTermination(Particle* ptclCM) {
 			members->CurrentTimeReg = members->CurrentTimeIrr;
 		}
 
-		fprintf(binout,"PID: %d\n", members->PID);
-		fprintf(binout, "Position (pc) - x:%e, y:%e, z:%e, \n", members->Position[0]*position_unit, members->Position[1]*position_unit, members->Position[2]*position_unit);
-		fprintf(binout, "Velocity (km/s) - vx:%e, vy:%e, vz:%e, \n", members->Velocity[0]*velocity_unit/yr*pc/1e5, members->Velocity[1]*velocity_unit/yr*pc/1e5, members->Velocity[2]*velocity_unit/yr*pc/1e5);
-		fprintf(binout, "Mass (Msol) - %e, \n", members->Mass*mass_unit);
-
-		fprintf(binout, "Total Acceleration - ax:%e, ay:%e, az:%e, \n", members->a_tot[0][0], members->a_tot[1][0], members->a_tot[2][0]);
-		// fprintf(binout, "Total Acceleration - axdot:%e, aydot:%e, azdot:%e, \n", members->a_tot[0][1], members->a_tot[1][1], members->a_tot[2][1]);
-		// fprintf(binout, "Total Acceleration - ax2dot:%e, ay2dot:%e, az2dot:%e, \n", members->a_tot[0][2], members->a_tot[1][2], members->a_tot[2][2]);
-		// fprintf(binout, "Total Acceleration - ax3dot:%e, ay3dot:%e, az3dot:%e, \n", members->a_tot[0][3], members->a_tot[1][3], members->a_tot[2][3]);
-		fprintf(binout, "Reg Acceleration - ax:%e, ay:%e, az:%e, \n", members->a_reg[0][0], members->a_reg[1][0], members->a_reg[2][0]);
-		// fprintf(binout, "Reg Acceleration - axdot:%e, aydot:%e, azdot:%e, \n", members->a_reg[0][1], members->a_reg[1][1], members->a_reg[2][1]);
-		// fprintf(binout, "Reg Acceleration - ax2dot:%e, ay2dot:%e, az2dot:%e, \n", members->a_reg[0][2], members->a_reg[1][2], members->a_reg[2][2]);
-		// fprintf(binout, "Reg Acceleration - ax3dot:%e, ay3dot:%e, az3dot:%e, \n", members->a_reg[0][3], members->a_reg[1][3], members->a_reg[2][3]);
-		fprintf(binout, "Irr Acceleration - ax:%e, ay:%e, az:%e, \n", members->a_irr[0][0], members->a_irr[1][0], members->a_irr[2][0]);
-		// fprintf(binout, "Irr Acceleration - axdot:%e, aydot:%e, azdot:%e, \n", members->a_irr[0][1], members->a_irr[1][1], members->a_irr[2][1]);
-		// fprintf(binout, "Irr Acceleration - ax2dot:%e, ay2dot:%e, az2dot:%e, \n", members->a_irr[0][2], members->a_irr[1][2], members->a_irr[2][2]);
-		// fprintf(binout, "Irr Acceleration - ax3dot:%e, ay3dot:%e, az3dot:%e, \n", members->a_irr[0][3], members->a_irr[1][3], members->a_irr[2][3]);
-		fprintf(binout, "Time Steps (Myr) - irregular:%e, regular:%e \n", members->TimeStepIrr*EnzoTimeStep*1e4, members->TimeStepReg*EnzoTimeStep*1e4);
-		// fprintf(binout, "Time Blocks - irregular:%llu, regular:%llu \n", members->TimeBlockIrr, members->TimeBlockReg);
-		// fprintf(binout, "Current Blocks - irregular: %llu, regular:%llu \n", members->CurrentBlockIrr, members->CurrentBlockReg);
+		members->printParticleInfo(binout);
 	}
 	ptclCM->clear();
 

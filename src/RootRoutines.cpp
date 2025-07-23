@@ -736,7 +736,6 @@ void RootRoutines() {
 						}
 
 						bin_termination = true;
-						ptcl->isActive = false;
 
 						if (ptcl->ParticleIndex == LastParticleIndex) {
 							LastParticleIndex--;
@@ -747,7 +746,6 @@ void RootRoutines() {
 						CMPtclWorker.erase(ptcl->ParticleIndex);
 
 						for (int j=0; j < ptcl->NumberOfMember; j++) {
-							particles[ptcl->Members[j]].CMPtclIndex = -1;
 							if (particles[ptcl->Members[j]].Mass < 0.0) {
 #ifdef SEVN
 								Particle* ptcl_erased = &particles[ptcl->Members[j]];
@@ -774,7 +772,6 @@ void RootRoutines() {
 								continue;
 							}
 							ThisLevelNode->ParticleList.push_back(ptcl->Members[j]);
-							particles[ptcl->Members[j]].isActive = true;
 						}
 #ifdef MULTIMAP
 #ifdef PERFORMANCETRACE

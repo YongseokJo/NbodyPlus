@@ -425,6 +425,33 @@ struct Particle {
 		std::memcpy(this->NewNeighbors, ptcl->NewNeighbors, sizeof(int)*ptcl->NewNumberOfNeighbor);
 	}
 	
+#define NO_PRINT_FULL_ACC
+	void printParticleInfo(FILE* file) {
+		fprintf(file, "PID: %d, ParticleIndex: %d, ParticleType: %d\n", PID, ParticleIndex, ParticleType);
+		fprintf(file, "Position (pc):%e, %e, %e\n", Position[0]*position_unit, Position[1]*position_unit, Position[2]*position_unit);
+		fprintf(file, "Velocity (km/s): %e, %e, %e\n", Velocity[0]*velocity_unit/yr*pc/1e5, Velocity[1]*velocity_unit/yr*pc/1e5, Velocity[2]*velocity_unit/yr*pc/1e5);
+		fprintf(file, "Mass (Msun): %e\n", Mass*mass_unit);
+		fprintf(file, "NumNeighbor: %d, ACRadius (pc): %e\n", NumberOfNeighbor, sqrt(RadiusOfNeighbor)*position_unit);
+		fprintf(file, "atot (0): %e, %e, %e\n", a_tot[0][0], a_tot[1][0], a_tot[2][0]);
+#ifdef PRINT_FULL_ACC
+		fprintf(file, "atot (1): %e, %e, %e\n", a_tot[0][1], a_tot[1][1], a_tot[2][1]);
+		fprintf(file, "atot (2): %e, %e, %e\n", a_tot[0][2], a_tot[1][2], a_tot[2][2]);
+		fprintf(file, "atot (3): %e, %e, %e\n", a_tot[0][3], a_tot[1][3], a_tot[2][3]);
+#endif
+		fprintf(file, "areg (0): %e, %e, %e\n", a_reg[0][0], a_reg[1][0], a_reg[2][0]);
+#ifdef PRINT_FULL_ACC
+		fprintf(file, "areg (1): %e, %e, %e\n", a_reg[0][1], a_reg[1][1], a_reg[2][1]);
+		fprintf(file, "areg (2): %e, %e, %e\n", a_reg[0][2], a_reg[1][2], a_reg[2][2]);
+		fprintf(file, "areg (3): %e, %e, %e\n", a_reg[0][3], a_reg[1][3], a_reg[2][3]);
+#endif
+		fprintf(file, "airr (0): %e, %e, %e\n", a_irr[0][0], a_irr[1][0], a_irr[2][0]);
+#ifdef PRINT_FULL_ACC
+		fprintf(file, "airr (1): %e, %e, %e\n", a_irr[0][1], a_irr[1][1], a_irr[2][1]);
+		fprintf(file, "airr (2): %e, %e, %e\n", a_irr[0][2], a_irr[1][2], a_irr[2][2]);
+		fprintf(file, "airr (3): %e, %e, %e\n", a_irr[0][3], a_irr[1][3], a_irr[2][3]);
+#endif
+		fprintf(file, "TimeStepIrr (Myr): %e, TimeStepReg (Myr): %e\n", TimeStepIrr*EnzoTimeStep*1e4, TimeStepReg*EnzoTimeStep*1e4);
+	}
 };
 
 
