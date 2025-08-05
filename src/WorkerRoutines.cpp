@@ -98,7 +98,7 @@ void WorkerRoutines() {
 				MPI_Recv(int_lists, 3, MPI_INT, ROOT, 1, MPI_COMM_DEVICE, &status);
 				RegularWorker(int_lists[0], int_lists[1], int_lists[2], ptcl_id);
 				delete int_lists;
-				break;
+				continue;
 			}
 
 			case IrrUpdate: // Irregular Update Particle

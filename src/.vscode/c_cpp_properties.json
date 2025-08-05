@@ -10,7 +10,7 @@
             ],
             "defines": [
                 "PERFORMANCETRACE",
-                "MultiNode",
+                // "MultiNode",
                 "AR_TTL",
                 "AR_SLOWDOWN_TREE",
                 "AR_SLOWDOWN_TIMESCALE",

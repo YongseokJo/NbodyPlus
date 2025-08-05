@@ -1412,7 +1412,7 @@ void RootRoutines() {
 #endif // multimap
 
 #ifdef NSIGHT
-				nvtxRangePushA("calculateRegAccelerationOnGPU");
+				// nvtxRangePushA("calculateRegAccelerationOnGPU");
 #endif
 
 #ifdef DEBUG
@@ -1422,6 +1422,10 @@ void RootRoutines() {
 
 				// calculateRegAccelerationOnGPU(RegularList, queue_scheduler); //original code
 				RegAccelerationOnGPU(RegularList, queue_scheduler);
+
+#ifdef PERFORMANCETRACE
+                start_point_routine = std::chrono::high_resolution_clock::now();
+#endif
 				
 				queue_scheduler.initialize(RegCuda);
 				queue_scheduler.takeQueueRegularList(RegularList);
@@ -1431,14 +1435,19 @@ void RootRoutines() {
 					queue_scheduler.runQueueAuto();
 					queue_scheduler.waitQueue(0); // blocking wait
 				} while (queue_scheduler.isComplete());
-				
+
+#ifdef PERFORMANCETRACE
+				end_point_routine = std::chrono::high_resolution_clock::now();
+				performance.RegularAdjust +=
+					std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
+#endif
 
 #ifdef DEBUG
 				std::cout << "calculateRegAccelerationOnGPU ended" << std::endl;
 #endif
 
 #ifdef NSIGHT
-				nvtxRangePop();
+				// nvtxRangePop();
 #endif
 
 #ifdef PERFORMANCETRACE

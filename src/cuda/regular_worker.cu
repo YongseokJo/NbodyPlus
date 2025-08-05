@@ -68,16 +68,21 @@ int deviceCount;
 // void AllocateDeviceMemory(int N_i, int N_j, int gpu_id);
 void sendAllParticlesToGPU(double new_time, std::unordered_set<int> RegularList, int *IndexList, int ListSize);
 // void RegularRoot(int NumTargetTotal, CUDA_REAL Acceleration[], int NumNeighbor[], int *NeighborList);
-void RegularRoot(int NumTargetTotal, std::vector<CUDA_REAL>& Acceleration, int NumNeighbor[], int *NeighborList);
+void RegularRoot(int NumTargetTotal, std::vector<CUDA_REAL>& Acceleration, int* IndexList);
 void SetSize(int N_i, int N_j);
 void RegAccelerationWorkThread(int TargetStart, int NumTarget, int NumTargetTotal, int JStart, int Jend, int gpu_id, cudaStream_t stream);
 
 
 void RegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueScheduler &queue_scheduler){
+
+#ifdef PERFORMANCETRACE
+	std::chrono::high_resolution_clock::time_point start_point_routine;
+	std::chrono::high_resolution_clock::time_point end_point_routine;
+#endif
+
 	int ListSize = RegularList.size();
 	int *IndexList = new int[ListSize];
     
-	int *ACListReceive, *NumNeighborReceive;
 	// CUDA_REAL *Acceleration;
 	int J_start, J_end; // indices of J particles in the gpu devices 
 
@@ -86,14 +91,35 @@ void RegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueScheduler &q
 
 	// Acceleration		= new CUDA_REAL[6*ListSize];
 	std::vector<CUDA_REAL> Acceleration(6*ListSize);
-	NumNeighborReceive  = new int[ListSize];
-	ACListReceive		= new int[ListSize * MaxNumNeighbor];
 
 	// std::memset(Acceleration, 0, ListSize * 6 * sizeof(CUDA_REAL));
 
-	Queue queue;
-	sendAllParticlesToGPU(new_time, RegularList, IndexList, ListSize);
+#ifdef PERFORMANCETRACE
+	start_point_routine = std::chrono::high_resolution_clock::now();
+#endif
 
+#ifdef NSIGHT
+	nvtxRangePushA("Root_sendAllParticlesToGPU");
+#endif
+	sendAllParticlesToGPU(new_time, RegularList, IndexList, ListSize);
+#ifdef NSIGHT
+	nvtxRangePop();
+#endif
+#ifdef NSIGHT
+	nvtxRangePushA("Root_RegCalSend");
+#endif
+
+#ifdef PERFORMANCETRACE
+	end_point_routine = std::chrono::high_resolution_clock::now();
+	performance.RegularSendAllParticlesToGPU +=
+		std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
+#endif
+
+#ifdef PERFORMANCETRACE
+	start_point_routine = std::chrono::high_resolution_clock::now();
+#endif
+
+	Queue queue;
 	// queue_scheduler.initialize(RegCal);
 	queue.task = RegCal;
 	queue.next_time = -1;
@@ -118,16 +144,16 @@ void RegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueScheduler &q
 	// Start RegularWorker in the queue_scheduler
 	// RegularWorker(ListSize, J_start, J_end, gpu_id);
 	SetSize(ListSize, NumberOfParticle);
-	RegularRoot(ListSize, Acceleration, NumNeighborReceive, ACListReceive);
-	int completed = 0;
-	MPI_Status status;
-	while (completed < deviceCount) {
-		MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-		int completed_rank = status.MPI_SOURCE;
-		int return_value;
-		MPI_Recv(&return_value, 1, MPI_INT, completed_rank, TERMINATE_TAG, MPI_COMM_WORLD, &status);
-		completed++;
-	}
+#ifdef NSIGHT
+	nvtxRangePop();
+#endif
+	RegularRoot(ListSize, Acceleration, IndexList);
+
+#ifdef PERFORMANCETRACE
+	end_point_routine = std::chrono::high_resolution_clock::now();
+	performance.RegularGPU +=
+		std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
+#endif
 
 #ifdef TEST1
 	fprintf(stdout, "GPU neighbor: ");
@@ -138,21 +164,9 @@ void RegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueScheduler &q
 	fprintf(stdout, "\n");
 	fprintf(stdout, "GPU N_neighbor: %d, accx: %e, accy: %e\n\n", NumNeighborReceive[I_test], Acceleration[I_test * _six], Acceleration[I_test * _six + 1]);
 #endif
-	for (int i=0; i<ListSize; i++) {
-		ptcl = &particles[ActiveIndexToOriginalIndex[IndexList[i]]];
-		ptcl->NewNumberOfNeighbor = NumNeighborReceive[i];
-		std::memcpy(ptcl->NewNeighbors, &ACListReceive[i * MaxNumNeighbor], NumNeighborReceive[i] * sizeof(int));
-
-		for (int dim=0; dim<Dim; dim++) {
-			ptcl->a_irr[dim][0]  = static_cast<double>(Acceleration[_six*i+dim]);
-			ptcl->a_irr[dim][1] = static_cast<double>(Acceleration[_six*i+dim+3]);
-		}
-	}
 
 	delete[] IndexList;
 	// delete[] Acceleration;
-	delete[] NumNeighborReceive;
-	delete[] ACListReceive;
 }
 
 
@@ -368,8 +382,7 @@ void RegularRoot(
     int NumTargetTotal,
     // CUDA_REAL Acceleration[],
 	std::vector<CUDA_REAL>& Acceleration,
-    int NumNeighbor[],
-    int *NeighborList
+	int* IndexList
     ){
     
     // Dynamically allocate 2D arrays on the heap to avoid stack overflow.
@@ -386,65 +399,100 @@ void RegularRoot(
     // The root loops through the particle chunks, receiving and aggregating data for each.
     for (int TargetStart = 0; TargetStart < NumTargetTotal; TargetStart += i_size_loop) {
         int NumTarget = std::min(i_size_loop, NumTargetTotal - TargetStart);
-        
 
         // The root process does not compute. It acts as the destination for the reduction.
-        MPI_Reduce(MPI_IN_PLACE,
+		MPI_Request request;
+        MPI_Ireduce(MPI_IN_PLACE,
                 //    Acceleration + TargetStart*_six, // receive buffer
-					Acceleration.data() + TargetStart*_six, // receive buffer,
+				   Acceleration.data() + TargetStart*_six, // receive buffer,
                    _six * NumTarget,
 				   MPI_CUDA,
                    MPI_SUM, 
-                   0, // root rank
-                   MPI_COMM_DEVICE);
-        
+                   ROOT, // root rank
+                   MPI_COMM_DEVICE,
+				   &request);
 				
         // Receive neighbor counts and lists from all worker ranks.
         // Workers are assumed to be ranks 1, 2, ..., deviceCount-1.
-        for (int p = 1; p <= deviceCount; p++) {
-            MPI_Recv(h_num_neighbor_array[p-1],
-                     NumTarget,
-                     MPI_INT,
-                     p, // Receive from worker rank p
-                     NEIGHBOR_COUNT_TAG,
-                     MPI_COMM_DEVICE,
-                     MPI_STATUS_IGNORE);
-            MPI_Recv(NeighborList_array[p-1],
-                     NumTarget * MaxNumNeighbor,
-                     MPI_INT,
-                     p, // Receive from worker rank p
-                     NEIGHBOR_LIST_TAG,
-                     MPI_COMM_DEVICE,
-                     MPI_STATUS_IGNORE);
-        }
 
-        // --- Aggregate the received neighbor data ---
-        for (int j = 0; j < NumTarget; j++) {
-            int current_target_idx = TargetStart + j;
-            NumNeighbor[current_target_idx] = 0;
-            
-            // Accumulate neighbor counts from each worker for the current target.
-            for (int l = 0; l < deviceCount; l++) {
-                NumNeighbor[current_target_idx] += h_num_neighbor_array[l][j];
-            }
-        }
+		int completed = 0;
+		while (completed < deviceCount) {
 
-        for (int k = 0; k < NumTarget; k++) {
-            int offset = 0;
-            // Merge neighbor lists from all workers for the current target.
-            for (int l = 0; l < deviceCount; l++) {
-                int count = h_num_neighbor_array[l][k];
-                if (offset + count > MaxNumNeighbor) {
-                    fprintf(stderr, "ERROR: Sum of neighbors exceeds MaxNumNeighbor for target %d!\n", k);
-                    // Handle error, e.g. break or throw
-                }
-                memcpy(&NeighborList[(TargetStart + k) * MaxNumNeighbor + offset],
-                       &NeighborList_array[l][k * MaxNumNeighbor],
-                       count * sizeof(int));
-                offset += count;
-            }
-        }
-        
+#ifdef NSIGHT
+			nvtxRangePushA("Root_RegNumNeighborMPI_Recv");
+#endif
+			MPI_Status status;
+			MPI_Probe(MPI_ANY_SOURCE, NEIGHBOR_COUNT_TAG, MPI_COMM_DEVICE, &status);
+			int p = status.MPI_SOURCE;
+			MPI_Recv(h_num_neighbor_array[p-1],
+					 NumTarget,
+					 MPI_INT,
+					 p, // Receive from worker rank p
+					 NEIGHBOR_COUNT_TAG,
+					 MPI_COMM_DEVICE,
+					 MPI_STATUS_IGNORE);
+
+#ifdef NSIGHT
+			nvtxRangePop();
+#endif
+
+#ifdef NSIGHT
+			nvtxRangePushA("Root_RegNeighborMPI_Recv");
+#endif
+
+			MPI_Recv(NeighborList_array[p-1],
+					 NumTarget * MaxNumNeighbor,
+					 MPI_INT,
+					 p, // Receive from worker rank p
+					 NEIGHBOR_LIST_TAG,
+					 MPI_COMM_DEVICE,
+					 MPI_STATUS_IGNORE);
+
+#ifdef NSIGHT
+			nvtxRangePop();
+#endif
+
+#ifdef NSIGHT
+			nvtxRangePushA("Root_RegNeighborPostProcessing");
+#endif
+
+			for (int j = 0; j < NumTarget; j++) {
+				Particle* ptcl = &particles[ActiveIndexToOriginalIndex[IndexList[TargetStart + j]]]; // We have to send IndexList here!!!
+				int current_target_idx = TargetStart + j;
+
+				std::memcpy(&ptcl->NewNeighbors[ptcl->NewNumberOfNeighbor],
+							&NeighborList_array[p-1][j * MaxNumNeighbor],
+							h_num_neighbor_array[p-1][j] * sizeof(int));
+
+				if (completed == 0)
+					ptcl->NewNumberOfNeighbor = 0;
+
+				ptcl->NewNumberOfNeighbor += h_num_neighbor_array[p-1][j];
+				if (ptcl->NewNumberOfNeighbor > MaxNumNeighbor) {
+                    fprintf(stderr, "ERROR: Sum of neighbors exceeds MaxNumNeighbor for target %d!\n", j);
+				}
+			}
+			completed++;
+
+#ifdef NSIGHT
+			nvtxRangePop();
+#endif
+		}
+
+#ifdef NSIGHT
+		nvtxRangePushA("Root_RegAccPostProcessing");
+#endif
+		MPI_Wait(&request, MPI_STATUS_IGNORE);
+		for (int i = 0; i < NumTarget; i++) {
+			Particle* ptcl = &particles[ActiveIndexToOriginalIndex[IndexList[TargetStart + i]]]; // We have to send IndexList here!!!
+			for (int dim = 0; dim < Dim; dim++) {
+				ptcl->a_irr[dim][0] = static_cast<double>(Acceleration[_six * (TargetStart + i) + dim]);
+				ptcl->a_irr[dim][1] = static_cast<double>(Acceleration[_six * (TargetStart + i) + dim + 3]);
+			}
+		}
+#ifdef NSIGHT
+		nvtxRangePop();
+#endif
     } // end of TargetStart loop
 
     // --- Free the dynamically allocated memory ---
@@ -463,23 +511,35 @@ void _RegularWorker(int NumTargetTotal, int Jstart, int Jend, int gpu_id){
     for (int TargetStart = 0; TargetStart < NumTargetTotal; TargetStart += i_size_loop) {
 		NumTarget = std::min(i_size_loop, NumTargetTotal-TargetStart);
 
+#ifdef NSIGHT
+		nvtxRangePushA("RegAccWorkerThread");
+#endif
 		RegAccelerationWorkThread(TargetStart, NumTarget, NumTargetTotal, Jstart, Jend, gpu_id, stream); //, h_result, NeighborList, h_num_neighbor_array
 		cudaStreamSynchronize(stream);
 		// Contribute h_result to the global sum on root
+#ifdef NSIGHT
+		nvtxRangePop();
+#endif
 
 		if (MPI_COMM_DEVICE != MPI_COMM_NULL) {
 			int local_size, local_rank;
 			MPI_Comm_rank(MPI_COMM_DEVICE, &local_rank);
 			MPI_Comm_size(MPI_COMM_DEVICE, &local_size);
 		}
-        MPI_Reduce(h_result,
-                   nullptr,
-                   _six * NumTarget,
-				   MPI_CUDA,
-                   MPI_SUM,
-                   0,
-                   MPI_COMM_DEVICE);
 
+		MPI_Request request;
+		MPI_Ireduce(h_result,
+					nullptr,
+					_six * NumTarget,
+					MPI_CUDA,
+					MPI_SUM,
+					ROOT,
+					MPI_COMM_DEVICE,
+					&request);
+
+#ifdef NSIGHT
+		nvtxRangePushA("RegNumNeighborMPI_Send");
+#endif
         // Send neighbor counts to root
         MPI_Send(h_num_neighbor,
                  NumTarget,
@@ -487,7 +547,12 @@ void _RegularWorker(int NumTargetTotal, int Jstart, int Jend, int gpu_id){
                  0,
                  NEIGHBOR_COUNT_TAG,
                  MPI_COMM_DEVICE);
-
+#ifdef NSIGHT
+		nvtxRangePop();
+#endif
+#ifdef NSIGHT
+		nvtxRangePushA("RegNeighborMPI_Send");
+#endif
         // Send neighbor lists to root
         MPI_Send(h_neighbor,
                  NumTarget * MaxNumNeighbor,
@@ -495,9 +560,15 @@ void _RegularWorker(int NumTargetTotal, int Jstart, int Jend, int gpu_id){
                  0,
                  NEIGHBOR_LIST_TAG,
                  MPI_COMM_DEVICE);
-        // Ensure GPU work is complete
 
-#define UNUSE
+#ifdef NSIGHT
+		nvtxRangePop();
+#endif
+
+		MPI_Wait(&request, MPI_STATUS_IGNORE);
+
+        // Ensure GPU work is complete
+// #define UNUSE
 #ifdef UNUSE
         // =================================================================
         // START: CPU VERIFICATION OF GPU NEIGHBOR LIST
