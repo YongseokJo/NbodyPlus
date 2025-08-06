@@ -7,6 +7,7 @@
 #include "../QueueScheduler.h"
 #include "cuda_functions.h"
 #include <cstring>
+#include <omp.h>
 
 #ifdef NSIGHT
 #include <nvToolsExt.h>
@@ -16,7 +17,7 @@ void InitialAssignmentOfTasks(std::vector<int>& data, double next_time, int NumT
 void InitialAssignmentOfTasks(std::vector<int>& data, int NumTask, int TAG);
 void InitialAssignmentOfTasks(int data, int NumTask, int TAG);
 void InitialAssignmentOfTasks(int* data, int NumTask, int TAG);
-void sendAllParticlesToGPU(double new_time, std::unordered_set<int> RegularList, int *IndexList);
+void sendAllParticlesToGPU(double new_time, std::unordered_set<int>& RegularList, int *IndexList);
 void CalculateAccelerationOnDevice(int *NumTargetTotal, int *h_target_list, double acc[][3], double adot[][3], int NumNeighbor[], int *NeighborList);
 
 /*
@@ -25,7 +26,7 @@ void CalculateAccelerationOnDevice(int *NumTargetTotal, int *h_target_list, doub
  *  Date    : 2024.01.18  by Seoyoung Kim
  *
  */
-void calculateRegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueScheduler &queue_scheduler){
+void calculateRegAccelerationOnGPU(std::unordered_set<int>& RegularList, QueueScheduler &queue_scheduler){
 
 #ifdef PERFORMANCETRACE
 	std::chrono::high_resolution_clock::time_point start_point_routine;
@@ -275,7 +276,7 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueSch
 
 
 // (Query MY) Let's optimize this function later. Copying data to h_ptcl in _ReceiveFromHost of cuda_my_acceleation.cpp seems super inefficient. 2025.5.24
-void sendAllParticlesToGPU(double new_time, std::unordered_set<int> RegularList, int *IndexList) {
+void sendAllParticlesToGPU(double new_time, std::unordered_set<int>& RegularList, int *IndexList) {
 
 	
 
@@ -296,6 +297,32 @@ void sendAllParticlesToGPU(double new_time, std::unordered_set<int> RegularList,
 	Position = new CUDA_REAL[NumberOfParticle][Dim];
 	Velocity = new CUDA_REAL[NumberOfParticle][Dim];
 
+	for (int i = 0; i <= LastParticleIndex; i++) {
+		Particle* ptcl = &particles[i];
+
+		if (!ptcl->isActive)
+			continue;
+
+		if (RegularList.find(i) != RegularList.end())
+			IndexList[j++] = size;
+		
+		ActiveIndexToOriginalIndex[size] = i;
+		size++;
+	}
+
+	#pragma omp parallel for
+	for (int i = 0; i < size; i++) {
+		Particle* ptcl = &particles[ActiveIndexToOriginalIndex[i]];
+		Mass[i] = (CUDA_REAL)ptcl->Mass;
+		Mdot[i] = 0; // particle[i]->Mass;
+		Radius2[i] = (CUDA_REAL)ptcl->RadiusOfNeighbor; // mass weight?
+		if (ptcl->NumberOfNeighbor == 0)
+			ptcl->predictParticleSecondOrder(new_time - ptcl->CurrentTimeReg, Position[i], Velocity[i]);
+		else
+			ptcl->predictParticleSecondOrder(new_time - ptcl->CurrentTimeIrr, Position[i], Velocity[i]);
+	}
+
+	/*
 	Particle *ptcl;
 
 	// copy the data of particles to the arrays to be sent
@@ -325,6 +352,7 @@ void sendAllParticlesToGPU(double new_time, std::unordered_set<int> RegularList,
 		// std::cout << "(size , i) = "  << size << " " << i << std::endl;
 		size++;
 	}
+	*/
 #else
 	// variables for saving variables to send to GPU
 	double * Mass;
