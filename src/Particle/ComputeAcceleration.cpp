@@ -249,6 +249,10 @@ void Particle::computeAccelerationReg() {
 	Particle* ptcl;
 	new_time = this->CurrentTimeReg+this->TimeStepReg; // the time to be advanced to
 	dt       = this->TimeStepReg*EnzoTimeStep; // interval of time step
+	if (dt == 0.0) {
+		dt  = this->TimeBlockReg*time_step*EnzoTimeStep; // interval of time step
+		assert(dt != 0.0);
+	}
 	this->NewNumberOfNeighbor = 0;
 
 	std::unordered_set<int> RealNeighbors; // Neighbors containing CM ptcls, not members
@@ -570,6 +574,10 @@ void Particle::updateRegularParticleCuda() {
 	 * Position and velocity correction due to 4th order correction
 	 ********************************************************/
 	double dt  = this->TimeStepReg*EnzoTimeStep;  // unit conversion
+	if (dt == 0.0) {
+		dt  = this->TimeBlockReg*time_step*EnzoTimeStep; // unit conversion
+		assert(dt != 0.0);
+	}
 	double dt2 = dt*dt;
 	double dt3 = dt2*dt;
 	double dt4 = dt3*dt;

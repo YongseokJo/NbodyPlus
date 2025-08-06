@@ -65,11 +65,13 @@ void WorkerRoutines() {
 				ptcl = &particles[ptcl_id];
 				ptcl->updateParticle();
 
-				for (int i=0; i<ptcl->NewNumberOfNeighbor; i++)
-					ptcl->Neighbors[i] = ptcl->NewNeighbors[i];
+				std::memcpy(ptcl->Neighbors, ptcl->NewNeighbors, sizeof(int) * ptcl->NewNumberOfNeighbor);
 				ptcl->NumberOfNeighbor = ptcl->NewNumberOfNeighbor;
 
-				ptcl->CurrentBlockReg += ptcl->TimeBlockReg;
+				if (ptcl->TimeStepReg == 0.0)
+					ptcl->CurrentBlockReg = ptcl->CurrentBlockIrr;
+				else
+					ptcl->CurrentBlockReg += ptcl->TimeBlockReg;
 				ptcl->CurrentTimeReg   = ptcl->CurrentBlockReg*time_step;
 				ptcl->calculateTimeStepReg();
 				// ptcl->NewCurrentBlockIrr = ptcl->CurrentBlockReg; // commented out by EW 2025.3.3 to match with RegCudaUpdate task
@@ -92,12 +94,14 @@ void WorkerRoutines() {
 
 				ptcl = &particles[ptcl_id];
 
-				for (int j = 0; j < ptcl->NewNumberOfNeighbor; j++)
-					ptcl->Neighbors[j] = ptcl->NewNeighbors[j];
+				std::memcpy(ptcl->Neighbors, ptcl->NewNeighbors, sizeof(int) * ptcl->NewNumberOfNeighbor);
 				ptcl->NumberOfNeighbor = ptcl->NewNumberOfNeighbor;
 
 				ptcl->updateParticle();
-				ptcl->CurrentBlockReg = ptcl->CurrentBlockReg + ptcl->TimeBlockReg;
+				if (ptcl->TimeStepReg == 0.0)
+					ptcl->CurrentBlockReg = ptcl->CurrentBlockIrr;
+				else
+					ptcl->CurrentBlockReg += ptcl->TimeBlockReg;
 				ptcl->CurrentTimeReg = ptcl->CurrentBlockReg * time_step;
 				ptcl->calculateTimeStepReg();
 				ptcl->calculateTimeStepIrr();

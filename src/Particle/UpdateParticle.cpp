@@ -5,37 +5,9 @@
 #include "../global.h"
 #include "../def.h"
 
-
-#ifdef CUDA_FLOAT
-/*	// commented out by EW 2025.7.15 to define this function as inline function
-void Particle::predictParticleSecondOrder(double dt, CUDA_REAL pos[], CUDA_REAL vel[]) {
-	// Doubling check
-	// temporary variables for calculation
-
-	// only predict the positions if necessary
-	// how about using polynomial correction here?
-	
-	dt = dt*EnzoTimeStep;
-
-	if (dt == 0) {
-		for (int dim=0; dim<Dim; dim++) {
-			pos[dim] = (CUDA_REAL)Position[dim];
-			vel[dim] = (CUDA_REAL)Velocity[dim];
-		}
-	}
-	else {
-		for (int dim=0; dim<Dim; dim++) {
-			pos[dim] = (CUDA_REAL) ((a_tot[dim][1]*dt/3 + a_tot[dim][0])*dt/2 + Velocity[dim])*dt + Position[dim];
-			vel[dim] = (CUDA_REAL) (a_tot[dim][1]*dt/2 + a_tot[dim][0])*dt   + Velocity[dim];
-		}
-	}
-	return;
-}
-*/
-#endif
-
 /* // commented out by EW 2025.7.15 to define this function as inline function
-void Particle::predictParticleSecondOrder(double dt, double pos[], double vel[]) {
+template <typename T>
+void Particle::predictParticleSecondOrder(double dt, T pos[], T vel[]) {
 	// Doubling check
 	// temporary variables for calculation
 
@@ -46,14 +18,14 @@ void Particle::predictParticleSecondOrder(double dt, double pos[], double vel[])
 
 	if (dt == 0) {
 		for (int dim=0; dim<Dim; dim++) {
-			pos[dim] = Position[dim];
-			vel[dim] = Velocity[dim];
+			pos[dim] = static_cast<T>(Position[dim]);
+			vel[dim] = static_cast<T>(Velocity[dim]);
 		}
 	}
 	else {
 		for (int dim=0; dim<Dim; dim++) {
-			pos[dim] = ((a_tot[dim][1]*dt/3 + a_tot[dim][0])*dt/2 + Velocity[dim])*dt + Position[dim];
-			vel[dim] =  (a_tot[dim][1]*dt/2 + a_tot[dim][0])*dt   + Velocity[dim];
+			pos[dim] = static_cast<T>(((a_tot[dim][1]*dt/3 + a_tot[dim][0])*dt/2 + Velocity[dim])*dt + Position[dim]);
+			vel[dim] = static_cast<T>((a_tot[dim][1]*dt/2 + a_tot[dim][0])*dt   + Velocity[dim]);
 		}
 	}
 	return;

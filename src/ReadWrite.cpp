@@ -28,6 +28,7 @@ bool readData() {
 	}
 
 	NumberOfParticle = getLineNumber();
+	assert(NumberOfParticle < MaxNumberOfParticle);
 	NewPID = NumberOfParticle;
 	LastParticleIndex = NumberOfParticle - 1;
 

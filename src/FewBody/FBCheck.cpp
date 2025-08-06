@@ -48,8 +48,9 @@ void Particle::checkNewGroup() {
         if (ptcl2->TimeStepIrr*EnzoTimeStep*1e4 > TSEARCH) // fiducial: 1e-5 but for RSEARCH = 0.00025 pc, 1e-6 Myr seems good
             continue;
 
-        double dt = this->CurrentTimeIrr > ptcl2->CurrentTimeIrr ? \
-                        this->CurrentTimeIrr - ptcl2->CurrentTimeIrr : ptcl2->CurrentTimeIrr - this->CurrentTimeIrr;
+        double time_ptcl2 = (ptcl2->NumberOfNeighbor == 0) ? ptcl2->CurrentTimeReg : ptcl2->CurrentTimeIrr;
+
+        double dt = ABS(this->CurrentTimeIrr - time_ptcl2);
 
         double pos2[Dim], vel2[Dim];
         
@@ -106,8 +107,9 @@ void Particle::checkNewGroup() {
         if (ptcl2->TimeStepIrr*EnzoTimeStep*1e4 > TSEARCH) // fiducial: 1e-5 but for RSEARCH = 0.00025 pc, 1e-6 Myr seems good
             continue;
 
-        double dt = this->CurrentTimeIrr > ptcl2->CurrentTimeIrr ? \
-                        this->CurrentTimeIrr - ptcl2->CurrentTimeIrr : ptcl2->CurrentTimeIrr - this->CurrentTimeIrr;
+        double time_ptcl2 = (ptcl2->NumberOfNeighbor == 0) ? ptcl2->CurrentTimeReg : ptcl2->CurrentTimeIrr;
+
+        double dt = ABS(this->CurrentTimeIrr - time_ptcl2);
 
         double pos2[Dim], vel2[Dim];
         
@@ -174,8 +176,9 @@ void Particle::checkNewGroup2() {
             continue;
         }
 
-        double dt = this->CurrentTimeIrr > ptcl2->CurrentTimeIrr ? \
-                        this->CurrentTimeIrr - ptcl2->CurrentTimeIrr : ptcl2->CurrentTimeIrr - this->CurrentTimeIrr;
+        double time_ptcl2 = (ptcl2->NumberOfNeighbor == 0) ? ptcl2->CurrentTimeReg : ptcl2->CurrentTimeIrr;
+
+        double dt = ABS(this->CurrentTimeIrr - time_ptcl2);
 
         double pos2[Dim], vel2[Dim];
         
@@ -204,8 +207,9 @@ void Particle::checkNewGroup2() {
             assert(ptcl2->isActive);
         }
 
-        double dt = this->CurrentTimeIrr > ptcl2->CurrentTimeIrr ? \
-                        this->CurrentTimeIrr - ptcl2->CurrentTimeIrr : ptcl2->CurrentTimeIrr - this->CurrentTimeIrr;
+        double time_ptcl2 = (ptcl2->NumberOfNeighbor == 0) ? ptcl2->CurrentTimeReg : ptcl2->CurrentTimeIrr;
+
+        double dt = ABS(this->CurrentTimeIrr - time_ptcl2);
 
         double pos2[Dim], vel2[Dim];
         
@@ -239,8 +243,9 @@ void Particle::checkNewGroup3() {
     for (int i=0; i < NumberOfGroupCandidate; i++) {
         ptcl2 = &particles[this->NewNeighbors[i]];
 
-        double dt = this->CurrentTimeIrr > ptcl2->CurrentTimeIrr ? \
-                        this->CurrentTimeIrr - ptcl2->CurrentTimeIrr : ptcl2->CurrentTimeIrr - this->CurrentTimeIrr;
+        double time_ptcl2 = (ptcl2->NumberOfNeighbor == 0) ? ptcl2->CurrentTimeReg : ptcl2->CurrentTimeIrr;
+
+        double dt = ABS(this->CurrentTimeIrr - time_ptcl2);
 
         this->predictParticleSecondOrder(dt, pos1, vel1);
         ptcl2->predictParticleSecondOrder(dt, pos2, vel2);
@@ -298,8 +303,9 @@ void Particle::checkNewGroup4() {
         if (ptcl2->TimeStepIrr*EnzoTimeStep*1e4 > TSEARCH) // fiducial: 1e-5 but for RSEARCH = 0.00025 pc, 1e-6 Myr seems good
             continue;
 
-        double dt = this->CurrentTimeIrr > ptcl2->CurrentTimeIrr ? \
-                        this->CurrentTimeIrr - ptcl2->CurrentTimeIrr : ptcl2->CurrentTimeIrr - this->CurrentTimeIrr;
+        double time_ptcl2 = (ptcl2->NumberOfNeighbor == 0) ? ptcl2->CurrentTimeReg : ptcl2->CurrentTimeIrr;
+
+        double dt = ABS(this->CurrentTimeIrr - time_ptcl2);
 
         double pos2[Dim], vel2[Dim];
         
@@ -334,8 +340,9 @@ void Particle::checkNewGroup4() {
         if (ptcl2->TimeStepIrr*EnzoTimeStep*1e4 > TSEARCH) // fiducial: 1e-5 but for RSEARCH = 0.00025 pc, 1e-6 Myr seems good
             continue;
 
-        double dt = this->CurrentTimeIrr > ptcl2->CurrentTimeIrr ? \
-                        this->CurrentTimeIrr - ptcl2->CurrentTimeIrr : ptcl2->CurrentTimeIrr - this->CurrentTimeIrr;
+        double time_ptcl2 = (ptcl2->NumberOfNeighbor == 0) ? ptcl2->CurrentTimeReg : ptcl2->CurrentTimeIrr;
+
+        double dt = ABS(this->CurrentTimeIrr - time_ptcl2);
 
         double pos2[Dim], vel2[Dim];
         

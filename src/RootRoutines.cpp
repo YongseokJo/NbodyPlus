@@ -1058,7 +1058,8 @@ void RootRoutines() {
 #ifdef DEBUG
 				std::cout << "updateSkipList starts" << std::endl;
 #endif
-				for (int i=0; i<ThisLevelNode->ParticleList.size(); i++)
+				OriginalParticleListSize = ThisLevelNode->ParticleList.size();
+				for (int i=0; i<OriginalParticleListSize; i++)
 					updateSkipList(skiplist, ThisLevelNode->ParticleList[i]);
 #ifdef DEBUG
 				std::cout << "updateSkipList ended" << std::endl;

@@ -199,7 +199,10 @@ void computeMemberAcceleration01(Particle* members) {
 		r2 = 0.0;
 		vx = 0.0;
 
-		ptcl->predictParticleSecondOrder(new_time - ptcl->CurrentTimeIrr, pos_neighbor, vel_neighbor);
+		if (ptcl->NumberOfNeighbor == 0)
+			ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeReg, pos_neighbor, vel_neighbor);
+		else
+			ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeIrr, pos_neighbor, vel_neighbor);
 
 		for (int dim=0; dim<Dim; dim++) {
 			// calculate position and velocity differences for current time
@@ -231,7 +234,10 @@ void computeMemberAcceleration01(Particle* members) {
 		r2 = 0.0;
 		vx = 0.0;
 
-		ptcl->predictParticleSecondOrder(new_time - ptcl->CurrentTimeIrr, pos_neighbor, vel_neighbor);
+		if (ptcl->NumberOfNeighbor == 0)
+			ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeReg, pos_neighbor, vel_neighbor);
+		else
+			ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeIrr, pos_neighbor, vel_neighbor);
 
 		for (int dim=0; dim<Dim; dim++) {
 			// calculate position and velocity differences for current time
@@ -308,7 +314,10 @@ void computeMemberAcceleration23(Particle* members) {
 		vdf_r2 = 0;
 		rdfdot_r2 = 0;
 
-		ptcl->predictParticleSecondOrder(new_time - ptcl->CurrentTimeIrr, pos_neighbor, vel_neighbor);
+		if (ptcl->NumberOfNeighbor == 0)
+			ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeReg, pos_neighbor, vel_neighbor);
+		else
+			ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeIrr, pos_neighbor, vel_neighbor);
 
 		// updated the predicted positions and velocities just in case
 		// if current time = the time we need, then PredPosition and PredVelocity is same as Position and Velocity
@@ -363,7 +372,10 @@ void computeMemberAcceleration23(Particle* members) {
 		vdf_r2 = 0;
 		rdfdot_r2 = 0;
 
-		ptcl->predictParticleSecondOrder(new_time - ptcl->CurrentTimeIrr, pos_neighbor, vel_neighbor);
+		if (ptcl->NumberOfNeighbor == 0)
+			ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeReg, pos_neighbor, vel_neighbor);
+		else
+			ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeIrr, pos_neighbor, vel_neighbor);
 
 		for (int dim=0; dim<Dim; dim++) {
 
