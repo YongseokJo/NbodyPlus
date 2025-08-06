@@ -84,7 +84,6 @@ struct Particle {
 	int NumberOfMember; // Number of group members; only used for cm ptcls by EW 2025.1.30
 
 #ifdef SEVN
-	// For SEVN
 	StarSEVN* StellarEvolution;
 #ifdef SEVN_BINARY
 	Binstar* BinaryEvolution;
@@ -133,7 +132,7 @@ struct Particle {
 		time_check = NUMERIC_FLOAT_MAX;
 		setBinaryInterruptState(BinaryInterruptState::none);
 		GroupInfo = nullptr;
-		isCMptcl = false; //(Query)
+		isCMptcl = false;
 		isUpdateToDate = true;
 		CMPtclIndex = -1;
 		NumberOfMember = 0;
@@ -259,8 +258,6 @@ struct Particle {
 			this->Position[dim] = this->NewPosition[dim];
 			this->Velocity[dim] = this->NewVelocity[dim];
 		}
-		
-		//updateTimeStep();
 	}
 
 	/*
@@ -276,57 +273,34 @@ struct Particle {
 		}
 	}
 	*/
-#ifdef CUDA_FLOAT
-	// void predictParticleSecondOrder(double dt, CUDA_REAL pos[], CUDA_REAL vel[]);
-	// inline function by EW 2025.7.15 to reduce function call time
-	void predictParticleSecondOrder(double dt, CUDA_REAL pos[], CUDA_REAL vel[]) {
-		// Doubling check
-		// temporary variables for calculation
-	
-		// only predict the positions if necessary
-		// how about using polynomial correction here?
-		
-		dt = dt*EnzoTimeStep;
-	
-		if (dt == 0) {
-			for (int dim=0; dim<Dim; dim++) {
-				pos[dim] = (CUDA_REAL)Position[dim];
-				vel[dim] = (CUDA_REAL)Velocity[dim];
-			}
-		}
-		else {
-			for (int dim=0; dim<Dim; dim++) {
-				pos[dim] = (CUDA_REAL) ((a_tot[dim][1]*dt/3 + a_tot[dim][0])*dt/2 + Velocity[dim])*dt + Position[dim];
-				vel[dim] = (CUDA_REAL) (a_tot[dim][1]*dt/2 + a_tot[dim][0])*dt   + Velocity[dim];
-			}
-		}
-		return;
-	}
-#endif
-	// inline function by EW 2025.7.15 to reduce function call time
-	void predictParticleSecondOrder(double dt, double pos[], double vel[]) {
-		// Doubling check
-		// temporary variables for calculation
 
-		// only predict the positions if necessary
-		// how about using polynomial correction here?
-		
-		dt = dt*EnzoTimeStep;
+	// inline function by EW 2025.7.15 to reduce function call time
+	template <typename T>
+	// void predictParticleSecondOrder(double dt, T pos[], T vel[]);
+    void predictParticleSecondOrder(double dt, T pos[], T vel[]) {
+        // Doubling check
+        // temporary variables for calculation
+    
+        // only predict the positions if necessary
+        // how about using polynomial correction here?
+        
+        dt = dt*EnzoTimeStep;
+    
+        if (dt == 0) {
+            for (int dim=0; dim<Dim; dim++) {
+                pos[dim] = static_cast<T>(Position[dim]);
+                vel[dim] = static_cast<T>(Velocity[dim]);
+            }
+        }
+        else {
+            for (int dim=0; dim<Dim; dim++) {
+                pos[dim] = static_cast<T>(((a_tot[dim][1]*dt/3 + a_tot[dim][0])*dt/2 + Velocity[dim])*dt + Position[dim]);
+                vel[dim] = static_cast<T>((a_tot[dim][1]*dt/2 + a_tot[dim][0])*dt   + Velocity[dim]);
+            }
+        }
+        return;
+    }
 
-		if (dt == 0) {
-			for (int dim=0; dim<Dim; dim++) {
-				pos[dim] = Position[dim];
-				vel[dim] = Velocity[dim];
-			}
-		}
-		else {
-			for (int dim=0; dim<Dim; dim++) {
-				pos[dim] = ((a_tot[dim][1]*dt/3 + a_tot[dim][0])*dt/2 + Velocity[dim])*dt + Position[dim];
-				vel[dim] =  (a_tot[dim][1]*dt/2 + a_tot[dim][0])*dt   + Velocity[dim];
-			}
-		}
-		return;
-	}
 	void correctParticleFourthOrder(double dt, double pos[], double vel[], double a[3][4]);
 
 

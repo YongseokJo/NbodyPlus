@@ -13,12 +13,7 @@
 #include <nvToolsExt.h>
 #endif
 
-void InitialAssignmentOfTasks(std::vector<int>& data, double next_time, int NumTask, int TAG);
-void InitialAssignmentOfTasks(std::vector<int>& data, int NumTask, int TAG);
-void InitialAssignmentOfTasks(int data, int NumTask, int TAG);
-void InitialAssignmentOfTasks(int* data, int NumTask, int TAG);
 void sendAllParticlesToGPU(double new_time, std::unordered_set<int>& RegularList, int *IndexList);
-void CalculateAccelerationOnDevice(int *NumTargetTotal, int *h_target_list, double acc[][3], double adot[][3], int NumNeighbor[], int *NeighborList);
 
 /*
  *  Purporse: calculate acceleration and neighbors of regular particles by sending them to GPU
@@ -38,63 +33,23 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int>& RegularList, QueueSc
 
 	// variables for saving variables to send to GPU
 	// only regular particle informations are stored here
-	double (*AccRegReceive)[Dim];
-	double (*AccRegDotReceive)[Dim];
-	double (*AccIrr)[Dim];
-	double (*AccIrrDot)[Dim];
-#ifdef CUDA_FLOAT
-	CUDA_REAL (*AccRegReceive_f)[Dim];
-	CUDA_REAL (*AccRegDotReceive_f)[Dim];
-#endif 
+	CUDA_REAL (*AccRegReceive)[Dim]		= new CUDA_REAL[ListSize][Dim];
+	CUDA_REAL (*AccRegDotReceive)[Dim]	= new CUDA_REAL[ListSize][Dim];
+	double (*AccIrr)[Dim]				= new double[ListSize][Dim];
+	double (*AccIrrDot)[Dim]			= new double[ListSize][Dim];
 
-
-	int *ACListReceive;
-	int *NumNeighborReceive;
+	int *NumNeighborReceive				= new int[ListSize];
+	int *ACListReceive					= new int[ListSize * MaxNumNeighbor];
 
 	Particle *ptcl;
 
 	double new_time = NextRegTimeBlock*time_step;  // next regular time
 
-
-	// need to make array to send to GPU
-	// allocate memory to the temporary variables
-	AccRegReceive    = new double[ListSize][Dim];
-	AccRegDotReceive = new double[ListSize][Dim];
-	AccIrr           = new double[ListSize][Dim];
-	AccIrrDot        = new double[ListSize][Dim];
-
-#ifdef CUDA_FLOAT
-	AccRegReceive_f		= new CUDA_REAL[ListSize][Dim];
-	AccRegDotReceive_f	= new CUDA_REAL[ListSize][Dim];
-#endif 
-	NumNeighborReceive  = new int[ListSize];
-
-	ACListReceive = new int[ListSize * MaxNumNeighbor];
-
-	/* // original code; (Query to MY) Do we have to initialize them to 0?
-	for (int i=0; i<ListSize; i++) {
-		for (int dim=0; dim<Dim; dim++) {
-			AccRegReceive[i][dim]    = 0;
-			AccRegDotReceive[i][dim] = 0;
-			AccIrr[i][dim]           = 0;
-			AccIrrDot[i][dim]        = 0;
-#ifdef CUDA_FLOAT
-			AccRegReceive_f[i][dim]		= 0;
-			AccRegDotReceive_f[i][dim]	= 0;
-#endif 
-		}
-	}
-	*/
-	// /* // faster than the above code
-	std::memset(AccRegReceive, 0, ListSize * Dim * sizeof(double));
-	std::memset(AccRegDotReceive, 0, ListSize * Dim * sizeof(double));
-	std::memset(AccIrr, 0, ListSize * Dim * sizeof(double));
-	std::memset(AccIrrDot, 0, ListSize * Dim * sizeof(double));
-#ifdef CUDA_FLOAT
-	std::memset(AccRegReceive_f, 0, ListSize * Dim * sizeof(CUDA_REAL));
-	std::memset(AccRegDotReceive_f, 0, ListSize * Dim * sizeof(CUDA_REAL));
-#endif
-	// */
+	// (Query to MY) Do we have to initialize them to 0?
+	std::memset(AccRegReceive,		0, ListSize * Dim * sizeof(CUDA_REAL));
+	std::memset(AccRegDotReceive,	0, ListSize * Dim * sizeof(CUDA_REAL));
+	std::memset(AccIrr,				0, ListSize * Dim * sizeof(double));
+	std::memset(AccIrrDot,			0, ListSize * Dim * sizeof(double));
 
 #ifdef PERFORMANCETRACE
 	start_point_routine = std::chrono::high_resolution_clock::now();
@@ -121,7 +76,6 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int>& RegularList, QueueSc
 	performance.RegularSendAllParticlesToGPU +=
 		std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
 #endif
-	
 
 #ifdef PERFORMANCETRACE
 	start_point_routine = std::chrono::high_resolution_clock::now();
@@ -134,12 +88,8 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int>& RegularList, QueueSc
 #ifdef NSIGHT
 	nvtxRangePushA("CalculateAccelerationOnDevice");
 #endif
-  
-#ifdef CUDA_FLOAT
-	CalculateAccelerationOnDevice(&ListSize, IndexList, AccRegReceive_f,	AccRegDotReceive_f, NumNeighborReceive, ACListReceive);
-#else
-	CalculateAccelerationOnDevice(&ListSize, IndexList, AccRegReceive,		AccRegDotReceive,	NumNeighborReceive, ACListReceive);
-#endif
+
+	CalculateAccelerationOnDevice(&ListSize, IndexList, AccRegReceive, AccRegDotReceive, NumNeighborReceive, ACListReceive);
   
 #ifdef NSIGHT
 	nvtxRangePop();
@@ -154,15 +104,6 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int>& RegularList, QueueSc
 	performance.RegularGPU +=
 		std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
 #endif
-
-	/*
-	for (int i=0; i<ListSize; i++) {
-		for (int dim=0; dim<Dim; dim++) {
-			AccRegReceive[i][dim]    = (CUDA_REAL) AccRegReceive_f[i][dim];
-			AccRegDotReceive[i][dim] = (CUDA_REAL) AccRegDotReceive_f[i][dim];
-		}
-	}
-	*/
 
 #ifdef PERFORMANCETRACE
 	start_point_routine = std::chrono::high_resolution_clock::now();
@@ -184,8 +125,8 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int>& RegularList, QueueSc
 
 		for (int dim=0; dim<Dim; dim++) {
 #ifdef CUDA_FLOAT
-			ptcl->a_irr[dim][0] = static_cast<double>(AccRegReceive_f[i][dim]);		// Just temporarilly save new reg acc here!
-			ptcl->a_irr[dim][1] = static_cast<double>(AccRegDotReceive_f[i][dim]);	// Just temporarilly save new reg acc here!
+			ptcl->a_irr[dim][0] = static_cast<double>(AccRegReceive[i][dim]);		// Just temporarilly save new reg acc here!
+			ptcl->a_irr[dim][1] = static_cast<double>(AccRegDotReceive[i][dim]);	// Just temporarilly save new reg acc here!
 #else
 			ptcl->a_irr[dim][0] = AccRegReceive[i][dim];		// Just temporarilly save new reg acc here!
 			ptcl->a_irr[dim][1] = AccRegDotReceive[i][dim];		// Just temporarilly save new reg acc here!
@@ -253,18 +194,12 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int>& RegularList, QueueSc
 		std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
 #endif
 
-
 	delete[] IndexList;
 
 	delete[] AccRegReceive;
 	delete[] AccRegDotReceive;
 	delete[] AccIrr;
 	delete[] AccIrrDot;
-
-#ifdef CUDA_FLOAT
-	delete[] AccRegReceive_f;
-	delete[] AccRegDotReceive_f;
-#endif 
 
 	delete[] NumNeighborReceive;
 	delete[] ACListReceive;
@@ -278,25 +213,16 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int>& RegularList, QueueSc
 // (Query MY) Let's optimize this function later. Copying data to h_ptcl in _ReceiveFromHost of cuda_my_acceleation.cpp seems super inefficient. 2025.5.24
 void sendAllParticlesToGPU(double new_time, std::unordered_set<int>& RegularList, int *IndexList) {
 
-	
-
-#ifdef CUDA_FLOAT
 	// variables for saving variables to send to GPU
-	CUDA_REAL * Mass;
-	CUDA_REAL * Mdot;
-	CUDA_REAL * Radius2;
-	CUDA_REAL(*Position)[Dim];
-	CUDA_REAL(*Velocity)[Dim];
-	//int size = NumberOfParticle;
-	int size=0, j=0;
-	
-	// allocate memory to the temporary variables
-	Mass     = new CUDA_REAL[NumberOfParticle];
-	Mdot     = new CUDA_REAL[NumberOfParticle];
-	Radius2  = new CUDA_REAL[NumberOfParticle];
-	Position = new CUDA_REAL[NumberOfParticle][Dim];
-	Velocity = new CUDA_REAL[NumberOfParticle][Dim];
+	CUDA_REAL *Mass				= new CUDA_REAL[NumberOfParticle];
+	CUDA_REAL *Mdot				= new CUDA_REAL[NumberOfParticle];	
+	CUDA_REAL *Radius2			= new CUDA_REAL[NumberOfParticle];
+	CUDA_REAL(*Position)[Dim]	= new CUDA_REAL[NumberOfParticle][Dim];
+	CUDA_REAL(*Velocity)[Dim]	= new CUDA_REAL[NumberOfParticle][Dim];
 
+	int size=0, j=0;
+
+	// /* new code using OpenMP by EW 2025.8.6
 	for (int i = 0; i <= LastParticleIndex; i++) {
 		Particle* ptcl = &particles[i];
 
@@ -321,8 +247,9 @@ void sendAllParticlesToGPU(double new_time, std::unordered_set<int>& RegularList
 		else
 			ptcl->predictParticleSecondOrder(new_time - ptcl->CurrentTimeIrr, Position[i], Velocity[i]);
 	}
+	// */
 
-	/*
+	/* // original code not using OpenMP by EW 2025.8.6
 	Particle *ptcl;
 
 	// copy the data of particles to the arrays to be sent
@@ -353,56 +280,6 @@ void sendAllParticlesToGPU(double new_time, std::unordered_set<int>& RegularList
 		size++;
 	}
 	*/
-#else
-	// variables for saving variables to send to GPU
-	double * Mass;
-	double * Mdot;
-	double * Radius2;
-	double(*Position)[Dim];
-	double(*Velocity)[Dim];
-	//int size = NumberOfParticle;
-	int size=0, j=0;
-
-
-	// allocate memory to the temporary variables
-	Mass     = new double[NumberOfParticle];
-	Mdot     = new double[NumberOfParticle];
-	Radius2  = new double[NumberOfParticle];
-	Position = new double[NumberOfParticle][Dim];
-	Velocity = new double[NumberOfParticle][Dim];
-
-	Particle *ptcl;
-
-	// copy the data of particles to the arrays to be sent
-		
-	for (int i=0; i<=LastParticleIndex; i++) {
-		ptcl = &particles[i];
-
-		if (!ptcl->isActive) {
-			// fprintf(stdout, "Skipping inactive particle (%d)\n", ptcl->PID);
-			continue;
-		}
-
-		if (RegularList.find(i) != RegularList.end()) {
-			IndexList[j] = size;
-			j++;
-		}
-
-
-		Mass[size]    = ptcl->Mass;
-		Mdot[size]    = 0; //particle[i]->Mass;
-		Radius2[size] = ptcl->RadiusOfNeighbor; // mass weight?
-
-		if (ptcl->NumberOfNeighbor == 0)
-			ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeReg, Position[size], Velocity[size]);
-		else
-			ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeIrr, Position[size], Velocity[size]);
-
-		ActiveIndexToOriginalIndex[size] = i;
-		// std::cout << "(size , i) = "  << size << " " << i << std::endl;
-		size++;
-	} 
-#endif
 
 	assert(NumberOfParticle == size); // for debugging by EW 2025.1.25
 
