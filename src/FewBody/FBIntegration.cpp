@@ -31,37 +31,6 @@ void Group::ARIntegration(double next_time) {
         std::memcpy(sym_int.particles.cm.Neighbors, groupCM->Neighbors, sizeof(int) * groupCM->NumberOfNeighbor);
     }
 // */
-/* // This makes simulation very slower.. I recommend not to use this by EW 2025.2.28
-    std::unordered_set<int> CMPtclsSet;
-    Particle* ptcl;
-    
-    sym_int.particles.cm.NumberOfNeighbor = 0;
-    for (int i=0; i<groupCM->NumberOfNeighbor; i++) {
-        ptcl = &particles[groupCM->Neighbors[i]];
-
-        if (!ptcl->isActive) {
-			if (ptcl->CMPtclIndex != -1) {
-				CMPtclsSet.insert(ptcl->CMPtclIndex);
-			}
-			continue;
-		}
-        sym_int.particles.cm.Neighbors[sym_int.particles.cm.NumberOfNeighbor++] = groupCM->Neighbors[i];
-    }
-    for (int i: CMPtclsSet) {
-        ptcl = &particles[i];
-
-        if (groupCM->PID == ptcl->PID) {
-            continue;
-        }
-
-        if (!ptcl->isActive) {
-            fprintf(stderr, "Why inactive CM ptcl? this PID: %d, neighbor PID: %d\n", groupCM->PID, ptcl->PID);
-            assert(ptcl->isActive);
-        }
-
-        sym_int.particles.cm.Neighbors[sym_int.particles.cm.NumberOfNeighbor++] = i;
-    }
-*/
 
 
 #ifdef SEVN
@@ -127,6 +96,9 @@ void Group::ARIntegration(double next_time) {
     assert(next_time > CurrentTime);
     // auto bin_interrupt = sym_int.integrateToTime(next_time*EnzoTimeStep); // original AR integrator
 
+    E_binary -= sym_int.getEtot();
+    E_binary_SD -= sym_int.getEtotSlowDown();
+
 // /* // Let's use Kepler solver for unperturbed binary. AR integrator might be very slow if there is a hard binary.
     AR::InterruptBinary<Particle> bin_interrupt;
     if (groupCM->NumberOfNeighbor == 0 && groupCM->NumberOfMember == 2) { // for unperturbed binary
@@ -152,8 +124,14 @@ void Group::ARIntegration(double next_time) {
     }
 // */
 
+    E_binary += sym_int.getEtot();
+    E_binary_SD += sym_int.getEtotSlowDown();
+
 // /* PN corrections
     if (bin_interrupt.status == AR::InterruptStatus::none) { // Every bound orbit
+
+        double delta_Ebin = -sym_int.getEtot();
+        double delta_Ebin_SD = -sym_int.getEtotSlowDown();
         
         auto& bin_root = sym_int.info.getBinaryTreeRoot();
 
@@ -163,6 +141,13 @@ void Group::ARIntegration(double next_time) {
             sym_int.initialIntegration(next_time*EnzoTimeStep); // Eunwoo: this should be fixed later // Eunwoo: I don't think so!
         
         groupCM->a_spin[1] = bin_root.ecc;
+
+        delta_Ebin += sym_int.getEtot();
+        delta_Ebin_SD += sym_int.getEtotSlowDown();
+
+        E_binary += delta_Ebin;
+        E_binary_SD += delta_Ebin_SD;
+        E_PN -= delta_Ebin;
     }    
 // */
 
@@ -170,6 +155,8 @@ void Group::ARIntegration(double next_time) {
 
         isMerger = true;
         groupCM->setBinaryInterruptState(BinaryInterruptState::merger);
+
+        E_merger += sym_int.getEtot();
 
         if (sym_int.particles.getSize() == 2) {
 

@@ -48,7 +48,6 @@ const int TIME_TAG = 3;
 const int QUEUE_TAG = 4;
 const int ANY_TAG = 100;
 const int TERMINATE_TAG = 666;
-extern int Task[NumberOfTask];
 
 // Time
 extern double global_time;
@@ -59,25 +58,22 @@ extern double time_step;
 extern ULL block_max;
 extern double eta;
 
-
-extern double binary_time;
-extern double binary_time_prev;
-extern ULL binary_block;
-
 // Enzo to Nbody
-extern Particle* FirstEnzoParticle;
 extern double EnzoLength, EnzoMass, EnzoVelocity, EnzoTime, EnzoForce, EnzoAcceleration;
 extern double EnzoTimeStep;
 
 
+extern double E_binary;
+extern double E_binary_SD;
+extern double E_merger;
+extern double E_PN;
+
 
 // i/o
 extern char* fname;
-extern double inputTime;
 extern double endTime;
 extern bool restart;
 extern char* foutput;
-extern bool IsOutput;
 extern double outputTime;
 extern int outNum;
 extern double outputTimeStep;

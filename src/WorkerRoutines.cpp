@@ -237,6 +237,9 @@ void WorkerRoutines() {
 					if (ptcl->getBinaryInterruptState() == BinaryInterruptState::none)
 						ptcl->setBinaryInterruptState(BinaryInterruptState::terminated);
 
+					E_binary -= ptcl->GroupInfo->sym_int.getEtot();
+					E_binary_SD -= ptcl->GroupInfo->sym_int.getEtotSlowDown();
+
 					delete ptcl->GroupInfo;
 #ifdef DEBUG
 					std::cout << "(SDAR) Processor " << MyRank<< ": PID= "<<ptcl->PID << " deleted!" <<std::endl;
@@ -266,6 +269,14 @@ void WorkerRoutines() {
 				std::cout << "(SDAR) Processor " << MyRank<< ": PID= "<<ptcl->PID << " NewFBInitialization3 done!" <<std::endl;
 				break;
 #endif 
+
+			case GetTotalEnergy:
+
+				MPI_Reduce(&E_binary,		nullptr, 1, MPI_DOUBLE, MPI_SUM, ROOT, MPI_COMM_WORLD);
+				MPI_Reduce(&E_binary_SD,	nullptr, 1, MPI_DOUBLE, MPI_SUM, ROOT, MPI_COMM_WORLD);
+				MPI_Reduce(&E_merger,		nullptr, 1, MPI_DOUBLE, MPI_SUM, ROOT, MPI_COMM_WORLD);
+				MPI_Reduce(&E_PN,			nullptr, 1, MPI_DOUBLE, MPI_SUM, ROOT, MPI_COMM_WORLD);
+				continue;
 
 			case Synchronize: // Synchronize
 				MPI_Win_sync(win);  // Synchronize memory

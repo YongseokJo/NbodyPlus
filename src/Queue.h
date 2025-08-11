@@ -23,6 +23,7 @@ enum TaskName : int8_t {
     MergeManyBody = 27,
     CalcAcc01MPI = 28,
     CalcAcc23MPI = 29,
+    GetTotalEnergy = 30,
     Synchronize = 100,
     Ends = -100,
     Error = -1
