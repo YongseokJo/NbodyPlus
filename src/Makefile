@@ -1,10 +1,10 @@
 # Compiler
 #CXX = icc
-CXX = mpic++
+CXX = mpiicpc
 #CXX = g++
 
 # Compiler flags
-CXXFLAGS  = -O2 -march=native -ftree-vectorize -std=c++11 -Wall -Wextra -Wuninitialized -I./Particle -I./ -g -DPERFORMANCETRACE -fopenmp #-DDEBUG #-DMULTIMAP #-DDEBUG #-fopenmp  -fsanitize=thread
+CXXFLAGS  = -O2 -march=native -ftree-vectorize -std=c++11 -Wall -Wextra -Wuninitialized -I./Particle -I./ -g -DPERFORMANCETRACE -qopenmp #-DDEBUG #-DMULTIMAP #-DDEBUG #-fopenmp  -fsanitize=thread
 #CXXFLAGS  = -O0 -std=c++11 -Wall -Wextra -Wuninitialized -I./Particle -I./ -g -qopenmp  #-fopenmp  -fsanitize=thread
 #CXXFLAGS  = -O0 -std=c++11 -Wall -Wextra -Wuninitialized -I./Particle -I./ -g -fopenmp  -fsanitize=thread
 #CXXFLAGS  = -O2 -std=c++11 -Wall -Wextra -Wuninitialized -I./Particle -I./ -g -fopenmp  #-fsanitize=thread
