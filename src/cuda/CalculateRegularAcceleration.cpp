@@ -288,6 +288,7 @@ void sendAllParticlesToGPU(double new_time, std::unordered_set<int>& RegularList
 		num_elements[num] = nn;
 		num++;
 	}
+	assert(NumberOfParticle == size);
 	std::vector<int> displs(NumberOfWorker, 0);
 	for (int i = 1; i < NumberOfWorker; i++) {
 		displs[i] = displs[i-1] + num_elements[i-1];
@@ -305,6 +306,7 @@ void sendAllParticlesToGPU(double new_time, std::unordered_set<int>& RegularList
 		completed++;
 	}
 
+	/*
 	// copy the data of particles to the arrays to be sent
 	for (int i=0; i<=LastParticleIndex; i++) {
 		ptcl       = &particles[i];
@@ -332,7 +334,7 @@ void sendAllParticlesToGPU(double new_time, std::unordered_set<int>& RegularList
 		// std::cout << "(size , i) = "  << size << " " << i << std::endl;
 		size++;
 	}
-	// */
+	*/
 
 	assert(NumberOfParticle == size); // for debugging by EW 2025.1.25
 
