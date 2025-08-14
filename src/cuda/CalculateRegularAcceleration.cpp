@@ -292,6 +292,7 @@ void sendAllParticlesToGPU(double new_time, std::unordered_set<int>& RegularList
 	std::vector<int> displs(NumberOfWorker, 0);
 	for (int i = 1; i < NumberOfWorker; i++) {
 		displs[i] = displs[i-1] + num_elements[i-1];
+		fprintf(stderr, "displs[%d] = %d\n", i, displs[i]);
 	}
 
 	MPI_Waitall(NumberOfWorker, requests, MPI_STATUSES_IGNORE);
@@ -305,6 +306,9 @@ void sendAllParticlesToGPU(double new_time, std::unordered_set<int>& RegularList
 		MPI_Recv(Velocity[displs[completed_rank - 1]], num_elements[completed_rank - 1] * Dim, MPI_FLOAT, completed_rank, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 		completed++;
 	}
+	fprintf(stderr, "debugging... ptcl (ParticleIndex 0) pos: (%e, %e, %e)\n", particles[0].Position[0], particles[0].Position[1], particles[0].Position[2]);
+	fprintf(stderr, "Position[0] = (%e, %e, %e)\n", Position[0][0], Position[0][1], Position[0][2]);
+
 
 	/*
 	// copy the data of particles to the arrays to be sent
