@@ -270,7 +270,7 @@ void WorkerRoutines() {
 			case PrepareGPUCalc: {
 
 				int J_start = (MyRank - 1) * (global_variable->LastParticleIndex + 1) / NumberOfWorker;
-				int J_end   = MyRank * (global_variable->LastParticleIndex + 1) / NumberOfWorker - 1;
+				int J_end   = MyRank * (global_variable->LastParticleIndex + 1) / NumberOfWorker;
 
 				std::vector<std::array<float, 3>> positions;
 				std::vector<std::array<float, 3>> velocities;
@@ -280,6 +280,10 @@ void WorkerRoutines() {
 				for (int j = J_start; j < J_end; j++) {
 
 					ptcl = &particles[j];
+
+					if (!ptcl->isActive)
+						continue;
+
 					if (ptcl->NumberOfNeighbor == 0)
 						ptcl->predictParticleSecondOrder(next_time-ptcl->CurrentTimeReg, position, velocity);
 					else
