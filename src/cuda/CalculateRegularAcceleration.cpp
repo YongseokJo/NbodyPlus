@@ -31,21 +31,9 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int>& RegularList, QueueSc
 	int ListSize = RegularList.size();
 	int *IndexList = new int[ListSize];
 
-	// variables for saving variables to send to GPU
-	// only regular particle informations are stored here
-	CUDA_REAL (*AccRegReceive)[Dim]		= new CUDA_REAL[ListSize][Dim];
-	CUDA_REAL (*AccRegDotReceive)[Dim]	= new CUDA_REAL[ListSize][Dim];
-
-	int *NumNeighborReceive				= new int[ListSize];
-	int *ACListReceive					= new int[ListSize * MaxNumNeighbor];
-
 	Particle *ptcl;
 
 	double new_time = NextRegTimeBlock*time_step;  // next regular time
-
-	// (Query to MY) Do we have to initialize them to 0?
-	std::memset(AccRegReceive,		0, ListSize * Dim * sizeof(CUDA_REAL));
-	std::memset(AccRegDotReceive,	0, ListSize * Dim * sizeof(CUDA_REAL));
 
 #ifdef PERFORMANCETRACE
 	start_point_routine = std::chrono::high_resolution_clock::now();
@@ -85,7 +73,7 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int>& RegularList, QueueSc
 	nvtxRangePushA("CalculateAccelerationOnDevice");
 #endif
 
-	CalculateAccelerationOnDevice(&ListSize, IndexList, AccRegReceive, AccRegDotReceive, NumNeighborReceive, ACListReceive);
+	CalculateAccelerationOnDevice(&ListSize, IndexList);
   
 #ifdef NSIGHT
 	nvtxRangePop();
@@ -192,12 +180,6 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int>& RegularList, QueueSc
 
 	delete[] IndexList;
 
-	delete[] AccRegReceive;
-	delete[] AccRegDotReceive;
-
-	delete[] NumNeighborReceive;
-	delete[] ACListReceive;
-
 	//CloseDevice();
 } // calculate 0th, 1st derivative of force + neighbors on GPU ends
 
@@ -216,7 +198,7 @@ void sendAllParticlesToGPU(double new_time, std::unordered_set<int>& RegularList
 
 	int size=0, j=0;
 
-	// /* new code using OpenMP by EW 2025.8.6
+	/* new code using OpenMP by EW 2025.8.6
 	for (int i = 0; i <= LastParticleIndex; i++) {
 		Particle* ptcl = &particles[i];
 
@@ -241,9 +223,9 @@ void sendAllParticlesToGPU(double new_time, std::unordered_set<int>& RegularList
 		else
 			ptcl->predictParticleSecondOrder(new_time - ptcl->CurrentTimeIrr, Position[i], Velocity[i]);
 	}
-	// */
+	*/
 
-	/* // original code not using OpenMP by EW 2025.8.6
+	// /* // original code not using OpenMP by EW 2025.8.6
 	Particle *ptcl;
 
 	// copy the data of particles to the arrays to be sent
@@ -273,7 +255,7 @@ void sendAllParticlesToGPU(double new_time, std::unordered_set<int>& RegularList
 		// std::cout << "(size , i) = "  << size << " " << i << std::endl;
 		size++;
 	}
-	*/
+	// */
 
 	assert(NumberOfParticle == size); // for debugging by EW 2025.1.25
 
