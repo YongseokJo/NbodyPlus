@@ -35,8 +35,6 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int>& RegularList, QueueSc
 	// only regular particle informations are stored here
 	CUDA_REAL (*AccRegReceive)[Dim]		= new CUDA_REAL[ListSize][Dim];
 	CUDA_REAL (*AccRegDotReceive)[Dim]	= new CUDA_REAL[ListSize][Dim];
-	double (*AccIrr)[Dim]				= new double[ListSize][Dim];
-	double (*AccIrrDot)[Dim]			= new double[ListSize][Dim];
 
 	int *NumNeighborReceive				= new int[ListSize];
 	int *ACListReceive					= new int[ListSize * MaxNumNeighbor];
@@ -48,8 +46,6 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int>& RegularList, QueueSc
 	// (Query to MY) Do we have to initialize them to 0?
 	std::memset(AccRegReceive,		0, ListSize * Dim * sizeof(CUDA_REAL));
 	std::memset(AccRegDotReceive,	0, ListSize * Dim * sizeof(CUDA_REAL));
-	std::memset(AccIrr,				0, ListSize * Dim * sizeof(double));
-	std::memset(AccIrrDot,			0, ListSize * Dim * sizeof(double));
 
 #ifdef PERFORMANCETRACE
 	start_point_routine = std::chrono::high_resolution_clock::now();
@@ -116,7 +112,7 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int>& RegularList, QueueSc
 #ifdef NSIGHT
 	nvtxRangePushA("RegCuda");
 #endif
-
+	/*
 	for (int i=0; i<ListSize; i++) {
 		ptcl = &particles[ActiveIndexToOriginalIndex[IndexList[i]]];
 
@@ -133,7 +129,7 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int>& RegularList, QueueSc
 #endif
 		}
 	}
-
+	*/
 	queue_scheduler.initialize(RegCuda);
 	queue_scheduler.takeQueueRegularList(RegularList);
 	do
@@ -198,8 +194,6 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int>& RegularList, QueueSc
 
 	delete[] AccRegReceive;
 	delete[] AccRegDotReceive;
-	delete[] AccIrr;
-	delete[] AccIrrDot;
 
 	delete[] NumNeighborReceive;
 	delete[] ACListReceive;

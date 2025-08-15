@@ -15,6 +15,9 @@
 #include <nvToolsExt.h>
 #endif
 
+#ifdef MultiGPU
+#include "../particle.h"
+#endif
 
 
 extern int MyRank;
@@ -64,6 +67,9 @@ CUDA_REAL **h_result_array = new CUDA_REAL*[4];
 int **NeighborList_array = new int*[4];
 int **h_num_neighbor_array = new int*[4];
 int **d_num_neighbor_block_array = new int*[4];
+
+extern Particle *particles;
+extern int *ActiveIndexToOriginalIndex;
 #endif
 
 
@@ -242,9 +248,29 @@ void GetAcceleration(
 			cudaStreamSynchronize(streams[i]);
         }
 		
+		Particle* ptcl;
 		for (int j = 0; j < NumTarget; j++) {
 			int target_idx = TargetStart + j;  // Precompute base index
 			int result_idx = _six * target_idx;  // Precompute h_result index
+
+			ptcl = &particles[ActiveIndexToOriginalIndex[h_target_list[j]]];
+			ptcl->NewNumberOfNeighbor = 0;
+			for (int dim=0; dim < Dim; dim++) {
+				ptcl->a_irr[dim][0] = 0.0;
+				ptcl->a_irr[dim][1] = 0.0;
+			}
+
+			for (int i = 0; i < deviceCount; i++) {
+				memcpy(&ptcl->NewNeighbors[ptcl->NewNumberOfNeighbor], 
+					   &NeighborList_array[i][j * MaxNumNeighbor], 
+					   h_num_neighbor_array[i][j] * sizeof(int));
+				ptcl->NewNumberOfNeighbor += h_num_neighbor_array[i][j];
+				for (int k = 0; k < 3; k++)
+					ptcl->a_irr[k][0] += static_cast<double>(h_result_array[i][j * _six + k]);
+				for (int k = 3; k < 6; k++)
+					ptcl->a_irr[k - 3][1] += static_cast<double>(h_result_array[i][j * _six + k]);
+			}
+			/*
 			NumNeighbor[j] = 0;
 
 			// Initialize h_result for this target
@@ -259,12 +285,13 @@ void GetAcceleration(
 				}
 				NumNeighbor[j] += h_num_neighbor_array[i][j];
 			}
+			*/
 		}
 
 		#ifdef NSIGHT
 		nvtxRangePushA("NeighborList_array to NeighborList");
 		#endif
-
+		/*
 		for (int k = 0; k < NumTarget; k++) {
 			int offset = 0;
 			for (int i = 0; i < deviceCount; i++) {
@@ -282,7 +309,7 @@ void GetAcceleration(
 		#ifdef NSIGHT
 		nvtxRangePop();
 		#endif
-
+		*/
 
 		#ifdef NSIGHT
 		nvtxRangePushA("h_result to acc and adot");
@@ -291,7 +318,7 @@ void GetAcceleration(
 		memcpy(acc 	+ TargetStart	, h_result					, NumTarget * 3 * sizeof(CUDA_REAL));
 		memcpy(adot + TargetStart	, h_result + NumTarget * 3	, NumTarget * 3 * sizeof(CUDA_REAL));
 		*/
-		// /* // original code
+		/* // original code
 		for (int i=0; i<NumTarget; i++) {
 			acc[i+TargetStart][0]  = h_result[_six*i];
 			acc[i+TargetStart][1]  = h_result[_six*i+1];
@@ -333,7 +360,7 @@ void GetAcceleration(
 			exit(1);
 			#endif
 		}
-		// */
+		*/
 		#ifdef NSIGHT
 		nvtxRangePop();
 		#endif
