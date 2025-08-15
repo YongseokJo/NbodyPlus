@@ -625,14 +625,19 @@ void GetAcceleration(
  *************************************************************************/
 
 
+// void _ReceiveFromHost(
+// 		int _NNB,
+// 		CUDA_REAL m[],
+// 		CUDA_REAL x[][3],
+// 		CUDA_REAL v[][3],
+// 		CUDA_REAL r2[],
+// 		CUDA_REAL mdot[]
+// 		){
 void _ReceiveFromHost(
-		int _NNB,
-		CUDA_REAL m[],
-		CUDA_REAL x[][3],
-		CUDA_REAL v[][3],
-		CUDA_REAL r2[],
-		CUDA_REAL mdot[]
-		){
+	int _NNB,
+	CUDA_REAL h_ptcl_j[],
+	CUDA_REAL r2[]
+	){
 
 	//variable_size stands for the (maximum) number of j (background particles)
 	//target_size stands for the (maximum) number of i (target particles)
@@ -743,7 +748,7 @@ void _ReceiveFromHost(
 
 #ifdef debuggig_verification
 		cudaMallocHost((void**)&h_r2        ,        variable_size * sizeof(CUDA_REAL)); // only for verification
-#endif debuggig_verification
+#endif
 
 		// cudaMallocHost((void**)&h_num_neighbor, GridDimY * variable_size * sizeof(int));
 		// cudaMalloc((void**)&d_num_neighbor, GridDimY * variable_size * sizeof(int));
@@ -770,7 +775,7 @@ void _ReceiveFromHost(
 #ifdef DEBUG
 	fprintf(stderr, "Allocate for MultiGPU\n");
 #endif
-	// /* // original code
+	/* // original code
 	for (int j=0; j<NNB; j++) {
 		for (int dim=0; dim<Dim; dim++) {
 			h_ptcl[j + NNB * dim]   = x[j][dim];
@@ -778,7 +783,7 @@ void _ReceiveFromHost(
 		}
 		h_ptcl[j + NNB * 6] = m[j];
 	}
-	// */
+	*/
 	/* // modified code by EW 2025.5.24 // not tested yet!!!
 	memcpy(h_ptcl			, x, NNB * Dim * sizeof(CUDA_REAL));
 	memcpy(h_ptcl + NNB * 3	, v, NNB * Dim * sizeof(CUDA_REAL));
@@ -786,7 +791,8 @@ void _ReceiveFromHost(
 	*/
 	for (int i = 0; i < deviceCount; i++) {
 		cudaSetDevice(i);
-		toDevice(h_ptcl, d_ptcl_array[i], _seven*NNB, streams[i]);
+		// toDevice(h_ptcl, d_ptcl_array[i], _seven*NNB, streams[i]);
+		toDevice(h_ptcl_j, d_ptcl_array[i], _seven*NNB, streams[i]);
 		cudaDeviceSynchronize();
 		toDevice(r2    , d_r2_array[i]  ,        NNB, streams[i]);
 
@@ -1133,8 +1139,11 @@ extern "C" {
 	void CloseDevice(){
 		_CloseDevice();
 	}
-	void SendToDevice(int *_NNB, CUDA_REAL m[], CUDA_REAL x[][3], CUDA_REAL v[][3], CUDA_REAL r2[], CUDA_REAL mdot[]) {
-		_ReceiveFromHost(*_NNB, m, x, v, r2, mdot);
+	// void SendToDevice(int *_NNB, CUDA_REAL m[], CUDA_REAL x[][3], CUDA_REAL v[][3], CUDA_REAL r2[], CUDA_REAL mdot[]) {
+	// 	_ReceiveFromHost(*_NNB, m, x, v, r2, mdot);
+	// }
+	void SendToDevice(int *_NNB, CUDA_REAL h_ptcl_j[], CUDA_REAL r2[]) {
+		_ReceiveFromHost(*_NNB, h_ptcl_j, r2);
 	}
 	void ProfileDevice(int *irank){
 		_ProfileDevice(*irank);

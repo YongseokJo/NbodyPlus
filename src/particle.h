@@ -20,6 +20,7 @@ extern double InitialNeighborRadius;
 extern double EnzoTimeStep;
 struct Particle;
 extern Particle *particles;
+extern int NumberOfParticle;
 
 enum class BinaryInterruptState:int {
 	none = 0, 
@@ -300,6 +301,26 @@ struct Particle {
         }
         return;
     }
+
+	template <typename T>
+    void predictParticleSecondOrder(double dt, T *h_ptcl_j, int &j) {
+
+		dt = dt*EnzoTimeStep;
+    
+        if (dt == 0) {
+            for (int dim=0; dim<Dim; dim++) {
+				h_ptcl_j[j + NumberOfParticle * dim]		= static_cast<T>(Position[dim]);
+				h_ptcl_j[j + NumberOfParticle * (dim + 3)]	= static_cast<T>(Velocity[dim]);
+            }
+        }
+        else {
+            for (int dim=0; dim<Dim; dim++) {
+                h_ptcl_j[j + NumberOfParticle * dim]		= static_cast<T>(((a_tot[dim][1]*dt/3 + a_tot[dim][0])*dt/2 + Velocity[dim])*dt + Position[dim]);
+                h_ptcl_j[j + NumberOfParticle * (dim + 3)]	= static_cast<T>((a_tot[dim][1]*dt/2 + a_tot[dim][0])*dt   + Velocity[dim]);
+            }
+        }
+        return;
+	}
 
 	void correctParticleFourthOrder(double dt, double pos[], double vel[], double a[3][4]);
 

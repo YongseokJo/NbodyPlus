@@ -190,11 +190,15 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int>& RegularList, QueueSc
 void sendAllParticlesToGPU(double new_time, std::unordered_set<int>& RegularList, int *IndexList) {
 
 	// variables for saving variables to send to GPU
+	/*
 	CUDA_REAL *Mass				= new CUDA_REAL[NumberOfParticle];
 	CUDA_REAL *Mdot				= new CUDA_REAL[NumberOfParticle];	
 	CUDA_REAL *Radius2			= new CUDA_REAL[NumberOfParticle];
 	CUDA_REAL(*Position)[Dim]	= new CUDA_REAL[NumberOfParticle][Dim];
 	CUDA_REAL(*Velocity)[Dim]	= new CUDA_REAL[NumberOfParticle][Dim];
+	*/
+	CUDA_REAL *h_ptcl_j			= new CUDA_REAL[NumberOfParticle * 7];
+	CUDA_REAL *Radius2			= new CUDA_REAL[NumberOfParticle];
 
 	int size=0, j=0;
 
@@ -242,14 +246,19 @@ void sendAllParticlesToGPU(double new_time, std::unordered_set<int>& RegularList
 			j++;
 		}
 
-		Mass[size]    = (CUDA_REAL)ptcl->Mass;
-		Mdot[size]    = 0; //particle[i]->Mass;
+		// Mass[size]    = (CUDA_REAL)ptcl->Mass;
+		h_ptcl_j[size + NumberOfParticle * 6] = (CUDA_REAL)ptcl->Mass;
+		// Mdot[size]    = 0; //particle[i]->Mass;
 		Radius2[size] = (CUDA_REAL)ptcl->RadiusOfNeighbor; // mass weight?
 
+		// if (ptcl->NumberOfNeighbor == 0)
+		// 	ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeReg, Position[size], Velocity[size]);
+		// else
+		// 	ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeIrr, Position[size], Velocity[size]);
 		if (ptcl->NumberOfNeighbor == 0)
-			ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeReg, Position[size], Velocity[size]);
+			ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeReg, h_ptcl_j, size);
 		else
-			ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeIrr, Position[size], Velocity[size]);
+			ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeIrr, h_ptcl_j, size);
 
 		ActiveIndexToOriginalIndex[size] = i;
 		// std::cout << "(size , i) = "  << size << " " << i << std::endl;
@@ -265,14 +274,16 @@ void sendAllParticlesToGPU(double new_time, std::unordered_set<int>& RegularList
 	//fprintf(stdout, "Sending particles to GPU...\n");
 	//fflush(stdout);
 	// send the arrays to GPU
-	SendToDevice(&size, Mass, Position, Velocity, Radius2, Mdot);
+	// SendToDevice(&size, Mass, Position, Velocity, Radius2, Mdot);
+	SendToDevice(&size, h_ptcl_j, Radius2);
 
 	//fprintf(stdout, "Done.\n");
 	//fflush(stdout);
 	// free the temporary variables
-	delete[] Mass;
-	delete[] Mdot;
+	// delete[] Mass;
+	// delete[] Mdot;
+	delete[] h_ptcl_j;
 	delete[] Radius2;
-	delete[] Position;
-	delete[] Velocity;
+	// delete[] Position;
+	// delete[] Velocity;
 }
