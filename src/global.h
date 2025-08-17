@@ -16,10 +16,14 @@
 extern Particle *particles;
 extern Particle *particles_original;
 
+extern CUDA_REAL* h_ptcl_j;
+extern CUDA_REAL* h_ptcl_j_original;
+
 /* Communicators */
 extern MPI_Win win;
 extern MPI_Win win2;
 extern MPI_Win win3;
+extern MPI_Win win4;
 extern MPI_Comm shared_comm;
 extern int MyRank;
 extern int NumberOfProcessor;

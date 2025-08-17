@@ -31,25 +31,9 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int>& RegularList, QueueSc
 	int ListSize = RegularList.size();
 	int *IndexList = new int[ListSize];
 
-	// variables for saving variables to send to GPU
-	// only regular particle informations are stored here
-	CUDA_REAL (*AccRegReceive)[Dim]		= new CUDA_REAL[ListSize][Dim];
-	CUDA_REAL (*AccRegDotReceive)[Dim]	= new CUDA_REAL[ListSize][Dim];
-	double (*AccIrr)[Dim]				= new double[ListSize][Dim];
-	double (*AccIrrDot)[Dim]			= new double[ListSize][Dim];
-
-	int *NumNeighborReceive				= new int[ListSize];
-	int *ACListReceive					= new int[ListSize * MaxNumNeighbor];
-
 	Particle *ptcl;
 
 	double new_time = NextRegTimeBlock*time_step;  // next regular time
-
-	// (Query to MY) Do we have to initialize them to 0?
-	std::memset(AccRegReceive,		0, ListSize * Dim * sizeof(CUDA_REAL));
-	std::memset(AccRegDotReceive,	0, ListSize * Dim * sizeof(CUDA_REAL));
-	std::memset(AccIrr,				0, ListSize * Dim * sizeof(double));
-	std::memset(AccIrrDot,			0, ListSize * Dim * sizeof(double));
 
 #ifdef PERFORMANCETRACE
 	start_point_routine = std::chrono::high_resolution_clock::now();
@@ -89,7 +73,7 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int>& RegularList, QueueSc
 	nvtxRangePushA("CalculateAccelerationOnDevice");
 #endif
 
-	CalculateAccelerationOnDevice(&ListSize, IndexList, AccRegReceive, AccRegDotReceive, NumNeighborReceive, ACListReceive);
+	CalculateAccelerationOnDevice(&ListSize, IndexList);
   
 #ifdef NSIGHT
 	nvtxRangePop();
@@ -116,7 +100,7 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int>& RegularList, QueueSc
 #ifdef NSIGHT
 	nvtxRangePushA("RegCuda");
 #endif
-
+	/*
 	for (int i=0; i<ListSize; i++) {
 		ptcl = &particles[ActiveIndexToOriginalIndex[IndexList[i]]];
 
@@ -133,7 +117,7 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int>& RegularList, QueueSc
 #endif
 		}
 	}
-
+	*/
 	queue_scheduler.initialize(RegCuda);
 	queue_scheduler.takeQueueRegularList(RegularList);
 	do
@@ -196,14 +180,6 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int>& RegularList, QueueSc
 
 	delete[] IndexList;
 
-	delete[] AccRegReceive;
-	delete[] AccRegDotReceive;
-	delete[] AccIrr;
-	delete[] AccIrrDot;
-
-	delete[] NumNeighborReceive;
-	delete[] ACListReceive;
-
 	//CloseDevice();
 } // calculate 0th, 1st derivative of force + neighbors on GPU ends
 
@@ -214,11 +190,15 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int>& RegularList, QueueSc
 void sendAllParticlesToGPU(double new_time, std::unordered_set<int>& RegularList, int *IndexList) {
 
 	// variables for saving variables to send to GPU
+	/*
 	CUDA_REAL *Mass				= new CUDA_REAL[NumberOfParticle];
 	CUDA_REAL *Mdot				= new CUDA_REAL[NumberOfParticle];	
 	CUDA_REAL *Radius2			= new CUDA_REAL[NumberOfParticle];
 	CUDA_REAL(*Position)[Dim]	= new CUDA_REAL[NumberOfParticle][Dim];
 	CUDA_REAL(*Velocity)[Dim]	= new CUDA_REAL[NumberOfParticle][Dim];
+	*/
+	CUDA_REAL *h_ptcl_j			= new CUDA_REAL[NumberOfParticle * 7];
+	CUDA_REAL *Radius2			= new CUDA_REAL[NumberOfParticle];
 
 	int size=0, j=0;
 
@@ -249,6 +229,7 @@ void sendAllParticlesToGPU(double new_time, std::unordered_set<int>& RegularList
 	}
 	*/
 
+	// /* // original code not using OpenMP by EW 2025.8.6
 	Particle *ptcl;
 
 	// /* // A code version using MPI parallelization
@@ -321,20 +302,25 @@ void sendAllParticlesToGPU(double new_time, std::unordered_set<int>& RegularList
 			j++;
 		}
 
-		Mass[size]    = (CUDA_REAL)ptcl->Mass;
-		Mdot[size]    = 0; //particle[i]->Mass;
+		// Mass[size]    = (CUDA_REAL)ptcl->Mass;
+		h_ptcl_j[size + NumberOfParticle * 6] = (CUDA_REAL)ptcl->Mass;
+		// Mdot[size]    = 0; //particle[i]->Mass;
 		Radius2[size] = (CUDA_REAL)ptcl->RadiusOfNeighbor; // mass weight?
 
+		// if (ptcl->NumberOfNeighbor == 0)
+		// 	ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeReg, Position[size], Velocity[size]);
+		// else
+		// 	ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeIrr, Position[size], Velocity[size]);
 		if (ptcl->NumberOfNeighbor == 0)
-			ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeReg, Position[size], Velocity[size]);
+			ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeReg, h_ptcl_j, size);
 		else
-			ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeIrr, Position[size], Velocity[size]);
+			ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeIrr, h_ptcl_j, size);
 
 		ActiveIndexToOriginalIndex[size] = i;
 		// std::cout << "(size , i) = "  << size << " " << i << std::endl;
 		size++;
 	}
-	*/
+	// */
 
 	assert(NumberOfParticle == size); // for debugging by EW 2025.1.25
 
@@ -344,14 +330,16 @@ void sendAllParticlesToGPU(double new_time, std::unordered_set<int>& RegularList
 	//fprintf(stdout, "Sending particles to GPU...\n");
 	//fflush(stdout);
 	// send the arrays to GPU
-	SendToDevice(&size, Mass, Position, Velocity, Radius2, Mdot);
+	// SendToDevice(&size, Mass, Position, Velocity, Radius2, Mdot);
+	SendToDevice(&size, h_ptcl_j, Radius2);
 
 	//fprintf(stdout, "Done.\n");
 	//fflush(stdout);
 	// free the temporary variables
-	delete[] Mass;
-	delete[] Mdot;
+	// delete[] Mass;
+	// delete[] Mdot;
+	delete[] h_ptcl_j;
 	delete[] Radius2;
-	delete[] Position;
-	delete[] Velocity;
+	// delete[] Position;
+	// delete[] Velocity;
 }

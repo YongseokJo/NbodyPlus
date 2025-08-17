@@ -15,6 +15,9 @@
 #include <nvToolsExt.h>
 #endif
 
+#ifdef MultiGPU
+#include "../particle.h"
+#endif
 
 
 extern int MyRank;
@@ -64,6 +67,9 @@ CUDA_REAL **h_result_array = new CUDA_REAL*[4];
 int **NeighborList_array = new int*[4];
 int **h_num_neighbor_array = new int*[4];
 int **d_num_neighbor_block_array = new int*[4];
+
+extern Particle *particles;
+extern int *ActiveIndexToOriginalIndex;
 #endif
 
 
@@ -92,14 +98,7 @@ CUDA_REAL *h_diff, *h_magnitudes;
  *	 Computing Acceleration
  *************************************************************************/
 #ifdef MultiGPU
-void GetAcceleration(
-    int NumTargetTotal,
-    int h_target_list[],
-    CUDA_REAL acc[][3],
-    CUDA_REAL adot[][3],
-    int NumNeighbor[],
-    int *NeighborList
-) {
+void GetAcceleration(int NumTargetTotal, int h_target_list[]) {
     assert(is_open);
 	assert((NumTargetTotal > 0) && (NumTargetTotal <= NNB));
 
@@ -189,7 +188,7 @@ void GetAcceleration(
 			*/
 			dim3 blockDim3(16, 6);       // 16 threads along X, 6 along Y
 			dim3 gridDim3((NumTarget+15)/16, 1);
-			reduce_forces_kernel<<<gridDim3, blockDim3>>>(d_diff_array[i], d_result_array[i], GridDimY, NumTarget);
+			reduce_forces_kernel<<<gridDim3, blockDim3, 0, streams[i]>>>(d_diff_array[i], d_result_array[i], GridDimY, NumTarget);
 
 
 			//cudaStreamSynchronize(streams[i]);
@@ -242,9 +241,29 @@ void GetAcceleration(
 			cudaStreamSynchronize(streams[i]);
         }
 		
+		Particle* ptcl;
 		for (int j = 0; j < NumTarget; j++) {
 			int target_idx = TargetStart + j;  // Precompute base index
 			int result_idx = _six * target_idx;  // Precompute h_result index
+
+			ptcl = &particles[ActiveIndexToOriginalIndex[h_target_list[j]]];
+			ptcl->NewNumberOfNeighbor = 0;
+			for (int dim=0; dim < Dim; dim++) {
+				ptcl->a_irr[dim][0] = 0.0;
+				ptcl->a_irr[dim][1] = 0.0;
+			}
+
+			for (int i = 0; i < deviceCount; i++) {
+				memcpy(&ptcl->NewNeighbors[ptcl->NewNumberOfNeighbor], 
+					   &NeighborList_array[i][j * MaxNumNeighbor], 
+					   h_num_neighbor_array[i][j] * sizeof(int));
+				ptcl->NewNumberOfNeighbor += h_num_neighbor_array[i][j];
+				for (int k = 0; k < 3; k++)
+					ptcl->a_irr[k][0] += static_cast<double>(h_result_array[i][j * _six + k]);
+				for (int k = 3; k < 6; k++)
+					ptcl->a_irr[k - 3][1] += static_cast<double>(h_result_array[i][j * _six + k]);
+			}
+			/*
 			NumNeighbor[j] = 0;
 
 			// Initialize h_result for this target
@@ -259,12 +278,13 @@ void GetAcceleration(
 				}
 				NumNeighbor[j] += h_num_neighbor_array[i][j];
 			}
+			*/
 		}
 
-		#ifdef NSIGHT
+#ifdef NSIGHT
 		nvtxRangePushA("NeighborList_array to NeighborList");
-		#endif
-
+#endif
+		/*
 		for (int k = 0; k < NumTarget; k++) {
 			int offset = 0;
 			for (int i = 0; i < deviceCount; i++) {
@@ -279,19 +299,19 @@ void GetAcceleration(
 				offset += count; 
 			}
 		}
-		#ifdef NSIGHT
+#ifdef NSIGHT
 		nvtxRangePop();
-		#endif
+#endif
+		*/
 
-
-		#ifdef NSIGHT
+#ifdef NSIGHT
 		nvtxRangePushA("h_result to acc and adot");
-		#endif
+#endif
 		/* // modified code by EW 2025.5.24 // not tested yet!!!
 		memcpy(acc 	+ TargetStart	, h_result					, NumTarget * 3 * sizeof(CUDA_REAL));
 		memcpy(adot + TargetStart	, h_result + NumTarget * 3	, NumTarget * 3 * sizeof(CUDA_REAL));
 		*/
-		// /* // original code
+		/* // original code
 		for (int i=0; i<NumTarget; i++) {
 			acc[i+TargetStart][0]  = h_result[_six*i];
 			acc[i+TargetStart][1]  = h_result[_six*i+1];
@@ -301,7 +321,7 @@ void GetAcceleration(
 			adot[i+TargetStart][2] = h_result[_six*i+5];
 			
 
-			#ifdef debuggig_verification
+#ifdef debuggig_verification
 			cudaSetDevice(0);
 			toHost(h_r2, d_r2_array[0], NNB); // only for verification
 
@@ -331,12 +351,12 @@ void GetAcceleration(
 			}
 			fprintf(stderr, "\n");
 			exit(1);
-			#endif
+#endif
 		}
-		// */
-		#ifdef NSIGHT
+		*/
+#ifdef NSIGHT
 		nvtxRangePop();
-		#endif
+#endif
 
     } // end of TargetStart loop
 	/*
@@ -422,12 +442,12 @@ void GetAcceleration(
 		cudaDeviceSynchronize();
 
 
-		#define newGather
-		#ifdef newGather
+#define newGather
+#ifdef newGather
 
-		#ifdef NSIGHT
+#ifdef NSIGHT
 		nvtxRangePushA("Reduction");
-		#endif
+#endif
 
 		// blockSize = 64;
 		// gridSize = (total_data_num + blockSize - 1) / blockSize;
@@ -440,37 +460,37 @@ void GetAcceleration(
 		gather_neighbor<<<gridDim2, blockDim2, 0, stream>>>\
 			(d_neighbor_block, d_num_neighbor, d_neighbor, NumTarget);
 
-		#ifdef NSIGHT
+#ifdef NSIGHT
 		nvtxRangePop();
-		#endif
+#endif
 
 		cudaStreamSynchronize(stream); // Wait for all operations to finish
 		toHost(h_result + _six * TargetStart, d_result, _six * NumTarget);
 
-		#ifdef NSIGHT
+#ifdef NSIGHT
 		nvtxRangePushA("Neighbor in CPU1");
-		#endif
+#endif
 
 		// toHost(NeighborList, d_neighbor, NumTarget * MaxNumNeighbor);
 		toHost(NeighborList, d_neighbor, NumTarget * MaxNumNeighbor);
 
 
-		#ifdef NSIGHT
+#ifdef NSIGHT
 		nvtxRangePop();
-		#endif
+#endif
 		// toHost(h_neighbor, d_neighbor, NumTarget * MaxNumNeighbor);//
-		#ifdef NSIGHT
+#ifdef NSIGHT
 		nvtxRangePushA("Neighbor in CPU2");
-		#endif
+#endif
 
 		toHost(h_num_neighbor, d_num_neighbor, NumTarget * GridDimY);
-		#ifdef NSIGHT
+#ifdef NSIGHT
 		nvtxRangePop();
-		#endif
+#endif
 
-		#ifdef NSIGHT
+#ifdef NSIGHT
 		nvtxRangePushA("Neighbor in CPU3");
-		#endif
+#endif
 
 		for (int i=0;i<NumTarget;i++) {
 	        int k = 0;
@@ -480,18 +500,18 @@ void GetAcceleration(
 			}
 			NumNeighbor[i + TargetStart] = k;
 		}
-		#ifdef NSIGHT
+#ifdef NSIGHT
 		nvtxRangePop();
-		#endif
+#endif
 
-		#else
+#else
 
 		cudaStreamSynchronize(stream); // Wait for all operations to finish
 		toHost(h_result + _six * TargetStart, d_result, _six * NumTarget);
 
-		#ifdef NSIGHT
+#ifdef NSIGHT
 		nvtxRangePushA("Neighbor in CPU");
-		#endif
+#endif
 
 		toHost(h_neighbor, d_neighbor_block, NumTarget * GridDimY * NNB_per_block);//
 		toHost(h_num_neighbor, d_num_neighbor, NumTarget * GridDimY);
@@ -521,18 +541,18 @@ void GetAcceleration(
 			NumNeighbor[i + TargetStart] = k;
 
 		}
-		#ifdef NSIGHT
+#ifdef NSIGHT
 		nvtxRangePop();
-		#endif
+#endif
 		
-		#endif
+#endif
 
 
 	}
 
-	#ifdef NSIGHT
+#ifdef NSIGHT
 	nvtxRangePushA("Out data");
-	#endif
+#endif
 	// out data
 	for (int i=0; i<NumTargetTotal; i++) {
 		acc[i][0]  = h_result[_six*i];
@@ -542,8 +562,8 @@ void GetAcceleration(
 		adot[i][1] = h_result[_six*i+4];
 		adot[i][2] = h_result[_six*i+5];
 		
-		// #define debuggig_verification
-		#ifdef debuggig_verification
+// #define debuggig_verification
+#ifdef debuggig_verification
 		toHost(h_r2, d_r2, NNB); // only for verification
 
 		fprintf(stderr, "%d (%d) neighbors of %d = ", i, h_target_list[i], NumNeighbor[i]);
@@ -572,12 +592,12 @@ void GetAcceleration(
 		}
 		fprintf(stderr, "\n");
 		exit(1);
-		#endif
+#endif
 	}
 
-	#ifdef NSIGHT
+#ifdef NSIGHT
 	nvtxRangePop();
-	#endif
+#endif
 	
 	cublasDestroy(handle);
 	/*
@@ -605,14 +625,19 @@ void GetAcceleration(
  *************************************************************************/
 
 
+// void _ReceiveFromHost(
+// 		int _NNB,
+// 		CUDA_REAL m[],
+// 		CUDA_REAL x[][3],
+// 		CUDA_REAL v[][3],
+// 		CUDA_REAL r2[],
+// 		CUDA_REAL mdot[]
+// 		){
 void _ReceiveFromHost(
-		int _NNB,
-		CUDA_REAL m[],
-		CUDA_REAL x[][3],
-		CUDA_REAL v[][3],
-		CUDA_REAL r2[],
-		CUDA_REAL mdot[]
-		){
+	int _NNB,
+	CUDA_REAL h_ptcl_j[],
+	CUDA_REAL r2[]
+	){
 
 	//variable_size stands for the (maximum) number of j (background particles)
 	//target_size stands for the (maximum) number of i (target particles)
@@ -648,7 +673,7 @@ void _ReceiveFromHost(
 
 
 		if (!first) {
-			#ifdef MultiGPU
+#ifdef MultiGPU
 			my_free(h_ptcl, d_ptcl_array, deviceCount);
 			my_free(h_result, d_result_array, deviceCount);
 			my_free(h_num_neighbor, d_num_neighbor_array, deviceCount);
@@ -665,7 +690,7 @@ void _ReceiveFromHost(
 				cudaFreeHost(h_num_neighbor_array[i]);
 				cudaFreeHost(NeighborList_array[i]);
 			}
-			#else
+#else
 			my_free(h_ptcl				 , d_ptcl);
 			my_free(h_result       , d_result);
 			my_free(h_num_neighbor , d_num_neighbor);
@@ -673,21 +698,21 @@ void _ReceiveFromHost(
 			cudaFree(d_target);
 			cudaFree(d_r2);
 			cudaFree(d_diff);
-			#ifdef newGather
+#ifdef newGather
 			cudaFree(d_neighbor_block);
 			my_free(h_neighbor     , d_neighbor);
-			#else
+#else
 			my_free(h_neighbor     , d_neighbor_block);
-			#endif
+#endif
 			// cudaFree(d_magnitudes);
 			// cudaFree(d_acc);
 			// cudaFree(d_adot);
-			#endif
+#endif
 		}
 		else {
 			first = false;
 		}
-		#ifdef MultiGPU
+#ifdef MultiGPU
 		my_allocate(&h_ptcl         , d_ptcl_array        ,         _seven*variable_size, deviceCount, 0); // x,v,m
 		my_allocate(&h_result       , d_result_array      ,           _six*variable_size, deviceCount, 0);
 		my_allocate(&h_num_neighbor , d_num_neighbor_array, variable_size, deviceCount, 0);
@@ -705,7 +730,7 @@ void _ReceiveFromHost(
 			cudaMallocHost(&h_num_neighbor_array[i], variable_size * sizeof(int));
 			cudaMallocHost(&NeighborList_array[i], variable_size * MaxNumNeighbor * sizeof(int));
 		}
-		#else
+#else
 		my_allocate(&h_ptcl         , &d_ptcl        ,         _seven*variable_size); // x,v,m
 		my_allocate(&h_result       , &d_result      ,           _six*variable_size);
 		// my_allocate(&h_num_neighbor , &d_num_neighbor,                variable_size);
@@ -718,12 +743,12 @@ void _ReceiveFromHost(
 		cudaMalloc((void**)&d_neighbor_block, GridDimY * NNB_per_block * target_size * sizeof(int));
 		my_allocate(&h_neighbor     , &d_neighbor    , MaxNumNeighbor * target_size);
 		my_allocate(&h_num_neighbor , &d_num_neighbor,                GridDimY * variable_size);
-		#endif
+#endif
 
 
-		#ifdef debuggig_verification
+#ifdef debuggig_verification
 		cudaMallocHost((void**)&h_r2        ,        variable_size * sizeof(CUDA_REAL)); // only for verification
-		#endif debuggig_verification
+#endif
 
 		// cudaMallocHost((void**)&h_num_neighbor, GridDimY * variable_size * sizeof(int));
 		// cudaMalloc((void**)&d_num_neighbor, GridDimY * variable_size * sizeof(int));
@@ -746,11 +771,11 @@ void _ReceiveFromHost(
 
 	//toDevice(h_background,d_background,variable_size);
 	
-	#ifdef MultiGPU
+#ifdef MultiGPU
 #ifdef DEBUG
 	fprintf(stderr, "Allocate for MultiGPU\n");
 #endif
-	// /* // original code
+	/* // original code
 	for (int j=0; j<NNB; j++) {
 		for (int dim=0; dim<Dim; dim++) {
 			h_ptcl[j + NNB * dim]   = x[j][dim];
@@ -758,7 +783,7 @@ void _ReceiveFromHost(
 		}
 		h_ptcl[j + NNB * 6] = m[j];
 	}
-	// */
+	*/
 	/* // modified code by EW 2025.5.24 // not tested yet!!!
 	memcpy(h_ptcl			, x, NNB * Dim * sizeof(CUDA_REAL));
 	memcpy(h_ptcl + NNB * 3	, v, NNB * Dim * sizeof(CUDA_REAL));
@@ -766,13 +791,14 @@ void _ReceiveFromHost(
 	*/
 	for (int i = 0; i < deviceCount; i++) {
 		cudaSetDevice(i);
-		toDevice(h_ptcl, d_ptcl_array[i], _seven*NNB, streams[i]);
+		// toDevice(h_ptcl, d_ptcl_array[i], _seven*NNB, streams[i]);
+		toDevice(h_ptcl_j, d_ptcl_array[i], _seven*NNB, streams[i]);
 		cudaDeviceSynchronize();
 		toDevice(r2    , d_r2_array[i]  ,        NNB, streams[i]);
 
 	}
 
-	#else
+#else
 	/* // original code
 	for (int j=0; j<NNB; j++) {
 		for (int dim=0; dim<Dim; dim++) {
@@ -791,7 +817,7 @@ void _ReceiveFromHost(
 	toDevice(h_ptcl,d_ptcl, _seven*NNB, stream);
 	toDevice(r2    ,d_r2  ,        NNB, stream);
 
-	#endif
+#endif
 	//fprintf(stdout, "CUDA: receive done\n");
 
 }
@@ -1113,14 +1139,17 @@ extern "C" {
 	void CloseDevice(){
 		_CloseDevice();
 	}
-	void SendToDevice(int *_NNB, CUDA_REAL m[], CUDA_REAL x[][3], CUDA_REAL v[][3], CUDA_REAL r2[], CUDA_REAL mdot[]) {
-		_ReceiveFromHost(*_NNB, m, x, v, r2, mdot);
+	// void SendToDevice(int *_NNB, CUDA_REAL m[], CUDA_REAL x[][3], CUDA_REAL v[][3], CUDA_REAL r2[], CUDA_REAL mdot[]) {
+	// 	_ReceiveFromHost(*_NNB, m, x, v, r2, mdot);
+	// }
+	void SendToDevice(int *_NNB, CUDA_REAL h_ptcl_j[], CUDA_REAL r2[]) {
+		_ReceiveFromHost(*_NNB, h_ptcl_j, r2);
 	}
 	void ProfileDevice(int *irank){
 		_ProfileDevice(*irank);
 	}
-	void CalculateAccelerationOnDevice(int *NumTargetTotal, int *h_target_list, CUDA_REAL acc[][3], CUDA_REAL adot[][3], int NumNeighbor[], int *NeighborList) {
-		GetAcceleration(*NumTargetTotal, h_target_list, acc, adot, NumNeighbor, NeighborList);
+	void CalculateAccelerationOnDevice(int *NumTargetTotal, int *h_target_list) {
+		GetAcceleration(*NumTargetTotal, h_target_list);
 	}
 }
 

@@ -10,9 +10,13 @@ Particle *particles;
 int *ActiveIndexToOriginalIndex;
 int *ActiveIndexToOriginalIndex_orginal;
 
+CUDA_REAL* h_ptcl_j_original;
+CUDA_REAL* h_ptcl_j;
+
 MPI_Win win;
 MPI_Win win2;
 MPI_Win win3;
+MPI_Win win4;
 
 MPI_Comm shared_comm;
 int MyRank;

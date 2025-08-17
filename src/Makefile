@@ -33,7 +33,7 @@ CXX_SRCS += FewBody/FBCheck.cpp FewBody/FBInitialization.cpp FewBody/FBIntegrati
 ifdef USE_CUDA
 	CXXFLAGS += -I./cuda -DCUDA -DNSIGHT
 	NVCC = nvcc
-	NVCCFLAGS = -O2 --std=c++11 -G -Xcompiler -rdynamic -g -lineinfo -Xptxas=-v -lcuda -lcudart -lcompute-sanitizer
+	NVCCFLAGS = -I./../SDAR/src -O2 --std=c++11 -G -Xcompiler -rdynamic -g -lineinfo -Xptxas=-v -lcuda -lcudart -lcompute-sanitizer
 	NVCC_FLAGS_DEBUG = -g -G --device-debug -lineinfo
 	LDFLAGS += -L/usr/local/cuda/lib64/ -lcudart -lcublas -lnvToolsExt -lcuda
 	CXX_SRCS += cuda/CalculateRegularAcceleration.cpp
