@@ -181,7 +181,7 @@ void RootRoutines() {
 				if (!makeSEVNBinary(ptcl)) {
 					if (ptcl->ParticleIndex == LastParticleIndex) {
 						LastParticleIndex--;
-						global_variable->LastParticleIndex == LastParticleIndex;
+						global_variable->LastParticleIndex = LastParticleIndex;
 					}
 					else
 						PrevCMPtclWorker.insert({ptcl->ParticleIndex, CMPtclWorker[ptcl->ParticleIndex]});
@@ -739,7 +739,7 @@ void RootRoutines() {
 
 						if (ptcl->ParticleIndex == LastParticleIndex) {
 							LastParticleIndex--;
-							global_variable->LastParticleIndex == LastParticleIndex;
+							global_variable->LastParticleIndex = LastParticleIndex;
 						}
 						else
 							PrevCMPtclWorker.insert({ptcl->ParticleIndex, CMPtclWorker[ptcl->ParticleIndex]});
@@ -972,7 +972,7 @@ void RootRoutines() {
 
 								if (mem_ptclCM->ParticleIndex == LastParticleIndex) {
 									LastParticleIndex--;
-									global_variable->LastParticleIndex == LastParticleIndex;
+									global_variable->LastParticleIndex = LastParticleIndex;
 								}
 								else
 									PrevCMPtclWorker.insert({mem_ptclCM->ParticleIndex, CMPtclWorker[mem_ptclCM->ParticleIndex]});
@@ -992,7 +992,7 @@ void RootRoutines() {
 						if (!makeSEVNBinary(ptclCM)) {
 							if (ptclCM->ParticleIndex == LastParticleIndex) {
 								LastParticleIndex--;
-								global_variable->LastParticleIndex == LastParticleIndex;
+								global_variable->LastParticleIndex = LastParticleIndex;
 							}
 							else
 								PrevCMPtclWorker.insert({ptclCM->ParticleIndex, CMPtclWorker[ptclCM->ParticleIndex]});

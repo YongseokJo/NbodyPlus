@@ -295,8 +295,6 @@ void WorkerRoutines() {
 				MPI_Send(positions.data(), positions.size() * 3, MPI_FLOAT, ROOT, 0, MPI_COMM_WORLD);
 				MPI_Send(velocities.data(), velocities.size() * 3, MPI_FLOAT, ROOT, 1, MPI_COMM_WORLD);
 
-				fprintf(stderr, "MyRank: %d. J_start: %d, J_end: %d, size: %d\n", MyRank, J_start, J_end, (int)positions.size());
-
 				continue;
 			}
 
