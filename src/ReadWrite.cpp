@@ -166,8 +166,6 @@ int writeParticle(double current_time, int outputNum) {
         return 1;
     }
 
-	bool writeCM = true;
-
     // Now let's save the outputs in a new directory
 
     // Construct the filename with the timestamp
@@ -186,35 +184,28 @@ int writeParticle(double current_time, int outputNum) {
     }
 
 	outputFile << "Time = " << current_time*EnzoTimeStep*1e10/1e6 << " Myr\n"; //
-	if (writeCM) {
 
-		Queue queue = {GetTotalEnergy, -1, -1.0};
-		for (int i=0; i< NumberOfWorker; i++)
-			MPI_Send(&queue, 1, QueueType, i+1, QUEUE_TAG, MPI_COMM_WORLD);
+	Queue queue = {GetTotalEnergy, -1, -1.0};
+	for (int i=0; i< NumberOfWorker; i++)
+		MPI_Send(&queue, 1, QueueType, i+1, QUEUE_TAG, MPI_COMM_WORLD);
 
-		MPI_Reduce(MPI_IN_PLACE, &E_binary,		1, MPI_DOUBLE, MPI_SUM, ROOT, MPI_COMM_WORLD);
-		MPI_Reduce(MPI_IN_PLACE, &E_binary_SD,	1, MPI_DOUBLE, MPI_SUM, ROOT, MPI_COMM_WORLD);
-		MPI_Reduce(MPI_IN_PLACE, &E_merger,		1, MPI_DOUBLE, MPI_SUM, ROOT, MPI_COMM_WORLD);
-		MPI_Reduce(MPI_IN_PLACE, &E_PN,			1, MPI_DOUBLE, MPI_SUM, ROOT, MPI_COMM_WORLD);
+	MPI_Reduce(MPI_IN_PLACE, &E_binary,		1, MPI_DOUBLE, MPI_SUM, ROOT, MPI_COMM_WORLD);
+	MPI_Reduce(MPI_IN_PLACE, &E_binary_SD,	1, MPI_DOUBLE, MPI_SUM, ROOT, MPI_COMM_WORLD);
+	MPI_Reduce(MPI_IN_PLACE, &E_merger,		1, MPI_DOUBLE, MPI_SUM, ROOT, MPI_COMM_WORLD);
+	MPI_Reduce(MPI_IN_PLACE, &E_PN,			1, MPI_DOUBLE, MPI_SUM, ROOT, MPI_COMM_WORLD);
 
-		outputFile << "NumberOfParticle = " << NumberOfParticle << "\n";
-		double unit_energy = mass_unit * (velocity_unit/yr*pc/1e5) * (velocity_unit/yr*pc/1e5);
-		outputFile << "E_binary = " << E_binary * unit_energy << "\n";
-		outputFile << "E_binary_SD = " << E_binary_SD * unit_energy << "\n";
-		outputFile << "E_merger = " << E_merger * unit_energy << "\n";
-		outputFile << "E_PN = " << E_PN * unit_energy << "\n";
+	outputFile << "NumberOfParticle = " << NumberOfParticle << "\n";
+	double unit_energy = mass_unit * (velocity_unit/yr*pc/1e5) * (velocity_unit/yr*pc/1e5);
+	outputFile << "E_binary = " << E_binary * unit_energy << "\n";
+	outputFile << "E_binary_SD = " << E_binary_SD * unit_energy << "\n";
+	outputFile << "E_merger = " << E_merger * unit_energy << "\n";
+	outputFile << "E_PN = " << E_PN * unit_energy << "\n";
 
-		E_binary = 0.0;
-		E_binary_SD = 0.0;
-		E_merger = 0.0;
-		E_PN = 0.0;
-	}
-	else {
-		outputFile << outputTime << ", "; //
-		outputFile << outputTimeStep << ", "; //
-		outputFile << current_time << ""; //
-		outputFile << "\n";
-	}
+	E_binary = 0.0;
+	E_binary_SD = 0.0;
+	E_merger = 0.0;
+	E_PN = 0.0;
+
     outputFile << std::left 
 			<< std::setw(width) << "PID"
 			<< std::setw(width) << "Mass (Msun)"
@@ -256,27 +247,12 @@ int writeParticle(double current_time, int outputNum) {
 			minTimeStepReg = ptcl->TimeStepReg;
 		}
 
-		if (writeCM) {
-			if (ptcl->isCMptcl)
-				CMPtclsSet.insert(i);
-			
-			ptcl->predictParticleSecondOrder(current_time - ptcl->CurrentTimeIrr, pos, vel);
-			write_out(outputFile, ptcl, pos, vel);
-		}
-		else {
-
-			ptcl->predictParticleSecondOrder(current_time - ptcl->CurrentTimeIrr, pos, vel);
-
-			if (ptcl->isCMptcl) {
-				Particle* members;
-				for (int j=0; j < ptcl->NumberOfMember; j++) {
-					members = &particles[ptcl->Members[j]];
-					write_out_group(outputFile, ptcl, members, pos, vel);
-				}
-			}
-			else
-				write_out(outputFile, ptcl, pos, vel);
-		}
+		if (ptcl->isCMptcl)
+			CMPtclsSet.insert(i);
+		
+		ptcl->predictParticleSecondOrder(current_time - ptcl->CurrentTimeIrr, pos, vel);
+		write_out(outputFile, ptcl, pos, vel);
+		
 // write_neighbor(output_nn, ptcl);
 	}
 
