@@ -189,7 +189,7 @@ void GetAcceleration(
 			*/
 			dim3 blockDim3(16, 6);       // 16 threads along X, 6 along Y
 			dim3 gridDim3((NumTarget+15)/16, 1);
-			reduce_forces_kernel<<<gridDim3, blockDim3>>>(d_diff_array[i], d_result_array[i], GridDimY, NumTarget);
+			reduce_forces_kernel<<<gridDim3, blockDim3, 0, streams[i]>>>(d_diff_array[i], d_result_array[i], GridDimY, NumTarget);
 
 
 			//cudaStreamSynchronize(streams[i]);

@@ -24,6 +24,7 @@ enum TaskName : int8_t {
     CalcAcc01MPI = 28,
     CalcAcc23MPI = 29,
     GetTotalEnergy = 30,
+    PrepareGPUCalc = 31,
     Synchronize = 100,
     Ends = -100,
     Error = -1
