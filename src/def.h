@@ -8,6 +8,7 @@
 #define MaxNumberOfCommunication 10000
 
 
+#define MaxNeighborRadius 0.2 // Let's set MaxNeighborRadius as 0.2 pc // Newly set by EW 2025.8.18
 
 // #define FixNumNeighbor 412 // 500 -> 100 modified by EW 2025.1.11
 #define MaxNumNeighbor 1000 // 10000 -> 2000 modified by EW 2025.1.11

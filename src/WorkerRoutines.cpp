@@ -107,7 +107,7 @@ void WorkerRoutines() {
 				ptcl->calculateTimeStepIrr();
 				// /*
 				if (ptcl->NumberOfNeighbor == 0) {
-					/*
+					// /*
 					if (ptcl->CurrentBlockIrr != ptcl->CurrentBlockReg || ptcl->CurrentTimeIrr != ptcl->CurrentBlockReg*time_step) {
 						fprintf(stderr, "PID: %d\n", ptcl->PID);
 						fprintf(stderr, "CurrentBlockIrr: %llu, CurrentBlockReg: %llu\n", ptcl->CurrentBlockIrr, ptcl->CurrentBlockReg);
@@ -118,7 +118,7 @@ void WorkerRoutines() {
 						assert(ptcl->CurrentBlockIrr == ptcl->CurrentBlockReg);
 						assert(ptcl->CurrentTimeIrr == ptcl->CurrentBlockReg*time_step);
 					}
-					*/
+					// */
 					ptcl->CurrentBlockIrr = ptcl->CurrentBlockReg;
 					ptcl->CurrentTimeIrr = ptcl->CurrentBlockReg*time_step;
 				}
