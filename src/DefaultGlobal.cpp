@@ -43,12 +43,7 @@ double endTime;
 
 double eta;
 
-double binary_time;
-double binary_time_prev;
-ULL binary_block;
-
 // Enzo to Nbody
-Particle* FirstEnzoParticle;
 double EnzoLength, EnzoMass, EnzoVelocity, EnzoTime, EnzoForce, EnzoAcceleration;
 double EnzoTimeStep;
 
@@ -58,10 +53,8 @@ double InitialNeighborRadius;
 
 // i/o
 char* fname;
-double inputTime;
 bool restart;
 char* foutput;
-bool IsOutput;
 double outputTime;
 int outNum;
 char *config_file;
@@ -79,13 +72,12 @@ FILE* workerout;
 Performance performance;
 #endif
 
-void DefaultGlobal() {
+double E_binary;	// Total binary energy in a processor
+double E_binary_SD; // Total slowdown binary energy in a processor
+double E_merger; 	// Total merger energy in a processor
+double E_PN;		// Total post-Newtonian energy in a processor
 
-	/* Task initialization */
-	//int Task[NumberOfTask];
-	for (int i=0;i<NumberOfTask; i++) {
-		Task[i] = i;
-	}
+void DefaultGlobal() {
 
 	NumberOfCommunication = 0;
 
@@ -98,7 +90,6 @@ void DefaultGlobal() {
 	block_max = static_cast<ULL>(pow(2, -time_block));
 	time_step = std::pow(2,time_block);
 
-	inputTime = 0.0;
 	endTime = 0.0;
 	outputTimeStep = 0.;
 
@@ -108,6 +99,11 @@ void DefaultGlobal() {
 	eta = 0.01;
 	FixNumNeighbor = 100;
 	InitialNeighborRadius = 0.011;
+
+	E_binary = 0.0;
+	E_binary_SD = 0.0;
+	E_merger = 0.0;
+	E_PN = 0.0;
 
 #ifdef SEVN
 	std::vector<std::string> args = {"empty", // Not used

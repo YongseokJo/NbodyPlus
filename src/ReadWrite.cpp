@@ -5,6 +5,7 @@
 #include <sys/stat.h>
 #include <iomanip>
 #include "global.h"
+#include "Queue.h"
 
 int getLineNumber();
 //void write_out(std::ofstream& outputFile, const Particle* ptcl);
@@ -109,24 +110,24 @@ bool readData() {
 
 
 int getLineNumber() {
-	    std::ifstream inputFile(fname); // Open the file
+	std::ifstream inputFile(fname); // Open the file
 
-			if (!inputFile) {
-				std::cerr << "Error: Could not open the file." << std::endl;
-				return 1;
-			}
+	if (!inputFile) {
+		std::cerr << "Error: Could not open the file." << std::endl;
+		return 1;
+	}
 
-			int lineCount = 0;
-			std::string line;
-			while (std::getline(inputFile, line)) { // Read lines from the file
-				lineCount++;
-			}
+	int lineCount = 0;
+	std::string line;
+	while (std::getline(inputFile, line)) { // Read lines from the file
+		lineCount++;
+	}
 
-			std::cout << "Number of lines in the file: " << lineCount << std::endl;
+	std::cout << "Number of lines in the file: " << lineCount << std::endl;
 
-			inputFile.close(); // Close the file
+	inputFile.close(); // Close the file
 
-			return lineCount;
+	return lineCount;
 }
 
 
@@ -165,7 +166,6 @@ int writeParticle(double current_time, int outputNum) {
         return 1;
     }
 
-
     // Now let's save the outputs in a new directory
 
     // Construct the filename with the timestamp
@@ -183,13 +183,29 @@ int writeParticle(double current_time, int outputNum) {
         return 1;
     }
 
-	outputFile << current_time*EnzoTimeStep*1e10/1e6 << " Myr, "; //
-	//outputFile << global_time*EnzoTimeStep*1e10/1e6 << " Myr"; //
-	outputFile << "\n";
-	outputFile << outputTime << ", "; //
-	outputFile << outputTimeStep << ", "; //
-	outputFile << current_time << ""; //
-	outputFile << "\n";
+	outputFile << "Time = " << current_time*EnzoTimeStep*1e10/1e6 << " Myr\n"; //
+
+	Queue queue = {GetTotalEnergy, -1, -1.0};
+	for (int i=0; i< NumberOfWorker; i++)
+		MPI_Send(&queue, 1, QueueType, i+1, QUEUE_TAG, MPI_COMM_WORLD);
+
+	MPI_Reduce(MPI_IN_PLACE, &E_binary,		1, MPI_DOUBLE, MPI_SUM, ROOT, MPI_COMM_WORLD);
+	MPI_Reduce(MPI_IN_PLACE, &E_binary_SD,	1, MPI_DOUBLE, MPI_SUM, ROOT, MPI_COMM_WORLD);
+	MPI_Reduce(MPI_IN_PLACE, &E_merger,		1, MPI_DOUBLE, MPI_SUM, ROOT, MPI_COMM_WORLD);
+	MPI_Reduce(MPI_IN_PLACE, &E_PN,			1, MPI_DOUBLE, MPI_SUM, ROOT, MPI_COMM_WORLD);
+
+	outputFile << "NumberOfParticle = " << NumberOfParticle << "\n";
+	double unit_energy = mass_unit * (velocity_unit/yr*pc/1e5) * (velocity_unit/yr*pc/1e5);
+	outputFile << "E_binary = " << E_binary * unit_energy << "\n";
+	outputFile << "E_binary_SD = " << E_binary_SD * unit_energy << "\n";
+	outputFile << "E_merger = " << E_merger * unit_energy << "\n";
+	outputFile << "E_PN = " << E_PN * unit_energy << "\n";
+
+	E_binary = 0.0;
+	E_binary_SD = 0.0;
+	E_merger = 0.0;
+	E_PN = 0.0;
+
     outputFile << std::left 
 			<< std::setw(width) << "PID"
 			<< std::setw(width) << "Mass (Msun)"
@@ -215,6 +231,8 @@ int writeParticle(double current_time, int outputNum) {
 	double minTimeStepIrr = 1.;
 	double minTimeStepReg = 1.;
 
+	std::unordered_set<int> CMPtclsSet;
+
 	for (int i=0; i<=LastParticleIndex; i++) {
 		ptcl = &particles[i];
 
@@ -229,19 +247,25 @@ int writeParticle(double current_time, int outputNum) {
 			minTimeStepReg = ptcl->TimeStepReg;
 		}
 
+		if (ptcl->isCMptcl)
+			CMPtclsSet.insert(i);
+		
+		ptcl->predictParticleSecondOrder(current_time - ptcl->CurrentTimeIrr, pos, vel);
+		write_out(outputFile, ptcl, pos, vel);
+		
+// write_neighbor(output_nn, ptcl);
+	}
+
+	for (int i: CMPtclsSet) {
+		ptcl = &particles[i];
+
 		ptcl->predictParticleSecondOrder(current_time - ptcl->CurrentTimeIrr, pos, vel);
 
-		if (ptcl->isCMptcl) {
-			Particle* members;
-			for (int j=0; j < ptcl->NumberOfMember; j++) {
-				members = &particles[ptcl->Members[j]];
-				write_out_group(outputFile, ptcl, members, pos, vel);
-			}
+		Particle* members;
+		for (int j=0; j < ptcl->NumberOfMember; j++) {
+			members = &particles[ptcl->Members[j]];
+			write_out_group(outputFile, ptcl, members, pos, vel);
 		}
-		else
-			write_out(outputFile, ptcl, pos, vel);
-
-// write_neighbor(output_nn, ptcl);
 	}
 
 	// Close the file

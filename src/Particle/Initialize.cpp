@@ -96,14 +96,6 @@ void CalculateAcceleration01(Particle* ptcl1) {
 	return;
 }
 
-
-	/*
-		// Calculate 2nd and 3rd derivatives of acceleration
-		if (restart) {
-			;
-		}
-	*/
-
 void CalculateAcceleration23(Particle* ptcl1) {
 
 	double x[Dim], v[Dim], a21[Dim], a21dot[Dim], a1[Dim], a2[Dim], a1dot[Dim], a2dot[Dim];

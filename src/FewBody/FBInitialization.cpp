@@ -8,6 +8,9 @@ void computeCMAcceleration(Particle* ptclCM);
 
 void deleteGroup(Particle* ptclCM) {
 
+	E_binary -= ptclCM->GroupInfo->sym_int.getEtot();
+	E_binary_SD -= ptclCM->GroupInfo->sym_int.getEtotSlowDown();
+
 	Group* ptclGroup = ptclCM->GroupInfo;
 
 	ptclCM->NewNumberOfNeighbor = ptclGroup->sym_int.particles.getSize();
@@ -248,6 +251,9 @@ void NewFBInitialization(Particle* ptclCM) {
 	ptclGroup->sym_int.initialIntegration(ptclGroup->CurrentTime*EnzoTimeStep);
     ptclGroup->sym_int.info.calcDsAndStepOption(ptclGroup->manager.step.getOrder(), ptclGroup->manager.interaction.gravitational_constant, ptclGroup->manager.ds_scale);
 
+	E_binary += ptclGroup->sym_int.getEtot();
+	E_binary_SD += ptclGroup->sym_int.getEtotSlowDown();
+
 	/* // Currently, we use a_reg of ptcl, so we don't need to newly set TimeLevelReg, TimeStepReg, TimeBlockReg by EW 2025.7.18
 	ptclCM->calculateTimeStepReg();
 	if (ptclCM->TimeLevelReg <= ptcl->TimeLevelReg-1 
@@ -352,8 +358,14 @@ void NewFBInitialization3(Group* group) {
 	It seems that this is right solution! by EW 2025.7.6
 	*/
 
+	E_binary -= group->sym_int.getEtot();
+	E_binary_SD -= group->sym_int.getEtotSlowDown();
+
 	delete group;
 	ptclCM->GroupInfo = ptclGroup;
+
+	E_binary += ptclGroup->sym_int.getEtot();
+	E_binary_SD += ptclGroup->sym_int.getEtotSlowDown();
 
 	fprintf(workerout, "The ID of CM is %d.\n", ptclCM->PID);
 
