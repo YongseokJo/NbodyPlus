@@ -75,7 +75,7 @@ Performance performance;
 double E_binary;	// Total binary energy in a processor
 double E_binary_SD; // Total slowdown binary energy in a processor
 double E_merger; 	// Total merger energy in a processor
-double E_PN;		// Total post-Newtonian energy in a processor
+double E_PN;		// Total post-Newtonian energy in a processor // Experimental one.. It seems not working well by EW 2025.8.19
 
 void DefaultGlobal() {
 
