@@ -107,7 +107,7 @@ void WorkerRoutines() {
 				ptcl->calculateTimeStepIrr();
 				// /*
 				if (ptcl->NumberOfNeighbor == 0) {
-					/*
+					// /*
 					if (ptcl->CurrentBlockIrr != ptcl->CurrentBlockReg || ptcl->CurrentTimeIrr != ptcl->CurrentBlockReg*time_step) {
 						fprintf(stderr, "PID: %d\n", ptcl->PID);
 						fprintf(stderr, "CurrentBlockIrr: %llu, CurrentBlockReg: %llu\n", ptcl->CurrentBlockIrr, ptcl->CurrentBlockReg);
@@ -118,7 +118,7 @@ void WorkerRoutines() {
 						assert(ptcl->CurrentBlockIrr == ptcl->CurrentBlockReg);
 						assert(ptcl->CurrentTimeIrr == ptcl->CurrentBlockReg*time_step);
 					}
-					*/
+					// */
 					ptcl->CurrentBlockIrr = ptcl->CurrentBlockReg;
 					ptcl->CurrentTimeIrr = ptcl->CurrentBlockReg*time_step;
 				}
@@ -266,6 +266,37 @@ void WorkerRoutines() {
 				std::cout << "(SDAR) Processor " << MyRank<< ": PID= "<<ptcl->PID << " NewFBInitialization3 done!" <<std::endl;
 				break;
 #endif 
+
+			case PrepareGPUCalc: {
+
+				int J_start = (MyRank - 1) * (global_variable->LastParticleIndex + 1) / NumberOfWorker;
+				int J_end   = MyRank * (global_variable->LastParticleIndex + 1) / NumberOfWorker;
+
+				std::vector<std::array<float, 3>> positions;
+				std::vector<std::array<float, 3>> velocities;
+				float position[3];
+				float velocity[3];
+
+				for (int j = J_start; j < J_end; j++) {
+
+					ptcl = &particles[j];
+
+					if (!ptcl->isActive)
+						continue;
+
+					if (ptcl->NumberOfNeighbor == 0)
+						ptcl->predictParticleSecondOrder(next_time-ptcl->CurrentTimeReg, position, velocity);
+					else
+						ptcl->predictParticleSecondOrder(next_time-ptcl->CurrentTimeIrr, position, velocity);
+
+					positions.push_back({ position[0], position[1], position[2] });
+					velocities.push_back({ velocity[0], velocity[1], velocity[2] });
+				}
+				MPI_Send(positions.data(), positions.size() * 3, MPI_FLOAT, ROOT, 0, MPI_COMM_WORLD);
+				MPI_Send(velocities.data(), velocities.size() * 3, MPI_FLOAT, ROOT, 1, MPI_COMM_WORLD);
+
+				continue;
+			}
 
 			case Synchronize: // Synchronize
 				MPI_Win_sync(win);  // Synchronize memory

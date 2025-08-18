@@ -640,7 +640,7 @@ void RootRoutines() {
                 performance.IrregularUpdate +=
                     std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
 #endif
-
+				int OriginalParticleListSize;
 #ifdef FEWBODY
 
 #ifdef PERFORMANCETRACE
@@ -650,8 +650,8 @@ void RootRoutines() {
 #ifdef NSIGHT
 				nvtxRangePushA("FewBodyTermination");
 #endif
-				int OriginalSize = ThisLevelNode->ParticleList.size();
-				for (int i=0; i<OriginalSize; i++ ){
+				OriginalParticleListSize = ThisLevelNode->ParticleList.size();
+				for (int i=0; i<OriginalParticleListSize; i++ ){
 					ptcl = &particles[ThisLevelNode->ParticleList[i]];
 					if (ptcl->getBinaryInterruptState() == BinaryInterruptState::merger ||
 						ptcl->getBinaryInterruptState() == BinaryInterruptState::terminated) {
@@ -804,12 +804,14 @@ void RootRoutines() {
 #endif
 						}
 #endif
+						// Temporary test... If this works, RegularMap version should be updated too by EW 2025.08.18 // It works well!!
+						RegularList.erase(ptcl->ParticleIndex);
 						FBTermination(ptcl);
 					}
 				}
 
 				if (bin_termination) {
-					for (int i=OriginalSize; i<ThisLevelNode->ParticleList.size(); i++) {
+					for (int i=OriginalParticleListSize; i<ThisLevelNode->ParticleList.size(); i++) {
 						ptcl = &particles[ThisLevelNode->ParticleList[i]];
 #ifdef MULTIMAP
 #ifdef PERFORMANCETRACE
@@ -919,7 +921,7 @@ void RootRoutines() {
 #ifdef NSIGHT
 				nvtxRangePushA("FormBinaries");
 #endif
-				int OriginalParticleListSize = ThisLevelNode->ParticleList.size();
+				OriginalParticleListSize = ThisLevelNode->ParticleList.size();
 				int rank_delete, rank_new;
 #ifdef DEBUG
 				std::cout << "formBinaries starts" << std::endl;
@@ -1005,6 +1007,10 @@ void RootRoutines() {
 							std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_BSE - start_point_BSE).count();
 #endif
 #endif
+						// Temporary test... If this works, RegularMap version should be updated too by EW 2025.08.18 // It works well!!
+						for (int i = 0; i < ptclCM->NewNumberOfNeighbor; i++)
+							RegularList.erase(ptclCM->NewNeighbors[i]);
+
 						queue.task = MakeGroup;
 						queue.pid = ptclCM->ParticleIndex;
 						workers[rank_new].addQueue(queue);
@@ -1116,13 +1122,17 @@ void RootRoutines() {
 					continue;
 				}
 #else // no multimap
+				/* // I didn't erase this yet because MultiMap should be fixed too by EW 2025.8.18
 				for (auto it = RegularList.begin(); it != RegularList.end(); ) {
-					if (!particles[*it].isActive)
+					if (!particles[*it].isActive) {
 						it = RegularList.erase(it);
+						fprintf(stderr, "bin_term or new_binaries... Why PID: %d is inactive? (NRTB: %llu)\n", particles[*it].PID, NextRegTimeBlock);
+						assert(particles[*it].isActive);
+					}
 					else
 						++it;
 				}
-
+				*/
 				if (RegularList.empty())
 					continue;
 #endif
