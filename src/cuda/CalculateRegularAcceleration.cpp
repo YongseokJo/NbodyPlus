@@ -228,14 +228,32 @@ void sendAllParticlesToGPU(double new_time, const int& RegularListSize) {
 
 	std::vector<Jparticle> Jparticles;
 	Jparticles.resize(NumberOfParticle);
-	int JparticlesSize = 0;
 
 	std::vector<Iparticle> Iparticles;
 	Iparticles.resize(RegularListSize);
-	int IparticlesSize = 0;
 
 	std::vector<int> RegularListIndices;
 	RegularListIndices.resize(RegularListSize);
+
+	std::vector<int> counts;
+	counts.resize(NumberOfProcessor * 2);
+	int send_buf[2] = {0, 0};
+
+	std::vector<int> Jcounts;
+	Jcounts.resize(NumberOfProcessor);
+	Jcounts[0] = 0;
+
+	std::vector<int> Icounts;
+	Icounts.resize(NumberOfProcessor);
+	Icounts[0] = 0;
+
+	std::vector<int> Jdispls;
+	Jdispls.resize(NumberOfProcessor);
+	Jdispls[0] = 0;
+
+	std::vector<int> Idispls;
+	Idispls.resize(NumberOfProcessor);
+	Idispls[0] = 0;
 
 	MPI_Waitall(NumberOfWorker, requests, MPI_STATUSES_IGNORE);
 
@@ -252,31 +270,25 @@ void sendAllParticlesToGPU(double new_time, const int& RegularListSize) {
 #endif
 */
 
-	int completed = 0;
-	MPI_Status status;
-	int completed_rank;
-	int Jparticles_count;
-	int Iparticles_count;
-	while (completed < NumberOfWorker) {
-		MPI_Probe(MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, &status);
-		completed_rank = status.MPI_SOURCE;
-		MPI_Get_count(&status, JparticleType, &Jparticles_count);
+	MPI_Gather(send_buf, 2, MPI_INT, counts.data(), 2, MPI_INT, ROOT, MPI_COMM_WORLD);
 
-		MPI_Recv(Jparticles.data() 			+ JparticlesSize, 	Jparticles_count, JparticleType,	completed_rank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-		JparticlesSize += Jparticles_count;
-
-		MPI_Probe(MPI_ANY_SOURCE, 1, MPI_COMM_WORLD, &status);
-		completed_rank = status.MPI_SOURCE;
-		MPI_Get_count(&status, IparticleType, &Iparticles_count);
-
-		MPI_Recv(Iparticles.data()			+ IparticlesSize,	Iparticles_count, IparticleType,	completed_rank, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-		MPI_Recv(RegularListIndices.data()	+ IparticlesSize,	Iparticles_count, MPI_INT,			completed_rank, 2, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-		IparticlesSize += Iparticles_count;
-		completed++;
+	for (int rank = 1; rank < NumberOfProcessor; rank++) {
+	
+		Jcounts[rank] = counts[rank * 2 + 0];
+		Icounts[rank] = counts[rank * 2 + 1];
+	
+		Jdispls[rank] = Jdispls[rank - 1] + Jcounts[rank - 1];
+		Idispls[rank] = Idispls[rank - 1] + Icounts[rank - 1];
 	}
-	assert(completed == NumberOfWorker);
-	assert(JparticlesSize == NumberOfParticle);
-	assert(IparticlesSize == RegularListSize);
+	assert(Jdispls[NumberOfProcessor - 1] + Jcounts[NumberOfProcessor - 1] == NumberOfParticle);
+	assert(Idispls[NumberOfProcessor - 1] + Icounts[NumberOfProcessor - 1] == RegularListSize);
+
+	MPI_Gatherv(nullptr, 0, JparticleType, 
+				Jparticles.data(), Jcounts.data(), Jdispls.data(), JparticleType, ROOT, MPI_COMM_WORLD);
+	MPI_Gatherv(nullptr, 0, IparticleType, 
+				Iparticles.data(), Icounts.data(), Idispls.data(), IparticleType, ROOT, MPI_COMM_WORLD);
+	MPI_Gatherv(nullptr, 0, MPI_INT,
+				RegularListIndices.data(), Icounts.data(), Idispls.data(), MPI_INT, ROOT, MPI_COMM_WORLD);
 
 /*
 #ifdef PERFORMANCETRACE

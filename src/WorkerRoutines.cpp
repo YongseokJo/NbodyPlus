@@ -299,9 +299,15 @@ void WorkerRoutines() {
 
 				}
 
-				MPI_Send(Jparticles.data(), 		Jparticles.size(), 			JparticleType,	ROOT, 0, MPI_COMM_WORLD);
-				MPI_Send(Iparticles.data(),			Iparticles.size(),			IparticleType,	ROOT, 1, MPI_COMM_WORLD);
-				MPI_Send(LocalRegularList.data(),	LocalRegularList.size(),	MPI_INT,		ROOT, 2, MPI_COMM_WORLD);
+				int sizes[2] = {Jparticles.size(), Iparticles.size()};
+				MPI_Gather(sizes, 2, MPI_INT, nullptr, 0, MPI_INT, ROOT, MPI_COMM_WORLD);
+
+				MPI_Gatherv(Jparticles.data(), sizes[0], JparticleType,	
+							nullptr, nullptr, nullptr, JparticleType, ROOT, MPI_COMM_WORLD);
+				MPI_Gatherv(Iparticles.data(), sizes[1], IparticleType,	
+							nullptr, nullptr, nullptr, IparticleType, ROOT, MPI_COMM_WORLD);
+				MPI_Gatherv(LocalRegularList.data(), sizes[1], MPI_INT,
+							nullptr, nullptr, nullptr, MPI_INT, ROOT, MPI_COMM_WORLD);
 
 				continue;
 			}
