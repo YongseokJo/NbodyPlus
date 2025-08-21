@@ -301,6 +301,51 @@ struct Particle {
         return;
     }
 
+	void predictParticleSecondOrder(double dt, std::vector<Jparticle>& jparticles, std::vector<Iparticle>& iparticles, std::vector<int>& localRegularList) {
+
+		dt = dt*EnzoTimeStep;
+
+		Iparticle iptcl;
+		Jparticle jptcl;
+
+		if (dt == 0) {
+			jptcl.posx		= static_cast<CUDA_REAL>(Position[0]);
+			jptcl.posy		= static_cast<CUDA_REAL>(Position[1]);
+			jptcl.posz		= static_cast<CUDA_REAL>(Position[2]);
+			jptcl.velx		= static_cast<CUDA_REAL>(Velocity[0]);
+			jptcl.vely		= static_cast<CUDA_REAL>(Velocity[1]);
+			jptcl.velz		= static_cast<CUDA_REAL>(Velocity[2]);
+			jptcl.mass		= static_cast<CUDA_REAL>(Mass);
+			jptcl.index		= static_cast<CUDA_INT>(ParticleIndex);
+			jparticles.push_back(jptcl);
+
+		} else {
+			jptcl.posx		= static_cast<CUDA_REAL>(((a_tot[0][1]*dt/3 + a_tot[0][0])*dt/2 + Velocity[0])*dt + Position[0]);
+			jptcl.posy		= static_cast<CUDA_REAL>(((a_tot[1][1]*dt/3 + a_tot[1][0])*dt/2 + Velocity[1])*dt + Position[1]);
+			jptcl.posz		= static_cast<CUDA_REAL>(((a_tot[2][1]*dt/3 + a_tot[2][0])*dt/2 + Velocity[2])*dt + Position[2]);
+			jptcl.velx		= static_cast<CUDA_REAL>((a_tot[0][1]*dt/2 + a_tot[0][0])*dt   + Velocity[0]);
+			jptcl.vely		= static_cast<CUDA_REAL>((a_tot[1][1]*dt/2 + a_tot[1][0])*dt   + Velocity[1]);
+			jptcl.velz		= static_cast<CUDA_REAL>((a_tot[2][1]*dt/2 + a_tot[2][0])*dt   + Velocity[2]);
+			jptcl.mass		= static_cast<CUDA_REAL>(Mass);
+			jptcl.index		= static_cast<CUDA_INT>(ParticleIndex);
+			jparticles.push_back(jptcl);
+		}
+		if (CurrentBlockReg + TimeBlockReg == global_variable->NextRegTimeBlock) {
+			iptcl.posx		= jptcl.posx;
+			iptcl.posy		= jptcl.posy;
+			iptcl.posz		= jptcl.posz;
+			iptcl.velx		= jptcl.velx;
+			iptcl.vely		= jptcl.vely;
+			iptcl.velz		= jptcl.velz;
+			iptcl.r2		= static_cast<CUDA_REAL>(RadiusOfNeighbor);
+			iptcl.dtr		= static_cast<CUDA_REAL>(TimeBlockReg*time_step*EnzoTimeStep);
+			iparticles.push_back(iptcl);
+			localRegularList.push_back(ParticleIndex);
+		}
+	}
+
+	std::tuple<std::vector<Jparticle>, std::vector<Iparticle>, std::vector<int>> Particle::predictParticleSecondOrder();
+
 	void correctParticleFourthOrder(double dt, double pos[], double vel[], double a[3][4]);
 
 

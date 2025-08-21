@@ -21,6 +21,8 @@ int NumberOfWorker;
 int NumberOfCommunication;
 
 MPI_Datatype QueueType;
+MPI_Datatype IparticleType;
+MPI_Datatype JparticleType;
 
 GlobalVariable *global_variable;
 GlobalVariable *global_variable_original;

@@ -462,7 +462,7 @@ __global__	void initialize(CUDA_REAL* result, CUDA_REAL* diff, int n, int m, int
 		diff[_six*idx + 5] = 0.;
 	}
 
-	#ifdef old
+#ifdef old
 	if (idx < m * n) {
 		int i = idx / n;
 		int j = idx % n;
@@ -481,7 +481,7 @@ __global__	void initialize(CUDA_REAL* result, CUDA_REAL* diff, int n, int m, int
 				*/
 		}
 	}
-	#endif
+#endif
 }
 
 // CUDA kernel to compute pairwise differences for a subset of particles
@@ -625,7 +625,7 @@ __global__ void reduce_forces(const CUDA_REAL *diff, CUDA_REAL *result, int n, i
 		six_idx = _six*(i*n+j);
 		warpSum[wid] = 0.;
 		__syncthreads();
-#pragma unroll 
+		#pragma unroll
 		for (k=0;k<_six;k++) { // ax ay az adotx adoty adotz
 
 			sum = (i < m && j < n) ? diff[six_idx+k] : 0;
@@ -674,7 +674,7 @@ __global__ void reduce_forces(const CUDA_REAL *diff, CUDA_REAL *result, int n, i
 		} // reduce across threads
 	}
 	if (wid == 0 && lane == 0 && i < m) {
-#pragma unroll
+		#pragma unroll
 		for (k=0; k<_six;k++) {
 			//printf("%d = (%e)\n", threadIdx.x, res[k]);
 			result[_six*i+k] = res[k];
@@ -696,7 +696,7 @@ __global__ void reduce_forces(const CUDA_REAL *diff, CUDA_REAL *result, int n, i
 	int k;
 
 	//printf("old version\n");
-#pragma unroll 
+	#pragma unroll 
 	for (k=0;k<_six;k++) {
 		sum = (i < m && j < n) ? diff[six_idx+k] : 0;
 		/*

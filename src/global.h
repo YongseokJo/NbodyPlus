@@ -29,6 +29,8 @@ extern int NumberOfCommunication;
 extern GlobalVariable *global_variable;
 extern GlobalVariable *global_variable_original;
 extern MPI_Datatype QueueType;
+extern MPI_Datatype IparticleType;
+extern MPI_Datatype JparticleType;
 
 extern int *ActiveIndexToOriginalIndex_orginal;
 extern int *ActiveIndexToOriginalIndex;

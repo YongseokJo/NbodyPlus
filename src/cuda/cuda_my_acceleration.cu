@@ -261,9 +261,9 @@ void GetAcceleration(
 			}
 		}
 
-		#ifdef NSIGHT
+#ifdef NSIGHT
 		nvtxRangePushA("NeighborList_array to NeighborList");
-		#endif
+#endif
 
 		for (int k = 0; k < NumTarget; k++) {
 			int offset = 0;
@@ -279,14 +279,14 @@ void GetAcceleration(
 				offset += count; 
 			}
 		}
-		#ifdef NSIGHT
+#ifdef NSIGHT
 		nvtxRangePop();
-		#endif
+#endif
 
 
-		#ifdef NSIGHT
+#ifdef NSIGHT
 		nvtxRangePushA("h_result to acc and adot");
-		#endif
+#endif
 		/* // modified code by EW 2025.5.24 // not tested yet!!!
 		memcpy(acc 	+ TargetStart	, h_result					, NumTarget * 3 * sizeof(CUDA_REAL));
 		memcpy(adot + TargetStart	, h_result + NumTarget * 3	, NumTarget * 3 * sizeof(CUDA_REAL));
@@ -301,7 +301,7 @@ void GetAcceleration(
 			adot[i+TargetStart][2] = h_result[_six*i+5];
 			
 
-			#ifdef debuggig_verification
+#ifdef debuggig_verification
 			cudaSetDevice(0);
 			toHost(h_r2, d_r2_array[0], NNB); // only for verification
 
@@ -331,12 +331,12 @@ void GetAcceleration(
 			}
 			fprintf(stderr, "\n");
 			exit(1);
-			#endif
+#endif
 		}
 		// */
-		#ifdef NSIGHT
+#ifdef NSIGHT
 		nvtxRangePop();
-		#endif
+#endif
 
     } // end of TargetStart loop
 	/*
@@ -422,12 +422,12 @@ void GetAcceleration(
 		cudaDeviceSynchronize();
 
 
-		#define newGather
-		#ifdef newGather
+#define newGather
+#ifdef newGather
 
-		#ifdef NSIGHT
+#ifdef NSIGHT
 		nvtxRangePushA("Reduction");
-		#endif
+#endif
 
 		// blockSize = 64;
 		// gridSize = (total_data_num + blockSize - 1) / blockSize;
@@ -440,37 +440,37 @@ void GetAcceleration(
 		gather_neighbor<<<gridDim2, blockDim2, 0, stream>>>\
 			(d_neighbor_block, d_num_neighbor, d_neighbor, NumTarget);
 
-		#ifdef NSIGHT
+#ifdef NSIGHT
 		nvtxRangePop();
-		#endif
+#endif
 
 		cudaStreamSynchronize(stream); // Wait for all operations to finish
 		toHost(h_result + _six * TargetStart, d_result, _six * NumTarget);
 
-		#ifdef NSIGHT
+#ifdef NSIGHT
 		nvtxRangePushA("Neighbor in CPU1");
-		#endif
+#endif
 
 		// toHost(NeighborList, d_neighbor, NumTarget * MaxNumNeighbor);
 		toHost(NeighborList, d_neighbor, NumTarget * MaxNumNeighbor);
 
 
-		#ifdef NSIGHT
+#ifdef NSIGHT
 		nvtxRangePop();
-		#endif
+#endif
 		// toHost(h_neighbor, d_neighbor, NumTarget * MaxNumNeighbor);//
-		#ifdef NSIGHT
+#ifdef NSIGHT
 		nvtxRangePushA("Neighbor in CPU2");
-		#endif
+#endif
 
 		toHost(h_num_neighbor, d_num_neighbor, NumTarget * GridDimY);
-		#ifdef NSIGHT
+#ifdef NSIGHT
 		nvtxRangePop();
-		#endif
+#endif
 
-		#ifdef NSIGHT
+#ifdef NSIGHT
 		nvtxRangePushA("Neighbor in CPU3");
-		#endif
+#endif
 
 		for (int i=0;i<NumTarget;i++) {
 	        int k = 0;
@@ -480,18 +480,18 @@ void GetAcceleration(
 			}
 			NumNeighbor[i + TargetStart] = k;
 		}
-		#ifdef NSIGHT
+#ifdef NSIGHT
 		nvtxRangePop();
-		#endif
+#endif
 
-		#else
+#else
 
 		cudaStreamSynchronize(stream); // Wait for all operations to finish
 		toHost(h_result + _six * TargetStart, d_result, _six * NumTarget);
 
-		#ifdef NSIGHT
+#ifdef NSIGHT
 		nvtxRangePushA("Neighbor in CPU");
-		#endif
+#endif
 
 		toHost(h_neighbor, d_neighbor_block, NumTarget * GridDimY * NNB_per_block);//
 		toHost(h_num_neighbor, d_num_neighbor, NumTarget * GridDimY);
@@ -521,18 +521,18 @@ void GetAcceleration(
 			NumNeighbor[i + TargetStart] = k;
 
 		}
-		#ifdef NSIGHT
+#ifdef NSIGHT
 		nvtxRangePop();
-		#endif
+#endif
 		
-		#endif
+#endif
 
 
 	}
 
-	#ifdef NSIGHT
+#ifdef NSIGHT
 	nvtxRangePushA("Out data");
-	#endif
+#endif
 	// out data
 	for (int i=0; i<NumTargetTotal; i++) {
 		acc[i][0]  = h_result[_six*i];
@@ -542,8 +542,8 @@ void GetAcceleration(
 		adot[i][1] = h_result[_six*i+4];
 		adot[i][2] = h_result[_six*i+5];
 		
-		// #define debuggig_verification
-		#ifdef debuggig_verification
+// #define debuggig_verification
+#ifdef debuggig_verification
 		toHost(h_r2, d_r2, NNB); // only for verification
 
 		fprintf(stderr, "%d (%d) neighbors of %d = ", i, h_target_list[i], NumNeighbor[i]);
@@ -572,12 +572,12 @@ void GetAcceleration(
 		}
 		fprintf(stderr, "\n");
 		exit(1);
-		#endif
+#endif
 	}
 
-	#ifdef NSIGHT
+#ifdef NSIGHT
 	nvtxRangePop();
-	#endif
+#endif
 	
 	cublasDestroy(handle);
 	/*
@@ -648,7 +648,7 @@ void _ReceiveFromHost(
 
 
 		if (!first) {
-			#ifdef MultiGPU
+#ifdef MultiGPU
 			my_free(h_ptcl, d_ptcl_array, deviceCount);
 			my_free(h_result, d_result_array, deviceCount);
 			my_free(h_num_neighbor, d_num_neighbor_array, deviceCount);
@@ -665,7 +665,7 @@ void _ReceiveFromHost(
 				cudaFreeHost(h_num_neighbor_array[i]);
 				cudaFreeHost(NeighborList_array[i]);
 			}
-			#else
+#else
 			my_free(h_ptcl				 , d_ptcl);
 			my_free(h_result       , d_result);
 			my_free(h_num_neighbor , d_num_neighbor);
@@ -673,21 +673,21 @@ void _ReceiveFromHost(
 			cudaFree(d_target);
 			cudaFree(d_r2);
 			cudaFree(d_diff);
-			#ifdef newGather
+#ifdef newGather
 			cudaFree(d_neighbor_block);
 			my_free(h_neighbor     , d_neighbor);
-			#else
+#else
 			my_free(h_neighbor     , d_neighbor_block);
-			#endif
+#endif
 			// cudaFree(d_magnitudes);
 			// cudaFree(d_acc);
 			// cudaFree(d_adot);
-			#endif
+#endif
 		}
 		else {
 			first = false;
 		}
-		#ifdef MultiGPU
+#ifdef MultiGPU
 		my_allocate(&h_ptcl         , d_ptcl_array        ,         _seven*variable_size, deviceCount, 0); // x,v,m
 		my_allocate(&h_result       , d_result_array      ,           _six*variable_size, deviceCount, 0);
 		my_allocate(&h_num_neighbor , d_num_neighbor_array, variable_size, deviceCount, 0);
@@ -705,7 +705,7 @@ void _ReceiveFromHost(
 			cudaMallocHost(&h_num_neighbor_array[i], variable_size * sizeof(int));
 			cudaMallocHost(&NeighborList_array[i], variable_size * MaxNumNeighbor * sizeof(int));
 		}
-		#else
+#else
 		my_allocate(&h_ptcl         , &d_ptcl        ,         _seven*variable_size); // x,v,m
 		my_allocate(&h_result       , &d_result      ,           _six*variable_size);
 		// my_allocate(&h_num_neighbor , &d_num_neighbor,                variable_size);
@@ -718,12 +718,12 @@ void _ReceiveFromHost(
 		cudaMalloc((void**)&d_neighbor_block, GridDimY * NNB_per_block * target_size * sizeof(int));
 		my_allocate(&h_neighbor     , &d_neighbor    , MaxNumNeighbor * target_size);
 		my_allocate(&h_num_neighbor , &d_num_neighbor,                GridDimY * variable_size);
-		#endif
+#endif
 
 
-		#ifdef debuggig_verification
+#ifdef debuggig_verification
 		cudaMallocHost((void**)&h_r2        ,        variable_size * sizeof(CUDA_REAL)); // only for verification
-		#endif debuggig_verification
+#endif debuggig_verification
 
 		// cudaMallocHost((void**)&h_num_neighbor, GridDimY * variable_size * sizeof(int));
 		// cudaMalloc((void**)&d_num_neighbor, GridDimY * variable_size * sizeof(int));
@@ -746,7 +746,7 @@ void _ReceiveFromHost(
 
 	//toDevice(h_background,d_background,variable_size);
 	
-	#ifdef MultiGPU
+#ifdef MultiGPU
 #ifdef DEBUG
 	fprintf(stderr, "Allocate for MultiGPU\n");
 #endif
@@ -772,7 +772,7 @@ void _ReceiveFromHost(
 
 	}
 
-	#else
+#else
 	/* // original code
 	for (int j=0; j<NNB; j++) {
 		for (int dim=0; dim<Dim; dim++) {
@@ -791,7 +791,7 @@ void _ReceiveFromHost(
 	toDevice(h_ptcl,d_ptcl, _seven*NNB, stream);
 	toDevice(r2    ,d_r2  ,        NNB, stream);
 
-	#endif
+#endif
 	//fprintf(stdout, "CUDA: receive done\n");
 
 }

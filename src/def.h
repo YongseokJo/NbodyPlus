@@ -81,8 +81,10 @@ typedef unsigned long long ULL;
 #define CUDA_FLOAT
 #ifdef CUDA_FLOAT
 typedef float CUDA_REAL;
+typedef int CUDA_INT;
 #else
 typedef double CUDA_REAL;
+typedef long long CUDA_INT;
 #endif
 
 #define nbodymax 100000000 //100000000 for node14

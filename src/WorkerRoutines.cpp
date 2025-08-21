@@ -3,6 +3,7 @@
 #include <errno.h>
 #include "global.h"
 #include "Queue.h"
+#include "cuda/cuda_defs.h"
 
 void broadcastFromRoot(double &data);
 void broadcastFromRoot(ULL &data);
@@ -277,13 +278,12 @@ void WorkerRoutines() {
 
 			case PrepareGPUCalc: {
 
+				std::vector<Jparticle> Jparticles;
+				std::vector<Iparticle> Iparticles;
+				std::vector<int> LocalRegularList;
+
 				int J_start = (MyRank - 1) * (global_variable->LastParticleIndex + 1) / NumberOfWorker;
 				int J_end   = MyRank * (global_variable->LastParticleIndex + 1) / NumberOfWorker;
-
-				std::vector<std::array<float, 3>> positions;
-				std::vector<std::array<float, 3>> velocities;
-				float position[3];
-				float velocity[3];
 
 				for (int j = J_start; j < J_end; j++) {
 
@@ -293,15 +293,15 @@ void WorkerRoutines() {
 						continue;
 
 					if (ptcl->NumberOfNeighbor == 0)
-						ptcl->predictParticleSecondOrder(next_time-ptcl->CurrentTimeReg, position, velocity);
+						ptcl->predictParticleSecondOrder(next_time-ptcl->CurrentTimeReg, Jparticles, Iparticles, LocalRegularList);
 					else
-						ptcl->predictParticleSecondOrder(next_time-ptcl->CurrentTimeIrr, position, velocity);
+						ptcl->predictParticleSecondOrder(next_time-ptcl->CurrentTimeIrr, Jparticles, Iparticles, LocalRegularList);
 
-					positions.push_back({ position[0], position[1], position[2] });
-					velocities.push_back({ velocity[0], velocity[1], velocity[2] });
 				}
-				MPI_Send(positions.data(), positions.size() * 3, MPI_FLOAT, ROOT, 0, MPI_COMM_WORLD);
-				MPI_Send(velocities.data(), velocities.size() * 3, MPI_FLOAT, ROOT, 1, MPI_COMM_WORLD);
+
+				MPI_Send(Jparticles.data(), 		Jparticles.size(), 			JparticleType,	ROOT, 0, MPI_COMM_WORLD);
+				MPI_Send(Iparticles.data(),			Iparticles.size(),			IparticleType,	ROOT, 1, MPI_COMM_WORLD);
+				MPI_Send(LocalRegularList.data(),	LocalRegularList.size(),	MPI_INT,		ROOT, 2, MPI_COMM_WORLD);
 
 				continue;
 			}
