@@ -4,6 +4,9 @@
 #include "def.h"
 #include <cmath>
 #include "cstring"
+#include <vector>
+#include "cuda/cuda_defs.h"
+#include "GlobalVariable.h"
 
 // SDAR
 #include "Common/Float.h"
@@ -18,8 +21,10 @@
 
 extern double InitialNeighborRadius;
 extern double EnzoTimeStep;
+extern GlobalVariable *global_variable;
 struct Particle;
 extern Particle *particles;
+extern double time_step;
 
 enum class BinaryInterruptState:int {
 	none = 0, 
@@ -343,8 +348,6 @@ struct Particle {
 			localRegularList.push_back(ParticleIndex);
 		}
 	}
-
-	std::tuple<std::vector<Jparticle>, std::vector<Iparticle>, std::vector<int>> Particle::predictParticleSecondOrder();
 
 	void correctParticleFourthOrder(double dt, double pos[], double vel[], double a[3][4]);
 

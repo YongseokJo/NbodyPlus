@@ -14,7 +14,7 @@
 #include <nvToolsExt.h>
 #endif
 
-void sendAllParticlesToGPU(double new_time, const int& RegularListSize);
+void sendAllParticlesToGPU(double new_time, const int& RegularListSize, std::vector<int>& RegularListIndices)
 
 /*
  *  Purporse: calculate acceleration and neighbors of regular particles by sending them to GPU
@@ -64,7 +64,8 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int>& RegularList, QueueSc
 	nvtxRangePushA("sendAllParticlesToGPU");
 #endif
 	int RegularListSize = RegularList.size();
-	sendAllParticlesToGPU(new_time, RegularListSize);  // needs to be updated
+	std::vector<int> RegularListIndices;
+	sendAllParticlesToGPU(new_time, RegularListSize, RegularListIndices);  // needs to be updated
 #ifdef NSIGHT
 	nvtxRangePop();
 #endif
@@ -213,7 +214,7 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int>& RegularList, QueueSc
 
 
 // (Query MY) Let's optimize this function later. Copying data to h_ptcl in _ReceiveFromHost of cuda_my_acceleation.cpp seems super inefficient. 2025.5.24
-void sendAllParticlesToGPU(double new_time, const int& RegularListSize) {
+void sendAllParticlesToGPU(double new_time, const int& RegularListSize, std::vector<int>& RegularListIndices) {
 
 /*
 #ifdef PERFORMANCETRACE
@@ -232,7 +233,6 @@ void sendAllParticlesToGPU(double new_time, const int& RegularListSize) {
 	std::vector<Iparticle> Iparticles;
 	Iparticles.resize(RegularListSize);
 
-	std::vector<int> RegularListIndices;
 	RegularListIndices.resize(RegularListSize);
 
 	std::vector<int> counts;
@@ -303,7 +303,7 @@ void sendAllParticlesToGPU(double new_time, const int& RegularListSize) {
 	start_point_routine = std::chrono::high_resolution_clock::now();
 #endif
 */
-	SendToDevice(Jparticles, Iparticles, RegularListIndices);
+	SendToDevice(Jparticles, Iparticles);
 /*
 #ifdef PERFORMANCETRACE
 	end_point_routine = std::chrono::high_resolution_clock::now();

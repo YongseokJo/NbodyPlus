@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <cmath>
 #include <cassert>
+#include <vector>
 #include <cuda.h>  // CUDA Driver API
 #include <cublas_v2.h>
 #include <cuda_runtime.h>
@@ -343,8 +344,8 @@ void GetAcceleration(
 
 
 void _ReceiveFromHost(
-		std::vector<Iparticle>& hI,
-		std::vector<Jparticle>& hJ
+		std::vector<Jparticle>& hJ,
+		std::vector<Iparticle>& hI
 		){
 
 	//variable_size stands for the (maximum) number of j (background particles)
@@ -419,7 +420,7 @@ void _ReceiveFromHost(
 		}
 #ifdef debuggig_verification
 		cudaMallocHost((void**)&h_r2        ,        variable_size * sizeof(CUDA_REAL)); // only for verification
-#endif debuggig_verification
+#endif
 	} //end of if (first) || (new_size(NNB) > variable_size)
 #ifdef DEBUG
 	size_t freeMem, totalMem;
@@ -776,8 +777,8 @@ extern "C" {
 	void CloseDevice(){
 		_CloseDevice();
 	}
-	void SendToDevice(Iparticle hI, Jparticle hJ) {
-		_ReceiveFromHost(hI, hJ);
+	void SendToDevice(std::vector<Jparticle>& hJ, std::vector<Iparticle>& hI) { {
+		_ReceiveFromHost(hJ, hI);
 	}
 	void ProfileDevice(int *irank){
 		_ProfileDevice(*irank);

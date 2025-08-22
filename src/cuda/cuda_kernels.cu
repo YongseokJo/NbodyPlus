@@ -295,8 +295,6 @@ __global__ void gather_numneighbor(const int* numneighbor_block, int* gathered_n
 	gathered_numneighbor[i] = temp;
 }
 
-#endif
-
 __global__	void initialize(CUDA_REAL* result, CUDA_REAL* diff, int n, int m, int* subset) {
 	int idx = blockIdx.x * blockDim.x + threadIdx.x;
 	if (idx < m*n) {
