@@ -450,9 +450,9 @@ void toDevice(T *host, T *device, const int size, cudaStream_t &stream) {
         auto [aJ, bJ] = block_range(nJ, i, deviceCount);
         size_t numJ = (bJ > aJ) ? (bJ - aJ) : 0;
         // copy the J slice for this device
-        toDevice(hJ + aJ, gpu[i].dJ, numJ, gpu[i].stream);
+        toDevice(hJ.data() + aJ, gpu[i].dJ, numJ, gpu[i].stream);
         // I: replicate to every device (common pattern). If you want to partition I, do block_range on nI instead.
-        toDevice(hI, gpu[i].dI, nI, gpu[i].stream);
+        toDevice(hI.data(), gpu[i].dI, nI, gpu[i].stream);
     }
 
 }
