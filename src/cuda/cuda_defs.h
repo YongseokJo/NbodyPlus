@@ -33,4 +33,5 @@ struct Jparticle {
     CUDA_INT index;
 };
 
+
 #endif
