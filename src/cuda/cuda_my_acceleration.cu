@@ -27,7 +27,6 @@ static long long numInter;
 static int icall,ini,isend;
 // static int nbodymax;
 static int deviceCount;
-static int target_size_per_gpu;
 
 static int devid, numGPU;
 static bool is_open = false;
@@ -64,7 +63,8 @@ struct GPU {
     int*       d_neighbor  = nullptr;
     int*       d_neighbor_count = nullptr;
     int*       d_neighbor_count_block = nullptr;
-    CUDA_REAL* d_result= nullptr;
+    CUDA_REAL* d_result = nullptr;
+    CUDA_REAL* d_result_block = nullptr;
 	Jparticle* dJ = nullptr;
 	Iparticle* dI = nullptr;
 	//CUDA_INT* dIdx = nullptr;
@@ -128,7 +128,7 @@ void GetAcceleration(
     // or any chunk size you prefer
 	int NumTarget;
 
-    for (int TargetStart = 0; TargetStart < NumTargetTotal; TargetStart += target_size) {
+    for (int TargetStart = 0; TargetStart < NumTargetTotal; TargetStart += I_capacity) {
         // How many targets remain in this chunk
         // int bigChunk = std::min(target_size, NumTargetTotal - TargetStart);
 		NumTarget = std::min(I_capacity, NumTargetTotal-TargetStart);
@@ -183,51 +183,52 @@ void GetAcceleration(
 				gpu[i].d_neighbor_count_block,
                 NumTarget,
                 deviceNumJ, //NNB
-                TargetStart,   // i_start
+                TargetStart   // i_start
             );
 			//cudaStreamSynchronize(streams[i]);
 
 			dim3 blockDim3(16, 6);       // 16 threads along X, 6 along Y
 			dim3 gridDim3((NumTarget+15)/16, 1);
-			reduce_forces_kernel<<<gridDim3, blockDim3, 0, streams[i]>>>(d_diff_array[i], d_result_array[i], GridDimY, NumTarget);
+			reduce_forces_kernel<<<gridDim3, blockDim3, 0, streams[i]>>>(
+				gpu[i].d_result_block, gpu[i].d_result, GridDimY, NumTarget);
 
             gather_neighbor<<<gridDim2, blockDim2, 0, streams[i]>>>(
-                d_neighbor_block_array[i], 
-                d_num_neighbor_block_array[i], 
-                d_neighbor_array[i],
+                gpu[i].d_neighbor_block, 
+                gpu[i].d_neighbor_count_block, 
+                gpu[i].d_neighbor,
                 NumTarget
             );
 
 
             gather_numneighbor<<<gridDim2, blockDim2, 0, streams[i]>>>(
-                d_num_neighbor_block_array[i], 
-                d_num_neighbor_array[i], 
+                gpu[i].d_neighbor_block, 
+                gpu[i].d_neighbor_count_block, 
                 NumTarget
             );
 			//cudaStreamSynchronize(streams[i]);
 
             // Copy back partial results
-            toHost(h_result_array[i],
-                   d_result_array[i],
+            toHost(gpu[i].h_result,
+                   gpu[i].d_result,
                    _six * NumTarget,
-                   streams[i]);
+                   gpu[i].stream);
 
 
-            toHost(NeighborList_array[i],
-                   d_neighbor_array[i],
+            toHost(gpu[i].h_neighbor,
+                   gpu[i].d_neighbor,
                    NumTarget * MaxNumNeighbor,
-                   streams[i]);
+                   gpu[i].stream);
 			
-            toHost(h_num_neighbor_array[i],
-                   d_num_neighbor_array[i],
+            toHost(gpu[i].h_neighbor_count,
+                   gpu[i].d_neighbor_count,
                    NumTarget,
-                   streams[i]);
+                   gpu[i].stream);
         }
 
         // 2) Synchronize all devices, then copy results to host
         for (int i = 0; i < deviceCount; i++) {
             cudaSetDevice(i);
-			cudaStreamSynchronize(streams[i]);
+			cudaStreamSynchronize(gpu[i].stream);
         }
 		
 		for (int j = 0; j < NumTarget; j++) {
@@ -235,17 +236,16 @@ void GetAcceleration(
 			int result_idx = _six * target_idx;  // Precompute h_result index
 			NumNeighbor[j] = 0;
 
-			// Initialize h_result for this target
-			for (int k = 0; k < _six; k++) {
-				h_result[result_idx + k] = 0.0;
-			}
 
 			// Accumulate results across devices
 			for (int i = 0; i < deviceCount; i++) {
-				for (int k = 0; k < _six; k++) {
-					h_result[result_idx + k] += h_result_array[i][j * _six + k];
-				}
-				NumNeighbor[j] += h_num_neighbor_array[i][j];
+				acc[target_idx][0] = gpu[i].h_result[j * _six];
+				acc[target_idx][1] = gpu[i].h_result[j * _six + 1];
+				acc[target_idx][2] = gpu[i].h_result[j * _six + 2];
+				adot[target_idx][0] = gpu[i].h_result[j * _six + 3];
+				adot[target_idx][1] = gpu[i].h_result[j * _six + 4];
+				adot[target_idx][2] = gpu[i].h_result[j * _six + 5];
+				NumNeighbor[j] += gpu[i].h_neighbor_count[j];
 			}
 		}
 
@@ -256,13 +256,13 @@ void GetAcceleration(
 		for (int k = 0; k < NumTarget; k++) {
 			int offset = 0;
 			for (int i = 0; i < deviceCount; i++) {
-				int count = h_num_neighbor_array[i][k];
+				int count = gpu[i].h_neighbor_count[k];
 				if (offset + count > MaxNumNeighbor) {
 					fprintf(stderr, "ERROR: Sum of neighbors exceeds MaxNumNeighbor for target %d!\n", k);
 					// Handle error, e.g. break or throw
 				}
 				memcpy(&NeighborList[k * MaxNumNeighbor + offset],
-					&NeighborList_array[i][k * MaxNumNeighbor],
+					&gpu[i].h_neighbor[k * MaxNumNeighbor],
 					count * sizeof(int));
 				offset += count; 
 			}
@@ -275,53 +275,7 @@ void GetAcceleration(
 #ifdef NSIGHT
 		nvtxRangePushA("h_result to acc and adot");
 #endif
-		/* // modified code by EW 2025.5.24 // not tested yet!!!
-		memcpy(acc 	+ TargetStart	, h_result					, NumTarget * 3 * sizeof(CUDA_REAL));
-		memcpy(adot + TargetStart	, h_result + NumTarget * 3	, NumTarget * 3 * sizeof(CUDA_REAL));
-		*/
-		// /* // original code
-		for (int i=0; i<NumTarget; i++) {
-			acc[i+TargetStart][0]  = h_result[_six*i];
-			acc[i+TargetStart][1]  = h_result[_six*i+1];
-			acc[i+TargetStart][2]  = h_result[_six*i+2];
-			adot[i+TargetStart][0] = h_result[_six*i+3];
-			adot[i+TargetStart][1] = h_result[_six*i+4];
-			adot[i+TargetStart][2] = h_result[_six*i+5];
-			
 
-#ifdef debuggig_verification
-			cudaSetDevice(0);
-			toHost(h_r2, d_r2_array[0], NNB); // only for verification
-
-			fprintf(stderr, "%d (%d) neighbors of %d = ", i, h_target_list[i], NumNeighbor[i]);
-			for (int j=0;j<NumNeighbor[i];j++) {
-				fprintf(stderr, "%d, ", NeighborList[i * MaxNumNeighbor + j]);
-			}
-			fprintf(stderr, "\n");
-
-			// verification
-			fprintf(stderr, "%d (%d) neighbors of %d (veri)= ", i, h_target_list[i], NumNeighbor[i]);
-			double ix = h_ptcl[h_target_list[i]];
-			double iy = h_ptcl[h_target_list[i] + NNB * 1];
-			double iz = h_ptcl[h_target_list[i] + NNB * 2];
-			double i_r2 = h_r2[h_target_list[i]];
-			
-			fprintf(stderr, "h_r2 = %e \n", i_r2);
-
-			for (int j=0; j<NNB; j++) {
-				double dx = ix - h_ptcl[j];
-				double dy = iy - h_ptcl[j + NNB * 1];
-				double dz = iz - h_ptcl[j + NNB * 2];
-				double r2_temp = dx*dx + dy*dy + dz*dz;
-				if (r2_temp < i_r2) {
-					fprintf(stderr, "%d, (%e)", j, r2_temp);
-				}
-			}
-			fprintf(stderr, "\n");
-			exit(1);
-#endif
-		}
-		// */
 #ifdef NSIGHT
 		nvtxRangePop();
 #endif
@@ -372,7 +326,7 @@ void _ReceiveFromHost(
 		J_capacity = new_size(NNB);
 		// target_size = ((NNB > nbodymax/NNB) ? int(pow(2,ceil(log(nbodymax/NNB)/log(2.0)))) : NNB);
 		I_capacity = J_capacity;
-		target_size_per_gpu = I_capacity / deviceCount + 1;
+
 		fprintf(stderr, "variable_size=%d, target_size=%d\n", J_capacity, I_capacity);
 
 		if (!first) {
@@ -385,6 +339,7 @@ void _ReceiveFromHost(
 				my_free_d(gpu[i].dI);
 				my_free_d(gpu[i].d_neighbor_count_block);
 				my_free_d(gpu[i].d_neighbor_block);
+				my_free_d(gpu[i].d_result_block);
 			}
 		}
 		else {
@@ -400,6 +355,7 @@ void _ReceiveFromHost(
 			my_allocate_d(&gpu[i].d_neighbor_count_block, GridDimY * I_capacity);
 			my_allocate_d(&gpu[i].dJ, J_capacity);
 			my_allocate_d(&gpu[i].dI, I_capacity);
+			my_allocate_d(&gpu[i].d_result_block, _six * GridDimY * I_capacity);
 		}
 		/*
 		my_allocate(&h_result       , d_result_array      ,           _six*J_capacity, deviceCount, 0);
@@ -417,8 +373,8 @@ void _ReceiveFromHost(
 			cudaMallocHost(&h_result_array[i], _six*J_capacity * sizeof(CUDA_REAL));
 			cudaMallocHost(&h_num_neighbor_array[i], J_capacity * sizeof(int));
 			cudaMallocHost(&NeighborList_array[i], J_capacity * MaxNumNeighbor * sizeof(int));
-		*/
 		}
+		*/
 #ifdef debuggig_verification
 		cudaMallocHost((void**)&h_r2        ,        variable_size * sizeof(CUDA_REAL)); // only for verification
 #endif
@@ -434,23 +390,14 @@ void _ReceiveFromHost(
 				<< std::endl;
 	}
 #endif
-/*
-template <typename T>
-void toDevice(T *host, T *device, const int size, cudaStream_t &stream) {
-	cudaError_t cudaStatus;
-	cudaStatus = cudaMemcpyAsync(device, host, size * sizeof(T), cudaMemcpyHostToDevice, stream);
-	if (cudaStatus != cudaSuccess) {
-		fprintf(stderr, "cudaMemcpyHostToDevice failed: %s\n", cudaGetErrorString(cudaStatus));
-	}
-}
-*/
 
     // -------------------- H2D copies --------------------
     // J: partition across devices
+	size_t aJ, bJ;
     for (int i = 0; i < deviceCount; ++i) {
         cudaSetDevice(i);
-        auto [aJ, bJ] = block_range(nJ, i, deviceCount);
-        size_t numJ = (bJ > aJ) ? (bJ - aJ) : 0;
+		block_range(nJ, i, deviceCount, aJ, bJ);
+		size_t numJ = (bJ > aJ) ? (bJ - aJ) : 0;
         // copy the J slice for this device
         toDevice(hJ.data() + aJ, gpu[i].dJ, numJ, gpu[i].stream);
         // I: replicate to every device (common pattern). If you want to partition I, do block_range on nI instead.
@@ -488,7 +435,7 @@ void _InitializeDevice(int irank){
 	for (int deviceNum = 0; deviceNum < deviceCount; deviceNum++) {
 		cudaSetDevice(deviceNum);
 
-		gpu[i].id = i;
+		gpu[deviceNum].id = deviceNum;
 		cudaStreamCreate(&gpu[deviceNum].stream);
 
         // Force runtime to initialize driver context for this device
@@ -778,7 +725,7 @@ extern "C" {
 	void CloseDevice(){
 		_CloseDevice();
 	}
-	void SendToDevice(std::vector<Jparticle>& hJ, std::vector<Iparticle>& hI) { {
+	void SendToDevice(std::vector<Jparticle>& hJ, std::vector<Iparticle>& hI){
 		_ReceiveFromHost(hJ, hI);
 	}
 	void ProfileDevice(int *irank){

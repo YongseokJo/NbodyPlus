@@ -29,6 +29,7 @@ __global__ void compute_forces(const Iparticle* __restrict__ d_Ip, const Jpartic
 	// define i and j. in this code, grid is 2D and block is 1D
     int i = threadIdx.x + blockIdx.x * blockDim.x; // Unique thread index across all blocks
 	int tid = threadIdx.x;
+	int I;
 	// int BatchSize = blockDim.x;
 	int idx_save_size = gridDim.y * m;
 
@@ -38,8 +39,7 @@ __global__ void compute_forces(const Iparticle* __restrict__ d_Ip, const Jpartic
 	
 	while (i < m + BatchSize){ // even with i > m, the last block needs to assign the shared memory for each tid
 		int i_ptcl;
-		(i < m) ? i_ptcl = subset[i + i_start] : i_ptcl = subset[m - 1 + i_start]; //assign dummy values for the last block	
-
+		(i < m) ? i_ptcl = i + i_start : m - 1 + i_start; //assign dummy values for the last block	
 		Iparticle Ip = d_Ip[i_ptcl];
 		CUDA_REAL i_r2 = Ip.r2;
 		
