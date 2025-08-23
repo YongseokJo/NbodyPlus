@@ -33,9 +33,9 @@ struct Jparticle {
     CUDA_INT index;
 };
 
-inline std::pair<size_t,size_t> block_range(size_t N, int i, int P) {
-    size_t a = (N * i) / P;        // floor
-    size_t b = (N * (i + 1)) / P;  // floor
-    return {a, b};                 // half-open [a, b)
+inline void block_range(size_t N, int i, int P, size_t &a, size_t &b) {
+    a = (N * i) / P;        // floor
+    b = (N * (i + 1)) / P;  // floor
+    return;                 // half-open [a, b)
 }
 #endif

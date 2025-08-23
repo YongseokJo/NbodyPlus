@@ -103,7 +103,7 @@ void GetAcceleration(
     CUDA_REAL adot[][3],
     int NumNeighbor[],
     int *NeighborList,
-	std::vector<int>& RegularList
+	std::vector<int>& RegularListIndices
 ) {
     assert(is_open);
 	assert((NumTargetTotal > 0) && (NumTargetTotal <= NNB));
@@ -397,7 +397,7 @@ void _ReceiveFromHost(
     for (int i = 0; i < deviceCount; ++i) {
         cudaSetDevice(i);
 		block_range(nJ, i, deviceCount, aJ, bJ);
-		size_t numJ = (bJ > aJ) ? (bJ - aJ) : 0;
+		size_t numJ = (bJ > aJ) ? (bJ - aJ) : 0; // I think this is redundant! by EW 2025.8.24
         // copy the J slice for this device
         toDevice(hJ.data() + aJ, gpu[i].dJ, numJ, gpu[i].stream);
         // I: replicate to every device (common pattern). If you want to partition I, do block_range on nI instead.
@@ -732,7 +732,7 @@ extern "C" {
 		_ProfileDevice(*irank);
 	}
 	void CalculateAccelerationOnDevice(int *NumTargetTotal, int *h_target_list, CUDA_REAL acc[][3], CUDA_REAL adot[][3], int NumNeighbor[], int *NeighborList, std::vector<int>& RegularListIndices) {
-		GetAcceleration(*NumTargetTotal, h_target_list, acc, adot, NumNeighbor, NeighborList, RegularList);
+		GetAcceleration(*NumTargetTotal, h_target_list, acc, adot, NumNeighbor, NeighborList, RegularListIndices);
 	}
 }
 
