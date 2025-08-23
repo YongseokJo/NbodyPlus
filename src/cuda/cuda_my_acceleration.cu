@@ -102,7 +102,8 @@ void GetAcceleration(
     CUDA_REAL acc[][3],
     CUDA_REAL adot[][3],
     int NumNeighbor[],
-    int *NeighborList
+    int *NeighborList,
+	std::vector<int>& RegularList
 ) {
     assert(is_open);
 	assert((NumTargetTotal > 0) && (NumTargetTotal <= NNB));
@@ -783,8 +784,8 @@ extern "C" {
 	void ProfileDevice(int *irank){
 		_ProfileDevice(*irank);
 	}
-	void CalculateAccelerationOnDevice(int *NumTargetTotal, int *h_target_list, CUDA_REAL acc[][3], CUDA_REAL adot[][3], int NumNeighbor[], int *NeighborList) {
-		GetAcceleration(*NumTargetTotal, h_target_list, acc, adot, NumNeighbor, NeighborList);
+	void CalculateAccelerationOnDevice(int *NumTargetTotal, int *h_target_list, CUDA_REAL acc[][3], CUDA_REAL adot[][3], int NumNeighbor[], int *NeighborList, std::vector<int>& RegularListIndices) {
+		GetAcceleration(*NumTargetTotal, h_target_list, acc, adot, NumNeighbor, NeighborList, RegularList);
 	}
 }
 

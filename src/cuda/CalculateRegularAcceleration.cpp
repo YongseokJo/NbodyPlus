@@ -14,7 +14,7 @@
 #include <nvToolsExt.h>
 #endif
 
-void sendAllParticlesToGPU(double new_time, const int& RegularListSize, std::vector<int>& RegularListIndices)
+void sendAllParticlesToGPU(double new_time, const int& RegularListSize, std::vector<int>& RegularListIndices);
 
 /*
  *  Purporse: calculate acceleration and neighbors of regular particles by sending them to GPU
@@ -92,7 +92,7 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int>& RegularList, QueueSc
 	nvtxRangePushA("CalculateAccelerationOnDevice");
 #endif
 
-	CalculateAccelerationOnDevice(&ListSize, IndexList, AccRegReceive, AccRegDotReceive, NumNeighborReceive, ACListReceive);
+	CalculateAccelerationOnDevice(&ListSize, IndexList, AccRegReceive, AccRegDotReceive, NumNeighborReceive, ACListReceive, RegularListIndices);
   
 #ifdef NSIGHT
 	nvtxRangePop();
