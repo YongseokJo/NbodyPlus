@@ -12,7 +12,7 @@ __global__ void reduce_forces(const CUDA_REAL *diff, CUDA_REAL *result, int n, i
 __global__ void print_forces_subset(CUDA_REAL* result, int m, int n);
 
 // __global__ void compute_forces(const CUDA_REAL* __restrict__ ptcl, const CUDA_REAL* __restrict__ r2, CUDA_REAL* __restrict__ diff, int m, int n, const int* __restrict__ subset, int* __restrict__ neighbor, int* num_neighbor, int i_start, int j_start, int NNB);
-__global__ void compute_forces(const std::vector<Iparticle>& d_Ip, const std::vector<Iparticle>& d_Jp, CUDA_REAL* __restrict__ acc, int* __restrict__ neighbor, int* num_neighbor, int m, int n, int i_start);
+__global__ void compute_forces(const Iparticle* __restrict__ d_Ip, Jparticle* __restrict__ d_Jp, CUDA_REAL* __restrict__ acc, int* __restrict__ neighbor, int* num_neighbor, int m, int n, int i_start);
 __global__ void gather_neighbor(const int*  neighbor_block, const int*  num_neighbor, int* gathered_neighbor, int  m);
 __global__ void gather_numneighbor(const int* numneighbor_block, int* gathered_numneighbor, int m);
 

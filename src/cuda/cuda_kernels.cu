@@ -25,7 +25,7 @@ __global__ void print_forces_subset(CUDA_REAL* result, int m, int n) {
 // NJBlock = 28
 // NNB_per_block = 256;
 
-__global__ void compute_forces(const std::vector<Iparticle>& d_Ip, const std::vector<Iparticle>& d_Jp, CUDA_REAL* __restrict__ acc, int* __restrict__ neighbor, int* num_neighbor, int m, int n, int i_start){
+__global__ void compute_forces(const Iparticle* __restrict__ d_Ip, const Jparticle* __restrict__ d_Jp, CUDA_REAL* __restrict__ acc, int* __restrict__ neighbor, int* num_neighbor, int m, int n, int i_start){
 	// define i and j. in this code, grid is 2D and block is 1D
     int i = threadIdx.x + blockIdx.x * blockDim.x; // Unique thread index across all blocks
 	int tid = threadIdx.x;
@@ -41,6 +41,7 @@ __global__ void compute_forces(const std::vector<Iparticle>& d_Ip, const std::ve
 		(i < m) ? i_ptcl = subset[i + i_start] : i_ptcl = subset[m - 1 + i_start]; //assign dummy values for the last block	
 
 		Iparticle Ip = d_Ip[i_ptcl];
+		CUDA_REAL i_r2 = Ip.r2;
 		
 		int NumNeighbor = 0;
 		int idx_save = i * gridDim.y + blockIdx.y;
