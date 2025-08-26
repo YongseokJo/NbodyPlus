@@ -11,6 +11,7 @@
 #include "cuda_defs.h"
 #include "cuda_kernels.h"
 #include "cuda_routines.h"
+#include "../particle.h"
 
 #ifdef NSIGHT
 #include <nvToolsExt.h>
@@ -20,6 +21,7 @@
 
 extern int MyRank;
 const int ROOT = 0;
+extern Particle *particles;
 
 static int NNB;
 static CUDA_REAL time_send, time_grav, time_out, time_nb;
@@ -109,11 +111,7 @@ void block_range(size_t N, int i, int P, size_t &a, size_t &b) {
 
 void GetAcceleration(
     int NumTargetTotal,
-    int h_target_list[],
-    CUDA_REAL acc[][3],
-    CUDA_REAL adot[][3],
-    int NumNeighbor[],
-    int *NeighborList //	std::vector<int>& RegularList
+	std::vector<int>& RegularList
 ) {
     assert(is_open);
 	assert((NumTargetTotal > 0) && (NumTargetTotal <= NNB));
@@ -217,19 +215,25 @@ void GetAcceleration(
 			cudaStreamSynchronize(gpu[i].stream);
         }
 		
+		Particle* ptcl;
 		for (int j = 0; j < NumTarget; j++) {
-			int target_idx = TargetStart + j;  // Precompute base index
-			int result_idx = _six * target_idx;  // Precompute h_result index
 
-			// Accumulate results across devices
+			int target_idx = TargetStart + j;  // Precompute base index
+			ptcl = &particles[RegularList[j]];
+
+			ptcl->NewNumberOfNeighbor = 0;
+			for (int dim=0; dim < Dim; dim++) {
+				ptcl->a_irr[dim][0] = 0.0;
+				ptcl->a_irr[dim][1] = 0.0;
+			}
+
 			for (int i = 0; i < deviceCount; i++) {
-				acc[target_idx][0] += gpu[i].h_result[j * _six];
-				acc[target_idx][1] += gpu[i].h_result[j * _six + 1];
-				acc[target_idx][2] += gpu[i].h_result[j * _six + 2];
-				adot[target_idx][0] += gpu[i].h_result[j * _six + 3];
-				adot[target_idx][1] += gpu[i].h_result[j * _six + 4];
-				adot[target_idx][2] += gpu[i].h_result[j * _six + 5];
-				NumNeighbor[j] += gpu[i].h_neighbor_count[j];
+				memcpy(&ptcl->NewNeighbors[ptcl->NewNumberOfNeighbor], &gpu[i].h_neighbor[j * MaxNumNeighbor], gpu[i].h_neighbor_count[j] * sizeof(int));
+				ptcl->NewNumberOfNeighbor += gpu[i].h_neighbor_count[j];
+				for (int k = 0; k < 3; k++) {
+					ptcl->a_irr[k][0] += static_cast<double>(gpu[i].h_result[j * _six + k]);
+					ptcl->a_irr[k][1] += static_cast<double>(gpu[i].h_result[j * _six + k + 3]);
+				}
 			}
 		}
 
@@ -237,20 +241,6 @@ void GetAcceleration(
 		nvtxRangePushA("NeighborList_array to NeighborList");
 #endif
 
-		for (int k = 0; k < NumTarget; k++) {
-			int offset = 0;
-			for (int i = 0; i < deviceCount; i++) {
-				int count = gpu[i].h_neighbor_count[k];
-				if (offset + count > MaxNumNeighbor) {
-					fprintf(stderr, "ERROR: Sum of neighbors exceeds MaxNumNeighbor for target %d!\n", k);
-					// Handle error, e.g. break or throw
-				}
-				memcpy(&NeighborList[k * MaxNumNeighbor + offset],
-					&gpu[i].h_neighbor[k * MaxNumNeighbor],
-					count * sizeof(int));
-				offset += count; 
-			}
-		}
 #ifdef NSIGHT
 		nvtxRangePop();
 #endif
@@ -322,7 +312,7 @@ void _ReceiveFromHost(
 		fprintf(stderr, "variable_size=%d, target_size=%d\n", J_capacity, I_capacity);
 
 		if (!first) {
-			for (int i = 0; i < deviceCount; i++){
+			for (int i = 0; i < deviceCount; i++) {
 				cudaSetDevice(i);
 				my_free(gpu[i].h_result, gpu[i].d_result);
 				my_free(gpu[i].h_neighbor_count, gpu[i].d_neighbor_count);
@@ -337,7 +327,7 @@ void _ReceiveFromHost(
 		else {
 			first = false;
 		}
-		for (int i = 0; i < deviceCount; i++){
+		for (int i = 0; i < deviceCount; i++) {
 			cudaSetDevice(i);
 			my_allocate(&gpu[i].h_result, &gpu[i].d_result, _six*I_capacity); // x,v,m
 			my_allocate(&gpu[i].h_neighbor_count, &gpu[i].d_neighbor_count, I_capacity);
@@ -423,7 +413,7 @@ void _InitializeDevice(int irank){
 
 
 	if (MyRank == ROOT) {
-	fprintf(stderr, "# GPU initialization - rank: %d; HOST %s; NGPU %d; device: %d %s\n", irank, hostname,numGPU, devid, prop.name);
+		fprintf(stderr, "# GPU initialization - rank: %d; HOST %s; NGPU %d; device: %d %s\n", irank, hostname,numGPU, devid, prop.name);
 	}
 
 	gpu.resize(deviceCount);
@@ -436,7 +426,7 @@ void _InitializeDevice(int irank){
 
         // Force runtime to initialize driver context for this device
         cudaFree(nullptr);
-		}
+	}
 
 	// Use CUDA Driver API to get the device associated with the current context
     CUdevice cuDev;
@@ -727,8 +717,8 @@ extern "C" {
 	void ProfileDevice(int *irank){
 		_ProfileDevice(*irank);
 	}
-	void CalculateAccelerationOnDevice(int *NumTargetTotal, int *h_target_list, CUDA_REAL acc[][3], CUDA_REAL adot[][3], int NumNeighbor[], int *NeighborList) {
-		GetAcceleration(*NumTargetTotal, h_target_list, acc, adot, NumNeighbor, NeighborList);
+	void CalculateAccelerationOnDevice(int *NumTargetTotal, std::vector<int>& RegularList) {
+		GetAcceleration(*NumTargetTotal, RegularList);
 	}
 }
 

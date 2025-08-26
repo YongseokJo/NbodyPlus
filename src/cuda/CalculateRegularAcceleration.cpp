@@ -30,32 +30,10 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int>& RegularList, QueueSc
 #endif
 
 	int ListSize = RegularList.size();
-	int *IndexList = new int[ListSize];
-
-	// variables for saving variables to send to GPU
-	// only regular particle informations are stored here
-	CUDA_REAL (*AccRegReceive)[Dim]		= new CUDA_REAL[ListSize][Dim];
-	CUDA_REAL (*AccRegDotReceive)[Dim]	= new CUDA_REAL[ListSize][Dim];
-	double (*AccIrr)[Dim]				= new double[ListSize][Dim];
-	double (*AccIrrDot)[Dim]			= new double[ListSize][Dim];
-
-	int *NumNeighborReceive				= new int[ListSize];
-	int *ACListReceive					= new int[ListSize * MaxNumNeighbor];
+	double new_time = NextRegTimeBlock*time_step;  // next regular time
 
 	Particle *ptcl;
 
-	double new_time = NextRegTimeBlock*time_step;  // next regular time
-
-	// We have to initialize them to 0!
-	std::memset(AccRegReceive,		0, ListSize * Dim * sizeof(CUDA_REAL));
-	std::memset(AccRegDotReceive,	0, ListSize * Dim * sizeof(CUDA_REAL));
-	std::memset(AccIrr,				0, ListSize * Dim * sizeof(double));
-	std::memset(AccIrrDot,			0, ListSize * Dim * sizeof(double));
-
-	for (int i=0; i<ListSize; i++) {
-		NumNeighborReceive[i] = 0;
-		}
-		
 #ifdef PERFORMANCETRACE
 	start_point_routine = std::chrono::high_resolution_clock::now();
 #endif
@@ -96,7 +74,7 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int>& RegularList, QueueSc
 	nvtxRangePushA("CalculateAccelerationOnDevice");
 #endif
 
-	CalculateAccelerationOnDevice(&ListSize, IndexList, AccRegReceive, AccRegDotReceive, NumNeighborReceive, ACListReceive); //RegularListIndices
+	CalculateAccelerationOnDevice(&ListSize, RegularListIndices); //RegularListIndices
   
 #ifdef NSIGHT
 	nvtxRangePop();
@@ -123,7 +101,7 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int>& RegularList, QueueSc
 #ifdef NSIGHT
 	nvtxRangePushA("RegCuda");
 #endif
-
+	/*
 	for (int i=0; i<ListSize; i++) {
 		ptcl = &particles[RegularListIndices[i]];
 
@@ -140,6 +118,7 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int>& RegularList, QueueSc
 #endif
 		}
 	}
+	*/
 	/*
 	fprintf(stderr, "DEBUGGING STARTS...\n");
 	fprintf(stderr, "ListSize: %d\n", ListSize);
@@ -212,16 +191,6 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int>& RegularList, QueueSc
 	performance.RegularAdjust +=
 		std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
 #endif
-
-	delete[] IndexList;
-
-	delete[] AccRegReceive;
-	delete[] AccRegDotReceive;
-	delete[] AccIrr;
-	delete[] AccIrrDot;
-
-	delete[] NumNeighborReceive;
-	delete[] ACListReceive;
 
 	//CloseDevice();
 } // calculate 0th, 1st derivative of force + neighbors on GPU ends

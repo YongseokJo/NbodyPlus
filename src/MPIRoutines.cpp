@@ -65,12 +65,9 @@ void initializeMPI(int argc, char *argv[]) {
 		MPI_INFO_NULL, shared_comm, &particles_original, &win);
 		MPI_Win_allocate_shared(sizeof(GlobalVariable), sizeof(GlobalVariable),
 		 MPI_INFO_NULL, shared_comm, &global_variable_original, &win2);
-		MPI_Win_allocate_shared(sizeof(int)*MaxNumberOfParticle, sizeof(int),
-		 MPI_INFO_NULL, shared_comm, &ActiveIndexToOriginalIndex_orginal, &win3);
 	} else {
 		MPI_Win_allocate_shared(0, sizeof(Particle), MPI_INFO_NULL, shared_comm, &particles_original, &win);
 		MPI_Win_allocate_shared(0, sizeof(GlobalVariable), MPI_INFO_NULL, shared_comm, &global_variable_original, &win2);
-		MPI_Win_allocate_shared(0, sizeof(int), MPI_INFO_NULL, shared_comm, &ActiveIndexToOriginalIndex_orginal, &win3);
 	}
 	// Query shared memory of rank 0
 	
@@ -79,7 +76,6 @@ void initializeMPI(int argc, char *argv[]) {
 
 	MPI_Win_shared_query(win, 0, &size_bytes, &disp_unit, &particles);
 	MPI_Win_shared_query(win2, 0, &size_bytes, &disp_unit, &global_variable);
-	MPI_Win_shared_query(win3, 0, &size_bytes, &disp_unit, &ActiveIndexToOriginalIndex);
 }
 
 void InitialAssignmentOfTasks(std::vector<int>& data, int NumTask, int TAG) {
