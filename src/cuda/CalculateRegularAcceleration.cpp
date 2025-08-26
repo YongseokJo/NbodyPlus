@@ -140,6 +140,18 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int>& RegularList, QueueSc
 #endif
 		}
 	}
+	/*
+	fprintf(stderr, "DEBUGGING STARTS...\n");
+	fprintf(stderr, "ListSize: %d\n", ListSize);
+	for (int i=0; i<ListSize; i++) {
+		ptcl = &particles[RegularListIndices[i]];
+		fprintf(stderr, "PID: %d, NumNeighbor: %d, NewNumNeighbor: %d\n", ptcl->PID, ptcl->NumberOfNeighbor, ptcl->NewNumberOfNeighbor);
+		for (int j=0; j<ptcl->NewNumberOfNeighbor; j++) {
+			fprintf(stderr, "%d ", ptcl->NewNeighbors[j]);
+		}
+		fprintf(stderr, "\n");
+	}
+	*/
 
 	queue_scheduler.initialize(RegCuda);
 	queue_scheduler.takeQueueRegularList(RegularList);

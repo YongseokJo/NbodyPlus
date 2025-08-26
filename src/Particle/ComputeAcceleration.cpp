@@ -437,7 +437,7 @@ void Particle::updateRegularParticleCuda() {
 	std::unordered_set<int> hashTableOld;
 	hashTableOld.reserve(this->NumberOfNeighbor);
 	std::unordered_set<int> hashTableNew;
-	hashTableNew.reserve(NewNumberOfNeighborGPU);
+	hashTableNew.reserve(NewNumberOfNeighborGPU - 1);
 	
 	int RealNeighbors[MaxNumNeighbor]; // this->Neighbors is containing members, not CM ptcls, but this is containing CM ptcls, not members
 	int RealNumberOfNeighbor = 0;
@@ -472,6 +472,7 @@ void Particle::updateRegularParticleCuda() {
 			}
 		}
 	}
+	NewNumberOfNeighborGPU--;
 	assert(RealNumberOfNeighbor == hashTableOld.size()); // for debugging by EW 2025.1.30
 
 	size = hashTableNew.size() > hashTableOld.size() ? hashTableNew.size() : hashTableOld.size();

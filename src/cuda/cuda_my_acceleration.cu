@@ -256,6 +256,7 @@ void GetAcceleration(
 #endif
 
 		// Debugging: print out the first few accelerations
+		/*
 		for (int i = 0; i < std::min(5, NumTargetTotal); i++) {
 			printf("Target %d: acc = (%e, %e, %e), adot = (%e, %e, %e), NumNeighbor = %d\n",
 				i, acc[i][0], acc[i][1], acc[i][2],
@@ -265,6 +266,7 @@ void GetAcceleration(
 				printf("  Neighbor %d: %d\n", j, NeighborList[i * MaxNumNeighbor + j]);
 			}
 		}
+		*/
 
 		// 3) Now acc and adot arrays on host have the accumulated results for this chunk
 		// You can process them as needed before the next chunk
