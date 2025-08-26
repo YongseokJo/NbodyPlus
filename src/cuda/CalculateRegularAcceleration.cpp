@@ -125,7 +125,7 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int>& RegularList, QueueSc
 #endif
 
 	for (int i=0; i<ListSize; i++) {
-		ptcl = &particles[ActiveIndexToOriginalIndex[IndexList[i]]];
+		ptcl = &particles[RegularListIndices[i]];
 
 		ptcl->NewNumberOfNeighbor = NumNeighborReceive[i];
 		std::memcpy(ptcl->NewNeighbors, &ACListReceive[i * MaxNumNeighbor], NumNeighborReceive[i] * sizeof(int));
