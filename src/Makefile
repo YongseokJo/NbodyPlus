@@ -1,6 +1,6 @@
 # Compiler
 #CXX = icc
-CXX = mpicc
+CXX = mpicxx
 #CXX = g++
 
 # Compiler flags

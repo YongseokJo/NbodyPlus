@@ -46,12 +46,16 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int>& RegularList, QueueSc
 
 	double new_time = NextRegTimeBlock*time_step;  // next regular time
 
-	// (Query to MY) Do we have to initialize them to 0?
+	// We have to initialize them to 0!
 	std::memset(AccRegReceive,		0, ListSize * Dim * sizeof(CUDA_REAL));
 	std::memset(AccRegDotReceive,	0, ListSize * Dim * sizeof(CUDA_REAL));
 	std::memset(AccIrr,				0, ListSize * Dim * sizeof(double));
 	std::memset(AccIrrDot,			0, ListSize * Dim * sizeof(double));
 
+	for (int i=0; i<ListSize; i++) {
+		NumNeighborReceive[i] = 0;
+		}
+		
 #ifdef PERFORMANCETRACE
 	start_point_routine = std::chrono::high_resolution_clock::now();
 #endif
@@ -92,7 +96,7 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int>& RegularList, QueueSc
 	nvtxRangePushA("CalculateAccelerationOnDevice");
 #endif
 
-	CalculateAccelerationOnDevice(&ListSize, IndexList, AccRegReceive, AccRegDotReceive, NumNeighborReceive, ACListReceive, RegularListIndices);
+	CalculateAccelerationOnDevice(&ListSize, IndexList, AccRegReceive, AccRegDotReceive, NumNeighborReceive, ACListReceive); //RegularListIndices
   
 #ifdef NSIGHT
 	nvtxRangePop();
