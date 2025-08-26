@@ -147,7 +147,7 @@ void GetAcceleration(
         for (int i = 0; i < deviceCount; i++) {
             cudaSetDevice(i);
 
-			fprintf(stderr, "GPU %d: J_start = %d, J_count = %d\n", i, gpu[i].J_start, gpu[i].J_count);
+			// fprintf(stderr, "GPU %d: J_start = %d, J_count = %d\n", i, gpu[i].J_start, gpu[i].J_count);
 
 			dim3 gridDim2(NumTarget, 1);
             dim3 blockDim2(GridDimY, 1);
