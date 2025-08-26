@@ -113,12 +113,7 @@ void GetAcceleration(
     CUDA_REAL acc[][3],
     CUDA_REAL adot[][3],
     int NumNeighbor[],
-<<<<<<< HEAD
     int *NeighborList //	std::vector<int>& RegularList
-=======
-    int *NeighborList,
-	std::vector<int>& RegularListIndices
->>>>>>> 56f56f16da43bda9472ccb2b3e7ee6e05bc41841
 ) {
     assert(is_open);
 	assert((NumTargetTotal > 0) && (NumTargetTotal <= NNB));
@@ -151,6 +146,9 @@ void GetAcceleration(
         // 1) Launch a kernel on each GPU with an offset
         for (int i = 0; i < deviceCount; i++) {
             cudaSetDevice(i);
+
+			fprintf(stderr, "GPU %d: J_start = %d, J_count = %d\n", i, gpu[i].J_start, gpu[i].J_count);
+
 			dim3 gridDim2(NumTarget, 1);
             dim3 blockDim2(GridDimY, 1);
 
@@ -160,26 +158,9 @@ void GetAcceleration(
             // Prepare kernel dimensions
             dim3 blockDim(BatchSize, 1, 1);
             dim3 gridDim(
-                (NumTarget + BatchSize + blockDim.x - 1) / blockDim.x, 
-                GridDimY
+            	(NumTarget + BatchSize + blockDim.x - 1) / blockDim.x, 
+            	GridDimY
             );
-
-            // Launch compute_forces on GPU i
-			/*
-            compute_forces<<<gridDim, blockDim, 0, streams[i]>>>(
-                d_ptcl_array[i],
-                d_r2_array[i],
-                d_diff_array[i],
-                NumTarget,
-                deviceNumJ, //NNB
-                d_target_array[i],
-                d_neighbor_block_array[i],
-                d_num_neighbor_block_array[i],
-                TargetStart,   // i_start
-				deviceJStart, // j_start
-				NNB
-            );
-			*/
             compute_forces<<<gridDim, blockDim, 0, gpu[i].stream>>>(
                 gpu[i].dI,
                 gpu[i].dJ,
@@ -188,8 +169,7 @@ void GetAcceleration(
 				gpu[i].d_neighbor_count_block,
                 NumTarget,
                 gpu[i].J_count, //NNB
-                TargetStart,   // i_start
-				gpu[i].J_start // j_start
+                TargetStart   // i_start
             );
 			//cudaStreamSynchronize(gpu[i].stream);
 
@@ -275,6 +255,19 @@ void GetAcceleration(
 		nvtxRangePop();
 #endif
 
+		// Debugging: print out the first few accelerations
+		for (int i = 0; i < std::min(5, NumTargetTotal); i++) {
+			printf("Target %d: acc = (%e, %e, %e), adot = (%e, %e, %e), NumNeighbor = %d\n",
+				i, acc[i][0], acc[i][1], acc[i][2],
+				adot[i][0], adot[i][1], adot[i][2],
+				NumNeighbor[i]);
+			for (int j = 0; j < NumNeighbor[i]; j++) {
+				printf("  Neighbor %d: %d\n", j, NeighborList[i * MaxNumNeighbor + j]);
+			}
+		}
+
+		// 3) Now acc and adot arrays on host have the accumulated results for this chunk
+		// You can process them as needed before the next chunk
 
 #ifdef NSIGHT
 		nvtxRangePushA("h_result to acc and adot");
@@ -285,13 +278,6 @@ void GetAcceleration(
 #endif
 
     } // end of TargetStart loop
-	/*
-	for (int i = 0; i < deviceCount; i++){
-		cudaSetDevice(i);
-		cublasDestroy(cublasHandles[i]);
-	}
-	*/
-
 }
 
 

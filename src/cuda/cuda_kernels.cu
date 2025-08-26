@@ -26,7 +26,7 @@ __global__ void print_forces_subset(CUDA_REAL* result, int m, int n) {
 // NNB_per_block = 256;
 
 __global__ void compute_forces(const Iparticle* __restrict__ d_Ip, const Jparticle* __restrict__ d_Jp, CUDA_REAL* __restrict__ acc, int* __restrict__ neighbor, int* num_neighbor,
-	 							int m, int n, int i_start, int j_start){
+	 							int m, int n, int i_start){
 	// define i and j. in this code, grid is 2D and block is 1D
     int i = threadIdx.x + blockIdx.x * blockDim.x; // Unique thread index across all blocks
 	int tid = threadIdx.x;
@@ -41,7 +41,7 @@ __global__ void compute_forces(const Iparticle* __restrict__ d_Ip, const Jpartic
 	while (i < m + BatchSize){ // even with i > m, the last block needs to assign the shared memory for each tid
 		int i_ptcl = (i < m) ? i + i_start : m - 1 + i_start; //assign dummy values for the last block	
 		Iparticle Ip = d_Ip[i_ptcl];
-		CUDA_REAL i_r2 = Ip.r2;
+		// CUDA_REAL i_r2 = Ip.r2;
 		
 		int NumNeighbor = 0;
 		int idx_save = i * gridDim.y + blockIdx.y;
@@ -70,7 +70,7 @@ __global__ void compute_forces(const Iparticle* __restrict__ d_Ip, const Jpartic
 					CUDA_REAL dz = Jp_sh[jj].posz - Ip.posz;
 					CUDA_REAL d2 = dx*dx + dy*dy + dz*dz;
 
-					if (d2 > i_r2) {
+					if (d2 > Ip.r2) {
 						// Calculate velocity differences
 						CUDA_REAL dvx = Jp_sh[jj].velx - Ip.velx;
 						CUDA_REAL dvy = Jp_sh[jj].vely - Ip.vely;
@@ -91,7 +91,8 @@ __global__ void compute_forces(const Iparticle* __restrict__ d_Ip, const Jpartic
 
 					}
 					else { //if (i_ptcl != j_start + j + jj) 
-						BlockNeighbor[NumNeighbor++] = j_start + j + jj;
+						// BlockNeighbor[NumNeighbor++] = j_start + j + jj;
+						BlockNeighbor[NumNeighbor++] = Jp_sh[jj].index;
 						assert (NumNeighbor < NNB_per_block);
 					}
 
