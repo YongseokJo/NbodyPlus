@@ -79,28 +79,26 @@ void readParameterFile() {
 		Config config;
 		config.read(config_file);
 
-		fname				   = config.getChar("Filename");
-		//int num_particles = config.getInt("num_particles");
-		endTime        = config.getDouble("StopTime");
-		outputTimeStep = config.getDouble("dtOutput");
-		foutput			   = config.getChar("OutputDirectory");
-		eta			   = config.getDouble("eta");
-		FixNumNeighbor  = config.getInt("FixNumNeighbor");
+		fname					= config.getChar("Filename");
+		endTime        			= config.getDouble("StopTime");
+		outputTimeStep 			= config.getDouble("dtOutput");
+		foutput			   		= config.getChar("OutputDirectory");
+		eta			   			= config.getDouble("eta");
+		FixNumNeighbor  		= config.getInt("FixNumNeighbor");
 		InitialNeighborRadius	= config.getDouble("InitialRadius");
-		InitialNeighborRadius /= position_unit; // converting unit from pc to code unit
+		InitialNeighborRadius 	/= position_unit; // converting unit from pc to code unit
 
 
-		EnzoTimeStep   = endTime/1e10; // endTime should be Myr
-		outputTimeStep = outputTimeStep/endTime; // endTime should be Myr
+		EnzoTimeStep   			= endTime/1e10; // endTime should be yr
+		outputTimeStep 			= outputTimeStep/endTime; // endTime should be yr
 
 		if (MyRank == ROOT) {
-			std::cout << "Starting ABYSS ..." <<  std::endl;
-			std::cout << "File name: " << fname << std::endl;
-			std::cout << "eta: " << eta << std::endl;
+			std::cout << "IC file name: " << fname << std::endl;
 			std::cout << "Output file name: " << foutput << std::endl;
-			std::cout << "End Time: " << endTime << std::endl;
+			std::cout << "Eta (timestep constant): " << eta << std::endl;
+			std::cout << "End Time: " << endTime/1e6 << " Myr" << std::endl;
 			std::cout << "EnzoTimeStep = "   << EnzoTimeStep   << std::endl;
-			std::cout << "outputTimeStep = " << outputTimeStep << "Myr" <<std::endl;
+			std::cout << "outputTimeStep = " << outputTimeStep * EnzoTimeStep * 1e4 << " Myr" <<std::endl;
 		}
 
 

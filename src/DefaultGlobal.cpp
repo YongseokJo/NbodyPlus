@@ -7,12 +7,9 @@
 
 Particle *particles_original;
 Particle *particles;
-int *ActiveIndexToOriginalIndex;
-int *ActiveIndexToOriginalIndex_orginal;
 
 MPI_Win win;
 MPI_Win win2;
-MPI_Win win3;
 
 MPI_Comm shared_comm;
 int MyRank;
@@ -21,6 +18,8 @@ int NumberOfWorker;
 int NumberOfCommunication;
 
 MPI_Datatype QueueType;
+MPI_Datatype IparticleType;
+MPI_Datatype JparticleType;
 
 GlobalVariable *global_variable;
 GlobalVariable *global_variable_original;

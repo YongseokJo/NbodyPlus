@@ -19,7 +19,6 @@ extern Particle *particles_original;
 /* Communicators */
 extern MPI_Win win;
 extern MPI_Win win2;
-extern MPI_Win win3;
 extern MPI_Comm shared_comm;
 extern int MyRank;
 extern int NumberOfProcessor;
@@ -29,9 +28,8 @@ extern int NumberOfCommunication;
 extern GlobalVariable *global_variable;
 extern GlobalVariable *global_variable_original;
 extern MPI_Datatype QueueType;
-
-extern int *ActiveIndexToOriginalIndex_orginal;
-extern int *ActiveIndexToOriginalIndex;
+extern MPI_Datatype IparticleType;
+extern MPI_Datatype JparticleType;
 
 extern int LastParticleIndex;
 extern int NumberOfParticle;

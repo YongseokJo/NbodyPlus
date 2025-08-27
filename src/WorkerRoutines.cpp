@@ -13,6 +13,7 @@ void makePrimordialGroup(Particle* ptclCM);
 void NewFBInitialization(Particle* ptclCM);
 void deleteGroup(Particle* ptclCM);
 void NewFBInitialization3(Group* group);
+void sendAllParticlesToGPU_Worker(double new_time);
 
 void WorkerRoutines() {
 
@@ -150,10 +151,8 @@ void WorkerRoutines() {
 				//MPI_Win_sync(win);  // Synchronize memory
 				//MPI_Barrier(shared_comm);
 				//MPI_Win_fence(0, win);
-				fprintf(stderr, "(%d) nbody+:time_block = %d, EnzoTimeStep=%e\n", MyRank, time_block, EnzoTimeStep);
-				fflush(stderr);
+				fprintf(workerout, "MyRank = %d time_block = %d, EnzoTimeStep = %e\n\n", MyRank, time_block, EnzoTimeStep);
 				break;
-
 
 #ifdef FEWBODY
 			case SearchPrimordialGroup: // Primordial binary search
@@ -275,36 +274,10 @@ void WorkerRoutines() {
 				MPI_Reduce(&E_PN,			nullptr, 1, MPI_DOUBLE, MPI_SUM, ROOT, MPI_COMM_WORLD);
 				continue;
 
-			case PrepareGPUCalc: {
+			case PrepareGPUCalc:
 
-				int J_start = (MyRank - 1) * (global_variable->LastParticleIndex + 1) / NumberOfWorker;
-				int J_end   = MyRank * (global_variable->LastParticleIndex + 1) / NumberOfWorker;
-
-				std::vector<std::array<float, 3>> positions;
-				std::vector<std::array<float, 3>> velocities;
-				float position[3];
-				float velocity[3];
-
-				for (int j = J_start; j < J_end; j++) {
-
-					ptcl = &particles[j];
-
-					if (!ptcl->isActive)
-						continue;
-
-					if (ptcl->NumberOfNeighbor == 0)
-						ptcl->predictParticleSecondOrder(next_time-ptcl->CurrentTimeReg, position, velocity);
-					else
-						ptcl->predictParticleSecondOrder(next_time-ptcl->CurrentTimeIrr, position, velocity);
-
-					positions.push_back({ position[0], position[1], position[2] });
-					velocities.push_back({ velocity[0], velocity[1], velocity[2] });
-				}
-				MPI_Send(positions.data(), positions.size() * 3, MPI_FLOAT, ROOT, 0, MPI_COMM_WORLD);
-				MPI_Send(velocities.data(), velocities.size() * 3, MPI_FLOAT, ROOT, 1, MPI_COMM_WORLD);
-
+				sendAllParticlesToGPU_Worker(next_time);
 				continue;
-			}
 
 			case Synchronize: // Synchronize
 				MPI_Win_sync(win);  // Synchronize memory
@@ -312,14 +285,14 @@ void WorkerRoutines() {
 				break;
 
 			case Ends: // Simualtion ends
-				std::cout << "Processor " << MyRank<< " returns." << std::endl;
+				fprintf(workerout, "Processor %d returns.\n", MyRank);
 				return;
-				break;
 
 			case Error:
 				perror("Error task assignments");
 				exit(EXIT_FAILURE);
 				break;
+
 			default:
 				break;
 		}

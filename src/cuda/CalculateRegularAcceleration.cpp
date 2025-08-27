@@ -7,13 +7,13 @@
 #include "../QueueScheduler.h"
 #include "cuda_functions.h"
 #include <cstring>
-#include <omp.h>
+#include "cuda_defs.h"
 
 #ifdef NSIGHT
 #include <nvToolsExt.h>
 #endif
 
-void sendAllParticlesToGPU(double new_time, std::unordered_set<int>& RegularList, int *IndexList);
+void sendAllParticlesToGPU(double new_time, const int& RegularListSize, std::vector<int>& RegularListIndices);
 
 /*
  *  Purporse: calculate acceleration and neighbors of regular particles by sending them to GPU
@@ -29,27 +29,9 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int>& RegularList, QueueSc
 #endif
 
 	int ListSize = RegularList.size();
-	int *IndexList = new int[ListSize];
-
-	// variables for saving variables to send to GPU
-	// only regular particle informations are stored here
-	CUDA_REAL (*AccRegReceive)[Dim]		= new CUDA_REAL[ListSize][Dim];
-	CUDA_REAL (*AccRegDotReceive)[Dim]	= new CUDA_REAL[ListSize][Dim];
-	double (*AccIrr)[Dim]				= new double[ListSize][Dim];
-	double (*AccIrrDot)[Dim]			= new double[ListSize][Dim];
-
-	int *NumNeighborReceive				= new int[ListSize];
-	int *ACListReceive					= new int[ListSize * MaxNumNeighbor];
-
-	Particle *ptcl;
-
 	double new_time = NextRegTimeBlock*time_step;  // next regular time
 
-	// (Query to MY) Do we have to initialize them to 0?
-	std::memset(AccRegReceive,		0, ListSize * Dim * sizeof(CUDA_REAL));
-	std::memset(AccRegDotReceive,	0, ListSize * Dim * sizeof(CUDA_REAL));
-	std::memset(AccIrr,				0, ListSize * Dim * sizeof(double));
-	std::memset(AccIrrDot,			0, ListSize * Dim * sizeof(double));
+	Particle *ptcl;
 
 #ifdef PERFORMANCETRACE
 	start_point_routine = std::chrono::high_resolution_clock::now();
@@ -62,7 +44,9 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int>& RegularList, QueueSc
 #ifdef NSIGHT
 	nvtxRangePushA("sendAllParticlesToGPU");
 #endif
-	sendAllParticlesToGPU(new_time, RegularList, IndexList);  // needs to be updated
+	int RegularListSize = RegularList.size();
+	std::vector<int> RegularListIndices;
+	sendAllParticlesToGPU(new_time, RegularListSize, RegularListIndices);  // needs to be updated
 #ifdef NSIGHT
 	nvtxRangePop();
 #endif
@@ -89,7 +73,7 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int>& RegularList, QueueSc
 	nvtxRangePushA("CalculateAccelerationOnDevice");
 #endif
 
-	CalculateAccelerationOnDevice(&ListSize, IndexList, AccRegReceive, AccRegDotReceive, NumNeighborReceive, ACListReceive);
+	CalculateAccelerationOnDevice(&ListSize, RegularListIndices); //RegularListIndices
   
 #ifdef NSIGHT
 	nvtxRangePop();
@@ -117,23 +101,6 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int>& RegularList, QueueSc
 	nvtxRangePushA("RegCuda");
 #endif
 
-	for (int i=0; i<ListSize; i++) {
-		ptcl = &particles[ActiveIndexToOriginalIndex[IndexList[i]]];
-
-		ptcl->NewNumberOfNeighbor = NumNeighborReceive[i];
-		std::memcpy(ptcl->NewNeighbors, &ACListReceive[i * MaxNumNeighbor], NumNeighborReceive[i] * sizeof(int));
-
-		for (int dim=0; dim<Dim; dim++) {
-#ifdef CUDA_FLOAT
-			ptcl->a_irr[dim][0] = static_cast<double>(AccRegReceive[i][dim]);		// Just temporarilly save new reg acc here!
-			ptcl->a_irr[dim][1] = static_cast<double>(AccRegDotReceive[i][dim]);	// Just temporarilly save new reg acc here!
-#else
-			ptcl->a_irr[dim][0] = AccRegReceive[i][dim];		// Just temporarilly save new reg acc here!
-			ptcl->a_irr[dim][1] = AccRegDotReceive[i][dim];		// Just temporarilly save new reg acc here!
-#endif
-		}
-	}
-
 	queue_scheduler.initialize(RegCuda);
 	queue_scheduler.takeQueueRegularList(RegularList);
 	do
@@ -143,8 +110,7 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int>& RegularList, QueueSc
 		queue_scheduler.waitQueue(0); // blocking wait
 	} while (queue_scheduler.isComplete());
 
-/*
-	// Adjust Regular Gravity
+	/* // Legacy code.. this part is replaced by queue_scheduler above
 	int i=0;
 	TaskName task=RegCuda;
 	Queue queue = {task, -1, -1.0};
@@ -179,7 +145,7 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int>& RegularList, QueueSc
         }
 		queue_scheduler.waitQueue(0); // blocking wait
 	} while (queue_scheduler.isComplete());
-*/
+	*/
 #ifdef NSIGHT
 	nvtxRangePop();
 #endif
@@ -194,70 +160,11 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int>& RegularList, QueueSc
 		std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
 #endif
 
-	delete[] IndexList;
-
-	delete[] AccRegReceive;
-	delete[] AccRegDotReceive;
-	delete[] AccIrr;
-	delete[] AccIrrDot;
-
-	delete[] NumNeighborReceive;
-	delete[] ACListReceive;
-
 	//CloseDevice();
 } // calculate 0th, 1st derivative of force + neighbors on GPU ends
 
 
-
-
-// (Query MY) Let's optimize this function later. Copying data to h_ptcl in _ReceiveFromHost of cuda_my_acceleation.cpp seems super inefficient. 2025.5.24
-void sendAllParticlesToGPU(double new_time, std::unordered_set<int>& RegularList, int *IndexList) {
-
-	// variables for saving variables to send to GPU
-	CUDA_REAL *Mass				= new CUDA_REAL[NumberOfParticle];
-	CUDA_REAL *Mdot				= new CUDA_REAL[NumberOfParticle];	
-	CUDA_REAL *Radius2			= new CUDA_REAL[NumberOfParticle];
-	CUDA_REAL(*Position)[Dim]	= new CUDA_REAL[NumberOfParticle][Dim];
-	CUDA_REAL(*Velocity)[Dim]	= new CUDA_REAL[NumberOfParticle][Dim];
-
-/*
-#ifdef PERFORMANCETRACE
-	std::chrono::high_resolution_clock::time_point start_point_routine;
-	std::chrono::high_resolution_clock::time_point end_point_routine;
-#endif
-*/
-
-	int size=0, j=0;
-
-	/* new code using OpenMP by EW 2025.8.6
-	for (int i = 0; i <= LastParticleIndex; i++) {
-		Particle* ptcl = &particles[i];
-
-		if (!ptcl->isActive)
-			continue;
-
-		if (RegularList.find(i) != RegularList.end())
-			IndexList[j++] = size;
-		
-		ActiveIndexToOriginalIndex[size] = i;
-		size++;
-	}
-
-	#pragma omp parallel for
-	for (int i = 0; i < size; i++) {
-		Particle* ptcl = &particles[ActiveIndexToOriginalIndex[i]];
-		Mass[i] = (CUDA_REAL)ptcl->Mass;
-		Mdot[i] = 0; // particle[i]->Mass;
-		Radius2[i] = (CUDA_REAL)ptcl->RadiusOfNeighbor; // mass weight?
-		if (ptcl->NumberOfNeighbor == 0)
-			ptcl->predictParticleSecondOrder(new_time - ptcl->CurrentTimeReg, Position[i], Velocity[i]);
-		else
-			ptcl->predictParticleSecondOrder(new_time - ptcl->CurrentTimeIrr, Position[i], Velocity[i]);
-	}
-	*/
-
-	// /* // original code not using OpenMP by EW 2025.8.6
-	Particle *ptcl;
+void sendAllParticlesToGPU(double new_time, const int& RegularListSize, std::vector<int>& RegularListIndices) {
 
 /*
 #ifdef PERFORMANCETRACE
@@ -267,9 +174,38 @@ void sendAllParticlesToGPU(double new_time, std::unordered_set<int>& RegularList
 
 	Queue queue = {PrepareGPUCalc, -1, new_time};
 	MPI_Request requests[NumberOfWorker];
-	for (int i = 0; i < NumberOfWorker; i++) {
+	for (int i = 0; i < NumberOfWorker; i++)
 		MPI_Isend(&queue, 1, QueueType, i+1, QUEUE_TAG, MPI_COMM_WORLD, &requests[i]);
-	}
+
+	std::vector<Jparticle> Jparticles;
+	Jparticles.resize(NumberOfParticle);
+
+	std::vector<Iparticle> Iparticles;
+	Iparticles.resize(RegularListSize);
+
+	RegularListIndices.resize(RegularListSize);
+
+	std::vector<int> counts;
+	counts.resize(NumberOfProcessor * 2);
+	int send_buf[2] = {0, 0};
+
+	std::vector<int> Jcounts;
+	Jcounts.resize(NumberOfProcessor);
+	Jcounts[0] = 0;
+
+	std::vector<int> Icounts;
+	Icounts.resize(NumberOfProcessor);
+	Icounts[0] = 0;
+
+	std::vector<int> Jdispls;
+	Jdispls.resize(NumberOfProcessor);
+	Jdispls[0] = 0;
+
+	std::vector<int> Idispls;
+	Idispls.resize(NumberOfProcessor);
+	Idispls[0] = 0;
+
+	MPI_Waitall(NumberOfWorker, requests, MPI_STATUSES_IGNORE);
 
 /*
 #ifdef PERFORMANCETRACE
@@ -284,123 +220,40 @@ void sendAllParticlesToGPU(double new_time, std::unordered_set<int>& RegularList
 #endif
 */
 
-	std::vector<int> num_elements(NumberOfWorker, 0);
-	int num = 0;
-	int real = 0;
-	while (num < NumberOfWorker) {
-		int J_start = num * (LastParticleIndex + 1) / NumberOfWorker;
-		int J_end = (num+1) * (LastParticleIndex + 1) / NumberOfWorker;
+	MPI_Gather(send_buf, 2, MPI_INT, counts.data(), 2, MPI_INT, ROOT, MPI_COMM_WORLD);
 
-		int nn = 0;
-		for (int i = J_start; i < J_end; i++) {
-			ptcl = &particles[i];
-
-			if (!ptcl->isActive)
-				continue;
-
-			nn++;
-
-			if (RegularList.find(i) != RegularList.end()) {
-				IndexList[j] = size;
-				j++;
-			}
-			if (ptcl->CurrentBlockReg + ptcl->TimeBlockReg == NextRegTimeBlock)
-				real++;
-
-			Mass[size]    = (CUDA_REAL)ptcl->Mass;
-			Mdot[size]    = 0; //particle[i]->Mass;
-			Radius2[size] = (CUDA_REAL)ptcl->RadiusOfNeighbor; // mass weight?
-
-			ActiveIndexToOriginalIndex[size] = i;
-			size++;
-		}
-		num_elements[num] = nn;
-		num++;
+	for (int rank = 1; rank < NumberOfProcessor; rank++) {
+	
+		Jcounts[rank] = counts[rank * 2 + 0];
+		Icounts[rank] = counts[rank * 2 + 1];
+	
+		Jdispls[rank] = Jdispls[rank - 1] + Jcounts[rank - 1];
+		Idispls[rank] = Idispls[rank - 1] + Icounts[rank - 1];
 	}
-	assert(real == RegularList.size());
+	assert(Jdispls[NumberOfProcessor - 1] + Jcounts[NumberOfProcessor - 1] == NumberOfParticle);
+	assert(Idispls[NumberOfProcessor - 1] + Icounts[NumberOfProcessor - 1] == RegularListSize);
+
+	MPI_Gatherv(nullptr, 0, JparticleType, 
+				Jparticles.data(), Jcounts.data(), Jdispls.data(), JparticleType, ROOT, MPI_COMM_WORLD);
+	MPI_Gatherv(nullptr, 0, IparticleType, 
+				Iparticles.data(), Icounts.data(), Idispls.data(), IparticleType, ROOT, MPI_COMM_WORLD);
+	MPI_Gatherv(nullptr, 0, MPI_INT,
+				RegularListIndices.data(), Icounts.data(), Idispls.data(), MPI_INT, ROOT, MPI_COMM_WORLD);
 
 /*
 #ifdef PERFORMANCETRACE
 	end_point_routine = std::chrono::high_resolution_clock::now();
 	elapsed = std::chrono::duration_cast<std::chrono::microseconds>(end_point_routine - start_point_routine);
-	fprintf(stdout, "Entire loop took %lld microseconds\n", static_cast<long long>(elapsed.count()));
+	fprintf(stdout, "Gather calculation took %lld microseconds\n", static_cast<long long>(elapsed.count()));
 #endif
 */
-
-	assert(NumberOfParticle == size);
-	std::vector<int> displs(NumberOfWorker, 0);
-	for (int i = 1; i < NumberOfWorker; i++)
-		displs[i] = displs[i-1] + num_elements[i-1];
-
-	MPI_Waitall(NumberOfWorker, requests, MPI_STATUSES_IGNORE);
-/*
-#ifdef PERFORMANCETRACE
-	start_point_routine = std::chrono::high_resolution_clock::now();
-#endif
-*/
-	int completed = 0;
-	MPI_Status status;
-	while (completed < NumberOfWorker) {
-		MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-		int completed_rank = status.MPI_SOURCE;
-
-		MPI_Recv(Position[displs[completed_rank - 1]], num_elements[completed_rank - 1] * Dim, MPI_FLOAT, completed_rank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-		MPI_Recv(Velocity[displs[completed_rank - 1]], num_elements[completed_rank - 1] * Dim, MPI_FLOAT, completed_rank, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-		completed++;
-	}
-
-/*
-#ifdef PERFORMANCETRACE
-	end_point_routine = std::chrono::high_resolution_clock::now();
-	elapsed = std::chrono::duration_cast<std::chrono::microseconds>(end_point_routine - start_point_routine);
-	fprintf(stdout, "Recv job took %lld microseconds\n", static_cast<long long>(elapsed.count()));
-#endif
-*/
-
-	/*
-	// copy the data of particles to the arrays to be sent
-	for (int i=0; i<=LastParticleIndex; i++) {
-		ptcl       = &particles[i];
-
-		if (!ptcl->isActive) {
-			// fprintf(stdout, "Skipping inactive particle (%d)\n", ptcl->PID);
-			continue;
-		}
-
-		if (RegularList.find(i) != RegularList.end()) {
-			IndexList[j] = size;
-			j++;
-		}
-
-		Mass[size]    = (CUDA_REAL)ptcl->Mass;
-		Mdot[size]    = 0; //particle[i]->Mass;
-		Radius2[size] = (CUDA_REAL)ptcl->RadiusOfNeighbor; // mass weight?
-
-		if (ptcl->NumberOfNeighbor == 0)
-			ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeReg, Position[size], Velocity[size]);
-		else
-			ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeIrr, Position[size], Velocity[size]);
-
-		ActiveIndexToOriginalIndex[size] = i;
-		// std::cout << "(size , i) = "  << size << " " << i << std::endl;
-		size++;
-	}
-	*/
-
-	assert(NumberOfParticle == size); // for debugging by EW 2025.1.25
-
-	// fprintf(stdout, "in sendAllParticlesToGPU, NumberOfParticle = %d, size=%d, TotalNumberOfParticle=%d\n", NumberOfParticle, size, LastParticleIndex+1);
-
-
-	//fprintf(stdout, "Sending particles to GPU...\n");
-	//fflush(stdout);
 	// send the arrays to GPU
 /*
 #ifdef PERFORMANCETRACE
 	start_point_routine = std::chrono::high_resolution_clock::now();
 #endif
 */
-	SendToDevice(&size, Mass, Position, Velocity, Radius2, Mdot);
+	SendToDevice(Jparticles, Iparticles);
 /*
 #ifdef PERFORMANCETRACE
 	end_point_routine = std::chrono::high_resolution_clock::now();
@@ -409,12 +262,40 @@ void sendAllParticlesToGPU(double new_time, std::unordered_set<int>& RegularList
 #endif
 */
 
-	//fprintf(stdout, "Done.\n");
-	//fflush(stdout);
-	// free the temporary variables
-	delete[] Mass;
-	delete[] Mdot;
-	delete[] Radius2;
-	delete[] Position;
-	delete[] Velocity;
+}
+
+void sendAllParticlesToGPU_Worker(double new_time) {
+
+	Particle* ptcl;
+	std::vector<Jparticle> Jparticles;
+	std::vector<Iparticle> Iparticles;
+	std::vector<int> LocalRegularList;
+
+	int J_start = (MyRank - 1) * (global_variable->LastParticleIndex + 1) / NumberOfWorker;
+	int J_end   = MyRank * (global_variable->LastParticleIndex + 1) / NumberOfWorker;
+
+	for (int j = J_start; j < J_end; j++) {
+
+		ptcl = &particles[j];
+
+		if (!ptcl->isActive)
+			continue;
+
+		if (ptcl->NumberOfNeighbor == 0)
+			ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeReg, Jparticles, Iparticles, LocalRegularList);
+		else
+			ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeIrr, Jparticles, Iparticles, LocalRegularList);
+
+	}
+
+	int sizes[2] = {Jparticles.size(), Iparticles.size()};
+	MPI_Gather(sizes, 2, MPI_INT, nullptr, 0, MPI_INT, ROOT, MPI_COMM_WORLD);
+
+	MPI_Gatherv(Jparticles.data(), sizes[0], JparticleType,	
+				nullptr, nullptr, nullptr, JparticleType, ROOT, MPI_COMM_WORLD);
+	MPI_Gatherv(Iparticles.data(), sizes[1], IparticleType,	
+				nullptr, nullptr, nullptr, IparticleType, ROOT, MPI_COMM_WORLD);
+	MPI_Gatherv(LocalRegularList.data(), sizes[1], MPI_INT,
+				nullptr, nullptr, nullptr, MPI_INT, ROOT, MPI_COMM_WORLD);
+
 }

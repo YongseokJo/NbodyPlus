@@ -8,8 +8,6 @@
 #include <unordered_set>
 
 
-void calculateSingleAcceleration(Particle *ptcl2, double *pos, double *vel, double (&a)[3], double (&adot)[3], int sign);
-
 void Particle::computeAccelerationIrr() {
 
 	this->NewNumberOfNeighbor = 0; // for Few-body Search by EW 2025.3.1
@@ -410,9 +408,6 @@ void Particle::computeAccelerationReg() {
 void Particle::updateRegularParticleCuda() {
 
 	double new_a[Dim], new_adot[Dim];
-	int NewNumberOfNeighborGPU = this->NewNumberOfNeighbor;
-	int NewNeighborIndex;
-
 	double new_time = this->CurrentTimeReg+this->TimeStepReg;
 	double pos[Dim], vel[Dim];
 	if (this->NumberOfNeighbor == 0)
@@ -420,8 +415,7 @@ void Particle::updateRegularParticleCuda() {
 	else
 		this->predictParticleSecondOrder(0, pos, vel);
 
-	double a_tmp[Dim];
-	double adot_tmp[Dim];
+	double a_tmp[Dim], adot_tmp[Dim];
 
 	for (int dim=0; dim<Dim; dim++) {
 		new_a[dim]			= this->a_irr[dim][0];
@@ -433,47 +427,22 @@ void Particle::updateRegularParticleCuda() {
 		adot_tmp[dim]       = 0.;
 	}
 
-
 	std::unordered_set<int> hashTableOld;
 	hashTableOld.reserve(this->NumberOfNeighbor);
 	std::unordered_set<int> hashTableNew;
-	hashTableNew.reserve(NewNumberOfNeighborGPU);
-	
-	int RealNeighbors[MaxNumNeighbor]; // this->Neighbors is containing members, not CM ptcls, but this is containing CM ptcls, not members
-	int RealNumberOfNeighbor = 0;
+	hashTableNew.reserve(this->NewNumberOfNeighbor); // We are including myself in neighbor from GPU kernel by EW 2025.8.26
 
-	int size = this->NumberOfNeighbor > NewNumberOfNeighborGPU ? this->NumberOfNeighbor : NewNumberOfNeighborGPU;
 
-	for (int i=0; i<size; i++) {
-		if (i < NewNumberOfNeighborGPU) {
-			NewNeighborIndex = ActiveIndexToOriginalIndex[this->NewNeighbors[i]];
-			// /* // for debugging by EW 2025.1.23
-			if (!particles[NewNeighborIndex].isActive) {
-				fprintf(stderr, "In GPU, this PID: %d, inActive PID: %d\n", this->PID, particles[NewNeighborIndex].PID);
-				//fprintf(stderr, "ActiveIndexToPID[%d]=%d\n", this->PID, ActiveIndexToPID[this->PID]);
-				assert(particles[NewNeighborIndex].isActive); // for debugging by EW 2025.1.23
-			}
-			// */
-			hashTableNew.insert(NewNeighborIndex);
-		}
-		if (i < this->NumberOfNeighbor) {
-			if (particles[this->Neighbors[i]].isActive) {
-				hashTableOld.insert(this->Neighbors[i]);
-				RealNeighbors[RealNumberOfNeighbor++] = this->Neighbors[i];
-			}
-			else {
-				if (particles[this->Neighbors[i]].CMPtclIndex != -1) {
-					if (hashTableOld.find(particles[this->Neighbors[i]].CMPtclIndex) == hashTableOld.end()) {
-						hashTableOld.insert(particles[this->Neighbors[i]].CMPtclIndex);
-						RealNeighbors[RealNumberOfNeighbor++] = particles[this->Neighbors[i]].CMPtclIndex;
-					}
-				}
-			}
-		}
+	hashTableNew.insert(this->NewNeighbors, this->NewNeighbors + this->NewNumberOfNeighbor);
+	hashTableNew.erase(this->ParticleIndex);
+	this->NewNumberOfNeighbor--;
+
+	for (int i = 0; i < this->NumberOfNeighbor; i++) {
+		if (particles[this->Neighbors[i]].isActive)
+			hashTableOld.insert(this->Neighbors[i]);
+		else if (particles[this->Neighbors[i]].CMPtclIndex != -1)
+			hashTableOld.insert(particles[this->Neighbors[i]].CMPtclIndex);
 	}
-	assert(RealNumberOfNeighbor == hashTableOld.size()); // for debugging by EW 2025.1.30
-
-	size = hashTableNew.size() > hashTableOld.size() ? hashTableNew.size() : hashTableOld.size();
 
 	Particle* ptcl;
 	double pos_neighbor[Dim], vel_neighbor[Dim];
@@ -482,51 +451,11 @@ void Particle::updateRegularParticleCuda() {
 	double dxdv;
 	double m_r3;
 
+	for (int _OldNeighborIndex: hashTableOld) {
+		ptcl = &particles[_OldNeighborIndex];
 
-	auto it = hashTableNew.begin();
-	// Aceeleration correction
-	for (int i=0; i<size; i++) {
-		if ( i < RealNumberOfNeighbor ) {
-				
-			// neighbor in old but not in new
-		 	if ( hashTableNew.find(RealNeighbors[i]) == hashTableNew.end() ) {
-				//fprintf(stderr, "in old, not in new = %d\n",this->Neighbors[i]);
-				//std::cerr <<  "in old, not in new =" <<  this->Neighbors[i] << std::endl;
-				ptcl = &particles[RealNeighbors[i]];
-				/* // for debugging by EW 2025.1.23
-				if (!ptcl->isActive) {
-					fprintf(stderr, "this PID: %d, inActive PID: %d\n", this->PID, ptcl->PID);
-					assert(ptcl->isActive); // for debugging by EW 2025.1.23
-				}
-				*/
-
-				if (ptcl->NumberOfNeighbor == 0)
-					ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeReg, pos_neighbor, vel_neighbor);
-				else
-					ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeIrr, pos_neighbor, vel_neighbor);
-
-				dr2  = 0.0;
-				dxdv = 0.0;
-				for (int dim=0; dim<Dim; dim++) {
-					dx[dim] = pos_neighbor[dim] - pos[dim];
-					dv[dim] = vel_neighbor[dim] - vel[dim];
-					dr2    += dx[dim]*dx[dim];
-					dxdv   += dx[dim]*dv[dim];
-				}
-
-				m_r3 = ptcl->Mass/dr2/sqrt(dr2);
-
-				for (int dim=0; dim<Dim; dim++){
-					a_tmp[dim]    -= m_r3*dx[dim];
-					adot_tmp[dim] -= m_r3*(dv[dim] - 3*dx[dim]*dxdv/dr2);
-				}
-			}
-		}
-
-
-
-		if ( i < NewNumberOfNeighborGPU ) {
-			ptcl = &particles[*it];
+		// neighbor in old but not in new
+		if ( hashTableNew.find(ptcl->ParticleIndex) == hashTableNew.end() ) {
 
 			if (ptcl->NumberOfNeighbor == 0)
 				ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeReg, pos_neighbor, vel_neighbor);
@@ -545,29 +474,44 @@ void Particle::updateRegularParticleCuda() {
 			m_r3 = ptcl->Mass/dr2/sqrt(dr2);
 
 			for (int dim=0; dim<Dim; dim++){
-				a_irr[dim][0] += m_r3*dx[dim];
-				a_irr[dim][1] += m_r3*(dv[dim] - 3*dx[dim]*dxdv/dr2);
+				a_tmp[dim]    -= m_r3*dx[dim];
+				adot_tmp[dim] -= m_r3*(dv[dim] - 3*dx[dim]*dxdv/dr2);
 			}
-
-			// neighbor in new but not in old
-			if ( hashTableOld.find(ptcl->ParticleIndex) == hashTableOld.end() ) {
-				//fprintf(stderr, "in new, not in old = %d\n",this->Neighbors[i]);
-				//std::cerr <<  "in new, not in old =" <<  NewNeighbors[i] << std::endl;
-				for (int dim=0; dim<Dim; dim++){
-					a_tmp[dim]    += m_r3*dx[dim];
-					adot_tmp[dim] += m_r3*(dv[dim] - 3*dx[dim]*dxdv/dr2);
-				}
-			}
-			it++;
 		}
 	}
 
+	for (int _NewNeighborIndex: hashTableNew) {
+		ptcl = &particles[_NewNeighborIndex];
 
+		if (ptcl->NumberOfNeighbor == 0)
+			ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeReg, pos_neighbor, vel_neighbor);
+		else
+			ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeIrr, pos_neighbor, vel_neighbor);
 
-	/*******************************************************
-	 * Acceleartion correction according to past neighbor
-	 ********************************************************/
+		dr2  = 0.0;
+		dxdv = 0.0;
+		for (int dim=0; dim<Dim; dim++) {
+			dx[dim] = pos_neighbor[dim] - pos[dim];
+			dv[dim] = vel_neighbor[dim] - vel[dim];
+			dr2    += dx[dim]*dx[dim];
+			dxdv   += dx[dim]*dv[dim];
+		}
 
+		m_r3 = ptcl->Mass/dr2/sqrt(dr2);
+
+		for (int dim=0; dim<Dim; dim++){
+			a_irr[dim][0] += m_r3*dx[dim];
+			a_irr[dim][1] += m_r3*(dv[dim] - 3*dx[dim]*dxdv/dr2);
+		}
+
+		// neighbor in new but not in old
+		if ( hashTableOld.find(ptcl->ParticleIndex) == hashTableOld.end() ) {
+			for (int dim=0; dim<Dim; dim++){
+				a_tmp[dim]    += m_r3*dx[dim];
+				adot_tmp[dim] += m_r3*(dv[dim] - 3*dx[dim]*dxdv/dr2);
+			}
+		}
+	}
 
 
 	/*******************************************************
@@ -608,17 +552,15 @@ void Particle::updateRegularParticleCuda() {
 		adot_tmp[dim] = 0.;
 	}
 
-	it = hashTableNew.begin();
 	int _NewNumberOfNeighbor = 0;
-	for (int i=0; i<NewNumberOfNeighborGPU; i++) {
-		ptcl = &particles[*it];
+	for (int _NewNeighborIndex: hashTableNew) {
+		ptcl = &particles[_NewNeighborIndex];
 		if (ptcl->isCMptcl) {
 			for (int j=0; j<ptcl->NumberOfMember; j++)
 				this->NewNeighbors[_NewNumberOfNeighbor++] = ptcl->Members[j];
 		}
 		else
 			this->NewNeighbors[_NewNumberOfNeighbor++] = ptcl->ParticleIndex;
-		it++;
 	}
 	this->NewNumberOfNeighbor = _NewNumberOfNeighbor;
 

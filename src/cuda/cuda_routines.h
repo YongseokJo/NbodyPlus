@@ -51,118 +51,19 @@ void my_allocate(T **host, T **device, const int size) {
 }
 
 template <typename T>
-void my_free(T &host, T &device) {
-	cudaError_t cudaStatus;
-	cudaStatus = cudaFree(device);
-	if (cudaStatus != cudaSuccess) {
-		fprintf(stderr, "cudaFree failed: %s\n", cudaGetErrorString(cudaStatus));
-	}
-	cudaStatus = cudaFreeHost(host);
-	if (cudaStatus != cudaSuccess) {
-		fprintf(stderr, "cudaFree failed: %s\n", cudaGetErrorString(cudaStatus));
-	}
-	//free(host);
-}
-
-//	For multiple devices
-template <typename T>
-void my_allocate(T **host, T **device, const int size, int deviceCount, int targetsize) {
-    cudaError_t cudaStatus;
-	int temp;
-
-    // Allocate device memory for each device
-    for (int i = 0; i < deviceCount; i++) {
-        cudaStatus = cudaSetDevice(i); // Set the current device
-        if (cudaStatus != cudaSuccess) {
-            fprintf(stderr, "cudaSetDevice failed for device %d: %s\n", i, cudaGetErrorString(cudaStatus));
-            continue; // Skip to the next device if setting the device fails
-        }
-		if (targetsize == 0) {
-	        cudaStatus = cudaMalloc(&device[i], size * sizeof(T));
-		}
-		else{
-			temp = size / targetsize;
-			cudaStatus = cudaMalloc(&device[i], temp * ((targetsize + deviceCount - 1) / deviceCount) * sizeof(T));
-		}
-		
-        if (cudaStatus != cudaSuccess) {
-            fprintf(stderr, "cudaMalloc failed for device %d: %s\n", i, cudaGetErrorString(cudaStatus));
-        }
+void my_free(T*& host, T*& device) {
+    if (device) {
+        cudaError_t st = cudaFree(device);
+        if (st != cudaSuccess) fprintf(stderr, "cudaFree failed: %s\n", cudaGetErrorString(st));
+        device = nullptr;
     }
-
-    // Allocate pinned host memory for all devices
-    cudaStatus = cudaMallocHost(host, size * sizeof(T));
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMallocHost failed: %s\n", cudaGetErrorString(cudaStatus));
-    }
-}
-template <typename T>
-void my_free(T *host, T **device, int deviceCount) {
-    cudaError_t cudaStatus;
-
-    // Free device memory for each device
-    for (int i = 0; i < deviceCount; i++) {
-        cudaStatus = cudaSetDevice(i); // Set the current device
-        if (cudaStatus != cudaSuccess) {
-            fprintf(stderr, "cudaSetDevice failed for device %d: %s\n", i, cudaGetErrorString(cudaStatus));
-            continue; // Skip freeing this device if setting the device fails
-        }
-		
-        cudaStatus = cudaFree(device[i]);
-        if (cudaStatus != cudaSuccess) {
-            fprintf(stderr, "cudaFree failed for device %d: %s\n", i, cudaGetErrorString(cudaStatus));
-        }
-    }
-
-    // Free pinned host memory
-    cudaStatus = cudaFreeHost(host);
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaFreeHost failed: %s\n", cudaGetErrorString(cudaStatus));
-    }
-}
-template <typename T>
-void my_allocate_d(T **device, const int size, int deviceCount, int targetsize) {
-    cudaError_t cudaStatus;
-	int temp;
-	
-    // Allocate device memory for each device
-    for (int i = 0; i < deviceCount; i++) {
-        cudaStatus = cudaSetDevice(i); // Set the current device
-        if (cudaStatus != cudaSuccess) {
-            fprintf(stderr, "cudaSetDevice failed for device %d: %s\n", i, cudaGetErrorString(cudaStatus));
-            continue; // Skip to the next device if setting the device fails
-        }
-		if (targetsize == 0) {
-	        cudaStatus = cudaMalloc(&device[i], size * sizeof(T));
-		}
-		else{
-			temp = size / targetsize;
-			cudaStatus = cudaMalloc(&device[i], temp * ((targetsize + deviceCount - 1) / deviceCount) * sizeof(T));
-		}
-        if (cudaStatus != cudaSuccess) {
-            fprintf(stderr, "cudaMalloc failed for device %d: %s\n", i, cudaGetErrorString(cudaStatus));
-        }
+    if (host) {
+        cudaError_t st = cudaFreeHost(host);
+        if (st != cudaSuccess) fprintf(stderr, "cudaFreeHost failed: %s\n", cudaGetErrorString(st));
+        host = nullptr;
     }
 }
 
-template <typename T>
-void my_free_d(T &device, int deviceCount) {
-    cudaError_t cudaStatus;
-
-    // Free device memory for each device
-    for (int i = 0; i < deviceCount; i++) {
-        cudaStatus = cudaSetDevice(i); // Set the current device
-        if (cudaStatus != cudaSuccess) {
-            fprintf(stderr, "cudaSetDevice failed for device %d: %s\n", i, cudaGetErrorString(cudaStatus));
-            continue; // Skip freeing this device if setting the device fails
-        }
-		
-        cudaStatus = cudaFree(device[i]);
-        if (cudaStatus != cudaSuccess) {
-            fprintf(stderr, "cudaFree failed for device %d: %s\n", i, cudaGetErrorString(cudaStatus));
-        }
-    }
-}
 // ===============================
 
 
@@ -176,7 +77,7 @@ void my_allocate_d(T **device, const int size) {
 }
 
 template <typename T>
-void my_free_d(T &device) {
+void my_free_d(T*& device) {
 	cudaError_t cudaStatus;
 	cudaStatus = cudaFree(device);
 	if (cudaStatus != cudaSuccess) {

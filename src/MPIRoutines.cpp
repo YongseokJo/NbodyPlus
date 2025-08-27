@@ -8,6 +8,7 @@
 #include <mpi.h>
 #include <cstddef>
 #include "Queue.h"
+#include "cuda/cuda_defs.h"
 
 
 template <typename T>
@@ -15,6 +16,8 @@ void InitialAssignmentOfTasks(T data, int NumTask);
 
 
 MPI_Datatype createQueueType();
+MPI_Datatype createIparticleType();
+MPI_Datatype createJparticleType();
 
 void initializeMPI(int argc, char *argv[]) {
 	/* MPI Initialization */
@@ -33,7 +36,9 @@ void initializeMPI(int argc, char *argv[]) {
 		MPI_Finalize();
 	}
 
-	QueueType = createQueueType();
+	QueueType		= createQueueType();
+	IparticleType	= createIparticleType();
+	JparticleType	= createJparticleType();
 	/*
 	// comm for each node
 	MPI_Comm shmcomm;
@@ -51,7 +56,8 @@ void initializeMPI(int argc, char *argv[]) {
 	int shared_rank, shared_size;
 	MPI_Comm_rank(shared_comm, &shared_rank);
 	MPI_Comm_size(shared_comm, &shared_size);
-	fprintf(stderr,"My Rank =%d : Shared Rank = %d, Shared size = %d\n", MyRank, shared_rank, shared_size);
+	if (MyRank == ROOT)
+		fprintf(stdout, "MyRank = %d, NumberOfProcessor = %d : Shared Rank = %d, Shared size = %d\n", MyRank, NumberOfProcessor, shared_rank, shared_size);
 
 	// Allocate shared memory
 	if (shared_rank == 0) {
@@ -60,12 +66,9 @@ void initializeMPI(int argc, char *argv[]) {
 		MPI_INFO_NULL, shared_comm, &particles_original, &win);
 		MPI_Win_allocate_shared(sizeof(GlobalVariable), sizeof(GlobalVariable),
 		 MPI_INFO_NULL, shared_comm, &global_variable_original, &win2);
-		MPI_Win_allocate_shared(sizeof(int)*MaxNumberOfParticle, sizeof(int),
-		 MPI_INFO_NULL, shared_comm, &ActiveIndexToOriginalIndex_orginal, &win3);
 	} else {
 		MPI_Win_allocate_shared(0, sizeof(Particle), MPI_INFO_NULL, shared_comm, &particles_original, &win);
 		MPI_Win_allocate_shared(0, sizeof(GlobalVariable), MPI_INFO_NULL, shared_comm, &global_variable_original, &win2);
-		MPI_Win_allocate_shared(0, sizeof(int), MPI_INFO_NULL, shared_comm, &ActiveIndexToOriginalIndex_orginal, &win3);
 	}
 	// Query shared memory of rank 0
 	
@@ -74,7 +77,6 @@ void initializeMPI(int argc, char *argv[]) {
 
 	MPI_Win_shared_query(win, 0, &size_bytes, &disp_unit, &particles);
 	MPI_Win_shared_query(win2, 0, &size_bytes, &disp_unit, &global_variable);
-	MPI_Win_shared_query(win3, 0, &size_bytes, &disp_unit, &ActiveIndexToOriginalIndex);
 }
 
 void InitialAssignmentOfTasks(std::vector<int>& data, int NumTask, int TAG) {
@@ -163,18 +165,82 @@ void FurtherAssignmentOfTasks() {
 
 MPI_Datatype createQueueType() {
     MPI_Datatype QueueType;
-    int block_lengths[3] = {1, 1, 1}; // Number of elements in each field
-    MPI_Aint offsets[3];
-    MPI_Datatype types[3] = {MPI_INT8_T, MPI_INT, MPI_DOUBLE}; // Match the types in the struct
+    int blocklen[3] = {1, 1, 1};
+    MPI_Datatype types[3] = {MPI_INT8_T, MPI_INT, MPI_DOUBLE};
+	MPI_Aint disp[3], base;
 
-    // Calculate offsets
-    offsets[0] = offsetof(Queue, task);
-    offsets[1] = offsetof(Queue, pid);
-    offsets[2] = offsetof(Queue, next_time);
+	Queue sample;
+    MPI_Get_address(&sample,           &base);
+    MPI_Get_address(&sample.task,      &disp[0]);
+    MPI_Get_address(&sample.pid,       &disp[1]);
+    MPI_Get_address(&sample.next_time, &disp[2]);
 
-    // Create the struct datatype
-    MPI_Type_create_struct(3, block_lengths, offsets, types, &QueueType);
+	for (int i = 0; i < 3; ++i) disp[i] -= base;
+
+    MPI_Type_create_struct(3, blocklen, disp, types, &QueueType);
     MPI_Type_commit(&QueueType);
 
     return QueueType;
+}
+
+MPI_Datatype createIparticleType() {
+	MPI_Datatype IparticleType;
+	int blocklen[8] = {1,1,1,1,1,1,1,1};
+#ifdef CUDA_FLOAT
+	MPI_Datatype types[8] = {MPI_FLOAT, MPI_FLOAT, MPI_FLOAT, MPI_FLOAT,
+							MPI_FLOAT, MPI_FLOAT, MPI_FLOAT, MPI_FLOAT};
+#else
+	MPI_Datatype types[8] = {MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE,
+							MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE};
+#endif
+	MPI_Aint disp[8], base;
+
+	Iparticle sample;
+	MPI_Get_address(&sample,		&base);
+	MPI_Get_address(&sample.posx,	&disp[0]);
+	MPI_Get_address(&sample.posy,	&disp[1]);
+	MPI_Get_address(&sample.posz,	&disp[2]);
+	MPI_Get_address(&sample.r2,		&disp[3]);
+	MPI_Get_address(&sample.velx,	&disp[4]);
+	MPI_Get_address(&sample.vely,	&disp[5]);
+	MPI_Get_address(&sample.velz,	&disp[6]);
+	MPI_Get_address(&sample.dtr,	&disp[7]);
+
+	for (int i = 0; i < 8; ++i) disp[i] -= base;
+
+	MPI_Type_create_struct(8, blocklen, disp, types, &IparticleType);
+	MPI_Type_commit(&IparticleType);
+
+	return IparticleType;
+}
+
+MPI_Datatype createJparticleType() {
+	MPI_Datatype JparticleType;
+	int blocklen[8] = {1,1,1,1,1,1,1,1};
+#ifdef CUDA_FLOAT
+	MPI_Datatype types[8] = {MPI_FLOAT, MPI_FLOAT, MPI_FLOAT, MPI_FLOAT,
+							MPI_FLOAT, MPI_FLOAT, MPI_FLOAT, MPI_INT};
+#else
+	MPI_Datatype types[8] = {MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE,
+							MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_LONG_LONG};
+#endif
+	MPI_Aint disp[8], base;
+
+	Jparticle sample;
+	MPI_Get_address(&sample,		&base);
+	MPI_Get_address(&sample.posx,	&disp[0]);
+	MPI_Get_address(&sample.posy,	&disp[1]);
+	MPI_Get_address(&sample.posz,	&disp[2]);
+	MPI_Get_address(&sample.mass,	&disp[3]);
+	MPI_Get_address(&sample.velx,	&disp[4]);
+	MPI_Get_address(&sample.vely,	&disp[5]);
+	MPI_Get_address(&sample.velz,	&disp[6]);
+	MPI_Get_address(&sample.index,	&disp[7]);
+
+	for (int i = 0; i < 8; ++i) disp[i] -= base;
+
+	MPI_Type_create_struct(8, blocklen, disp, types, &JparticleType);
+	MPI_Type_commit(&JparticleType);
+
+	return JparticleType;
 }

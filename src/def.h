@@ -1,7 +1,3 @@
-// #define FAIL    -1 // crash with mpich, so commeted out by EW 2025.6.24
-// #define SUCCESS  1 // crash with mpich, so commeted out by EW 2025.6.24
-
-
 #define NumberOfTask 20
 
 #define MaxNumberOfParticle 200000
@@ -89,7 +85,6 @@ typedef double CUDA_REAL;
 #define BatchSize 64 // 64. each thread calculates BatchSize particles with a single shared memory
 #define GridDimY 32 // 32 original //  each block calcuates NNB/GridDimY particles
 #define NNB_per_block 128 //256 original
-#define MultiGPU // for multi-gpu
 //#define BatchSize 32 // each thread calculates BatchSize particles
 //#define GridDimY 16 // each block calcuates NNB/GridDimY particles
 //#define NNB_per_block 128
