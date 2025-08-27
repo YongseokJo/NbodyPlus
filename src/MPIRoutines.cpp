@@ -56,7 +56,8 @@ void initializeMPI(int argc, char *argv[]) {
 	int shared_rank, shared_size;
 	MPI_Comm_rank(shared_comm, &shared_rank);
 	MPI_Comm_size(shared_comm, &shared_size);
-	fprintf(stderr,"My Rank =%d : Shared Rank = %d, Shared size = %d\n", MyRank, shared_rank, shared_size);
+	if (MyRank == ROOT)
+		fprintf(stdout, "MyRank = %d, NumberOfProcessor = %d : Shared Rank = %d, Shared size = %d\n", MyRank, NumberOfProcessor, shared_rank, shared_size);
 
 	// Allocate shared memory
 	if (shared_rank == 0) {

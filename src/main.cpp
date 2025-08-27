@@ -33,14 +33,14 @@ int main(int argc, char *argv[]) {
 	DefaultGlobal();
 
 	binout = fopen("binary_output.txt", "w");
-	fprintf(binout, "Starting nbody - Binary OUTPUT\n");
+	fprintf(binout, "Starting ABYSS - Binary OUTPUT\n");
 	fflush(binout);
 	mergerout = fopen("merger_output.txt", "w");
-	fprintf(mergerout, "Starting nbody - Merger OUTPUT\n");
+	fprintf(mergerout, "Starting ABYSS - Merger OUTPUT\n");
 	fflush(mergerout);
 #ifdef SEVN
 	SEVNout = fopen("SEVN_output.txt", "w");
-	fprintf(SEVNout, "Starting nbody - SEVN OUTPUT\n");
+	fprintf(SEVNout, "Starting ABYSS - SEVN OUTPUT\n");
 	fflush(SEVNout);
 #endif
 
@@ -82,14 +82,13 @@ int main(int argc, char *argv[]) {
 	
 
 	if (MyRank == ROOT) {
-		global_variable->LastParticleIndex = LastParticleIndex;
 
 		RootRoutines();
 	} else {
 		// /* // by EW 2025.1.27
 		std::string filename = "worker_output_" + std::to_string(MyRank) + ".txt";
 		workerout = fopen(filename.c_str(), "w");
-		fprintf(workerout, "Starting nbody - WORKER OUTPUT\n");
+		fprintf(workerout, "Starting ABYSS - WORKER OUTPUT\n");
 		fflush(workerout);
 		// */
 		
@@ -98,7 +97,16 @@ int main(int argc, char *argv[]) {
 
 	// Finalize the window and MPI environment
 	MPI_Win_free(&win);
+	MPI_Win_free(&win2);
+
+	MPI_Comm_free(&shared_comm);
+
+	MPI_Type_free(&QueueType);
+    MPI_Type_free(&IparticleType);
+    MPI_Type_free(&JparticleType);
+
 	MPI_Finalize();
+
 	return 0;
 }
 

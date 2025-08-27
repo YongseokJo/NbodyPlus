@@ -101,19 +101,6 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int>& RegularList, QueueSc
 	nvtxRangePushA("RegCuda");
 #endif
 
-	/*
-	fprintf(stderr, "DEBUGGING STARTS...\n");
-	fprintf(stderr, "ListSize: %d\n", ListSize);
-	for (int i=0; i<ListSize; i++) {
-		ptcl = &particles[RegularListIndices[i]];
-		fprintf(stderr, "PID: %d, NumNeighbor: %d, NewNumNeighbor: %d\n", ptcl->PID, ptcl->NumberOfNeighbor, ptcl->NewNumberOfNeighbor);
-		for (int j=0; j<ptcl->NewNumberOfNeighbor; j++) {
-			fprintf(stderr, "%d ", ptcl->NewNeighbors[j]);
-		}
-		fprintf(stderr, "\n");
-	}
-	*/
-
 	queue_scheduler.initialize(RegCuda);
 	queue_scheduler.takeQueueRegularList(RegularList);
 	do
@@ -123,8 +110,7 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int>& RegularList, QueueSc
 		queue_scheduler.waitQueue(0); // blocking wait
 	} while (queue_scheduler.isComplete());
 
-	/*
-	// Adjust Regular Gravity
+	/* // Legacy code.. this part is replaced by queue_scheduler above
 	int i=0;
 	TaskName task=RegCuda;
 	Queue queue = {task, -1, -1.0};
@@ -178,9 +164,6 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int>& RegularList, QueueSc
 } // calculate 0th, 1st derivative of force + neighbors on GPU ends
 
 
-
-
-// (Query MY) Let's optimize this function later. Copying data to h_ptcl in _ReceiveFromHost of cuda_my_acceleation.cpp seems super inefficient. 2025.5.24
 void sendAllParticlesToGPU(double new_time, const int& RegularListSize, std::vector<int>& RegularListIndices) {
 
 /*
@@ -261,7 +244,7 @@ void sendAllParticlesToGPU(double new_time, const int& RegularListSize, std::vec
 #ifdef PERFORMANCETRACE
 	end_point_routine = std::chrono::high_resolution_clock::now();
 	elapsed = std::chrono::duration_cast<std::chrono::microseconds>(end_point_routine - start_point_routine);
-	fprintf(stdout, "Entire loop took %lld microseconds\n", static_cast<long long>(elapsed.count()));
+	fprintf(stdout, "Gather calculation took %lld microseconds\n", static_cast<long long>(elapsed.count()));
 #endif
 */
 	// send the arrays to GPU
@@ -278,5 +261,41 @@ void sendAllParticlesToGPU(double new_time, const int& RegularListSize, std::vec
 	fprintf(stdout, "SendToDevice took %lld microseconds\n", static_cast<long long>(elapsed.count()));
 #endif
 */
+
+}
+
+void sendAllParticlesToGPU_Worker(double new_time) {
+
+	Particle* ptcl;
+	std::vector<Jparticle> Jparticles;
+	std::vector<Iparticle> Iparticles;
+	std::vector<int> LocalRegularList;
+
+	int J_start = (MyRank - 1) * (global_variable->LastParticleIndex + 1) / NumberOfWorker;
+	int J_end   = MyRank * (global_variable->LastParticleIndex + 1) / NumberOfWorker;
+
+	for (int j = J_start; j < J_end; j++) {
+
+		ptcl = &particles[j];
+
+		if (!ptcl->isActive)
+			continue;
+
+		if (ptcl->NumberOfNeighbor == 0)
+			ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeReg, Jparticles, Iparticles, LocalRegularList);
+		else
+			ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeIrr, Jparticles, Iparticles, LocalRegularList);
+
+	}
+
+	int sizes[2] = {Jparticles.size(), Iparticles.size()};
+	MPI_Gather(sizes, 2, MPI_INT, nullptr, 0, MPI_INT, ROOT, MPI_COMM_WORLD);
+
+	MPI_Gatherv(Jparticles.data(), sizes[0], JparticleType,	
+				nullptr, nullptr, nullptr, JparticleType, ROOT, MPI_COMM_WORLD);
+	MPI_Gatherv(Iparticles.data(), sizes[1], IparticleType,	
+				nullptr, nullptr, nullptr, IparticleType, ROOT, MPI_COMM_WORLD);
+	MPI_Gatherv(LocalRegularList.data(), sizes[1], MPI_INT,
+				nullptr, nullptr, nullptr, MPI_INT, ROOT, MPI_COMM_WORLD);
 
 }

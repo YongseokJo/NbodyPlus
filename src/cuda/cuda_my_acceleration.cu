@@ -347,6 +347,9 @@ void _InitializeDevice(){
 	}
 	// Select CUDA device (optional)
 	cudaGetDeviceCount(&deviceCount);
+	if (MyRank == ROOT) {
+        std::cout << "There are " << deviceCount << " GPUs." << std::endl;
+    }
 	gpu.resize(deviceCount);
 
 	char hostname[150];
@@ -357,8 +360,8 @@ void _InitializeDevice(){
 		cudaSetDevice(deviceNum);
 
 		cudaDeviceProp prop;
-		cudaGetDeviceProperties(&prop, devid);
-		fprintf(stderr, "# GPU initialization - rank: %d; HOST: %s; NGPU: %d; device: %d %s\n", MyRank, hostname, deviceCount, devid, prop.name);
+		cudaGetDeviceProperties(&prop, deviceNum);
+		fprintf(stdout, "# GPU initialization - MyRank: %d; HOST: %s; NGPU: %d; device: %d %s\n", MyRank, hostname, deviceCount, deviceNum, prop.name);
 
 		gpu[deviceNum].id = deviceNum;
 		cudaStreamCreate(&gpu[deviceNum].stream);
@@ -373,20 +376,16 @@ void _InitializeDevice(){
     CUresult resCtx = cuCtxGetCurrent(&context); 
     if ((resCtx == CUDA_SUCCESS) && (context != nullptr)) {
         if (cuCtxGetDevice(&cuDev) == CUDA_SUCCESS) {
-            int devId = (int)cuDev;
-            std::cout << "[Rank " << MyRank << "] Current device from driver context = " << devId << std::endl;
+            devid = (int)cuDev;
+            std::cout << "[Rank " << MyRank << "] Current device from driver context = " << devid << std::endl;
             // Check if devId is valid
-            if (devId < 0 || devId >= deviceCount) {
-                std::cerr << "Invalid device ID from context: " << devId << std::endl;
+            if (devid < 0 || devid >= deviceCount) {
+                std::cerr << "Invalid device ID from context: " << devid << std::endl;
             }
         }
     } else {
         std::cerr << "Failed to get CUDA context on root processor. "
                   << "cuCtxGetCurrent returned: " << resCtx << std::endl;
-    }
-
-    if (MyRank == ROOT) {
-        std::cout << "There are " << deviceCount << " GPUs." << std::endl;
     }
 }
 

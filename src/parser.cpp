@@ -32,7 +32,7 @@ void Parser(int argc, char *argv[]) {
 	outputTimeStep = outputTimeStep/endTime; // endTime should be Myr
 
 	if (MyRank == ROOT) {
-		std::cout << "Configuration file " << config_file <<  std::endl;
+		std::cout << "Configuration file: " << config_file <<  std::endl;
 	}
 }
 

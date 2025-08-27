@@ -32,12 +32,10 @@ bool readData() {
 	assert(NumberOfParticle < MaxNumberOfParticle);
 	NewPID = NumberOfParticle;
 	LastParticleIndex = NumberOfParticle - 1;
+	global_variable->LastParticleIndex = LastParticleIndex;
 
-	// Declaration
-	//Particle *particle_temp;	
-	//particle_temp = new Particle[NumParticle];
+	
 	double** data = new double*[NumberOfParticle];
-
 	for (int i = 0; i < NumberOfParticle; ++i) {
 		data[i] = new double[NUM_COLUMNS];
 	}
@@ -49,9 +47,7 @@ bool readData() {
 		}
 	}
 
-
 	int row = 0;
-
 	std::string line;
 	while (std::getline(inputFile, line) && row < NumberOfParticle) { // Read lines from the file
 		std::istringstream iss(line); // Create a stringstream for each line
@@ -62,8 +58,6 @@ bool readData() {
 			data[row][col] = value;
 			++col;
 		}
-		//particle_temp[row].setParticleInfo(data[row], row);
-		//particle.push_back(new Particle()particle_temp[row]);
 		particles_original[row].initialize(data[row],row);
 		++row;
 	}
@@ -90,20 +84,11 @@ bool readData() {
 	initializeStellarEvolution();
 #endif
 
-	/*
-	for (int i=0; i<particle.size(); i++) {
-		particle[i]->ParticleIndex = i;
-	}
-	*/
-
-
-
 	// Deallocate memory
 	for (int i = 0; i < NumberOfParticle; ++i) {
 		delete[] data[i];
 	}
 	delete[] data;
-
 
 	return true;
 }

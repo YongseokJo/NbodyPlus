@@ -3,7 +3,6 @@
 #include <errno.h>
 #include "global.h"
 #include "Queue.h"
-#include "cuda/cuda_defs.h"
 
 void broadcastFromRoot(double &data);
 void broadcastFromRoot(ULL &data);
@@ -14,6 +13,7 @@ void makePrimordialGroup(Particle* ptclCM);
 void NewFBInitialization(Particle* ptclCM);
 void deleteGroup(Particle* ptclCM);
 void NewFBInitialization3(Group* group);
+void sendAllParticlesToGPU_Worker(double new_time);
 
 void WorkerRoutines() {
 
@@ -151,10 +151,8 @@ void WorkerRoutines() {
 				//MPI_Win_sync(win);  // Synchronize memory
 				//MPI_Barrier(shared_comm);
 				//MPI_Win_fence(0, win);
-				fprintf(stderr, "(%d) nbody+:time_block = %d, EnzoTimeStep=%e\n", MyRank, time_block, EnzoTimeStep);
-				fflush(stderr);
+				fprintf(workerout, "MyRank = %d time_block = %d, EnzoTimeStep = %e\n\n", MyRank, time_block, EnzoTimeStep);
 				break;
-
 
 #ifdef FEWBODY
 			case SearchPrimordialGroup: // Primordial binary search
@@ -276,41 +274,10 @@ void WorkerRoutines() {
 				MPI_Reduce(&E_PN,			nullptr, 1, MPI_DOUBLE, MPI_SUM, ROOT, MPI_COMM_WORLD);
 				continue;
 
-			case PrepareGPUCalc: {
+			case PrepareGPUCalc:
 
-				std::vector<Jparticle> Jparticles;
-				std::vector<Iparticle> Iparticles;
-				std::vector<int> LocalRegularList;
-
-				int J_start = (MyRank - 1) * (global_variable->LastParticleIndex + 1) / NumberOfWorker;
-				int J_end   = MyRank * (global_variable->LastParticleIndex + 1) / NumberOfWorker;
-
-				for (int j = J_start; j < J_end; j++) {
-
-					ptcl = &particles[j];
-
-					if (!ptcl->isActive)
-						continue;
-
-					if (ptcl->NumberOfNeighbor == 0)
-						ptcl->predictParticleSecondOrder(next_time-ptcl->CurrentTimeReg, Jparticles, Iparticles, LocalRegularList);
-					else
-						ptcl->predictParticleSecondOrder(next_time-ptcl->CurrentTimeIrr, Jparticles, Iparticles, LocalRegularList);
-
-				}
-
-				int sizes[2] = {Jparticles.size(), Iparticles.size()};
-				MPI_Gather(sizes, 2, MPI_INT, nullptr, 0, MPI_INT, ROOT, MPI_COMM_WORLD);
-
-				MPI_Gatherv(Jparticles.data(), sizes[0], JparticleType,	
-							nullptr, nullptr, nullptr, JparticleType, ROOT, MPI_COMM_WORLD);
-				MPI_Gatherv(Iparticles.data(), sizes[1], IparticleType,	
-							nullptr, nullptr, nullptr, IparticleType, ROOT, MPI_COMM_WORLD);
-				MPI_Gatherv(LocalRegularList.data(), sizes[1], MPI_INT,
-							nullptr, nullptr, nullptr, MPI_INT, ROOT, MPI_COMM_WORLD);
-
+				sendAllParticlesToGPU_Worker(next_time);
 				continue;
-			}
 
 			case Synchronize: // Synchronize
 				MPI_Win_sync(win);  // Synchronize memory
@@ -318,14 +285,14 @@ void WorkerRoutines() {
 				break;
 
 			case Ends: // Simualtion ends
-				std::cout << "Processor " << MyRank<< " returns." << std::endl;
+				fprintf(workerout, "Processor %d returns.\n", MyRank);
 				return;
-				break;
 
 			case Error:
 				perror("Error task assignments");
 				exit(EXIT_FAILURE);
 				break;
+
 			default:
 				break;
 		}

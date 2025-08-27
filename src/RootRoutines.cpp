@@ -294,8 +294,8 @@ void RootRoutines() {
 			MPI_Wait(&request, &status);
 			completed_tasks++;
 		}
-		fprintf(stderr, "nbody+:time_block = %d, EnzoTimeStep=%e\n", time_block, EnzoTimeStep);
-		fflush(stderr);
+		fprintf(stdout, "MyRank = %d time_block = %d, EnzoTimeStep = %e\n", MyRank, time_block, EnzoTimeStep);
+		fflush(stdout);
 	}
 
 	/* Particle Initialization Check */
@@ -368,11 +368,9 @@ void RootRoutines() {
 				task=Ends;
 				queue = {task, -1, -1.0};
 				InitialAssignmentOfTasks(queue, NumberOfWorker, QUEUE_TAG);
-				MPI_Type_free(&QueueType);
 				//MPI_Waitall(NumberOfCommunication, requests, statuses);
 				//NumberOfCommunication = 0;
-				std::cout << EnzoTimeStep << std::endl;
-				std::cout << "Simulation Done!" << std::endl;
+				fprintf(stdout, "Simulation Done! Current Time: %e Myr\n", global_time*EnzoTimeStep*1e4);
 				return;
 			}
 
@@ -1141,14 +1139,6 @@ void RootRoutines() {
 
 #ifdef CUDA
 			{
-				/* // Test for KISTI optimization
-				if ((global_time*EnzoTimeStep*1e10/1e6 >= 0 && global_time*EnzoTimeStep*1e10/1e6 <= 0.1) ||
-						(global_time*EnzoTimeStep*1e10/1e6 >= 20 && global_time*EnzoTimeStep*1e10/1e6 <= 20.1)) {
-					
-					fprintf(stdout, "N_reg: %d\n", RegularList.size());
-					fflush(stdout);
-				}
-				*/
 				next_time = NextRegTimeBlock*time_step;
 #ifdef MULTIMAP
 #ifdef PERFORMANCETRACE
