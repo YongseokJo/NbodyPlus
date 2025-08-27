@@ -30,7 +30,10 @@ struct Jparticle {
     CUDA_REAL velx;
     CUDA_REAL vely;
     CUDA_REAL velz;
-    CUDA_INT index;
+    int index;
+#ifndef CUDA_FLOAT
+    int pad;
+#endif
 };
 
 #endif

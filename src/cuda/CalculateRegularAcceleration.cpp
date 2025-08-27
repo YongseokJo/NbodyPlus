@@ -7,7 +7,6 @@
 #include "../QueueScheduler.h"
 #include "cuda_functions.h"
 #include <cstring>
-#include <omp.h>
 #include "cuda_defs.h"
 
 #ifdef NSIGHT
@@ -101,24 +100,7 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int>& RegularList, QueueSc
 #ifdef NSIGHT
 	nvtxRangePushA("RegCuda");
 #endif
-	/*
-	for (int i=0; i<ListSize; i++) {
-		ptcl = &particles[RegularListIndices[i]];
 
-		ptcl->NewNumberOfNeighbor = NumNeighborReceive[i];
-		std::memcpy(ptcl->NewNeighbors, &ACListReceive[i * MaxNumNeighbor], NumNeighborReceive[i] * sizeof(int));
-
-		for (int dim=0; dim<Dim; dim++) {
-#ifdef CUDA_FLOAT
-			ptcl->a_irr[dim][0] = static_cast<double>(AccRegReceive[i][dim]);		// Just temporarilly save new reg acc here!
-			ptcl->a_irr[dim][1] = static_cast<double>(AccRegDotReceive[i][dim]);	// Just temporarilly save new reg acc here!
-#else
-			ptcl->a_irr[dim][0] = AccRegReceive[i][dim];		// Just temporarilly save new reg acc here!
-			ptcl->a_irr[dim][1] = AccRegDotReceive[i][dim];		// Just temporarilly save new reg acc here!
-#endif
-		}
-	}
-	*/
 	/*
 	fprintf(stderr, "DEBUGGING STARTS...\n");
 	fprintf(stderr, "ListSize: %d\n", ListSize);
@@ -141,7 +123,7 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int>& RegularList, QueueSc
 		queue_scheduler.waitQueue(0); // blocking wait
 	} while (queue_scheduler.isComplete());
 
-/*
+	/*
 	// Adjust Regular Gravity
 	int i=0;
 	TaskName task=RegCuda;
@@ -177,7 +159,7 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int>& RegularList, QueueSc
         }
 		queue_scheduler.waitQueue(0); // blocking wait
 	} while (queue_scheduler.isComplete());
-*/
+	*/
 #ifdef NSIGHT
 	nvtxRangePop();
 #endif

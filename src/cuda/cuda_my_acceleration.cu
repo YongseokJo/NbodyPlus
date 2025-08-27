@@ -28,32 +28,13 @@ static CUDA_REAL time_send, time_grav, time_out, time_nb;
 static long long numInter;
 static int icall,ini,isend;
 // static int nbodymax;
-static int deviceCount;
+static int deviceCount = 0;
 
-static int devid, numGPU;
+static int devid;
 static bool is_open = false;
-static bool devinit = false;
 static bool first   = true;
 static int J_capacity;
 static int I_capacity;
-
-#ifdef unuse // will be depricated soon
-extern CUDA_REAL *h_ptcl, *d_ptcl; //, *background;
-extern CUDA_REAL *h_result, *d_result;
-extern CUDA_REAL *d_r2, *d_diff; //, *d_magnitudes
-extern int *d_target;
-// extern double3 *d_acc, *d_adot;
-
-CUDA_REAL *h_ptcl=nullptr, *d_ptcl=nullptr;; //, *background;
-CUDA_REAL *h_result=nullptr, *d_result=nullptr;
-CUDA_REAL *d_r2=nullptr, *d_diff=nullptr; // ,*d_magnitudes=nullptr, 
-extern int *h_neighbor, *d_neighbor;
-extern int *h_num_neighbor, *d_num_neighbor, *d_neighbor_block;
-int *h_neighbor=nullptr, *d_neighbor=nullptr;
-int *h_num_neighbor=nullptr, *d_num_neighbor=nullptr;
-int *d_neighbor_block=nullptr;
-int *d_target=nullptr;
-#endif
 
 struct GPU {
     int id = -1;
@@ -81,21 +62,11 @@ struct GPU {
 static std::vector<GPU> gpu;
 
 
-// double3 *d_adot=nullptr, *d_acc=nullptr;
-
 //#define debuggig_verification
 #ifdef debuggig_verification
 extern CUDA_REAL *h_r2;
 CUDA_REAL *h_r2=nullptr; //only for verification
 #endif
-
-#ifdef MultiGPU
-// cudaStream_t streams[4]; //Maximum 4 GPUs
-// cublasHandle_t cublasHandles[4];
-
-#endif
-extern CUDA_REAL *h_diff, *h_magnitudes;
-CUDA_REAL *h_diff, *h_magnitudes;
 
 
 void block_range(size_t N, int i, int P, size_t &a, size_t &b) {
@@ -121,7 +92,7 @@ void GetAcceleration(
     // -----------------------------------------------------------------
     // Instead of a single handle, each GPU has cublasHandles[i].
     // Also, each GPU has its own d_ptcl_array[i], d_diff_array[i], etc.
-	cudaGetDeviceCount(&deviceCount);
+
 	// cublasHandle_t cublasHandles[4];
 #ifdef DEBUG
 	fprintf(stderr, "Number of GPUs (GetAcceleration): %d\n", deviceCount);
@@ -296,11 +267,6 @@ void _ReceiveFromHost(
 	isend++;
 	assert(NNB <= nbodymax);
 	cudaError_t cudaStatus;
-
-
-	//printf("CUDA: receive starts\n");
-	cudaGetDeviceCount(&deviceCount);
-
 	
 
 	if ((first) || (new_size(NNB) > J_capacity )) {
@@ -339,25 +305,6 @@ void _ReceiveFromHost(
 			my_allocate_d(&gpu[i].d_result_block, _six * GridDimY * I_capacity);
 		}
 		
-		/*
-		my_allocate(&h_result       , d_result_array      ,           _six*J_capacity, deviceCount, 0);
-		my_allocate(&h_num_neighbor , d_num_neighbor_array, J_capacity, deviceCount, 0);
-		my_allocate_d(d_r2_array,        J_capacity, deviceCount, 0);
-		my_allocate_d(d_target_array,        J_capacity, deviceCount, 0);
-		my_allocate_d(d_diff_array      , _six * GridDimY * I_capacity, deviceCount, 0);
-		// C * m / N_device
-		// C * (m / N_device)
-		my_allocate_d(d_num_neighbor_block_array, GridDimY * I_capacity, deviceCount, 0);
-		my_allocate_d(d_neighbor_block_array, GridDimY * NNB_per_block * I_capacity, deviceCount, 0);
-		my_allocate_d(d_neighbor_array, MaxNumNeighbor * I_capacity, deviceCount, 0);
-		for (int i = 0; i < deviceCount; i++) {
-			cudaSetDevice(i);
-			cudaMallocHost(&h_result_array[i], _six*J_capacity * sizeof(CUDA_REAL));
-			cudaMallocHost(&h_num_neighbor_array[i], J_capacity * sizeof(int));
-			cudaMallocHost(&NeighborList_array[i], J_capacity * MaxNumNeighbor * sizeof(int));
-		}
-		*/
-		
 #ifdef debuggig_verification
 		cudaMallocHost((void**)&h_r2        ,        variable_size * sizeof(CUDA_REAL)); // only for verification
 #endif
@@ -393,33 +340,25 @@ void _ReceiveFromHost(
 }
 
 
-#ifdef MultiGPU
-void _InitializeDevice(int irank){
+void _InitializeDevice(){
 
 	if (MyRank == ROOT) {
-	std::cout << "Initializing CUDA ..." << std::endl;
+		std::cout << "Initializing CUDA ..." << std::endl;
 	}
 	// Select CUDA device (optional)
 	cudaGetDeviceCount(&deviceCount);
-
-	cudaDeviceProp prop;
-	cudaGetDeviceProperties(&prop, devid);
-	//  char *hostname = getenv("HOSTNAME");
+	gpu.resize(deviceCount);
 
 	char hostname[150];
 	memset(hostname,0,150);
 	gethostname(hostname,150);
-	
-
-
-	if (MyRank == ROOT) {
-		fprintf(stderr, "# GPU initialization - rank: %d; HOST %s; NGPU %d; device: %d %s\n", irank, hostname,numGPU, devid, prop.name);
-	}
-
-	gpu.resize(deviceCount);
 
 	for (int deviceNum = 0; deviceNum < deviceCount; deviceNum++) {
 		cudaSetDevice(deviceNum);
+
+		cudaDeviceProp prop;
+		cudaGetDeviceProperties(&prop, devid);
+		fprintf(stderr, "# GPU initialization - rank: %d; HOST: %s; NGPU: %d; device: %d %s\n", MyRank, hostname, deviceCount, devid, prop.name);
 
 		gpu[deviceNum].id = deviceNum;
 		cudaStreamCreate(&gpu[deviceNum].stream);
@@ -449,165 +388,17 @@ void _InitializeDevice(int irank){
     if (MyRank == ROOT) {
         std::cout << "There are " << deviceCount << " GPUs." << std::endl;
     }
-
-	// Initialize CUDA context
-	/*
-	cudaError_t cudaStatus = cudaFree(0);
-	if (cudaStatus != cudaSuccess) {
-		std::cerr << "CUDA initialization failed: " << cudaGetErrorString(cudaStatus) << std::endl;
-		return;
-	}
-	*/
-
-	// CUDA is now initialized and ready to be used
-	//std::cout << "CUDA initialized successfully!" << std::endl;
-
-	/*
-	if(devinit) return;
-
-	cudaGetDeviceCount(&numGPU);
-	assert(numGPU > 0);
-	char *gpu_list = getenv("GPU_LIST");
-	if(gpu_list)
-	{
-		numGPU = 0;
-		char *p = strtok(gpu_list, " ");
-		if (p) {
-			devid = atoi(p);
-			numGPU++;
-		}
-		assert(numGPU > 0);
-	}else{
-		devid=irank%numGPU;
-	}
-	cudaSetDevice(devid);
-
-#ifdef PROFILE
-	//  if(!irank)fprintf(stderr, "***********************\n");
-	//  if(!irank)fprintf(stderr, "Initializing NBODY6/GPU library\n");
-	cudaDeviceProp prop;
-	cudaGetDeviceProperties(&prop, devid);
-	//  char *hostname = getenv("HOSTNAME");
-	char hostname[150];
-	memset(hostname,0,150);
-	gethostname(hostname,150);
-	fprintf(stderr, "# GPU initialization - rank: %d; HOST %s; NGPU %d; device: %d %s\n", irank, hostname,numGPU, devid, prop.name);
-	//  if(!irank)fprintf(stderr, "***********************\n");
-#endif
-	devinit = true;
-	*/
 }
-#else //the regacy
-void _InitializeDevice(int irank){
-
-	if (MyRank == ROOT) {
-	std::cout << "Initializing CUDA ..." << std::endl;
-	}
-	// Select CUDA device (optional)
-	int deviceNum = 0; // Choose GPU device 0
-	int deviceCount;
-	cudaGetDeviceCount(&deviceCount);
-
-	cudaDeviceProp prop;
-	cudaGetDeviceProperties(&prop, devid);
-	//  char *hostname = getenv("HOSTNAME");
-
-	char hostname[150];
-	memset(hostname,0,150);
-	gethostname(hostname,150);
-	
-
-
-	if (MyRank == ROOT) {
-	fprintf(stderr, "# GPU initialization - rank: %d; HOST %s; NGPU %d; device: %d %s\n", irank, hostname,numGPU, devid, prop.name);
-	}
-
-
-	cudaSetDevice(deviceNum);
-
-	// Use CUDA Driver API to get the device associated with the current context
-	CUdevice device;
-	CUcontext context;
-	cuCtxGetCurrent(&context); // Get current CUDA context
-
-	if (context != nullptr) {
-		cuCtxGetDevice(&device); // Get the device associated with the current context
-		int deviceId=1;
-		//cuDeviceGetAttribute(&deviceId, CU_DEVICE_ATTRIBUTE_DEVICE_PARTITIONABLE, device);
-		//cuDeviceGetAttribute(&deviceId, CU_DEVICE_ATTRIBUTE_DEVICE_PARTITIONABLE, device);
-		//cuDeviceGetAttribute(&deviceId, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY, device);
-		//std::cout << "Root processor's current device is: " << deviceId << std::endl;
-	} else {
-		std::cerr << "Failed to get CUDA context on root processor." << std::endl;
-	}
-
-	cudaStreamCreate(&stream);
-
-	if (MyRank == ROOT) {
-	std::cout << "There are " << deviceCount << " GPUs." << std::endl;
-	}
-	if (device < 0 || device >= deviceCount) {
-		    // Handle invalid device index
-	}
-
-	// Initialize CUDA context
-	/*
-	cudaError_t cudaStatus = cudaFree(0);
-	if (cudaStatus != cudaSuccess) {
-		std::cerr << "CUDA initialization failed: " << cudaGetErrorString(cudaStatus) << std::endl;
-		return;
-	}
-	*/
-
-	// CUDA is now initialized and ready to be used
-	//std::cout << "CUDA initialized successfully!" << std::endl;
-
-	/*
-	if(devinit) return;
-
-	cudaGetDeviceCount(&numGPU);
-	assert(numGPU > 0);
-	char *gpu_list = getenv("GPU_LIST");
-	if(gpu_list)
-	{
-		numGPU = 0;
-		char *p = strtok(gpu_list, " ");
-		if (p) {
-			devid = atoi(p);
-			numGPU++;
-		}
-		assert(numGPU > 0);
-	}else{
-		devid=irank%numGPU;
-	}
-	cudaSetDevice(devid);
-
-#ifdef PROFILE
-	//  if(!irank)fprintf(stderr, "***********************\n");
-	//  if(!irank)fprintf(stderr, "Initializing NBODY6/GPU library\n");
-	cudaDeviceProp prop;
-	cudaGetDeviceProperties(&prop, devid);
-	//  char *hostname = getenv("HOSTNAME");
-	char hostname[150];
-	memset(hostname,0,150);
-	gethostname(hostname,150);
-	fprintf(stderr, "# GPU initialization - rank: %d; HOST %s; NGPU %d; device: %d %s\n", irank, hostname,numGPU, devid, prop.name);
-	//  if(!irank)fprintf(stderr, "***********************\n");
-#endif
-	devinit = true;
-	*/
-}
-#endif
 
 
 
-void _OpenDevice(const int irank){
+void _OpenDevice(){
 	time_send = time_grav = time_nb = time_out = 0.0;
 	numInter = 0;
 	icall = ini = isend = 0;
 
 	//select GPU========================================//
-	_InitializeDevice(irank);
+	_InitializeDevice();
 
 	if(is_open){
 		fprintf(stderr, "gpunb: it is already open\n");
@@ -617,9 +408,9 @@ void _OpenDevice(const int irank){
 
 
 #ifdef PROFILE
-	//	fprintf(stderr, "RANK: %d ******************\n",irank);
+	//	fprintf(stderr, "RANK: %d ******************\n",MyRank);
 	//	fprintf(stderr, "Opened NBODY6/GPU library\n");
-	fprintf(stderr, "# Open GPU regular force - rank: %d\n", irank);
+	fprintf(stderr, "# Open GPU regular force - rank: %d\n", MyRank);
 	//fprintf(stderr, "***********************\n");
 #endif
 }
@@ -665,10 +456,10 @@ void _CloseDevice() {
 
 
 
-void _ProfileDevice(int irank) {
+void _ProfileDevice() {
 #ifdef PROFILE
 	if(icall) {
-		fprintf(stderr,"[R.%d-D.%d GPU Reg.F ] Nsend %d  Ngrav %d  <Ni> %d   send(s) %f grav(s) %f  nb(s) %f  out(s) %f  Perf.(Gflops) %f\n",irank,devid,isend,icall,ini/isend,time_send,time_grav,time_nb,time_out,60.e-9*numInter/time_grav);
+		fprintf(stderr,"[R.%d-D.%d GPU Reg.F ] Nsend %d  Ngrav %d  <Ni> %d   send(s) %f grav(s) %f  nb(s) %f  out(s) %f  Perf.(Gflops) %f\n",MyRank,devid,isend,icall,ini/isend,time_send,time_grav,time_nb,time_out,60.e-9*numInter/time_grav);
 	}
 	time_send = time_grav = time_nb = time_out = 0.0;
 	numInter = 0;
@@ -702,11 +493,11 @@ inline void gpuMemReport(size_t * avail, size_t * total,
 
 
 extern "C" {
-	void InitializeDevice(int *irank){
-		_InitializeDevice(*irank);
+	void InitializeDevice(){
+		_InitializeDevice();
 	}
-	void OpenDevice(const int *irank){
-		_OpenDevice(*irank);
+	void OpenDevice(){
+		_OpenDevice();
 	}
 	void CloseDevice(){
 		_CloseDevice();
@@ -714,8 +505,8 @@ extern "C" {
 	void SendToDevice(std::vector<Jparticle>& hJ, std::vector<Iparticle>& hI){
 		_ReceiveFromHost(hJ, hI);
 	}
-	void ProfileDevice(int *irank){
-		_ProfileDevice(*irank);
+	void ProfileDevice(){
+		_ProfileDevice();
 	}
 	void CalculateAccelerationOnDevice(int *NumTargetTotal, std::vector<int>& RegularList) {
 		GetAcceleration(*NumTargetTotal, RegularList);

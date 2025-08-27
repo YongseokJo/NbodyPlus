@@ -4,7 +4,6 @@
 
 #include <iostream>
 #include <fstream>
-#include <iostream>
 #include <vector>
 #include <unistd.h>
 #include "def.h"
@@ -12,7 +11,6 @@
 #include "GlobalVariable.h"
 #include "global.h"
 #include <mpi.h>
-#include <unistd.h>
 #ifdef CUDA
 #include <cuda_runtime.h>
 #include "cuda/cuda_functions.h"
@@ -50,10 +48,10 @@ int main(int argc, char *argv[]) {
 	initializeMPI(argc, argv);
 
 #ifdef CUDA
-	int root_proc = 0;
-	//if (MyRank == ROOT)
-	OpenDevice(&root_proc);
-	cudaDeviceSynchronize(); 
+	if (MyRank == ROOT) {
+		OpenDevice();
+		cudaDeviceSynchronize();
+	}
 #endif
 
 	/*

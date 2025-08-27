@@ -321,7 +321,7 @@ struct Particle {
 			jptcl.vely		= static_cast<CUDA_REAL>(Velocity[1]);
 			jptcl.velz		= static_cast<CUDA_REAL>(Velocity[2]);
 			jptcl.mass		= static_cast<CUDA_REAL>(Mass);
-			jptcl.index		= static_cast<CUDA_INT>(ParticleIndex);
+			jptcl.index		= ParticleIndex;
 			jparticles.push_back(jptcl);
 
 		} else {
@@ -332,7 +332,7 @@ struct Particle {
 			jptcl.vely		= static_cast<CUDA_REAL>((a_tot[1][1]*dt/2 + a_tot[1][0])*dt   + Velocity[1]);
 			jptcl.velz		= static_cast<CUDA_REAL>((a_tot[2][1]*dt/2 + a_tot[2][0])*dt   + Velocity[2]);
 			jptcl.mass		= static_cast<CUDA_REAL>(Mass);
-			jptcl.index		= static_cast<CUDA_INT>(ParticleIndex);
+			jptcl.index		= ParticleIndex;
 			jparticles.push_back(jptcl);
 		}
 		if (CurrentBlockReg + TimeBlockReg == global_variable->NextRegTimeBlock) {

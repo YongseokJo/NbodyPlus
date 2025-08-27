@@ -285,7 +285,7 @@ void RootRoutines() {
 		broadcastFromRoot(time_block);
 		broadcastFromRoot(block_max);
 		broadcastFromRoot(time_step);
-		fprintf(stdout, "TimeSync broadcasd done.\n");
+		fprintf(stdout, "TimeSync broadcast done.\n");
 		fflush(stdout);
 		//MPI_Win_sync(win);  // Synchronize memory
 		//MPI_Barrier(shared_comm);
