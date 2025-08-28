@@ -5,26 +5,36 @@
 #include <map>
 #endif
 
-Particle *particles_original;
-Particle *particles;
-
-MPI_Win win;
-MPI_Win win2;
-
-MPI_Comm shared_comm;
+// Paremeters related to the World communicator
 int MyRank;
 int NumberOfProcessor;
 int NumberOfWorker;
 
+// Shared memory communicator
+MPI_Comm shared_comm;
+
+MPI_Win win;
+Particle *particles;
+Particle *particles_original;
+
+MPI_Win win2;
+GlobalVariable *global_variable;
+GlobalVariable *global_variable_original;
+
+// Custom MPI data types
 MPI_Datatype QueueType;
 MPI_Datatype IparticleType;
 MPI_Datatype JparticleType;
 
-GlobalVariable *global_variable;
-GlobalVariable *global_variable_original;
+// Particle array
 int LastParticleIndex; // The last index of particle array
-int NumberOfParticle; // The number of active particles
-int NewPID;
+int NumberOfParticle; // The number of active particles (single + cm)
+int NewCMPID; // The next PID to be assigned to a new CM particle
+
+// Parameters deterined in config file
+double eta;
+int FixNumNeighbor;
+double InitialNeighborRadius;
 
 // Time
 double global_time;
@@ -33,18 +43,8 @@ ULL NextRegTimeBlock;
 int time_block;
 double time_step;
 ULL block_max;
-double outputTimeStep;
 double endTime;
-
-double eta;
-
-// Enzo to Nbody
-double EnzoLength, EnzoMass, EnzoVelocity, EnzoTime, EnzoForce, EnzoAcceleration;
 double EnzoTimeStep;
-
-
-int FixNumNeighbor;
-double InitialNeighborRadius;
 
 // i/o
 char* fname;
@@ -52,7 +52,14 @@ bool restart;
 char* foutput;
 double outputTime;
 int outNum;
+double outputTimeStep;
 char *config_file;
+
+// Energy tracking
+double E_binary;	// Total binary energy in a processor
+double E_binary_SD; // Total slowdown binary energy in a processor
+double E_merger; 	// Total merger energy in a processor
+double E_PN;		// Total post-Newtonian energy in a processor // Experimental one.. It seems not working well by EW 2025.8.19
 
 FILE* binout;
 FILE* mergerout;
@@ -66,11 +73,6 @@ FILE* workerout;
 #ifdef PERFORMANCETRACE
 Performance performance;
 #endif
-
-double E_binary;	// Total binary energy in a processor
-double E_binary_SD; // Total slowdown binary energy in a processor
-double E_merger; 	// Total merger energy in a processor
-double E_PN;		// Total post-Newtonian energy in a processor // Experimental one.. It seems not working well by EW 2025.8.19
 
 void DefaultGlobal() {
 

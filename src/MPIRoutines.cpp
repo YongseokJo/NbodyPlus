@@ -62,7 +62,7 @@ void initializeMPI(int argc, char *argv[]) {
 	// Allocate shared memory
 	if (shared_rank == 0) {
 		//MPI_Win_allocate_shared(sizeof(int), sizeof(int), MPI_INFO_NULL, shared_comm, &shared_mem, &win);
-		MPI_Win_allocate_shared(sizeof(Particle) * MaxNumberOfParticle, sizeof(Particle), 
+		MPI_Win_allocate_shared(sizeof(Particle) * MaxNumParticle, sizeof(Particle), 
 		MPI_INFO_NULL, shared_comm, &particles_original, &win);
 		MPI_Win_allocate_shared(sizeof(GlobalVariable), sizeof(GlobalVariable),
 		 MPI_INFO_NULL, shared_comm, &global_variable_original, &win2);

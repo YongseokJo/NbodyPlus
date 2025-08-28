@@ -34,8 +34,8 @@ void formPrimordialBinaries(int OriginalLastParticleIndex) {
 		// deleteNeighbors(i);
 		NewCM = &particles[i];
 		NewCM->ParticleIndex = i;
-		NewCM->PID = NewPID;
-		NewPID++;
+		NewCM->PID = NewCMPID;
+		NewCMPID++;
 		std::cout << "New Primordial CM ParticleIndex: " << i << std::endl;
 		std::cout << "New Primordial CM PID: " << NewCM->PID << std::endl;
 		NewCM->setBinaryInterruptState(BinaryInterruptState::none);
@@ -108,8 +108,8 @@ void formBinaries(std::vector<int>& ParticleList, std::vector<int>& newCMptcls,
 		// deleteNeighbors(i);
 		NewCM = &particles[i];
 		NewCM->ParticleIndex = i;
-		NewCM->PID = NewPID;
-		NewPID++;
+		NewCM->PID = NewCMPID;
+		NewCMPID++;
 #ifdef DEBUG
 		std::cout << "New CM ParticleIndex: " << i << std::endl;
 		std::cout << "New CM PID: " << NewCM->PID << std::endl;

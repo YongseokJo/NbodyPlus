@@ -29,8 +29,8 @@ bool readData() {
 	}
 
 	NumberOfParticle = getLineNumber();
-	assert(NumberOfParticle < MaxNumberOfParticle);
-	NewPID = NumberOfParticle;
+	assert(NumberOfParticle < MaxNumParticle);
+	NewCMPID = NumberOfParticle;
 	LastParticleIndex = NumberOfParticle - 1;
 	global_variable->LastParticleIndex = LastParticleIndex;
 
