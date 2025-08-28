@@ -50,14 +50,14 @@ void Particle::checkNewGroup() {
 
         double time_ptcl2 = (ptcl2->NumberOfNeighbor == 0) ? ptcl2->CurrentTimeReg : ptcl2->CurrentTimeIrr;
 
-        double dt = ABS(this->CurrentTimeIrr - time_ptcl2);
+        double dt = std::abs(this->CurrentTimeIrr - time_ptcl2);
 
         double pos2[Dim], vel2[Dim];
         
 		this->predictParticleSecondOrder(dt, pos1, vel1);
 		ptcl2->predictParticleSecondOrder(dt, pos2, vel2);
 
-        const Float dr = dist(pos1, pos2);
+        const Float dr = sqrt((pos1[0]-pos2[0])*(pos1[0]-pos2[0])+(pos1[1]-pos2[1])*(pos1[1]-pos2[1])+(pos1[2]-pos2[2])*(pos1[2]-pos2[2]));
         
         if (dr < r_crit) {
 
@@ -109,14 +109,14 @@ void Particle::checkNewGroup() {
 
         double time_ptcl2 = (ptcl2->NumberOfNeighbor == 0) ? ptcl2->CurrentTimeReg : ptcl2->CurrentTimeIrr;
 
-        double dt = ABS(this->CurrentTimeIrr - time_ptcl2);
+        double dt = std::abs(this->CurrentTimeIrr - time_ptcl2);
 
         double pos2[Dim], vel2[Dim];
         
         this->predictParticleSecondOrder(dt, pos1, vel1);
         ptcl2->predictParticleSecondOrder(dt, pos2, vel2);
 
-        const Float dr = dist(pos1, pos2);
+        const Float dr = sqrt((pos1[0]-pos2[0])*(pos1[0]-pos2[0])+(pos1[1]-pos2[1])*(pos1[1]-pos2[1])+(pos1[2]-pos2[2])*(pos1[2]-pos2[2]));
         
         if (dr < r_crit) {
 
@@ -178,16 +178,16 @@ void Particle::checkNewGroup2() {
 
         double time_ptcl2 = (ptcl2->NumberOfNeighbor == 0) ? ptcl2->CurrentTimeReg : ptcl2->CurrentTimeIrr;
 
-        double dt = ABS(this->CurrentTimeIrr - time_ptcl2);
+        double dt = std::abs(this->CurrentTimeIrr - time_ptcl2);
 
         double pos2[Dim], vel2[Dim];
         
 		this->predictParticleSecondOrder(dt, pos1, vel1);
 		ptcl2->predictParticleSecondOrder(dt, pos2, vel2);
 
-        const Float dr = dist(pos1, pos2);
+        const Float dr = sqrt((pos1[0]-pos2[0])*(pos1[0]-pos2[0])+(pos1[1]-pos2[1])*(pos1[1]-pos2[1])+(pos1[2]-pos2[2])*(pos1[2]-pos2[2]));
 
-        double v2 = std::pow(dist(vel1, vel2), 2);
+        double v2 = (vel1[0]-vel2[0])*(vel1[0]-vel2[0]) + (vel1[1]-vel2[1])*(vel1[1]-vel2[1]) + (vel1[2]-vel2[2])*(vel1[2]-vel2[2]);
         double energy = v2/2 - (this->Mass + ptcl2->Mass)/dr; // determine they are bound or not
         
         if (dr < r_crit && energy < 0) {
@@ -209,16 +209,16 @@ void Particle::checkNewGroup2() {
 
         double time_ptcl2 = (ptcl2->NumberOfNeighbor == 0) ? ptcl2->CurrentTimeReg : ptcl2->CurrentTimeIrr;
 
-        double dt = ABS(this->CurrentTimeIrr - time_ptcl2);
+        double dt = std::abs(this->CurrentTimeIrr - time_ptcl2);
 
         double pos2[Dim], vel2[Dim];
         
         this->predictParticleSecondOrder(dt, pos1, vel1);
         ptcl2->predictParticleSecondOrder(dt, pos2, vel2);
 
-        const Float dr = dist(pos1, pos2);
+        const Float dr = sqrt((pos1[0]-pos2[0])*(pos1[0]-pos2[0])+(pos1[1]-pos2[1])*(pos1[1]-pos2[1])+(pos1[2]-pos2[2])*(pos1[2]-pos2[2]));
 
-        double v2 = std::pow(dist(vel1, vel2), 2);
+        double v2 = (vel1[0]-vel2[0])*(vel1[0]-vel2[0]) + (vel1[1]-vel2[1])*(vel1[1]-vel2[1]) + (vel1[2]-vel2[2])*(vel1[2]-vel2[2]);
         double energy = v2/2 - (this->Mass + ptcl2->Mass)/dr; // determine they are bound or not
         
         if (dr < r_crit && energy < 0) {
@@ -245,12 +245,12 @@ void Particle::checkNewGroup3() {
 
         double time_ptcl2 = (ptcl2->NumberOfNeighbor == 0) ? ptcl2->CurrentTimeReg : ptcl2->CurrentTimeIrr;
 
-        double dt = ABS(this->CurrentTimeIrr - time_ptcl2);
+        double dt = std::abs(this->CurrentTimeIrr - time_ptcl2);
 
         this->predictParticleSecondOrder(dt, pos1, vel1);
         ptcl2->predictParticleSecondOrder(dt, pos2, vel2);
 
-        const Float dr = dist(pos1, pos2);
+        const Float dr = sqrt((pos1[0]-pos2[0])*(pos1[0]-pos2[0])+(pos1[1]-pos2[1])*(pos1[1]-pos2[1])+(pos1[2]-pos2[2])*(pos1[2]-pos2[2]));
 
         Float fcm[3] = {this->Mass*this->a_tot[0][0] + ptcl2->Mass*ptcl2->a_tot[0][0], 
         this->Mass*this->a_tot[1][0] + ptcl2->Mass*ptcl2->a_tot[1][0], 
@@ -305,14 +305,14 @@ void Particle::checkNewGroup4() {
 
         double time_ptcl2 = (ptcl2->NumberOfNeighbor == 0) ? ptcl2->CurrentTimeReg : ptcl2->CurrentTimeIrr;
 
-        double dt = ABS(this->CurrentTimeIrr - time_ptcl2);
+        double dt = std::abs(this->CurrentTimeIrr - time_ptcl2);
 
         double pos2[Dim], vel2[Dim];
         
 		this->predictParticleSecondOrder(dt, pos1, vel1);
 		ptcl2->predictParticleSecondOrder(dt, pos2, vel2);
 
-        const Float dr = dist(pos1, pos2);
+        const Float dr = sqrt((pos1[0]-pos2[0])*(pos1[0]-pos2[0])+(pos1[1]-pos2[1])*(pos1[1]-pos2[1])+(pos1[2]-pos2[2])*(pos1[2]-pos2[2]));
         
         if (dr < r_crit) {
 
@@ -342,14 +342,14 @@ void Particle::checkNewGroup4() {
 
         double time_ptcl2 = (ptcl2->NumberOfNeighbor == 0) ? ptcl2->CurrentTimeReg : ptcl2->CurrentTimeIrr;
 
-        double dt = ABS(this->CurrentTimeIrr - time_ptcl2);
+        double dt = std::abs(this->CurrentTimeIrr - time_ptcl2);
 
         double pos2[Dim], vel2[Dim];
         
         this->predictParticleSecondOrder(dt, pos1, vel1);
         ptcl2->predictParticleSecondOrder(dt, pos2, vel2);
 
-        const Float dr = dist(pos1, pos2);
+        const Float dr = sqrt((pos1[0]-pos2[0])*(pos1[0]-pos2[0])+(pos1[1]-pos2[1])*(pos1[1]-pos2[1])+(pos1[2]-pos2[2])*(pos1[2]-pos2[2]));
         
         if (dr < r_crit) {
 

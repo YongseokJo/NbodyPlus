@@ -440,11 +440,12 @@ bool makeSEVNBinary(Particle* ptclCM) {
         dr[dim] = pos2[dim] - pos1[dim];
         dv[dim] = vel2[dim] - vel1[dim];
     }
-    double r = sqrt(mag(dr));
+    double r = sqrt(dr[0]*dr[0] + dr[1]*dr[1] + dr[2]*dr[2]);
     rv = dr[0]*dv[0] + dr[1]*dv[1] + dr[2]*dv[2];
 
     m_tot = ptcl1->Mass + ptcl2->Mass;
-    semi = 1.0 / (2.0 / r - mag(dv) / m_tot); // semi-major axis in code unit
+    double v2 = dv[0]*dv[0] + dv[1]*dv[1] + dv[2]*dv[2];
+    semi = 1.0 / (2.0 / r - v2 / m_tot); // semi-major axis in code unit
 
     double p = 1.0 - r/semi;
 

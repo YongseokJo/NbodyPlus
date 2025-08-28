@@ -1,14 +1,9 @@
-#define NumberOfTask 20
 
 #define MaxNumberOfParticle 200000
-#define MaxNumberOfCommunication 10000
-
 
 #define MaxNeighborRadius 0.2 // Let's set MaxNeighborRadius as 0.2 pc // Newly set by EW 2025.8.18
 
-// #define FixNumNeighbor 412 // 500 -> 100 modified by EW 2025.1.11
 #define MaxNumNeighbor 1000 // 10000 -> 2000 modified by EW 2025.1.11
-// #define ACRadius 0.0105634 // 0.013 // 0.11 -> 0.05 modified by EW 2025.1.11
 
 
 // SDAR
@@ -49,12 +44,6 @@ typedef unsigned long long ULL;
 
 
 
-#define mag(a) (a[0]*a[0]+a[1]*a[1]+a[2]*a[2])
-#define mag0(a) (a[0][0]*a[0][0]+a[1][0]*a[1][0]+a[2][0]*a[2][0])
-#define dist(a,b) std::sqrt((a[0]-b[0])*(a[0]-b[0])+(a[1]-b[1])*(a[1]-b[1])+(a[2]-b[2])*(a[2]-b[2]))
-
-
-
 // Physical units in cgs
 #define pc 3.08567758149137e18
 #define yr 3.1536e7
@@ -70,9 +59,6 @@ typedef unsigned long long ULL;
 // #define G_cgs 6.67430e-8 // Eunwoo: crash with SEVN
 // #define G // pc, yr, Msun // Eunwoo: crash with SEVN
 
-#define RCAST(a)  static_cast<double>(a)
-#define ABS(a) static_cast<double>(std::abs(a))
-#define MIN(a,b) std::min(RCAST(a),RCAST(b))
 
 #define CUDA_FLOAT
 #ifdef CUDA_FLOAT

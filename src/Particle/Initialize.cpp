@@ -205,7 +205,7 @@ void Particle::initializeTimeStep() {
 	//std::cout << "TimeStepReg=" << this->TimeStepReg*EnzoTimeStep*1e10/1e6 << std::endl;
 
 
-	this->TimeStepReg  = MIN(1,this->TimeStepReg);
+	this->TimeStepReg  = std::min(1.0, this->TimeStepReg);
 	this->TimeBlockReg = std::min(block_max, this->TimeBlockReg);
 	this->TimeLevelReg = std::min(0, this->TimeLevelReg);
 
@@ -225,54 +225,3 @@ void Particle::initializeTimeStep() {
 	this->CurrentBlockReg = 0;
 
 }
-
-
-/* this is for few body initialization
- *
-int InitializeTimeStep(Particle* particle, int size) {
-	std::cout << "Initializing timesteps ..." << std::endl;
-	double dtIrr, dtReg;
-	Particle *ptcl;
-
-	for (int i=0; i<size; i++){
-		ptcl = &particle[i];
-		dtReg = getNewTimeStep(ptcl->a_reg, ptcl->a_reg);
-		getBlockTimeStep(dtReg, ptcl->TimeLevelReg, ptcl->TimeBlockReg, ptcl->TimeStepReg);
-
-		if (ptcl->NumberOfAC != 0) {
-			dtIrr = getNewTimeStep(ptcl->a_tot, ptcl->a_irr);
-			getBlockTimeStep(dtIrr, ptcl->TimeLevelIrr, ptcl->TimeBlockIrr, ptcl->TimeStepIrr);
-		}
-		else {
-			ptcl->TimeBlockIrr = ptcl->TimeBlockReg;
-			ptcl->TimeLevelIrr = ptcl->TimeLevelReg;
-			ptcl->TimeStepIrr  = ptcl->TimeStepReg;
-		}
-
-		ptcl->TimeStepReg  = MIN(1,ptcl->TimeStepReg);
-		ptcl->TimeBlockReg = std::min(block_max, ptcl->TimeBlockReg);
-		ptcl->TimeLevelReg = std::min(0, ptcl->TimeLevelReg);
-
-		ptcl->CurrentTimeIrr  = 0;
-		ptcl->CurrentTimeReg  = 0;
-		ptcl->CurrentBlockIrr = 0;
-		ptcl->CurrentBlockReg = 0;
-	} // endfor size
-
-	for (int i=0; i<size; i++){
-		ptcl = &particle[i];
-
-		if (ptcl->NumberOfAC != 0) {
-			while (ptcl->TimeLevelIrr >= ptcl->TimeLevelReg) {
-				ptcl->TimeLevelIrr--;
-			}
-		}
-		ptcl->TimeBlockIrr = static_cast<ULL>(pow(2, ptcl->TimeLevelIrr-time_block));
-		ptcl->TimeBlockReg = static_cast<ULL>(pow(2, ptcl->TimeLevelReg-time_block));
-	} //endfor size
-	return true;
-}
-
-
-
-*/

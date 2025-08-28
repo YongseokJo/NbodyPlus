@@ -91,7 +91,7 @@ void CalculateAllAccelerationOnGPU(std::vector<Particle*> &particle){
 		}
 
 		TimeStepRegTmp     = 1.0/8.0*sqrt(1.0 + ri2);
-		TimeStepRegSend[i] = MIN(TimeStepRegTmp,1.0);
+		TimeStepRegSend[i] = (TimeStepRegTmp < 1.0) ? TimeStepRegTmp : 1.0;
 	}
 
 	// send the arrays to GPU

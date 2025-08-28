@@ -90,6 +90,8 @@ void Particle::updateRadius() {
 
 	/* n=2 polynomial (mild) as n increases it grows mild */
 
+	const double MaxRadius2 = MaxNeighborRadius*MaxNeighborRadius/(position_unit*position_unit);
+
 	if (this->NumberOfNeighbor > FixNumNeighbor) {
 		const int n = 2;
 		const double c = (MaxNumNeighbor-FixNumNeighbor);
@@ -99,8 +101,8 @@ void Particle::updateRadius() {
 		//fprintf(stdout, "PID=%d, NumberOfAC=%d, 1-a=%e, R0=%e(%e), R=%e(%e)\n",
 		//PID,NumberOfAC, 1.-a, RadiusOfAC, RadiusOfAC*RadiusOfAC, RadiusOfAC*(1-a),RadiusOfAC*(1-a)*RadiusOfAC*(1-a));
 		this->RadiusOfNeighbor *= (1.-a);
-		if (this->RadiusOfNeighbor > MaxNeighborRadius/position_unit)
-			this->RadiusOfNeighbor = MaxNeighborRadius/position_unit;
+		if (this->RadiusOfNeighbor > MaxRadius2)
+			this->RadiusOfNeighbor = MaxRadius2;
 	}
 	else if (this->NumberOfNeighbor < FixNumNeighbor) {
 		const int n = 3;
@@ -111,8 +113,8 @@ void Particle::updateRadius() {
 		//fprintf(stdout, "PID=%d, NumberOfAC=%d, 1-a=%e, R0=%e(%e), R=%e(%e)\n",
 		//PID,NumberOfAC, 1.-a, RadiusOfAC, RadiusOfAC*RadiusOfAC, RadiusOfAC*(1-a),RadiusOfAC*(1-a)*RadiusOfAC*(1-a));
 		this->RadiusOfNeighbor *= (1.-a);
-		if (this->RadiusOfNeighbor > MaxNeighborRadius/position_unit)
-			this->RadiusOfNeighbor = MaxNeighborRadius/position_unit;
+		if (this->RadiusOfNeighbor > MaxRadius2)
+			this->RadiusOfNeighbor = MaxRadius2;
 	}
 }
 

@@ -13,7 +13,9 @@ void makePrimordialGroup(Particle* ptclCM);
 void NewFBInitialization(Particle* ptclCM);
 void deleteGroup(Particle* ptclCM);
 void NewFBInitialization3(Group* group);
+#ifdef CUDA
 void sendAllParticlesToGPU_Worker(double new_time);
+#endif
 
 void WorkerRoutines() {
 
@@ -273,12 +275,12 @@ void WorkerRoutines() {
 				MPI_Reduce(&E_merger,		nullptr, 1, MPI_DOUBLE, MPI_SUM, ROOT, MPI_COMM_WORLD);
 				MPI_Reduce(&E_PN,			nullptr, 1, MPI_DOUBLE, MPI_SUM, ROOT, MPI_COMM_WORLD);
 				continue;
-
+#ifdef CUDA
 			case PrepareGPUCalc:
 
 				sendAllParticlesToGPU_Worker(next_time);
 				continue;
-
+#endif
 			case Synchronize: // Synchronize
 				MPI_Win_sync(win);  // Synchronize memory
 				MPI_Barrier(shared_comm);

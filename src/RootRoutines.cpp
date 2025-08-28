@@ -280,8 +280,6 @@ void RootRoutines() {
 		completed_tasks = 0; total_tasks = NumberOfWorker;
 		queue = {task, -1, -1.0};
 		InitialAssignmentOfTasks(queue, NumberOfWorker, QUEUE_TAG);
-		//MPI_Waitall(NumberOfCommunication, requests, statuses);
-		//NumberOfCommunication = 0;
 		broadcastFromRoot(time_block);
 		broadcastFromRoot(block_max);
 		broadcastFromRoot(time_step);
@@ -368,8 +366,6 @@ void RootRoutines() {
 				task=Ends;
 				queue = {task, -1, -1.0};
 				InitialAssignmentOfTasks(queue, NumberOfWorker, QUEUE_TAG);
-				//MPI_Waitall(NumberOfCommunication, requests, statuses);
-				//NumberOfCommunication = 0;
 				fprintf(stdout, "Simulation Done! Current Time: %e Myr\n", global_time*EnzoTimeStep*1e4);
 				return;
 			}
@@ -1093,13 +1089,10 @@ void RootRoutines() {
 
 				// end if the global time exceeds the end time
 				if (current_time_irr >= 1) {
-					task=-100;
+					task=Ends;
 					queue = {task, -1, -1.0};
 					InitialAssignmentOfTasks(Queue, NumberOfWorker, QUEUE_TAG);
-					MPI_Waitall(NumberOfCommunication, requests, statuses);
-					NumberOfCommunication = 0;
-					std::cout << EnzoTimeStep << std::endl;
-					std::cout << "Simulation Done!" << std::endl;
+					fprintf(stdout, "Simulation Done! Current Time: %e Myr\n", global_time*EnzoTimeStep*1e4);
 					return;
 				}
 #endif

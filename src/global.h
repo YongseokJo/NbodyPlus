@@ -24,7 +24,6 @@ extern int MyRank;
 extern int NumberOfProcessor;
 extern int NumberOfWorker;
 const int ROOT = 0;
-extern int NumberOfCommunication;
 extern GlobalVariable *global_variable;
 extern GlobalVariable *global_variable_original;
 extern MPI_Datatype QueueType;

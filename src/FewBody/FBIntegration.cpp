@@ -663,8 +663,8 @@ void remnantSpinMass(Particle* p1, Particle* p2) {
                     {223.911, -648.502, -697.177, 753.738, 1166.89}};
     double ksi = 0.474046;
 
-    double a1 = sqrt(mag(p1->a_spin));
-    double a2 = sqrt(mag(p2->a_spin));
+    double a1 = sqrt(p1->a_spin[0]*p1->a_spin[0] + p1->a_spin[1]*p1->a_spin[1] + p1->a_spin[2]*p1->a_spin[2]);
+    double a2 = sqrt(p2->a_spin[0]*p2->a_spin[0] + p2->a_spin[1]*p2->a_spin[1] + p2->a_spin[2]*p2->a_spin[2]);
     double Mtot = p1->Mass + p2->Mass;
     double q = p2->Mass/p1->Mass;
     assert(q <= 1);
@@ -695,10 +695,12 @@ void remnantSpinMass(Particle* p1, Particle* p2) {
     fprintf(mergerout, "In code unit!\n");
 
     auto cosine = [&](double a[3], double b[3]) {
-        if (mag(a) == 0 || mag(b) == 0)
+        double a_mag = sqrt(a[0]*a[0] + a[1]*a[1] + a[2]*a[2]);
+        double b_mag = sqrt(b[0]*b[0] + b[1]*b[1] + b[2]*b[2]);
+        if (a_mag == 0. || b_mag == 0)
             return 0.;
         else
-            return (a[0] * b[0] + a[1] * b[1] + a[2] * b[2])/sqrt(mag(a))/sqrt(mag(b));
+            return (a[0] * b[0] + a[1] * b[1] + a[2] * b[2])/a_mag/b_mag;
     };
 
     double cosa = cosine(p1->a_spin, p2->a_spin); // cos(alpha): This angle should be changed to the initial value. I will change this later.
@@ -747,8 +749,9 @@ void remnantSpinMass(Particle* p1, Particle* p2) {
         J_tot[i] = (p1->Mass*p2->Mass/Mtot) * L_ang[i] + (p1->Mass*p1->Mass/c) * p1->a_spin[i] + (p2->Mass*p2->Mass/c) * p2->a_spin[i];
 
     double J_tot_norm[3];
+    double J_tot_mag = sqrt(J_tot[0]*J_tot[0] + J_tot[1]*J_tot[1] + J_tot[2]*J_tot[2]);
     for (int i=0; i<3; i++)
-        J_tot_norm[i] = J_tot[i]/sqrt(mag(J_tot));
+        J_tot_norm[i] = J_tot[i]/J_tot_mag;
 
     for (int i=0; i<3; i++)
         p1->a_spin[i] = afin*J_tot_norm[i];
@@ -781,14 +784,16 @@ void recoilKick(Particle* p1, Particle* p2) {
     double VC     = 1.507e3; // km/s
 
     auto cosine = [&](double a[3], double b[3]) {
-        if (mag(a) == 0 || mag(b) == 0)
+        double a_mag = sqrt(a[0]*a[0] + a[1]*a[1] + a[2]*a[2]);
+        double b_mag = sqrt(b[0]*b[0] + b[1]*b[1] + b[2]*b[2]);
+        if (a_mag == 0. || b_mag == 0.)
             return 0.;
         else
-            return (a[0] * b[0] + a[1] * b[1] + a[2] * b[2])/sqrt(mag(a))/sqrt(mag(b));
+            return (a[0] * b[0] + a[1] * b[1] + a[2] * b[2])/a_mag/b_mag;
     };
 
-    double a1 = sqrt(mag(p1->a_spin));
-    double a2 = sqrt(mag(p2->a_spin));
+    double a1 = sqrt(p1->a_spin[0]*p1->a_spin[0] + p1->a_spin[1]*p1->a_spin[1] + p1->a_spin[2]*p1->a_spin[2]);
+    double a2 = sqrt(p2->a_spin[0]*p2->a_spin[0] + p2->a_spin[1]*p2->a_spin[1] + p2->a_spin[2]*p2->a_spin[2]);
     double q = p2->Mass/p1->Mass;
     // fprintf(mergerout, "q: %e\n", q);
     assert(q <= 1);
@@ -846,9 +851,10 @@ void recoilKick(Particle* p1, Particle* p2) {
     vpar *= sqrt((a2per1 - q * a1per1) * (a2per1 - q * a1per1) + (a2per2 - q * a1per2) * (a2per2 - q * a1per2)) * cos(phi);
     // fprintf(mergerout, "vpar: %e\n", vpar);
 
-    double e_par[3]   = {L_ang[0]/sqrt(mag(L_ang)), L_ang[1]/sqrt(mag(L_ang)), L_ang[2]/sqrt(mag(L_ang))};
+    double L_ang_mag = sqrt(L_ang[0]*L_ang[0] + L_ang[1]*L_ang[1] + L_ang[2]*L_ang[2]);
+    double e_par[3]   = {L_ang[0]/L_ang_mag, L_ang[1]/L_ang_mag, L_ang[2]/L_ang_mag};
     double e_per1[3]  = {p2->a_spin[0] - p2->a_spin[0]*cosg, p2->a_spin[1] - p2->a_spin[1]*cosg, p2->a_spin[2] - p2->a_spin[2]*cosg};
-    double norm1      = sqrt(mag(e_per1));
+    double norm1      = sqrt(e_per1[0]*e_per1[0] + e_per1[1]*e_per1[1] + e_per1[2]*e_per1[2]);
     if (norm1 != 0) {
         for (int i=0; i<3; i++)
             e_per1[i]   /= norm1; 
@@ -866,7 +872,7 @@ void recoilKick(Particle* p1, Particle* p2) {
         vkick[i] = (vm + vper*cos(ksi)) * e_per1[i] + vper*sin(ksi) * e_per2[i] + vpar * e_par[i];
 
     fprintf(mergerout, "GW recoil kick: (%e, %e, %e) km/s\n", vkick[0], vkick[1], vkick[2]);
-    fprintf(mergerout, "\t magnitude: %e km/s\n", sqrt(mag(vkick)));
+    fprintf(mergerout, "\t magnitude: %e km/s\n", sqrt(vkick[0]*vkick[0] + vkick[1]*vkick[1] + vkick[2]*vkick[2]));
 
     for (int i=0; i<3; i++)
         p1->Velocity[i] += vkick[i]/(velocity_unit/yr*pc/1e5); // km/s to code unit

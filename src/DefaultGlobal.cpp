@@ -15,7 +15,6 @@ MPI_Comm shared_comm;
 int MyRank;
 int NumberOfProcessor;
 int NumberOfWorker;
-int NumberOfCommunication;
 
 MPI_Datatype QueueType;
 MPI_Datatype IparticleType;
@@ -26,9 +25,6 @@ GlobalVariable *global_variable_original;
 int LastParticleIndex; // The last index of particle array
 int NumberOfParticle; // The number of active particles
 int NewPID;
-
-// Task
-int Task[NumberOfTask];
 
 // Time
 double global_time;
@@ -77,8 +73,6 @@ double E_merger; 	// Total merger energy in a processor
 double E_PN;		// Total post-Newtonian energy in a processor // Experimental one.. It seems not working well by EW 2025.8.19
 
 void DefaultGlobal() {
-
-	NumberOfCommunication = 0;
 
 	/* Timesteps */
 	endTime = 1;
