@@ -75,12 +75,14 @@ void CalculateAcceleration01(Particle* ptcl1) {
 				ptcl1->a_irr[dim][1] += m_r3*(v[dim] - 3*x[dim]*vx/r2);
 			}
 			if (!ptcl2->isCMptcl) {
-				ptcl1->Neighbors[ptcl1->NumberOfNeighbor++] = ptcl2->ParticleIndex; // Eunwoo: PID -> ParticleIndex
+				Neighbors[ptcl1->ParticleIndex * MaxNumNeighbor + ptcl1->NumberOfNeighbor] = ptcl2->ParticleIndex;
+				ptcl1->NumberOfNeighbor++;
 				assert(ptcl1->NumberOfNeighbor < MaxNumNeighbor);
 			}
 			else {
 				for (int j=0; j<ptcl2->NumberOfMember; j++) {
-					ptcl1->Neighbors[ptcl1->NumberOfNeighbor++] = ptcl2->Members[j];
+					Neighbors[ptcl1->ParticleIndex * MaxNumNeighbor + ptcl1->NumberOfNeighbor] = ptcl2->Members[j];
+					ptcl1->NumberOfNeighbor++;
 					assert(ptcl1->NumberOfNeighbor < MaxNumNeighbor);
 				}
 			}

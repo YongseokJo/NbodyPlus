@@ -49,7 +49,7 @@ void Particle::computeAccelerationIrr() {
 
 	for (int i=0; i<this->NumberOfNeighbor; i++) {
 
-		ptcl = &particles[this->Neighbors[i]];
+		ptcl = &particles[Neighbors[this->ParticleIndex * MaxNumNeighbor + i]];
 
 		if (!ptcl->isActive) {
 			if (ptcl->CMPtclIndex != -1) {
@@ -95,8 +95,10 @@ void Particle::computeAccelerationIrr() {
 			vx += v[dim]*x[dim];
 		}
 
-		if (sqrt(r2) < RSEARCH/position_unit && vx < 0)
-			this->NewNeighbors[this->NewNumberOfNeighbor++] = this->Neighbors[i];
+		if (sqrt(r2) < RSEARCH/position_unit && vx < 0) {
+			NewNeighbors[this->ParticleIndex * MaxNumNeighbor + this->NewNumberOfNeighbor] = Neighbors[this->ParticleIndex * MaxNumNeighbor + i];
+			this->NewNumberOfNeighbor++;
+		}
 
 		//mdot = ptcl->evolveStarMass(CurrentTimeIrr,
 				//CurrentTimeIrr+TimeStepIrr*1.01)/TimeStepIrr*1e-2; // derivative can be improved
@@ -139,8 +141,10 @@ void Particle::computeAccelerationIrr() {
 			vx += v[dim]*x[dim];
 		}
 
-		if (sqrt(r2) < RSEARCH/position_unit && vx < 0)
-			this->NewNeighbors[this->NewNumberOfNeighbor++] = i;
+		if (sqrt(r2) < RSEARCH/position_unit && vx < 0) {
+			NewNeighbors[this->ParticleIndex * MaxNumNeighbor + this->NewNumberOfNeighbor] = i;
+			this->NewNumberOfNeighbor++;
+		}
 
 		//mdot = ptcl->evolveStarMass(CurrentTimeIrr,
 				//CurrentTimeIrr+TimeStepIrr*1.01)/TimeStepIrr*1e-2; // derivative can be improved
@@ -267,9 +271,9 @@ void Particle::computeAccelerationReg() {
 	}
 
 	for (int i=0; i<this->NumberOfNeighbor; i++) {
-		ptcl = &particles[this->Neighbors[i]];
+		ptcl = &particles[Neighbors[this->ParticleIndex * MaxNumNeighbor + i]];
 		if (ptcl->isActive)
-			RealNeighbors.insert(this->Neighbors[i]);
+			RealNeighbors.insert(Neighbors[this->ParticleIndex * MaxNumNeighbor + i]);
 		else if (ptcl->CMPtclIndex != -1)
 			RealNeighbors.insert(ptcl->CMPtclIndex);
 	}
@@ -335,12 +339,12 @@ void Particle::computeAccelerationReg() {
 
 		if (r2 < this->RadiusOfNeighbor) {
 			if (!ptcl->isCMptcl) {
-				this->NewNeighbors[this->NewNumberOfNeighbor] = ptcl->ParticleIndex;
+				NewNeighbors[this->ParticleIndex * MaxNumNeighbor + this->NewNumberOfNeighbor] = ptcl->ParticleIndex;
 				this->NewNumberOfNeighbor++;
 			}
 			else {
 				for (int k=0; k<ptcl->NumberOfMember; k++) {
-					this->NewNeighbors[this->NewNumberOfNeighbor] = ptcl->Members[k];
+					NewNeighbors[this->ParticleIndex * MaxNumNeighbor + this->NewNumberOfNeighbor] = ptcl->Members[k];
 					this->NewNumberOfNeighbor++;
 				}
 			}
@@ -433,15 +437,15 @@ void Particle::updateRegularParticleCuda() {
 	hashTableNew.reserve(this->NewNumberOfNeighbor); // We are including myself in neighbor from GPU kernel by EW 2025.8.26
 
 
-	hashTableNew.insert(this->NewNeighbors, this->NewNeighbors + this->NewNumberOfNeighbor);
+	hashTableNew.insert(NewNeighbors + this->ParticleIndex * MaxNumNeighbor, NewNeighbors + this->ParticleIndex * MaxNumNeighbor + this->NewNumberOfNeighbor);
 	hashTableNew.erase(this->ParticleIndex);
 	this->NewNumberOfNeighbor--;
 
 	for (int i = 0; i < this->NumberOfNeighbor; i++) {
-		if (particles[this->Neighbors[i]].isActive)
-			hashTableOld.insert(this->Neighbors[i]);
-		else if (particles[this->Neighbors[i]].CMPtclIndex != -1)
-			hashTableOld.insert(particles[this->Neighbors[i]].CMPtclIndex);
+		if (particles[Neighbors[this->ParticleIndex * MaxNumNeighbor + i]].isActive)
+			hashTableOld.insert(Neighbors[this->ParticleIndex * MaxNumNeighbor + i]);
+		else if (particles[Neighbors[this->ParticleIndex * MaxNumNeighbor + i]].isCMptcl)
+			hashTableOld.insert(particles[Neighbors[this->ParticleIndex * MaxNumNeighbor + i]].CMPtclIndex);
 	}
 
 	Particle* ptcl;
@@ -556,11 +560,15 @@ void Particle::updateRegularParticleCuda() {
 	for (int _NewNeighborIndex: hashTableNew) {
 		ptcl = &particles[_NewNeighborIndex];
 		if (ptcl->isCMptcl) {
-			for (int j=0; j<ptcl->NumberOfMember; j++)
-				this->NewNeighbors[_NewNumberOfNeighbor++] = ptcl->Members[j];
+			for (int j=0; j<ptcl->NumberOfMember; j++) {
+				NewNeighbors[this->ParticleIndex * MaxNumNeighbor + _NewNumberOfNeighbor] = ptcl->Members[j];
+				_NewNumberOfNeighbor++;
+			}
 		}
-		else
-			this->NewNeighbors[_NewNumberOfNeighbor++] = ptcl->ParticleIndex;
+		else {
+			NewNeighbors[this->ParticleIndex * MaxNumNeighbor + _NewNumberOfNeighbor] = ptcl->ParticleIndex;
+			_NewNumberOfNeighbor++;
+		}
 	}
 	this->NewNumberOfNeighbor = _NewNumberOfNeighbor;
 

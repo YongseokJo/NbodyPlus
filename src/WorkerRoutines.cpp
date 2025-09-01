@@ -68,7 +68,7 @@ void WorkerRoutines() {
 				ptcl = &particles[ptcl_id];
 				ptcl->updateParticle();
 
-				std::memcpy(ptcl->Neighbors, ptcl->NewNeighbors, sizeof(int) * ptcl->NewNumberOfNeighbor);
+				std::memcpy(Neighbors + ptcl->ParticleIndex * MaxNumNeighbor, NewNeighbors + ptcl->ParticleIndex * MaxNumNeighbor, sizeof(int) * ptcl->NewNumberOfNeighbor);
 				ptcl->NumberOfNeighbor = ptcl->NewNumberOfNeighbor;
 
 				if (ptcl->TimeStepReg == 0.0)
@@ -106,7 +106,7 @@ void WorkerRoutines() {
 				ptcl->CurrentTimeReg = ptcl->CurrentBlockReg * time_step;
 
 				ptcl->updateParticle();
-				std::memcpy(ptcl->Neighbors, ptcl->NewNeighbors, sizeof(int) * ptcl->NewNumberOfNeighbor);
+				std::memcpy(Neighbors + ptcl->ParticleIndex * MaxNumNeighbor, NewNeighbors + ptcl->ParticleIndex * MaxNumNeighbor, sizeof(int) * ptcl->NewNumberOfNeighbor);
 				ptcl->NumberOfNeighbor = ptcl->NewNumberOfNeighbor;
 
 				ptcl->calculateTimeStepReg();

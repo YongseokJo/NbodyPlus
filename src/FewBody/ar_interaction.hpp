@@ -6,6 +6,7 @@
 extern double EnzoTimeStep;
 extern FILE* workerout;
 extern Particle *particles;
+extern int* Neighbors;
 
 #include "ar_perturber.hpp"
 #include <cassert>
@@ -201,7 +202,7 @@ public:
             Float time = _time;
 
             // auto* pert_adr = _perturber.neighbor_address.getDataAddress();
-            auto pert_adr = _particle_cm.Neighbors;
+            int* pert_adr = Neighbors + _particle_cm.ParticleIndex * MaxNumNeighbor;
 
             Float xp[n_pert][3], xcm[3], m[n_pert];
             // ChangeOver* changeover[n_pert_single];
@@ -490,7 +491,7 @@ public:
 
         if (n_pert>0) {
 
-            auto pert_adr = _particle_cm.Neighbors;
+            int* pert_adr = Neighbors + _particle_cm.ParticleIndex * MaxNumNeighbor;
 
             std::unordered_set<int> CMPtclsSet;
 

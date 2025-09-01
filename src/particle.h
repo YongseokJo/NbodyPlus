@@ -52,9 +52,7 @@ struct Particle {
 	double a_tot[Dim][HERMITE_ORDER];
 	double a_reg[Dim][HERMITE_ORDER];
 	double a_irr[Dim][HERMITE_ORDER];
-	int    Neighbors[MaxNumNeighbor];    // 
 	int    NumberOfNeighbor;    // 
-	int    NewNeighbors[MaxNumNeighbor];    // 
 	int    NewNumberOfNeighbor;    // 
 
 	double CurrentTimeIrr;
@@ -442,10 +440,12 @@ struct Particle {
 	}
 
 	// made by EW 2025.1.6
+	/*
 	void copyNewNeighbor(Particle* ptcl) {
 		this->NewNumberOfNeighbor = ptcl->NewNumberOfNeighbor;
 		std::memcpy(this->NewNeighbors, ptcl->NewNeighbors, sizeof(int)*ptcl->NewNumberOfNeighbor);
 	}
+	*/
 	
 #define NO_PRINT_FULL_ACC
 	void printParticleInfo(FILE* file) {

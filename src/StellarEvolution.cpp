@@ -392,9 +392,9 @@ bool makeSEVNBinary(Particle* ptclCM) {
 
     // Activate binary stellar evolution iff there are two members in the binary
 	int NumberOfMembers=0;
-    Particle* ptcl1 = &particles[ptclCM->NewNeighbors[0]];
+    Particle* ptcl1 = &particles[NewNeighbors[ptclCM->ParticleIndex * MaxNumNeighbor]];
 	for (int i = 0; i < ptclCM->NewNumberOfNeighbor; ++i) {
-		Particle* members = &particles[ptclCM->NewNeighbors[i]];
+        Particle* members = &particles[NewNeighbors[ptclCM->ParticleIndex * MaxNumNeighbor + i]];
         if (members->CurrentTimeIrr > ptcl1->CurrentTimeIrr) {
         	ptcl1 = members;
     	}
@@ -413,10 +413,10 @@ bool makeSEVNBinary(Particle* ptclCM) {
 
     double BinaryFormationTime = ptcl1->CurrentTimeIrr; // in code unit
     
-    ptcl1 = &particles[ptclCM->NewNeighbors[0]];
+    ptcl1 = &particles[NewNeighbors[ptclCM->ParticleIndex * MaxNumNeighbor]];
     StarSEVN* star1 = ptcl1->StellarEvolution;
 
-    Particle* ptcl2 = &particles[ptclCM->NewNeighbors[1]];
+    Particle* ptcl2 = &particles[NewNeighbors[ptclCM->ParticleIndex * MaxNumNeighbor + 1]];
     StarSEVN* star2 = ptcl2->StellarEvolution;
 
     // Make BSE object iff both members are not remnants

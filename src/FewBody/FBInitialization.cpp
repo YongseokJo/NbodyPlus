@@ -19,7 +19,7 @@ void deleteGroup(Particle* ptclCM) {
 
 	for (int i=0; i < ptclGroup->sym_int.particles.getSize(); i++) {
 		Particle* members = &ptclGroup->sym_int.particles[i];
-		ptclCM->NewNeighbors[i] = members->ParticleIndex;
+		NewNeighbors[ptclCM->ParticleIndex * MaxNumNeighbor + i] = members->ParticleIndex;
 
 		for (int dim=0; dim<Dim; dim++) {
 			particles[members->ParticleIndex].Position[dim] = ptclCM->Position[dim] + members->Position[dim];
@@ -83,7 +83,7 @@ void Group::initialIntegrator(int NumMembers) {
 
 	fprintf(workerout, "Mem PID:");
     for (int i = 0; i < groupCM->NewNumberOfNeighbor; ++i) {
-		Particle* members = &particles[groupCM->NewNeighbors[i]];
+		Particle* members = &particles[NewNeighbors[groupCM->ParticleIndex * MaxNumNeighbor + i]];
 		if (!members->isCMptcl) {
 			members->CMPtclIndex = groupCM->ParticleIndex; // added for write_out_group function by EW 2025.1.6
 			sym_int.particles.addMemberAndAddress(*members);
@@ -92,7 +92,7 @@ void Group::initialIntegrator(int NumMembers) {
 		}
 		else {
 			for (int j=0; j < members->NewNumberOfNeighbor; j++) {
-				Particle* members_members = &particles[members->NewNeighbors[j]];
+				Particle* members_members = &particles[NewNeighbors[members->ParticleIndex * MaxNumNeighbor + j]];
 				members_members->CMPtclIndex = groupCM->ParticleIndex; // added for write_out_group function by EW 2025.1.6
 				sym_int.particles.addMemberAndAddress(*members_members);
 				fprintf(workerout, " %d", sym_int.particles[groupCM->NumberOfMember].PID);
@@ -137,11 +137,11 @@ void NewFBInitialization(Particle* ptclCM) {
 	ptclGroup->groupCM = ptclCM;
 
 	// Find member particle with the biggest CurrentTimeIrr
-	Particle* ptcl = &particles[ptclCM->NewNeighbors[0]];
+	Particle* ptcl = &particles[NewNeighbors[ptclCM->ParticleIndex * MaxNumNeighbor]];
 	int NumberOfMembers=0;
 
 	for (int i = 0; i < ptclCM->NewNumberOfNeighbor; ++i) {
-		Particle* members = &particles[ptclCM->NewNeighbors[i]];
+		Particle* members = &particles[NewNeighbors[ptclCM->ParticleIndex * MaxNumNeighbor + i]];
 		members->isActive = false;
 		if (members->CurrentTimeIrr > ptcl->CurrentTimeIrr) {
         	ptcl = members;
@@ -155,7 +155,7 @@ void NewFBInitialization(Particle* ptclCM) {
 	fprintf(workerout, "NewFBInitialization. CurrentTimeIrr (Myr): %e\n", ptcl->CurrentTimeIrr*EnzoTimeStep*1e4);
 
 	for (int i = 0; i < ptclCM->NewNumberOfNeighbor; ++i) {
-		Particle* members = &particles[ptclCM->NewNeighbors[i]];
+		Particle* members = &particles[NewNeighbors[ptclCM->ParticleIndex * MaxNumNeighbor + i]];
 
 		double dt = ptcl->CurrentTimeIrr - members->CurrentTimeIrr;
 		double pos[Dim], vel[Dim];
@@ -166,7 +166,7 @@ void NewFBInitialization(Particle* ptclCM) {
 			Particle* members_members;
 
 			for (int j=0; j<members->NewNumberOfNeighbor; j++) {
-				members_members = &particles[members->NewNeighbors[j]];
+				members_members = &particles[NewNeighbors[members->ParticleIndex * MaxNumNeighbor + j]];
 				members_members->CurrentTimeIrr = ptcl->CurrentTimeIrr;
 
 				for (int dim=0; dim<Dim; dim++) {
@@ -215,7 +215,9 @@ void NewFBInitialization(Particle* ptclCM) {
 			ptclCM->a_reg[dim][order] = ptcl->a_reg[dim][order];
 	}
 	ptclCM->NumberOfNeighbor = ptcl->NumberOfNeighbor;
-	std::memcpy(ptclCM->Neighbors, ptcl->Neighbors, sizeof(int)*ptcl->NumberOfNeighbor); // this will be adjusted soon! we should delete members...
+	std::memcpy(Neighbors + ptclCM->ParticleIndex * MaxNumNeighbor, 
+				Neighbors + ptcl->ParticleIndex * MaxNumNeighbor, 
+				sizeof(int) * ptcl->NumberOfNeighbor); // this will be adjusted soon! we should delete members...
 	computeCMAcceleration(ptclCM); // neighbors are adjusted here!
 
 	fprintf(workerout, "The ID of CM is %d.\n",ptclCM->PID);
@@ -229,7 +231,7 @@ void NewFBInitialization(Particle* ptclCM) {
 	ptclGroup->CurrentTime	= ptclCM->CurrentTimeIrr;
 
 	for (int i = 0; i < ptclCM->NewNumberOfNeighbor; ++i) {
-		Particle* members = &particles[ptclCM->NewNeighbors[i]];
+		Particle* members = &particles[NewNeighbors[ptclCM->ParticleIndex * MaxNumNeighbor + i]];
 
 		if (members->isCMptcl)
 			members->clear();
@@ -244,9 +246,9 @@ void NewFBInitialization(Particle* ptclCM) {
             ptclGroup->sym_int.particles.cm.a_tot[dim][j] = ptclCM->a_tot[dim][j];
     }
 	ptclGroup->sym_int.particles.cm.PID = ptclCM->PID; // added for ar_interaction.hpp by EW 2025.7.19
+	ptclGroup->sym_int.particles.cm.ParticleIndex = ptclCM->ParticleIndex; // added for separate shared neighbor array by EW 2025.9.1
     
     ptclGroup->sym_int.particles.cm.NumberOfNeighbor = ptclCM->NumberOfNeighbor;
-	std::memcpy(ptclGroup->sym_int.particles.cm.Neighbors, ptclCM->Neighbors, sizeof(int)*ptclCM->NumberOfNeighbor);
 
 	ptclGroup->sym_int.initialIntegration(ptclGroup->CurrentTime*EnzoTimeStep);
     ptclGroup->sym_int.info.calcDsAndStepOption(ptclGroup->manager.step.getOrder(), ptclGroup->manager.interaction.gravitational_constant, ptclGroup->manager.ds_scale);
@@ -343,7 +345,7 @@ void NewFBInitialization3(Group* group) {
 		if (members->Mass < 0)
 			members->CMPtclIndex = -1;
 		else {
-			ptclCM->NewNeighbors[ptclCM->NewNumberOfNeighbor] = ptclCM->Members[i];
+			NewNeighbors[ptclCM->ParticleIndex * MaxNumNeighbor + ptclCM->NewNumberOfNeighbor] = ptclCM->Members[i];
 			ptclCM->NewNumberOfNeighbor++;
 		}
 	}
@@ -380,9 +382,9 @@ void NewFBInitialization3(Group* group) {
             ptclGroup->sym_int.particles.cm.a_tot[dim][j] = ptclCM->a_tot[dim][j];
     }
 	ptclGroup->sym_int.particles.cm.PID = ptclCM->PID; // added for ar_interaction.hpp by EW 2025.7.19
+	ptclGroup->sym_int.particles.cm.ParticleIndex = ptclCM->ParticleIndex; // added for separate shared neighbor array by EW 2025.9.1
     
     ptclGroup->sym_int.particles.cm.NumberOfNeighbor = ptclCM->NumberOfNeighbor;
-	std::memcpy(ptclGroup->sym_int.particles.cm.Neighbors, ptclCM->Neighbors, sizeof(int)*ptclCM->NumberOfNeighbor);
 
 	ptclGroup->sym_int.initialIntegration(ptclGroup->CurrentTime*EnzoTimeStep);
     ptclGroup->sym_int.info.calcDsAndStepOption(ptclGroup->manager.step.getOrder(), ptclGroup->manager.interaction.gravitational_constant, ptclGroup->manager.ds_scale);
@@ -447,13 +449,13 @@ void computeCMAcceleration(Particle* ptclCM) {
 
 	for (int i = 0; i < ptclCM->NumberOfNeighbor; i++) {
 
-		ptcl = &particles[ptclCM->Neighbors[i]];
+		ptcl = &particles[Neighbors[ptclCM->ParticleIndex * MaxNumNeighbor + i]];
 
 		if (!ptcl->isActive) {
 			if (ptcl->CMPtclIndex != -1) {
 				if (ptcl->CMPtclIndex == ptclCM->ParticleIndex) {
 					if (i != ptclCM->NumberOfNeighbor - 1)
-						ptclCM->Neighbors[i] = ptclCM->Neighbors[ptclCM->NumberOfNeighbor - 1];
+						Neighbors[ptclCM->ParticleIndex * MaxNumNeighbor + i] = Neighbors[ptclCM->ParticleIndex * MaxNumNeighbor + ptclCM->NumberOfNeighbor - 1];
 					ptclCM->NumberOfNeighbor--;
 					i--;
 				}
@@ -554,7 +556,7 @@ void computeCMAcceleration(Particle* ptclCM) {
  
 	for (int i = 0; i < ptclCM->NumberOfNeighbor; i++) {
 
-		ptcl = &particles[ptclCM->Neighbors[i]];
+		ptcl = &particles[Neighbors[ptclCM->ParticleIndex * MaxNumNeighbor + i]];
 
 		if (!ptcl->isActive) // CMPtclsSet already contains all active CM particles
 			continue;

@@ -36,7 +36,7 @@ void Particle::checkNewGroup() {
     // check only active particles 
     // single case
     for (int i=0; i < this->NumberOfNeighbor; i++) {
-        ptcl2 = &particles[this->Neighbors[i]];
+        ptcl2 = &particles[Neighbors[this->ParticleIndex * MaxNumNeighbor + i]];
         if (!ptcl2->isActive) {
             if (ptcl2->CMPtclIndex != -1) {
                 CMPtclsSet.insert(ptcl2->CMPtclIndex);
@@ -86,7 +86,7 @@ void Particle::checkNewGroup() {
                 // if kappa_org < criterion, avoid to form new group, should be consistent as checkbreak
                 if(kappa_org<kappa_org_crit) continue;
 // */ // test_1e4_2
-                this->NewNeighbors[this->NewNumberOfNeighbor] = this->Neighbors[i];
+                NewNeighbors[this->ParticleIndex * MaxNumNeighbor + this->NewNumberOfNeighbor] = ptcl2->ParticleIndex;
                 this->NewNumberOfNeighbor++;
             }
         }
@@ -145,7 +145,7 @@ void Particle::checkNewGroup() {
                 // if kappa_org < criterion, avoid to form new group, should be consistent as checkbreak
                 if(kappa_org<kappa_org_crit) continue;
 // */ // test_1e4_2
-                this->NewNeighbors[this->NewNumberOfNeighbor] = i;
+                NewNeighbors[this->ParticleIndex * MaxNumNeighbor + this->NewNumberOfNeighbor] = i;
                 this->NewNumberOfNeighbor++;
             }
         }
@@ -168,7 +168,7 @@ void Particle::checkNewGroup2() {
     // check only active particles 
     // single case
     for (int i=0; i < this->NumberOfNeighbor; i++) {
-        ptcl2 = &particles[this->Neighbors[i]];
+        ptcl2 = &particles[Neighbors[this->ParticleIndex * MaxNumNeighbor + i]];
         if (!ptcl2->isActive) {
             if (ptcl2->CMPtclIndex != -1) {
                 CMPtclsSet.insert(ptcl2->CMPtclIndex);
@@ -191,7 +191,7 @@ void Particle::checkNewGroup2() {
         double energy = v2/2 - (this->Mass + ptcl2->Mass)/dr; // determine they are bound or not
         
         if (dr < r_crit && energy < 0) {
-            this->NewNeighbors[this->NewNumberOfNeighbor] = this->Neighbors[i];
+            NewNeighbors[this->ParticleIndex * MaxNumNeighbor + this->NewNumberOfNeighbor] = ptcl2->ParticleIndex;
             this->NewNumberOfNeighbor++;
         }
     }
@@ -222,7 +222,7 @@ void Particle::checkNewGroup2() {
         double energy = v2/2 - (this->Mass + ptcl2->Mass)/dr; // determine they are bound or not
         
         if (dr < r_crit && energy < 0) {
-            this->NewNeighbors[this->NewNumberOfNeighbor] = i;
+            NewNeighbors[this->ParticleIndex * MaxNumNeighbor + this->NewNumberOfNeighbor] = i;
             this->NewNumberOfNeighbor++;
         }
     }
@@ -241,7 +241,7 @@ void Particle::checkNewGroup3() {
     double pos2[Dim], vel2[Dim];
 
     for (int i=0; i < NumberOfGroupCandidate; i++) {
-        ptcl2 = &particles[this->NewNeighbors[i]];
+        ptcl2 = &particles[NewNeighbors[this->ParticleIndex * MaxNumNeighbor + i]];
 
         double time_ptcl2 = (ptcl2->NumberOfNeighbor == 0) ? ptcl2->CurrentTimeReg : ptcl2->CurrentTimeIrr;
 
@@ -273,7 +273,7 @@ void Particle::checkNewGroup3() {
         // if kappa_org < criterion, avoid to form new group, should be consistent as checkbreak
         if(kappa_org<kappa_org_crit) continue;
 
-        this->NewNeighbors[this->NewNumberOfNeighbor] = this->NewNeighbors[i];
+        NewNeighbors[this->ParticleIndex * MaxNumNeighbor + this->NewNumberOfNeighbor] = ptcl2->ParticleIndex;
         this->NewNumberOfNeighbor++;
     }
 }
@@ -291,7 +291,7 @@ void Particle::checkNewGroup4() {
     // check only active particles 
     // single case
     for (int i=0; i < this->NumberOfNeighbor; i++) {
-        ptcl2 = &particles[this->Neighbors[i]];
+        ptcl2 = &particles[Neighbors[this->ParticleIndex * MaxNumNeighbor + i]];
         if (!ptcl2->isActive) {
             if (ptcl2->CMPtclIndex != -1) {
                 CMPtclsSet.insert(ptcl2->CMPtclIndex);
@@ -319,7 +319,7 @@ void Particle::checkNewGroup4() {
             Float drdv = calcDrDv(pos1, pos2, vel1, vel2);
             // only inwards
             if(drdv<0.0) {
-                this->NewNeighbors[this->NewNumberOfNeighbor] = this->Neighbors[i];
+                NewNeighbors[this->ParticleIndex * MaxNumNeighbor + this->NewNumberOfNeighbor] = ptcl2->ParticleIndex;
                 this->NewNumberOfNeighbor++;
             }
         }
@@ -356,7 +356,7 @@ void Particle::checkNewGroup4() {
             Float drdv = calcDrDv(pos1, pos2, vel1, vel2);
             // only inwards
             if(drdv<0.0) {
-                this->NewNeighbors[this->NewNumberOfNeighbor] = i;
+                NewNeighbors[this->ParticleIndex * MaxNumNeighbor + this->NewNumberOfNeighbor] = i;
                 this->NewNumberOfNeighbor++;
             }
         }
@@ -418,7 +418,8 @@ bool Group::CheckBreak() {
                         if (ptcl2->PID != ptcl1->PID && ptcl2->PID != outgoingPID) {
                             ptcl2->setBinaryInterruptState(BinaryInterruptState::threebody);
                             ptcl2->NewNumberOfNeighbor = 0;
-                            ptcl1->NewNeighbors[ptcl1->NewNumberOfNeighbor++] = ptcl2->ParticleIndex;
+                            NewNeighbors[ptcl1->ParticleIndex * MaxNumNeighbor + ptcl1->NewNumberOfNeighbor] = ptcl2->ParticleIndex;
+                            ptcl1->NewNumberOfNeighbor++;
                             fprintf(workerout, "ptcl2 PID: %d, ptcl1 NewNumberOfNeighbor: %d\n", ptcl2->PID, ptcl1->NewNumberOfNeighbor);
                         }
                     }
@@ -477,7 +478,8 @@ bool Group::CheckBreak() {
                             if (ptcl2->PID != ptcl1->PID && ptcl2->PID != outgoingPID) {
                                 ptcl2->setBinaryInterruptState(BinaryInterruptState::threebody);
                                 ptcl2->NewNumberOfNeighbor = 0;
-                                ptcl1->NewNeighbors[ptcl1->NewNumberOfNeighbor++] = ptcl2->ParticleIndex;
+                                NewNeighbors[ptcl1->ParticleIndex * MaxNumNeighbor + ptcl1->NewNumberOfNeighbor] = ptcl2->ParticleIndex;
+                                ptcl1->NewNumberOfNeighbor++;
                                 fprintf(workerout, "ptcl2 PID: %d, ptcl1 NewNumberOfNeighbor: %d\n", ptcl2->PID, ptcl1->NewNumberOfNeighbor);
                             }
                         }
@@ -572,7 +574,8 @@ bool Group::CheckBreak() {
                                 if (ptcl2->PID != ptcl1->PID && ptcl2->PID != outgoingPID) {
                                     ptcl2->setBinaryInterruptState(BinaryInterruptState::threebody);
                                     ptcl2->NewNumberOfNeighbor = 0;
-                                    ptcl1->NewNeighbors[ptcl1->NewNumberOfNeighbor++] = ptcl2->ParticleIndex;
+                                    NewNeighbors[ptcl1->ParticleIndex * MaxNumNeighbor + ptcl1->NewNumberOfNeighbor] = ptcl2->ParticleIndex;
+                                    ptcl1->NewNumberOfNeighbor++;
                                     fprintf(workerout, "ptcl2 PID: %d, ptcl1 NewNumberOfNeighbor: %d\n", ptcl2->PID, ptcl1->NewNumberOfNeighbor);
                                 }
                             }

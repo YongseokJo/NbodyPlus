@@ -6,6 +6,11 @@
 void CalculateAcceleration01(Particle* ptcl1);
 void CalculateAcceleration23(Particle* ptcl1);
 void mergeGroupCandidates(int OriginalLastParticleIndex);
+void copyNewNeighbor(int ptclIndexDest, int ptclIndexSrc) {
+	int NewNumberOfNeighbor = particles[ptclIndexSrc].NewNumberOfNeighbor;
+	std::memcpy(NewNeighbors + ptclIndexDest * MaxNumNeighbor, NewNeighbors + ptclIndexSrc * MaxNumNeighbor, sizeof(int) * NewNumberOfNeighbor);
+	particles[ptclIndexDest].NewNumberOfNeighbor = NewNumberOfNeighbor;
+};
 
 void formPrimordialBinaries(int OriginalLastParticleIndex) {
 
@@ -17,8 +22,9 @@ void formPrimordialBinaries(int OriginalLastParticleIndex) {
 		if (ptcl->NewNumberOfNeighbor > 0) {
 			NewCM = &particles[LastParticleIndex+1];
 			NewCM->clear();
-			NewCM->copyNewNeighbor(ptcl);		
-			NewCM->NewNeighbors[ptcl->NewNumberOfNeighbor] = ptcl->ParticleIndex;
+			NewCM->ParticleIndex = LastParticleIndex+1;
+			copyNewNeighbor(NewCM->ParticleIndex, ptcl->ParticleIndex);
+			NewNeighbors[NewCM->ParticleIndex * MaxNumNeighbor + NewCM->NewNumberOfNeighbor] = ptcl->ParticleIndex;
 			NewCM->NewNumberOfNeighbor++;
 
 			LastParticleIndex++;
@@ -60,13 +66,14 @@ void formBinaries(std::vector<int>& ParticleList, std::vector<int>& newCMptcls,
 			// fprintf(stdout, "GAR. PID: %d\n", ptcl->PID); // for debugging by EW 2025.1.23
 			NewCM = &particles[LastParticleIndex+1];
 			NewCM->clear();
-			NewCM->copyNewNeighbor(ptcl);
+			NewCM->ParticleIndex = LastParticleIndex+1;
+			copyNewNeighbor(NewCM->ParticleIndex, ptcl->ParticleIndex);
 			/* // for debugging by EW 2025.1.23
 			for (int j = 0; j < ptcl->NewNumberOfNeighbor; j++) {
 				fprintf(stdout, "GAR. PID: %d\n", particles[ptcl->NewNeighbors[j]].PID);
 			}
 			*/
-			NewCM->NewNeighbors[ptcl->NewNumberOfNeighbor] = ptcl->ParticleIndex;
+			NewNeighbors[NewCM->ParticleIndex * MaxNumNeighbor + NewCM->NewNumberOfNeighbor] = ptcl->ParticleIndex;
 			NewCM->NewNumberOfNeighbor++;
 
 			LastParticleIndex++;
@@ -88,7 +95,7 @@ void formBinaries(std::vector<int>& ParticleList, std::vector<int>& newCMptcls,
 
 		Particle* ptcl = &particles[LastParticleIndex];
 		auto it = terminated.begin();
-		particles[it->first].copyNewNeighbor(ptcl);
+		copyNewNeighbor(it->first, ptcl->ParticleIndex);
 
 		existing.insert({it->first, it->second});
 		newCMptcls.push_back(it->first);
@@ -143,28 +150,29 @@ void mergeGroupCandidates(int OriginalLastParticleIndex) {
                 // Check if there's any common member between group1 and group2
                 bool commonFound = false;
 				for (int k=0; k < currentCM->NewNumberOfNeighbor; k++) {
-					int member1 = currentCM->NewNeighbors[k];
-					if (std::find(otherCM->NewNeighbors, otherCM->NewNeighbors + otherCM->NewNumberOfNeighbor, member1) != otherCM->NewNeighbors + otherCM->NewNumberOfNeighbor) {
-                        commonFound = true;
-                        break;
-                    }
+					int member1 = NewNeighbors[currentCM->ParticleIndex * MaxNumNeighbor + k];
+					if (std::find(NewNeighbors + otherCM->ParticleIndex * MaxNumNeighbor, NewNeighbors + otherCM->ParticleIndex * MaxNumNeighbor + otherCM->NewNumberOfNeighbor, member1) != NewNeighbors + otherCM->ParticleIndex * MaxNumNeighbor + otherCM->NewNumberOfNeighbor) {
+						commonFound = true;
+						break;
+					}
                 }
 
                 // If common members are found, merge group2 into group1
                 if (commonFound) {
                     // Merge group2 into group1, avoiding duplicates
 					for (int l=0; l < otherCM->NewNumberOfNeighbor; l++) {
-						int member2 = otherCM->NewNeighbors[l];
-						if (std::find(currentCM->NewNeighbors, currentCM->NewNeighbors + currentCM->NewNumberOfNeighbor, member2) == currentCM->NewNeighbors + currentCM->NewNumberOfNeighbor) {
-							currentCM->NewNeighbors[currentCM->NewNumberOfNeighbor] = member2;
+						int member2 = NewNeighbors[otherCM->ParticleIndex * MaxNumNeighbor + l];
+						if (std::find(NewNeighbors + currentCM->ParticleIndex * MaxNumNeighbor, NewNeighbors + currentCM->ParticleIndex * MaxNumNeighbor + currentCM->NewNumberOfNeighbor, member2) == NewNeighbors + currentCM->ParticleIndex * MaxNumNeighbor + currentCM->NewNumberOfNeighbor) {
+							NewNeighbors[currentCM->ParticleIndex * MaxNumNeighbor + currentCM->NewNumberOfNeighbor] = member2;
 							currentCM->NewNumberOfNeighbor++;
-                        }
-                    }
+						}
+					}
 					merged = true;
 
                     // Mark otherGroup for deletion after the loop
 					if (j != LastParticleIndex) {
-						particles[j].copyNewNeighbor(&particles[LastParticleIndex]);
+						particles[j].ParticleIndex = j;
+						copyNewNeighbor(j, LastParticleIndex);
 					}
 					particles[LastParticleIndex].clear();
 					LastParticleIndex--;
@@ -186,7 +194,7 @@ void makePrimordialGroup(Particle* ptclCM) {
 	ptclGroup->groupCM = ptclCM;
 
 	for (int i = 0; i < ptclCM->NewNumberOfNeighbor; ++i) {
-		Particle* members = &particles[ptclCM->NewNeighbors[i]];
+		Particle* members = &particles[NewNeighbors[ptclCM->ParticleIndex * MaxNumNeighbor + i]];
 		members->isActive = false;
     }
 
@@ -201,7 +209,7 @@ void makePrimordialGroup(Particle* ptclCM) {
 	}
 
 	// ptclCM->RadiusOfNeighbor = InitialNeighborRadius*InitialNeighborRadius;
-	ptclCM->RadiusOfNeighbor = particles[ptclCM->NewNeighbors[0]].RadiusOfNeighbor;
+	ptclCM->RadiusOfNeighbor = particles[NewNeighbors[ptclCM->ParticleIndex * MaxNumNeighbor]].RadiusOfNeighbor;
 
 	fprintf(workerout, "The ID of CM is %d.\n",ptclCM->PID);
 
