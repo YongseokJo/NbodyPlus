@@ -444,7 +444,7 @@ void Particle::updateRegularParticleCuda() {
 	for (int i = 0; i < this->NumberOfNeighbor; i++) {
 		if (particles[Neighbors[this->ParticleIndex * MaxNumNeighbor + i]].isActive)
 			hashTableOld.insert(Neighbors[this->ParticleIndex * MaxNumNeighbor + i]);
-		else if (particles[Neighbors[this->ParticleIndex * MaxNumNeighbor + i]].isCMptcl)
+		else if (particles[Neighbors[this->ParticleIndex * MaxNumNeighbor + i]].CMPtclIndex != -1)
 			hashTableOld.insert(particles[Neighbors[this->ParticleIndex * MaxNumNeighbor + i]].CMPtclIndex);
 	}
 
