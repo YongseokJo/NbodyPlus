@@ -58,7 +58,7 @@ bool readData() {
 			data[row][col] = value;
 			++col;
 		}
-		particles_original[row].initialize(data[row],row);
+		particles[row].initialize(data[row],row);
 		++row;
 	}
 

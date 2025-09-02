@@ -31,11 +31,9 @@ extern MPI_Comm shared_comm;
 
 extern MPI_Win win;
 extern Particle *particles;
-extern Particle *particles_original;
 
 extern MPI_Win win2;
 extern GlobalVariable *global_variable;
-extern GlobalVariable *global_variable_original;
 
 extern MPI_Datatype QueueType;
 extern MPI_Datatype IparticleType;
