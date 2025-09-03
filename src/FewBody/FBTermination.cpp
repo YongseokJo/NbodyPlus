@@ -68,11 +68,11 @@ void FBTermination(Particle* ptclCM) {
 				members->a_reg[dim][order] = ptclCM->a_reg[dim][order];
 		}
 		members->NumberOfNeighbor = ptclCM->NumberOfNeighbor;
-		std::memcpy(Neighbors + members->ParticleIndex * MaxNumNeighbor, Neighbors + ptclCM->ParticleIndex * MaxNumNeighbor, sizeof(int)*ptclCM->NumberOfNeighbor);
+		std::memcpy(Neighbors + members->NeighborsOffset, Neighbors + ptclCM->NeighborsOffset, sizeof(int)*ptclCM->NumberOfNeighbor);
 		for (int j = 0; j < ptclCM->NumberOfMember; j++) {
 			Particle* members_members = &particles[ptclCM->Members[j]];
 			if (members_members->Mass > 0.0 && members_members->PID != members->PID) {
-				Neighbors[members->ParticleIndex * MaxNumNeighbor + members->NumberOfNeighbor] = members_members->ParticleIndex;
+				Neighbors[members->NeighborsOffset + members->NumberOfNeighbor] = members_members->ParticleIndex;
 				members->NumberOfNeighbor++;
 			}
 		}
@@ -189,7 +189,7 @@ void computeMemberAcceleration01(Particle* members) {
 
 	for (int i = 0; i < members->NumberOfNeighbor; i++) {
 
-		ptcl = &particles[Neighbors[members->ParticleIndex * MaxNumNeighbor + i]];
+		ptcl = &particles[Neighbors[members->NeighborsOffset + i]];
 
 		if (!ptcl->isActive) {
 			if (ptcl->CMPtclIndex != -1)
@@ -301,7 +301,7 @@ void computeMemberAcceleration23(Particle* members) {
 
 	for (int i = 0; i < members->NumberOfNeighbor; i++) {
 
-		ptcl = &particles[Neighbors[members->ParticleIndex * MaxNumNeighbor + i]];
+		ptcl = &particles[Neighbors[members->NeighborsOffset + i]];
 
 		if (!ptcl->isActive) {
 			if (ptcl->CMPtclIndex != -1)
@@ -461,7 +461,7 @@ void computeMemberAccelerationIrr(Particle* members, double new_time) {
 
 	for (int i=0; i<members->NumberOfNeighbor; i++) {
 
-		ptcl = &particles[Neighbors[members->ParticleIndex * MaxNumNeighbor + i]];
+		ptcl = &particles[Neighbors[members->NeighborsOffset + i]];
 
 		if (!ptcl->isActive) {
 			if (ptcl->CMPtclIndex != -1) {

@@ -202,7 +202,7 @@ public:
             Float time = _time;
 
             // auto* pert_adr = _perturber.neighbor_address.getDataAddress();
-            int* pert_adr = Neighbors + _particle_cm.ParticleIndex * MaxNumNeighbor;
+            int* pert_adr = Neighbors + _particle_cm.NeighborsOffset;
 
             Float xp[n_pert][3], xcm[3], m[n_pert];
             // ChangeOver* changeover[n_pert_single];
@@ -491,7 +491,7 @@ public:
 
         if (n_pert>0) {
 
-            int* pert_adr = Neighbors + _particle_cm.ParticleIndex * MaxNumNeighbor;
+            int* pert_adr = Neighbors + _particle_cm.NeighborsOffset;
 
             std::unordered_set<int> CMPtclsSet;
 

@@ -937,7 +937,7 @@ void RootRoutines() {
 						ptclCM = &particles[newCMptcls[i]]; // 2025.01.10 edited to newCMptcls[i] by YS
 
 						for (int j=0; j<ptclCM->NewNumberOfNeighbor; j++) {
-							mem_ptclCM = &particles[NewNeighbors[ptclCM->ParticleIndex * MaxNumNeighbor + j]];
+							mem_ptclCM = &particles[NewNeighbors[ptclCM->NeighborsOffset + j]];
 #ifdef MULTIMAP
 #ifdef PERFORMANCETRACE
 							start_point_map = std::chrono::high_resolution_clock::now();
@@ -1003,7 +1003,7 @@ void RootRoutines() {
 #endif
 						// Temporary test... If this works, RegularMap version should be updated too by EW 2025.08.18 // It works well!!
 						for (int i = 0; i < ptclCM->NewNumberOfNeighbor; i++)
-							RegularList.erase(NewNeighbors[ptclCM->ParticleIndex * MaxNumNeighbor + i]);
+							RegularList.erase(NewNeighbors[ptclCM->NeighborsOffset + i]);
 
 						queue.task = MakeGroup;
 						queue.pid = ptclCM->ParticleIndex;

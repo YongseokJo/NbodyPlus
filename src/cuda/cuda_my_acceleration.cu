@@ -200,7 +200,7 @@ void GetAcceleration(
 			}
 
 			for (int i = 0; i < deviceCount; i++) {
-				memcpy(NewNeighbors + ptcl->ParticleIndex * MaxNumNeighbor + ptcl->NewNumberOfNeighbor, &gpu[i].h_neighbor[j * MaxNumNeighbor], gpu[i].h_neighbor_count[j] * sizeof(int));
+				memcpy(NewNeighbors + ptcl->NeighborsOffset + ptcl->NewNumberOfNeighbor, &gpu[i].h_neighbor[j * MaxNumNeighbor], gpu[i].h_neighbor_count[j] * sizeof(int));
 				ptcl->NewNumberOfNeighbor += gpu[i].h_neighbor_count[j];
 				for (int k = 0; k < 3; k++) {
 					ptcl->a_irr[k][0] += static_cast<double>(gpu[i].h_result[j * _six + k]);

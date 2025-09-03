@@ -52,8 +52,9 @@ struct Particle {
 	double a_tot[Dim][HERMITE_ORDER];
 	double a_reg[Dim][HERMITE_ORDER];
 	double a_irr[Dim][HERMITE_ORDER];
-	int    NumberOfNeighbor;    // 
-	int    NewNumberOfNeighbor;    // 
+	int    NumberOfNeighbor;
+	int    NewNumberOfNeighbor;
+	int    NeighborsOffset;
 
 	double CurrentTimeIrr;
 	double CurrentTimeReg;
@@ -103,6 +104,7 @@ struct Particle {
 		RadiusOfNeighbor= -1;
 		NumberOfNeighbor= 0;
 		NewNumberOfNeighbor= 0;
+		NeighborsOffset= -1;
 		ParticleType    = NO_FEEDBACK_STAR;
 		CurrentTimeIrr  = 0.; // consistent with actual current time
 		CurrentTimeReg  = 0.;
@@ -178,6 +180,7 @@ struct Particle {
 
 		this->isActive				= true;
 		this->ParticleIndex			= PID;
+		this->NeighborsOffset		= this->ParticleIndex * MaxNumNeighbor;
 		this->dm = 0.0;
 		this->time_check = NUMERIC_FLOAT_MAX;
 		this->setBinaryInterruptState(BinaryInterruptState::none);
@@ -214,6 +217,7 @@ struct Particle {
 
         NumberOfNeighbor = 0;
         NewNumberOfNeighbor = 0;
+		NeighborsOffset = -1;
 
 		isUpdateToDate = true;
         isActive = false;
@@ -349,20 +353,7 @@ struct Particle {
 
 	void correctParticleFourthOrder(double dt, double pos[], double vel[], double a[3][4]);
 
-
-	/*
-	void update_timestep() {
-		double acc = mag(acceleration);
-		double vel = mag(Velocity);
-
-		time_step = eta*sqrt(std::abs(vel/acc));
-	}
-	*/
-
 	void updateRadius();
-
-	//void initializeNeighbor();
-	//void initializeAcceleration();
 	void initializeTimeStep();
 
 	void computeAccelerationIrr();

@@ -49,7 +49,7 @@ void Particle::computeAccelerationIrr() {
 
 	for (int i=0; i<this->NumberOfNeighbor; i++) {
 
-		ptcl = &particles[Neighbors[this->ParticleIndex * MaxNumNeighbor + i]];
+		ptcl = &particles[Neighbors[this->NeighborsOffset + i]];
 
 		if (!ptcl->isActive) {
 			if (ptcl->CMPtclIndex != -1) {
@@ -96,7 +96,7 @@ void Particle::computeAccelerationIrr() {
 		}
 
 		if (sqrt(r2) < RSEARCH/position_unit && vx < 0) {
-			NewNeighbors[this->ParticleIndex * MaxNumNeighbor + this->NewNumberOfNeighbor] = Neighbors[this->ParticleIndex * MaxNumNeighbor + i];
+			NewNeighbors[this->NeighborsOffset + this->NewNumberOfNeighbor] = Neighbors[this->NeighborsOffset + i];
 			this->NewNumberOfNeighbor++;
 		}
 
@@ -142,7 +142,7 @@ void Particle::computeAccelerationIrr() {
 		}
 
 		if (sqrt(r2) < RSEARCH/position_unit && vx < 0) {
-			NewNeighbors[this->ParticleIndex * MaxNumNeighbor + this->NewNumberOfNeighbor] = i;
+			NewNeighbors[this->NeighborsOffset + this->NewNumberOfNeighbor] = i;
 			this->NewNumberOfNeighbor++;
 		}
 
@@ -271,9 +271,9 @@ void Particle::computeAccelerationReg() {
 	}
 
 	for (int i=0; i<this->NumberOfNeighbor; i++) {
-		ptcl = &particles[Neighbors[this->ParticleIndex * MaxNumNeighbor + i]];
+		ptcl = &particles[Neighbors[this->NeighborsOffset + i]];
 		if (ptcl->isActive)
-			RealNeighbors.insert(Neighbors[this->ParticleIndex * MaxNumNeighbor + i]);
+			RealNeighbors.insert(Neighbors[this->NeighborsOffset + i]);
 		else if (ptcl->CMPtclIndex != -1)
 			RealNeighbors.insert(ptcl->CMPtclIndex);
 	}
@@ -339,12 +339,12 @@ void Particle::computeAccelerationReg() {
 
 		if (r2 < this->RadiusOfNeighbor) {
 			if (!ptcl->isCMptcl) {
-				NewNeighbors[this->ParticleIndex * MaxNumNeighbor + this->NewNumberOfNeighbor] = ptcl->ParticleIndex;
+				NewNeighbors[this->NeighborsOffset + this->NewNumberOfNeighbor] = ptcl->ParticleIndex;
 				this->NewNumberOfNeighbor++;
 			}
 			else {
 				for (int k=0; k<ptcl->NumberOfMember; k++) {
-					NewNeighbors[this->ParticleIndex * MaxNumNeighbor + this->NewNumberOfNeighbor] = ptcl->Members[k];
+					NewNeighbors[this->NeighborsOffset + this->NewNumberOfNeighbor] = ptcl->Members[k];
 					this->NewNumberOfNeighbor++;
 				}
 			}
@@ -437,15 +437,15 @@ void Particle::updateRegularParticleCuda() {
 	hashTableNew.reserve(this->NewNumberOfNeighbor); // We are including myself in neighbor from GPU kernel by EW 2025.8.26
 
 
-	hashTableNew.insert(NewNeighbors + this->ParticleIndex * MaxNumNeighbor, NewNeighbors + this->ParticleIndex * MaxNumNeighbor + this->NewNumberOfNeighbor);
+	hashTableNew.insert(NewNeighbors + this->NeighborsOffset, NewNeighbors + this->NeighborsOffset + this->NewNumberOfNeighbor);
 	hashTableNew.erase(this->ParticleIndex);
 	this->NewNumberOfNeighbor--;
 
 	for (int i = 0; i < this->NumberOfNeighbor; i++) {
-		if (particles[Neighbors[this->ParticleIndex * MaxNumNeighbor + i]].isActive)
-			hashTableOld.insert(Neighbors[this->ParticleIndex * MaxNumNeighbor + i]);
-		else if (particles[Neighbors[this->ParticleIndex * MaxNumNeighbor + i]].CMPtclIndex != -1)
-			hashTableOld.insert(particles[Neighbors[this->ParticleIndex * MaxNumNeighbor + i]].CMPtclIndex);
+		if (particles[Neighbors[this->NeighborsOffset + i]].isActive)
+			hashTableOld.insert(Neighbors[this->NeighborsOffset + i]);
+		else if (particles[Neighbors[this->NeighborsOffset + i]].CMPtclIndex != -1)
+			hashTableOld.insert(particles[Neighbors[this->NeighborsOffset + i]].CMPtclIndex);
 	}
 
 	Particle* ptcl;
@@ -561,12 +561,12 @@ void Particle::updateRegularParticleCuda() {
 		ptcl = &particles[_NewNeighborIndex];
 		if (ptcl->isCMptcl) {
 			for (int j=0; j<ptcl->NumberOfMember; j++) {
-				NewNeighbors[this->ParticleIndex * MaxNumNeighbor + _NewNumberOfNeighbor] = ptcl->Members[j];
+				NewNeighbors[this->NeighborsOffset + _NewNumberOfNeighbor] = ptcl->Members[j];
 				_NewNumberOfNeighbor++;
 			}
 		}
 		else {
-			NewNeighbors[this->ParticleIndex * MaxNumNeighbor + _NewNumberOfNeighbor] = ptcl->ParticleIndex;
+			NewNeighbors[this->NeighborsOffset + _NewNumberOfNeighbor] = ptcl->ParticleIndex;
 			_NewNumberOfNeighbor++;
 		}
 	}
