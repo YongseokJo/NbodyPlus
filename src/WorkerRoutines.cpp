@@ -161,7 +161,7 @@ void WorkerRoutines() {
 
 				ptcl = &particles[ptcl_id];
 
-				ptcl->NewNumberOfNeighbor = 0;
+				ptcl->NewNumberOfMember = 0;
 				ptcl->checkNewGroup2();
 				break;
 
@@ -173,22 +173,22 @@ void WorkerRoutines() {
 					ptcl->setBinaryInterruptState(BinaryInterruptState::none);
 				}
 				else if (ptcl->getBinaryInterruptState()==BinaryInterruptState::manybody) {
-					ptcl->NewNumberOfNeighbor = 0;
+					ptcl->NewNumberOfMember = 0;
 					ptcl->checkNewGroup2();
 					ptcl->setBinaryInterruptState(BinaryInterruptState::none);
 				}
 				else {
-					ptcl->NewNumberOfNeighbor = 0;
+					ptcl->NewNumberOfMember = 0;
 					if (ptcl->TimeStepIrr*EnzoTimeStep*1e4 < TSEARCH)
 						ptcl->checkNewGroup();
 				}
 				/*
 				if (ptcl->getBinaryInterruptState()==BinaryInterruptState::manybody) {
 					ptcl->setBinaryInterruptState(BinaryInterruptState::none);
-					std::cout << "ptcl PID: " << ptcl->PID << ", ptcl NewNumberOfNeighbor: " << ptcl->NewNumberOfNeighbor << std::endl;
+					std::cout << "ptcl PID: " << ptcl->PID << ", ptcl NewNumberOfMember: " << ptcl->NewNumberOfMember << std::endl;
 				}
 				else {
-					ptcl->NewNumberOfNeighbor = 0;
+					ptcl->NewNumberOfMember = 0;
 					if (ptcl->TimeStepIrr*EnzoTimeStep*1e4 < TSEARCH)
 						ptcl->checkNewGroup();
 				}

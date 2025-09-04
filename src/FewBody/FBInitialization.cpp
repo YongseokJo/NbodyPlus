@@ -13,13 +13,13 @@ void deleteGroup(Particle* ptclCM) {
 
 	Group* ptclGroup = ptclCM->GroupInfo;
 
-	ptclCM->NewNumberOfNeighbor = ptclGroup->sym_int.particles.getSize();
+	ptclCM->NewNumberOfMember = ptclGroup->sym_int.particles.getSize();
 
 	assert(!ptclGroup->sym_int.particles.isOriginFrame()); // for debugging by EW 2025.1.4
 
 	for (int i=0; i < ptclGroup->sym_int.particles.getSize(); i++) {
 		Particle* members = &ptclGroup->sym_int.particles[i];
-		NewNeighbors[ptclCM->NeighborsOffset + i] = members->ParticleIndex;
+		ptclCM->NewMembers[i] = members->ParticleIndex;
 
 		for (int dim=0; dim<Dim; dim++) {
 			particles[members->ParticleIndex].Position[dim] = ptclCM->Position[dim] + members->Position[dim];
@@ -82,8 +82,8 @@ void Group::initialIntegrator(int NumMembers) {
 	sym_int.info.reserveMem(NumMembers);
 
 	fprintf(workerout, "Mem PID:");
-    for (int i = 0; i < groupCM->NewNumberOfNeighbor; ++i) {
-		Particle* members = &particles[NewNeighbors[groupCM->NeighborsOffset + i]];
+    for (int i = 0; i < groupCM->NewNumberOfMember; ++i) {
+		Particle* members = &particles[groupCM->NewMembers[i]];
 		if (!members->isCMptcl) {
 			members->CMPtclIndex = groupCM->ParticleIndex; // added for write_out_group function by EW 2025.1.6
 			sym_int.particles.addMemberAndAddress(*members);
@@ -91,8 +91,8 @@ void Group::initialIntegrator(int NumMembers) {
 			groupCM->Members[groupCM->NumberOfMember++] = members->ParticleIndex;
 		}
 		else {
-			for (int j=0; j < members->NewNumberOfNeighbor; j++) {
-				Particle* members_members = &particles[NewNeighbors[members->NeighborsOffset + j]];
+			for (int j=0; j < members->NewNumberOfMember; j++) {
+				Particle* members_members = &particles[members->NewMembers[j]];
 				members_members->CMPtclIndex = groupCM->ParticleIndex; // added for write_out_group function by EW 2025.1.6
 				sym_int.particles.addMemberAndAddress(*members_members);
 				fprintf(workerout, " %d", sym_int.particles[groupCM->NumberOfMember].PID);
@@ -137,11 +137,11 @@ void NewFBInitialization(Particle* ptclCM) {
 	ptclGroup->groupCM = ptclCM;
 
 	// Find member particle with the biggest CurrentTimeIrr
-	Particle* ptcl = &particles[NewNeighbors[ptclCM->NeighborsOffset]];
+	Particle* ptcl = &particles[ptclCM->NewMembers[0]];
 	int NumberOfMembers=0;
 
-	for (int i = 0; i < ptclCM->NewNumberOfNeighbor; ++i) {
-		Particle* members = &particles[NewNeighbors[ptclCM->NeighborsOffset + i]];
+	for (int i = 0; i < ptclCM->NewNumberOfMember; ++i) {
+		Particle* members = &particles[ptclCM->NewMembers[i]];
 		members->isActive = false;
 		if (members->CurrentTimeIrr > ptcl->CurrentTimeIrr) {
         	ptcl = members;
@@ -149,13 +149,13 @@ void NewFBInitialization(Particle* ptclCM) {
 		if (!members->isCMptcl)
 			NumberOfMembers++;
 		else
-			NumberOfMembers += members->NewNumberOfNeighbor;
+			NumberOfMembers += members->NewNumberOfMember;
     }
 
 	fprintf(workerout, "NewFBInitialization. CurrentTimeIrr (Myr): %e\n", ptcl->CurrentTimeIrr*EnzoTimeStep*1e4);
 
-	for (int i = 0; i < ptclCM->NewNumberOfNeighbor; ++i) {
-		Particle* members = &particles[NewNeighbors[ptclCM->NeighborsOffset + i]];
+	for (int i = 0; i < ptclCM->NewNumberOfMember; ++i) {
+		Particle* members = &particles[ptclCM->NewMembers[i]];
 
 		double dt = ptcl->CurrentTimeIrr - members->CurrentTimeIrr;
 		double pos[Dim], vel[Dim];
@@ -165,8 +165,8 @@ void NewFBInitialization(Particle* ptclCM) {
 		if (members->isCMptcl) {
 			Particle* members_members;
 
-			for (int j=0; j<members->NewNumberOfNeighbor; j++) {
-				members_members = &particles[NewNeighbors[members->NeighborsOffset + j]];
+			for (int j=0; j<members->NewNumberOfMember; j++) {
+				members_members = &particles[members->NewMembers[j]];
 				members_members->CurrentTimeIrr = ptcl->CurrentTimeIrr;
 
 				for (int dim=0; dim<Dim; dim++) {
@@ -230,8 +230,8 @@ void NewFBInitialization(Particle* ptclCM) {
 
 	ptclGroup->CurrentTime	= ptclCM->CurrentTimeIrr;
 
-	for (int i = 0; i < ptclCM->NewNumberOfNeighbor; ++i) {
-		Particle* members = &particles[NewNeighbors[ptclCM->NeighborsOffset + i]];
+	for (int i = 0; i < ptclCM->NewNumberOfMember; ++i) {
+		Particle* members = &particles[ptclCM->NewMembers[i]];
 
 		if (members->isCMptcl)
 			members->clear();
@@ -340,23 +340,22 @@ void NewFBInitialization3(Group* group) {
 	ptclGroup->isMerger = group->isMerger;
 	ptclGroup->CurrentTime = group->CurrentTime;
 
-	ptclCM->NewNumberOfNeighbor = 0;
+	ptclCM->NewNumberOfMember = 0;
 	for (int i = 0; i < ptclCM->NumberOfMember; i++) {
 		Particle* members = &particles[ptclCM->Members[i]];
 		if (members->Mass < 0)
 			members->CMPtclIndex = -1;
 		else {
-			NewNeighbors[ptclCM->NeighborsOffset + ptclCM->NewNumberOfNeighbor] = ptclCM->Members[i];
-			ptclCM->NewNumberOfNeighbor++;
+			ptclCM->NewMembers[ptclCM->NewNumberOfMember++] = ptclCM->Members[i];
 		}
 	}
 
 	ptclGroup->initialManager();
-	ptclGroup->initialIntegrator(ptclCM->NewNumberOfNeighbor); // Binary tree is made and CM particle is made automatically.
-	ptclCM->NewNumberOfNeighbor = 0;
+	ptclGroup->initialIntegrator(ptclCM->NewNumberOfMember); // Binary tree is made and CM particle is made automatically.
+	ptclCM->NewNumberOfMember = 0;
 	/*
 	After NewFBInitialization3, new binary forms and the same particles are detected as new binary members...
-	I suspect this error happens because NewNumberOfNeighbor was not set to 0.
+	I suspect this error happens because NewNumberOfMember was not set to 0.
 	Let's see what happens... by EW 2025.6.25
 	It seems that this is right solution! by EW 2025.7.6
 	*/

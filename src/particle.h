@@ -84,8 +84,10 @@ struct Particle {
 	Group* GroupInfo;
 	bool isCMptcl; // do we need this? (Query) we can simply use if GroupInfo == nullptr right?
 	int CMPtclIndex; // added for write_out_group function by EW 2025.1.6
-	int Members[10]; // ParticleIndex of group members; only used for cm ptcls by EW 2025.1.30
 	int NumberOfMember; // Number of group members; only used for cm ptcls by EW 2025.1.30
+	int Members[10]; // ParticleIndex of group members; only used for cm ptcls by EW 2025.1.30
+	int NewNumberOfMember; // newly added for few-body search by EW 2025.9.4
+	int NewMembers[10]; // newly added for few-body search by EW 2025.9.4
 
 #ifdef SEVN
 	StarSEVN* StellarEvolution;
@@ -141,6 +143,7 @@ struct Particle {
 		isUpdateToDate = true;
 		CMPtclIndex = -1;
 		NumberOfMember = 0;
+		NewNumberOfMember = 0;
 #ifdef SEVN
 		StellarEvolution = nullptr;
 #ifdef SEVN_BINARY
@@ -192,7 +195,7 @@ struct Particle {
 		this->CMPtclIndex = -1;
 		this->isUpdateToDate = true;
 		this->NumberOfMember = 0;
-
+		this->NewNumberOfMember = 0;
 #ifndef SEVN
 		this->ParticleType = NO_FEEDBACK_STAR;
 		this->radius = 2.25461e-8/position_unit*pow(this->Mass*1e9, 1./3); // stellar radius in code unit
@@ -225,6 +228,7 @@ struct Particle {
 		isCMptcl = false;
 		CMPtclIndex = -1;
 		NumberOfMember = 0;
+		NewNumberOfMember = 0;
 		setBinaryInterruptState(BinaryInterruptState::none);
 		ParticleType = NO_FEEDBACK_STAR;
 
@@ -431,12 +435,12 @@ struct Particle {
 	}
 
 	// made by EW 2025.1.6
-	/*
-	void copyNewNeighbor(Particle* ptcl) {
-		this->NewNumberOfNeighbor = ptcl->NewNumberOfNeighbor;
-		std::memcpy(this->NewNeighbors, ptcl->NewNeighbors, sizeof(int)*ptcl->NewNumberOfNeighbor);
+	// /*
+	void copyNewMembers(Particle* ptcl) {
+		this->NewNumberOfMember = ptcl->NewNumberOfMember;
+		std::memcpy(this->NewMembers, ptcl->NewMembers, sizeof(int)*ptcl->NewNumberOfMember);
 	}
-	*/
+	// */
 	
 #define NO_PRINT_FULL_ACC
 	void printParticleInfo(FILE* file) {

@@ -10,7 +10,7 @@
 
 void Particle::computeAccelerationIrr() {
 
-	this->NewNumberOfNeighbor = 0; // for Few-body Search by EW 2025.3.1
+	this->NewNumberOfMember = 0; // for Few-body Search by EW 2025.3.1
 
 	if (this->NumberOfNeighbor == 0) {
 		for (int dim=0; dim<Dim; dim++){
@@ -95,10 +95,8 @@ void Particle::computeAccelerationIrr() {
 			vx += v[dim]*x[dim];
 		}
 
-		if (sqrt(r2) < RSEARCH/position_unit && vx < 0) {
-			NewNeighbors[this->NeighborsOffset + this->NewNumberOfNeighbor] = Neighbors[this->NeighborsOffset + i];
-			this->NewNumberOfNeighbor++;
-		}
+		if (sqrt(r2) < RSEARCH/position_unit && vx < 0)
+			this->NewMembers[this->NewNumberOfMember++] = ptcl->ParticleIndex;
 
 		//mdot = ptcl->evolveStarMass(CurrentTimeIrr,
 				//CurrentTimeIrr+TimeStepIrr*1.01)/TimeStepIrr*1e-2; // derivative can be improved
@@ -141,10 +139,8 @@ void Particle::computeAccelerationIrr() {
 			vx += v[dim]*x[dim];
 		}
 
-		if (sqrt(r2) < RSEARCH/position_unit && vx < 0) {
-			NewNeighbors[this->NeighborsOffset + this->NewNumberOfNeighbor] = i;
-			this->NewNumberOfNeighbor++;
-		}
+		if (sqrt(r2) < RSEARCH/position_unit && vx < 0)
+			this->NewMembers[this->NewNumberOfMember++] = i;
 
 		//mdot = ptcl->evolveStarMass(CurrentTimeIrr,
 				//CurrentTimeIrr+TimeStepIrr*1.01)/TimeStepIrr*1e-2; // derivative can be improved
