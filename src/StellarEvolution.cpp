@@ -401,7 +401,7 @@ bool makeSEVNBinary(Particle* ptclCM) {
 		if (!members->isCMptcl)
 			NumberOfMembers++;
 		else {
-			NumberOfMembers += members->NewNumberOfMember;
+			NumberOfMembers += members->NumberOfMember;
             if (members->BinaryEvolution != nullptr) {
                 fprintf(SEVNout, "SEVN BSE... BSE can't be applied to many-body case. Binary object (PID: %d) should be deleted!!!\n", members->PID);
                 convertBinaryToSingle(members);

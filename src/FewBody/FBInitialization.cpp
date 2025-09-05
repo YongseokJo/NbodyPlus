@@ -11,33 +11,7 @@ void deleteGroup(Particle* ptclCM) {
 	E_binary -= ptclCM->GroupInfo->sym_int.getEtot();
 	E_binary_SD -= ptclCM->GroupInfo->sym_int.getEtotSlowDown();
 
-	Group* ptclGroup = ptclCM->GroupInfo;
-
-	ptclCM->NewNumberOfMember = ptclGroup->sym_int.particles.getSize();
-
-	assert(!ptclGroup->sym_int.particles.isOriginFrame()); // for debugging by EW 2025.1.4
-
-	for (int i=0; i < ptclGroup->sym_int.particles.getSize(); i++) {
-		Particle* members = &ptclGroup->sym_int.particles[i];
-		ptclCM->NewMembers[i] = members->ParticleIndex;
-
-		for (int dim=0; dim<Dim; dim++) {
-			particles[members->ParticleIndex].Position[dim] = ptclCM->Position[dim] + members->Position[dim];
-			particles[members->ParticleIndex].Velocity[dim] = ptclCM->Velocity[dim] + members->Velocity[dim];
-		}
-		particles[members->ParticleIndex].Mass = members->Mass;
-	}
-
-/* // original version; this might take so much time by EW 2025.1.4
-	for (int dim=0; dim<Dim; dim++) {
-		ptclGroup->sym_int.particles.cm.Position[dim] = ptclCM->Position[dim];
-		ptclGroup->sym_int.particles.cm.Velocity[dim] = ptclCM->Velocity[dim];
-	}
-	ptclGroup->sym_int.particles.shiftToOriginFrame();
-	group2->sym_int.particles.template writeBackMemberAll<Particle>();
-*/
-
-	delete ptclGroup;
+	delete ptclCM->GroupInfo;
 }
 
 void Group::initialManager() {
@@ -91,8 +65,8 @@ void Group::initialIntegrator(int NumMembers) {
 			groupCM->Members[groupCM->NumberOfMember++] = members->ParticleIndex;
 		}
 		else {
-			for (int j=0; j < members->NewNumberOfMember; j++) {
-				Particle* members_members = &particles[members->NewMembers[j]];
+			for (int j=0; j < members->NumberOfMember; j++) {
+				Particle* members_members = &particles[members->Members[j]];
 				members_members->CMPtclIndex = groupCM->ParticleIndex; // added for write_out_group function by EW 2025.1.6
 				sym_int.particles.addMemberAndAddress(*members_members);
 				fprintf(workerout, " %d", sym_int.particles[groupCM->NumberOfMember].PID);
@@ -149,7 +123,7 @@ void NewFBInitialization(Particle* ptclCM) {
 		if (!members->isCMptcl)
 			NumberOfMembers++;
 		else
-			NumberOfMembers += members->NewNumberOfMember;
+			NumberOfMembers += members->NumberOfMember;
     }
 
 	fprintf(workerout, "NewFBInitialization. CurrentTimeIrr (Myr): %e\n", ptcl->CurrentTimeIrr*EnzoTimeStep*1e4);
@@ -165,8 +139,8 @@ void NewFBInitialization(Particle* ptclCM) {
 		if (members->isCMptcl) {
 			Particle* members_members;
 
-			for (int j=0; j<members->NewNumberOfMember; j++) {
-				members_members = &particles[members->NewMembers[j]];
+			for (int j=0; j<members->NumberOfMember; j++) {
+				members_members = &particles[members->Members[j]];
 				members_members->CurrentTimeIrr = ptcl->CurrentTimeIrr;
 
 				for (int dim=0; dim<Dim; dim++) {

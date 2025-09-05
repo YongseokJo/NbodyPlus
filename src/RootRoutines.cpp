@@ -824,9 +824,15 @@ void RootRoutines() {
 							RegularList.insert(ptcl->ParticleIndex);
 #endif // multimap
 
-						ptcl->NewNumberOfMember = 0; // (Query to myself) Let's move this to checkNewGroup4!!! by EW 2025.9.4 
+						ptcl->NewNumberOfMember = 0;
+						for (int j=OriginalParticleListSize; j<ThisLevelNode->ParticleList.size(); j++) {
+							if (i == j) continue;
+							ptcl->NewMembers[ptcl->NewNumberOfMember++] = ThisLevelNode->ParticleList[j];
+						}
+						/*
 						if (ptcl->TimeStepIrr * EnzoTimeStep * 1e4 < TSEARCH)
 							ptcl->checkNewGroup4();
+						*/
 					}
 
 					// Erase terminated CM particles by EW 2025.1.6
@@ -880,6 +886,9 @@ void RootRoutines() {
 				{
 					ptcl = &particles[ptcl_id];
 					
+					if (ptcl->NewNumberOfMember != 0)
+						ptcl->checkNewGroup3();
+					/*
 					if (ptcl->getBinaryInterruptState() == BinaryInterruptState::threebody) {
 						ptcl->setBinaryInterruptState(BinaryInterruptState::none);
 					}
@@ -893,6 +902,7 @@ void RootRoutines() {
 					{	
 						ptcl->checkNewGroup3();
 					}
+					*/
 				}
 #ifdef DEBUG
 				std::cout << "FB search ended" << std::endl;

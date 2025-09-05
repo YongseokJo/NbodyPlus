@@ -248,6 +248,8 @@ void Particle::checkNewGroup3() {
 
         const Float dr = sqrt((pos1[0]-pos2[0])*(pos1[0]-pos2[0])+(pos1[1]-pos2[1])*(pos1[1]-pos2[1])+(pos1[2]-pos2[2])*(pos1[2]-pos2[2]));
 
+        if (dr > RSEARCH/position_unit) continue;
+
         Float fcm[3] = {this->Mass*this->a_tot[0][0] + ptcl2->Mass*ptcl2->a_tot[0][0], 
         this->Mass*this->a_tot[1][0] + ptcl2->Mass*ptcl2->a_tot[1][0], 
         this->Mass*this->a_tot[2][0] + ptcl2->Mass*ptcl2->a_tot[2][0]};
@@ -394,7 +396,7 @@ bool Group::CheckBreak() {
             }
         }
         */
-        // /*
+        /*
         if (n_member == 3) {
             fprintf(workerout, "Left PID: %d, Right PID: %d\n", bin_root.getLeftMember()->PID, bin_root.getRightMember()->PID);
             int outgoingPID = bin_root.getLeftMember()->PID != -1 ? bin_root.getLeftMember()->PID : bin_root.getRightMember()->PID;
@@ -419,7 +421,7 @@ bool Group::CheckBreak() {
                 }
             }
         }
-        // */
+        */
         fflush(workerout);
         return true;
     }
@@ -453,7 +455,7 @@ bool Group::CheckBreak() {
                 }
             }
             */
-            // /*
+            /*
             if (n_member == 3) {
                 fprintf(workerout, "Left PID: %d, Right PID: %d\n", bin_root.getLeftMember()->PID, bin_root.getRightMember()->PID);
                 int outgoingPID = bin_root.getLeftMember()->PID != -1 ? bin_root.getLeftMember()->PID : bin_root.getRightMember()->PID;
@@ -478,7 +480,7 @@ bool Group::CheckBreak() {
                     }
                 }
             }
-            // */
+            */
             fflush(workerout);
             return true;
         }
@@ -548,7 +550,7 @@ bool Group::CheckBreak() {
                     }
                 }
                 */
-                // /*
+                /*
                 if (n_member == 3) {
                     fprintf(workerout, "Left PID: %d, Right PID: %d\n", bin_root.getLeftMember()->PID, bin_root.getRightMember()->PID);
                     int outgoingPID = bin_root.getLeftMember()->PID != -1 ? bin_root.getLeftMember()->PID : bin_root.getRightMember()->PID;
@@ -573,7 +575,7 @@ bool Group::CheckBreak() {
                         }
                     }
                 }
-                // */
+                */
                 fflush(workerout);
                 return true;
             }
