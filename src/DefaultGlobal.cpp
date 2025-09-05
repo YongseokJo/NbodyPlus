@@ -15,11 +15,9 @@ MPI_Comm shared_comm;
 
 MPI_Win win;
 Particle *particles;
-Particle *particles_original;
 
 MPI_Win win2;
 GlobalVariable *global_variable;
-GlobalVariable *global_variable_original;
 
 MPI_Win win3;
 int* Neighbors;

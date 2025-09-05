@@ -61,19 +61,18 @@ void initializeMPI(int argc, char *argv[]) {
 
 	// Allocate shared memory
 	if (shared_rank == 0) {
-		//MPI_Win_allocate_shared(sizeof(int), sizeof(int), MPI_INFO_NULL, shared_comm, &shared_mem, &win);
-		MPI_Win_allocate_shared(sizeof(Particle) * MaxNumParticle, sizeof(Particle), MPI_INFO_NULL, shared_comm, &particles_original, &win);
-		MPI_Win_allocate_shared(sizeof(GlobalVariable), sizeof(GlobalVariable), MPI_INFO_NULL, shared_comm, &global_variable_original, &win2);
-		MPI_Win_allocate_shared(sizeof(int) * MaxNumParticle * MaxNumNeighbor, sizeof(int), MPI_INFO_NULL, shared_comm, &Neighbors_original, &win3);
-		MPI_Win_allocate_shared(sizeof(int) * MaxNumParticle * MaxNumNeighbor, sizeof(int), MPI_INFO_NULL, shared_comm, &NewNeighbors_original, &win4);
+		MPI_Win_allocate_shared(sizeof(Particle) * MaxNumParticle, sizeof(Particle), MPI_INFO_NULL, shared_comm, &particles, &win);
+		MPI_Win_allocate_shared(sizeof(GlobalVariable), sizeof(GlobalVariable), MPI_INFO_NULL, shared_comm, &global_variable, &win2);
+		MPI_Win_allocate_shared(sizeof(int) * MaxNumParticle * MaxNumNeighbor, sizeof(int), MPI_INFO_NULL, shared_comm, &Neighbors, &win3);
+		MPI_Win_allocate_shared(sizeof(int) * MaxNumParticle * MaxNumNeighbor, sizeof(int), MPI_INFO_NULL, shared_comm, &NewNeighbors, &win4);
 	} else {
-		MPI_Win_allocate_shared(0, sizeof(Particle), MPI_INFO_NULL, shared_comm, &particles_original, &win);
-		MPI_Win_allocate_shared(0, sizeof(GlobalVariable), MPI_INFO_NULL, shared_comm, &global_variable_original, &win2);
-		MPI_Win_allocate_shared(0, sizeof(int), MPI_INFO_NULL, shared_comm, &Neighbors_original, &win3);
-		MPI_Win_allocate_shared(0, sizeof(int), MPI_INFO_NULL, shared_comm, &NewNeighbors_original, &win4);
+		MPI_Win_allocate_shared(0, sizeof(Particle), MPI_INFO_NULL, shared_comm, &particles, &win);
+		MPI_Win_allocate_shared(0, sizeof(GlobalVariable), MPI_INFO_NULL, shared_comm, &global_variable, &win2);
+		MPI_Win_allocate_shared(0, sizeof(int), MPI_INFO_NULL, shared_comm, &Neighbors, &win3);
+		MPI_Win_allocate_shared(0, sizeof(int), MPI_INFO_NULL, shared_comm, &NewNeighbors, &win4);
 	}
-	// Query shared memory of rank 0
 	
+  // Query shared memory of rank 0
 	MPI_Aint size_bytes;
 	int disp_unit;
 
