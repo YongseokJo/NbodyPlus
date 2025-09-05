@@ -19,6 +19,14 @@ Particle *particles;
 MPI_Win win2;
 GlobalVariable *global_variable;
 
+MPI_Win win3;
+int* Neighbors;
+int* Neighbors_original;
+
+MPI_Win win4;
+int* NewNeighbors;
+int* NewNeighbors_original;
+
 // Custom MPI data types
 MPI_Datatype QueueType;
 MPI_Datatype IparticleType;

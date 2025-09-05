@@ -28,7 +28,6 @@ void Group::ARIntegration(double next_time) {
 // /*
     if (groupCM->CurrentTimeReg >= groupCM->CurrentTimeIrr) { // Neighbors were updated in regular routine
         sym_int.particles.cm.NumberOfNeighbor = groupCM->NumberOfNeighbor;
-        std::memcpy(sym_int.particles.cm.Neighbors, groupCM->Neighbors, sizeof(int) * groupCM->NumberOfNeighbor);
     }
 // */
 

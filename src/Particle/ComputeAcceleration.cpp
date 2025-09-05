@@ -10,7 +10,7 @@
 
 void Particle::computeAccelerationIrr() {
 
-	this->NewNumberOfNeighbor = 0; // for Few-body Search by EW 2025.3.1
+	this->NewNumberOfMember = 0; // for Few-body Search by EW 2025.3.1
 
 	if (this->NumberOfNeighbor == 0) {
 		for (int dim=0; dim<Dim; dim++){
@@ -49,7 +49,7 @@ void Particle::computeAccelerationIrr() {
 
 	for (int i=0; i<this->NumberOfNeighbor; i++) {
 
-		ptcl = &particles[this->Neighbors[i]];
+		ptcl = &particles[Neighbors[this->NeighborsOffset + i]];
 
 		if (!ptcl->isActive) {
 			if (ptcl->CMPtclIndex != -1) {
@@ -96,7 +96,7 @@ void Particle::computeAccelerationIrr() {
 		}
 
 		if (sqrt(r2) < RSEARCH/position_unit && vx < 0)
-			this->NewNeighbors[this->NewNumberOfNeighbor++] = this->Neighbors[i];
+			this->NewMembers[this->NewNumberOfMember++] = ptcl->ParticleIndex;
 
 		//mdot = ptcl->evolveStarMass(CurrentTimeIrr,
 				//CurrentTimeIrr+TimeStepIrr*1.01)/TimeStepIrr*1e-2; // derivative can be improved
@@ -140,7 +140,7 @@ void Particle::computeAccelerationIrr() {
 		}
 
 		if (sqrt(r2) < RSEARCH/position_unit && vx < 0)
-			this->NewNeighbors[this->NewNumberOfNeighbor++] = i;
+			this->NewMembers[this->NewNumberOfMember++] = i;
 
 		//mdot = ptcl->evolveStarMass(CurrentTimeIrr,
 				//CurrentTimeIrr+TimeStepIrr*1.01)/TimeStepIrr*1e-2; // derivative can be improved
@@ -267,9 +267,9 @@ void Particle::computeAccelerationReg() {
 	}
 
 	for (int i=0; i<this->NumberOfNeighbor; i++) {
-		ptcl = &particles[this->Neighbors[i]];
+		ptcl = &particles[Neighbors[this->NeighborsOffset + i]];
 		if (ptcl->isActive)
-			RealNeighbors.insert(this->Neighbors[i]);
+			RealNeighbors.insert(Neighbors[this->NeighborsOffset + i]);
 		else if (ptcl->CMPtclIndex != -1)
 			RealNeighbors.insert(ptcl->CMPtclIndex);
 	}
@@ -335,12 +335,12 @@ void Particle::computeAccelerationReg() {
 
 		if (r2 < this->RadiusOfNeighbor) {
 			if (!ptcl->isCMptcl) {
-				this->NewNeighbors[this->NewNumberOfNeighbor] = ptcl->ParticleIndex;
+				NewNeighbors[this->NeighborsOffset + this->NewNumberOfNeighbor] = ptcl->ParticleIndex;
 				this->NewNumberOfNeighbor++;
 			}
 			else {
 				for (int k=0; k<ptcl->NumberOfMember; k++) {
-					this->NewNeighbors[this->NewNumberOfNeighbor] = ptcl->Members[k];
+					NewNeighbors[this->NeighborsOffset + this->NewNumberOfNeighbor] = ptcl->Members[k];
 					this->NewNumberOfNeighbor++;
 				}
 			}
@@ -433,15 +433,15 @@ void Particle::updateRegularParticleCuda() {
 	hashTableNew.reserve(this->NewNumberOfNeighbor); // We are including myself in neighbor from GPU kernel by EW 2025.8.26
 
 
-	hashTableNew.insert(this->NewNeighbors, this->NewNeighbors + this->NewNumberOfNeighbor);
+	hashTableNew.insert(NewNeighbors + this->NeighborsOffset, NewNeighbors + this->NeighborsOffset + this->NewNumberOfNeighbor);
 	hashTableNew.erase(this->ParticleIndex);
 	this->NewNumberOfNeighbor--;
 
 	for (int i = 0; i < this->NumberOfNeighbor; i++) {
-		if (particles[this->Neighbors[i]].isActive)
-			hashTableOld.insert(this->Neighbors[i]);
-		else if (particles[this->Neighbors[i]].CMPtclIndex != -1)
-			hashTableOld.insert(particles[this->Neighbors[i]].CMPtclIndex);
+		if (particles[Neighbors[this->NeighborsOffset + i]].isActive)
+			hashTableOld.insert(Neighbors[this->NeighborsOffset + i]);
+		else if (particles[Neighbors[this->NeighborsOffset + i]].CMPtclIndex != -1)
+			hashTableOld.insert(particles[Neighbors[this->NeighborsOffset + i]].CMPtclIndex);
 	}
 
 	Particle* ptcl;
@@ -556,11 +556,15 @@ void Particle::updateRegularParticleCuda() {
 	for (int _NewNeighborIndex: hashTableNew) {
 		ptcl = &particles[_NewNeighborIndex];
 		if (ptcl->isCMptcl) {
-			for (int j=0; j<ptcl->NumberOfMember; j++)
-				this->NewNeighbors[_NewNumberOfNeighbor++] = ptcl->Members[j];
+			for (int j=0; j<ptcl->NumberOfMember; j++) {
+				NewNeighbors[this->NeighborsOffset + _NewNumberOfNeighbor] = ptcl->Members[j];
+				_NewNumberOfNeighbor++;
+			}
 		}
-		else
-			this->NewNeighbors[_NewNumberOfNeighbor++] = ptcl->ParticleIndex;
+		else {
+			NewNeighbors[this->NeighborsOffset + _NewNumberOfNeighbor] = ptcl->ParticleIndex;
+			_NewNumberOfNeighbor++;
+		}
 	}
 	this->NewNumberOfNeighbor = _NewNumberOfNeighbor;
 

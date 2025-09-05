@@ -35,6 +35,14 @@ extern Particle *particles;
 extern MPI_Win win2;
 extern GlobalVariable *global_variable;
 
+extern MPI_Win win3;
+extern int* Neighbors;
+extern int* Neighbors_original;
+
+extern MPI_Win win4;
+extern int* NewNeighbors;
+extern int* NewNeighbors_original;
+
 extern MPI_Datatype QueueType;
 extern MPI_Datatype IparticleType;
 extern MPI_Datatype JparticleType;

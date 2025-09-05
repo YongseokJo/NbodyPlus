@@ -824,9 +824,15 @@ void RootRoutines() {
 							RegularList.insert(ptcl->ParticleIndex);
 #endif // multimap
 
-						ptcl->NewNumberOfNeighbor = 0;
+						ptcl->NewNumberOfMember = 0;
+						for (int j=OriginalParticleListSize; j<ThisLevelNode->ParticleList.size(); j++) {
+							if (i == j) continue;
+							ptcl->NewMembers[ptcl->NewNumberOfMember++] = ThisLevelNode->ParticleList[j];
+						}
+						/*
 						if (ptcl->TimeStepIrr * EnzoTimeStep * 1e4 < TSEARCH)
 							ptcl->checkNewGroup4();
+						*/
 					}
 
 					// Erase terminated CM particles by EW 2025.1.6
@@ -880,19 +886,23 @@ void RootRoutines() {
 				{
 					ptcl = &particles[ptcl_id];
 					
+					if (ptcl->NewNumberOfMember != 0)
+						ptcl->checkNewGroup3();
+					/*
 					if (ptcl->getBinaryInterruptState() == BinaryInterruptState::threebody) {
 						ptcl->setBinaryInterruptState(BinaryInterruptState::none);
 					}
 					else if (ptcl->getBinaryInterruptState()==BinaryInterruptState::manybody)
 					{
-						ptcl->NewNumberOfNeighbor = 0;
+						ptcl->NewNumberOfMember = 0;
 						ptcl->checkNewGroup2();
 						ptcl->setBinaryInterruptState(BinaryInterruptState::none);
 					}
-					else if (ptcl->NewNumberOfNeighbor != 0)
+					else if (ptcl->NewNumberOfMember != 0)
 					{	
 						ptcl->checkNewGroup3();
 					}
+					*/
 				}
 #ifdef DEBUG
 				std::cout << "FB search ended" << std::endl;
@@ -936,8 +946,8 @@ void RootRoutines() {
 					for (int i=0; i<newCMptcls.size(); i++) {
 						ptclCM = &particles[newCMptcls[i]]; // 2025.01.10 edited to newCMptcls[i] by YS
 
-						for (int j=0; j<ptclCM->NewNumberOfNeighbor; j++) {
-							mem_ptclCM = &particles[ptclCM->NewNeighbors[j]];
+						for (int j=0; j<ptclCM->NewNumberOfMember; j++) {
+							mem_ptclCM = &particles[ptclCM->NewMembers[j]];
 #ifdef MULTIMAP
 #ifdef PERFORMANCETRACE
 							start_point_map = std::chrono::high_resolution_clock::now();
@@ -1002,8 +1012,8 @@ void RootRoutines() {
 #endif
 #endif
 						// Temporary test... If this works, RegularMap version should be updated too by EW 2025.08.18 // It works well!!
-						for (int i = 0; i < ptclCM->NewNumberOfNeighbor; i++)
-							RegularList.erase(ptclCM->NewNeighbors[i]);
+						for (int i = 0; i < ptclCM->NewNumberOfMember; i++)
+							RegularList.erase(ptclCM->NewMembers[i]);
 
 						queue.task = MakeGroup;
 						queue.pid = ptclCM->ParticleIndex;

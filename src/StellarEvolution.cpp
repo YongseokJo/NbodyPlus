@@ -392,16 +392,16 @@ bool makeSEVNBinary(Particle* ptclCM) {
 
     // Activate binary stellar evolution iff there are two members in the binary
 	int NumberOfMembers=0;
-    Particle* ptcl1 = &particles[ptclCM->NewNeighbors[0]];
-	for (int i = 0; i < ptclCM->NewNumberOfNeighbor; ++i) {
-		Particle* members = &particles[ptclCM->NewNeighbors[i]];
+    Particle* ptcl1 = &particles[ptclCM->NewMembers[0]];
+	for (int i = 0; i < ptclCM->NewNumberOfMember; ++i) {
+        Particle* members = &particles[ptclCM->NewMembers[i]];
         if (members->CurrentTimeIrr > ptcl1->CurrentTimeIrr) {
         	ptcl1 = members;
     	}
 		if (!members->isCMptcl)
 			NumberOfMembers++;
 		else {
-			NumberOfMembers += members->NewNumberOfNeighbor;
+			NumberOfMembers += members->NumberOfMember;
             if (members->BinaryEvolution != nullptr) {
                 fprintf(SEVNout, "SEVN BSE... BSE can't be applied to many-body case. Binary object (PID: %d) should be deleted!!!\n", members->PID);
                 convertBinaryToSingle(members);
@@ -413,10 +413,10 @@ bool makeSEVNBinary(Particle* ptclCM) {
 
     double BinaryFormationTime = ptcl1->CurrentTimeIrr; // in code unit
     
-    ptcl1 = &particles[ptclCM->NewNeighbors[0]];
+    ptcl1 = &particles[ptclCM->NewMembers[0]];
     StarSEVN* star1 = ptcl1->StellarEvolution;
 
-    Particle* ptcl2 = &particles[ptclCM->NewNeighbors[1]];
+    Particle* ptcl2 = &particles[ptclCM->NewMembers[1]];
     StarSEVN* star2 = ptcl2->StellarEvolution;
 
     // Make BSE object iff both members are not remnants
@@ -490,7 +490,7 @@ bool makeSEVNBinary(Particle* ptclCM) {
         if (ptcl1->ParticleType > REMNANT) {
             if (star1->amiempty() || (star1->vkick[3] > 0.0)) {
                 fprintf(SEVNout, "SEVN BSE... No binary is created!!!\n");
-                ptclCM->NewNumberOfNeighbor = 0;
+                ptclCM->NewNumberOfMember = 0;
                 return false;
             }
             return true;
@@ -509,7 +509,7 @@ bool makeSEVNBinary(Particle* ptclCM) {
         if (ptcl2->ParticleType > REMNANT) {
             if (star2->amiempty() || (star2->vkick[3] > 0.0)) {
                 fprintf(SEVNout, "SEVN BSE... No binary is created!!!\n");
-                ptclCM->NewNumberOfNeighbor = 0;
+                ptclCM->NewNumberOfMember = 0;
                 return false;
             }
             return true;
