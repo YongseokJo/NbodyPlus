@@ -8,7 +8,6 @@
 #include "Queue.h"
 
 int getLineNumber();
-//void write_out(std::ofstream& outputFile, const Particle* ptcl);
 void write_out(std::ofstream& outputFile, const Particle* ptcl, const double *pos, const double *vel);
 void write_out_group(std::ofstream& outputFile, const Particle* ptcl, const Particle* members, const double *pos, const double *vel);
 void write_neighbor(std::ofstream& outputFile, const Particle* ptcl);
@@ -116,14 +115,7 @@ int getLineNumber() {
 }
 
 
-bool WriteData() {
-	return true;
-}
-
-
-
 // Function to create a directory
-
 bool createDirectory(const std::string& path) {
 	// Create a folder with permissions 0777 (full access for user, group, others)
 	int status = mkdir(path.c_str(), 0777);
@@ -155,11 +147,9 @@ int writeParticle(double current_time, int outputNum) {
 
     // Construct the filename with the timestamp
     std::string filename = directoryPath + "/" + foutput + "_" + std::to_string(outputNum) + ".txt";
-    //std::string nn_fname = directoryPath + "/neighbor/nn_" + std::to_string(outputNum) + ".txt";
 
     // Open a file for writing
     std::ofstream outputFile(filename);
-    //std::ofstream output_nn(nn_fname);
 
 
     // Check if the file is opened successfully
@@ -237,8 +227,6 @@ int writeParticle(double current_time, int outputNum) {
 		
 		ptcl->predictParticleSecondOrder(current_time - ptcl->CurrentTimeIrr, pos, vel);
 		write_out(outputFile, ptcl, pos, vel);
-		
-// write_neighbor(output_nn, ptcl);
 	}
 
 	for (int i: CMPtclsSet) {
@@ -255,7 +243,6 @@ int writeParticle(double current_time, int outputNum) {
 
 	// Close the file
 	outputFile.close();
-	// output_nn.close();
 
 	std::cout << "Data written to output.txt successfully!" << std::endl;
 
@@ -396,22 +383,3 @@ void write_out_group(std::ofstream& outputFile, const Particle* ptclCM, const Pa
 		outputFile << std::setw(width) << (vel[2] - ptclCM->Velocity[2] + ptcl->Velocity[2])*velocity_unit/yr*pc/1e5 << '\n';
 #endif
 }
-
-/*
-void write_neighbor(std::ofstream& outputFile, const Particle* ptcl) {
-	outputFile  << std::left\
-			<< std::setw(width) << ptcl->PID << " = [ " ;
-	for (Particle* nn:ptcl->ACList) {
-			outputFile << nn->PID << "  ";
-	}
-	outputFile << "]\n";
-
-}
-*/
-
-
-#ifdef time_trace
-void output_time_trace() {
-
-}
-#endif

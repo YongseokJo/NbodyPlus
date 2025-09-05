@@ -20,10 +20,6 @@ MPI_Datatype createIparticleType();
 MPI_Datatype createJparticleType();
 
 void initializeMPI(int argc, char *argv[]) {
-	/* MPI Initialization */
-	//MPI_Win win;
-	//int MyRank;
-	//int NumberOfProcessor;
 
 	MPI_Init(&argc, &argv);
 
@@ -39,15 +35,6 @@ void initializeMPI(int argc, char *argv[]) {
 	QueueType		= createQueueType();
 	IparticleType	= createIparticleType();
 	JparticleType	= createJparticleType();
-	/*
-	// comm for each node
-	MPI_Comm shmcomm;
-	MPI_Comm_split_type(MPI_COMM_WORLD, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, &shmcomm);
-	int local_rank, local_size;
-	MPI_Comm_rank(shmcomm, &local_rank);
-	MPI_Comm_size(shmcomm, &local_size);
-	*/
-
 
 	// Create a shared memory communicator
 	MPI_Comm_split_type(MPI_COMM_WORLD, MPI_COMM_TYPE_SHARED, MyRank, MPI_INFO_NULL, &shared_comm);
@@ -56,6 +43,7 @@ void initializeMPI(int argc, char *argv[]) {
 	int shared_rank, shared_size;
 	MPI_Comm_rank(shared_comm, &shared_rank);
 	MPI_Comm_size(shared_comm, &shared_size);
+
 	if (MyRank == ROOT)
 		fprintf(stdout, "MyRank = %d, NumberOfProcessor = %d : Shared Rank = %d, Shared size = %d\n", MyRank, NumberOfProcessor, shared_rank, shared_size);
 

@@ -54,24 +54,6 @@ int main(int argc, char *argv[]) {
 	}
 #endif
 
-	/*
-	// Insert this function definition at the top of your code after the include directives.
-	char hostname[256];
-	gethostname(hostname, sizeof(hostname));
-
-	// Insert this code right after the  MPI initialization routines (though not a mandatory requirement 
-	// to add there only). Please make a judgement based on your code.
-	// Retrieve process ID and hostname
-	pid_t pid = getpid();
-
-	volatile int i = 0;
-	while (0 == i)
-	{
-		std::cout << "My rank = " << MyRank << " PID = " << pid << " running on Host = " << hostname << " in sleep " << std::endl;
-		sleep(5);
-	}
-	*/
-
 	/* Input options */
 	Parser(argc, argv);
 	readParameterFile();
@@ -82,15 +64,12 @@ int main(int argc, char *argv[]) {
 	
 
 	if (MyRank == ROOT) {
-
 		RootRoutines();
 	} else {
-		// /* // by EW 2025.1.27
 		std::string filename = "worker_output_" + std::to_string(MyRank) + ".txt";
 		workerout = fopen(filename.c_str(), "w");
 		fprintf(workerout, "Starting ABYSS - WORKER OUTPUT\n");
 		fflush(workerout);
-		// */
 		
 		WorkerRoutines();
 	}
@@ -98,6 +77,8 @@ int main(int argc, char *argv[]) {
 	// Finalize the window and MPI environment
 	MPI_Win_free(&win);
 	MPI_Win_free(&win2);
+	MPI_Win_free(&win3);
+	MPI_Win_free(&win4);
 
 	MPI_Comm_free(&shared_comm);
 

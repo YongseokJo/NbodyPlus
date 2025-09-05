@@ -154,14 +154,6 @@ struct Particle {
 #endif
 	}
 
-	/*
-	Particle(double x, double y, double z, double vx, double vy, double vz, double m, double q)
-		: Mass(m) {
-			Position[0] = x; Position[1] = y; Position[2] = z;
-			Velocity[0] = vx; Velocity[1] = vy; Velocity[2] = vz;
-		}
-		*/
-
 	void initialize(double *data, int PID) {
 		this->PID          = PID;
 		this->Position[0]  = data[0];
@@ -287,7 +279,6 @@ struct Particle {
 
 	// inline function by EW 2025.7.15 to reduce function call time
 	template <typename T>
-	// void predictParticleSecondOrder(double dt, T pos[], T vel[]);
     void predictParticleSecondOrder(double dt, T pos[], T vel[]) {
         // Doubling check
         // temporary variables for calculation
@@ -421,7 +412,6 @@ struct Particle {
 	@param[out] _fout: std::ostream output object
 	@param[in] _width: print width (defaulted 20)
 	*/
-
 	void printColumn(std::ostream & _fout, const int _width=20){
 		_fout<<std::setw(_width)<<Mass
 			<<std::setw(_width)<<Position[0]
@@ -435,12 +425,10 @@ struct Particle {
 	}
 
 	// made by EW 2025.1.6
-	// /*
 	void copyNewMembers(Particle* ptcl) {
 		this->NewNumberOfMember = ptcl->NewNumberOfMember;
 		std::memcpy(this->NewMembers, ptcl->NewMembers, sizeof(int)*ptcl->NewNumberOfMember);
 	}
-	// */
 	
 #define NO_PRINT_FULL_ACC
 	void printParticleInfo(FILE* file) {
