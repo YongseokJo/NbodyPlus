@@ -823,12 +823,13 @@ void RootRoutines() {
 						if (ptcl->CurrentBlockReg + ptcl->TimeBlockReg == NextRegTimeBlock)
 							RegularList.insert(ptcl->ParticleIndex);
 #endif // multimap
-
+						/*
 						ptcl->NewNumberOfMember = 0;
 						for (int j=OriginalParticleListSize; j<ThisLevelNode->ParticleList.size(); j++) {
 							if (i == j) continue;
 							ptcl->NewMembers[ptcl->NewNumberOfMember++] = ThisLevelNode->ParticleList[j];
 						}
+						*/
 						/*
 						if (ptcl->TimeStepIrr * EnzoTimeStep * 1e4 < TSEARCH)
 							ptcl->checkNewGroup4();
@@ -882,6 +883,7 @@ void RootRoutines() {
 
 				// std::cerr << "FB search ended" << std::endl;
 				*/
+#if 0
 				for (int ptcl_id : ThisLevelNode->ParticleList)
 				{
 					ptcl = &particles[ptcl_id];
@@ -904,6 +906,7 @@ void RootRoutines() {
 					}
 					*/
 				}
+#endif
 #ifdef DEBUG
 				std::cout << "FB search ended" << std::endl;
 #endif

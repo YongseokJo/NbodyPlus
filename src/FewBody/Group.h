@@ -48,6 +48,7 @@ struct Group
 
 	void ARIntegration(double next_time);
 	bool CheckBreak();
+	bool CheckBreak2();
 	void initialManager();
 	void initialIntegrator(int NumMembers);
 

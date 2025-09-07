@@ -35,11 +35,13 @@ void FBTermination(Particle* ptclCM) {
 			continue;
 		
 		NumberOfParticle++;
-
+		/*
 		if (ptclCM->NumberOfMember == 2)
 			members->setBinaryInterruptState(BinaryInterruptState::none);
 		else if (ptclCM->NumberOfMember > 3)
 			members->setBinaryInterruptState(BinaryInterruptState::manybody);
+		*/
+		members->setBinaryInterruptState(BinaryInterruptState::none);
 
 		// members->CurrentTimeIrr		= ptclCM->CurrentTimeIrr;
 		members->CurrentTimeReg		= ptclCM->CurrentTimeReg;
@@ -131,12 +133,13 @@ void FBTermination(Particle* ptclCM) {
 		if (members->NumberOfNeighbor != 0) {
 			members->calculateTimeStepIrr2();
 			// members->calculateTimeStepIrr();
-
+			/*
 			if (ptclCM->NumberOfMember > 2) {
 				members->TimeLevelIrr--;
 				members->TimeStepIrr = static_cast<double>(pow(2, members->TimeLevelIrr));
 				members->TimeBlockIrr = static_cast<ULL>(pow(2, members->TimeLevelIrr-time_block));
 			}
+			*/
 			members->NewCurrentBlockIrr = members->CurrentBlockIrr + members->TimeBlockIrr;
 			members->NextBlockIrr = members->CurrentBlockIrr + members->TimeBlockIrr;
 		} 

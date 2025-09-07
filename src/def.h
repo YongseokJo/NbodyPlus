@@ -4,7 +4,7 @@
 #define MaxNeighborRadius 0.2 // Let's set MaxNeighborRadius as 0.2 pc // Newly set by EW 2025.8.18 // This can be set in config file later.
 
 // SDAR // These should be set in config file, not in macro here!!! by EW 2025.8.28
-#define RSEARCH 1e-4 // 1e-4 // pc
+#define RSEARCH 2.5e-4 // 1e-4 // pc
 #define TSEARCH 1e-6 // 1e-6 // Myr
 
 // Particle Type in line with SEVN by EW 2025.7.5

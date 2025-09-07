@@ -98,6 +98,9 @@ void WorkerRoutines() {
 				ptcl = &particles[ptcl_id];
 
 				if (ptcl->CurrentBlockReg + ptcl->TimeBlockReg > ptcl->CurrentBlockIrr) {
+					fprintf(stderr, "ptcl->CurrentBlockReg + ptcl->TimeBlockReg > ptcl->CurrentBlockIrr\n");
+					fprintf(stderr, "PID: %d, NumberOfNeighbor: %d\n", ptcl->PID, ptcl->NumberOfNeighbor);
+					fprintf(stderr, "CurrentBlockReg: %llu, TimeBlockReg: %llu, CurrentBlockIrr: %llu\n", ptcl->CurrentBlockReg, ptcl->TimeBlockReg, ptcl->CurrentBlockIrr);
 					assert(ptcl->NumberOfNeighbor == 0);
 					ptcl->CurrentBlockReg = ptcl->CurrentBlockIrr;
 				}
@@ -229,7 +232,7 @@ void WorkerRoutines() {
 				
 				ptcl->GroupInfo->ARIntegration(next_time);
 				if (!ptcl->GroupInfo->isMerger && !ptcl->GroupInfo->isTerminate)
-					ptcl->GroupInfo->isTerminate = ptcl->GroupInfo->CheckBreak();
+					ptcl->GroupInfo->isTerminate = ptcl->GroupInfo->CheckBreak2();
 
 				if (ptcl->GroupInfo->isTerminate) {
 					if (ptcl->getBinaryInterruptState() == BinaryInterruptState::none)
