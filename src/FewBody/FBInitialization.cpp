@@ -255,14 +255,14 @@ void NewFBInitialization(Particle* ptclCM) {
 		ptclCM->NextBlockIrr = ptclCM->CurrentBlockIrr + ptclCM->TimeBlockIrr;
 	}
 	else {
-		ptclCM->TimeStepReg -= ptclCM->CurrentTimeIrr - ptclCM->CurrentTimeReg;
+		ptclCM->TimeStepReg = (ptclCM->CurrentBlockReg + ptclCM-> TimeBlockReg - ptclCM->CurrentBlockIrr) * time_step;
 
 		ptclCM->TimeStepIrr = ptclCM->TimeStepReg;
 		ptclCM->NewCurrentBlockIrr = ptclCM->CurrentBlockReg + ptclCM->TimeBlockReg;
 		ptclCM->NextBlockIrr = ptclCM->CurrentBlockReg + ptclCM->TimeBlockReg;
 		ptclCM->TimeBlockIrr = ptclCM->NextBlockIrr - ptclCM->CurrentBlockIrr;
 
-		ptclCM->CurrentBlockReg = ptclCM->CurrentBlockIrr;
+		// ptclCM->CurrentBlockReg = ptclCM->CurrentBlockIrr;
 		// I think fourth order correction is already done in computeAccelerationIrr function! by EW 2025.7.18
 		// ptclCM->correctParticleFourthOrder(ptclCM->CurrentTimeIrr - ptclCM->CurrentTimeReg, ptclCM->Position, ptclCM->Velocity, ptclCM->a_tot);
 		// ptclCM->updateParticle();

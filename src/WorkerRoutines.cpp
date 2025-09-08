@@ -71,10 +71,7 @@ void WorkerRoutines() {
 				std::memcpy(Neighbors + ptcl->NeighborsOffset, NewNeighbors + ptcl->NeighborsOffset, sizeof(int) * ptcl->NewNumberOfNeighbor);
 				ptcl->NumberOfNeighbor = ptcl->NewNumberOfNeighbor;
 
-				if (ptcl->TimeStepReg == 0.0)
-					ptcl->CurrentBlockReg = ptcl->CurrentBlockIrr;
-				else
-					ptcl->CurrentBlockReg += ptcl->TimeBlockReg;
+				ptcl->CurrentBlockReg += ptcl->TimeBlockReg;
 				ptcl->CurrentTimeReg   = ptcl->CurrentBlockReg*time_step;
 				ptcl->calculateTimeStepReg();
 				// ptcl->NewCurrentBlockIrr = ptcl->CurrentBlockReg; // commented out by EW 2025.3.3 to match with RegCudaUpdate task
@@ -97,12 +94,7 @@ void WorkerRoutines() {
 
 				ptcl = &particles[ptcl_id];
 
-				if (ptcl->CurrentBlockReg + ptcl->TimeBlockReg > ptcl->CurrentBlockIrr) {
-					assert(ptcl->NumberOfNeighbor == 0);
-					ptcl->CurrentBlockReg = ptcl->CurrentBlockIrr;
-				}
-				else
-					ptcl->CurrentBlockReg += ptcl->TimeBlockReg;
+				ptcl->CurrentBlockReg += ptcl->TimeBlockReg;
 				ptcl->CurrentTimeReg = ptcl->CurrentBlockReg * time_step;
 
 				ptcl->updateParticle();

@@ -141,14 +141,14 @@ void FBTermination(Particle* ptclCM) {
 			members->NextBlockIrr = members->CurrentBlockIrr + members->TimeBlockIrr;
 		} 
 		else {
-			members->TimeStepReg -= members->CurrentTimeIrr - members->CurrentTimeReg;
+			members->TimeStepReg = (members->CurrentBlockReg + members-> TimeBlockReg - members->CurrentBlockIrr) * time_step;
 
 			members->TimeStepIrr = members->TimeStepReg;
 			members->NewCurrentBlockIrr = members->CurrentBlockReg + members->TimeBlockReg;
 			members->NextBlockIrr = members->CurrentBlockReg + members->TimeBlockReg;
 			members->TimeBlockIrr = members->NextBlockIrr - members->CurrentBlockIrr;
 
-			members->CurrentBlockReg = members->CurrentBlockIrr;
+			// members->CurrentBlockReg = members->CurrentBlockIrr;
 			// I think fourth order correction is already done in computeAccelerationIrr function! by EW 2025.7.18
 			// members->correctParticleFourthOrder(members->CurrentTimeIrr - members->CurrentTimeReg, members->Position, members->Velocity, members->a_tot);
 			// members->updateParticle();
