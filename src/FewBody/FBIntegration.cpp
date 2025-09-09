@@ -33,7 +33,7 @@ void Group::ARIntegration(double next_time) {
 
 
 #ifdef SEVN
-#ifdef SEVN_BINARY
+#ifdef SEVN_BINARY // this code is not tested yet!!!!!
     // Check if RLOF is triggered
     if (groupCM->a_spin[2] < 0.0) {
         assert(groupCM->NumberOfMember == 2);
@@ -59,7 +59,7 @@ void Group::ARIntegration(double next_time) {
             bin_root.getRightMember()->Position[dim] += bin_root.Position[dim];
             bin_root.getRightMember()->Velocity[dim] += bin_root.Velocity[dim];
         }
-        sym_int.initialIntegration(CurrentTime*EnzoTimeStep);
+        // sym_int.initialIntegration(CurrentTime*EnzoTimeStep); // commented out by EW 2025.9.9 // not tested yet!!!!!
         groupCM->a_spin[2] = 1.0; // This means that RLOF is applied to SDAR
     }
 #endif
@@ -79,8 +79,7 @@ void Group::ARIntegration(double next_time) {
     if (!kicked && evolved) { // Eunwoo: orbital parameters should be re-calculated due to mass changes during stellar evolution!
         sym_int.particles.shiftToOriginFrame();
         sym_int.info.generateBinaryTree(sym_int.particles,manager.interaction.gravitational_constant);
-        // sym_int.initialIntegration(next_time*EnzoTimeStep); // (Query) original code but I think this is wrong by EW 2025.7.5 
-        sym_int.initialIntegration(CurrentTime*EnzoTimeStep); // (Query) I think this is correct by EW 2025.7.5
+        // sym_int.initialIntegration(CurrentTime*EnzoTimeStep); // commented out by EW 2025.9.9 // not tested yet!!!!!
     }
     if (kicked) {
         for (int i = 0; i < sym_int.particles.getSize(); i++) {
@@ -115,8 +114,10 @@ void Group::ARIntegration(double next_time) {
             Interaction interaction;
             interaction.modifyAndInterruptKepler(bin_interrupt, bin_root, (next_time - CurrentTime)*EnzoTimeStep);
         }
-        if (bin_interrupt.status == AR::InterruptStatus::none)  
+        /* // commented out by EW 2025.9.9
+        if (bin_interrupt.status == AR::InterruptStatus::none)
             sym_int.initialIntegration(next_time*EnzoTimeStep);
+        */
     }
     else {
         bin_interrupt = sym_int.integrateToTime(next_time*EnzoTimeStep);
@@ -136,8 +137,10 @@ void Group::ARIntegration(double next_time) {
 
         GR_energy_loss_iter(bin_interrupt, bin_root, CurrentTime, next_time);
 
+        /* // commented out by EW 2025.9.9
         if (bin_interrupt.status == AR::InterruptStatus::none)
             sym_int.initialIntegration(next_time*EnzoTimeStep); // Eunwoo: this should be fixed later // Eunwoo: I don't think so!
+        */
         
         groupCM->a_spin[1] = bin_root.ecc;
 
