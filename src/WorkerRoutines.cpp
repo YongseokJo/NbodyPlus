@@ -107,12 +107,12 @@ void WorkerRoutines() {
 				if (ptcl->CurrentBlockIrr != ptcl->CurrentBlockReg || ptcl->CurrentTimeIrr != ptcl->CurrentTimeReg) {
 					fprintf(stderr, "PID: %d\n", ptcl->PID);
 					fprintf(stderr, "CurrentBlockIrr: %llu, CurrentBlockReg: %llu\n", ptcl->CurrentBlockIrr, ptcl->CurrentBlockReg);
-					fprintf(stderr, "CurrentBlockIrr * time_step: %e, CurrentBlockReg * time_step: %e\n", ptcl->CurrentBlockIrr*time_step, ptcl->CurrentBlockReg*time_step);
-					fprintf(stderr, "CurrentTimeIrr: %e, CurrentTimeReg: %e\n", ptcl->CurrentTimeIrr, ptcl->CurrentTimeReg);
+					fprintf(stderr, "CurrentBlockIrr * time_step: %.17g, CurrentBlockReg * time_step: %.17g\n", ptcl->CurrentBlockIrr*time_step, ptcl->CurrentBlockReg*time_step);
+					fprintf(stderr, "CurrentTimeIrr: %.17g, CurrentTimeReg: %.17g\n", ptcl->CurrentTimeIrr, ptcl->CurrentTimeReg);
 					fprintf(stderr, "NextRegTimeBlock: %llu\n", global_variable->NextRegTimeBlock);
 					fflush(stderr);
-					assert(ptcl->CurrentBlockIrr == ptcl->CurrentBlockReg);
 					assert(ptcl->CurrentTimeIrr == ptcl->CurrentTimeReg);
+					assert(ptcl->CurrentBlockIrr == ptcl->CurrentBlockReg);
 				}
 				// */
 				ptcl->updateRadius();
@@ -221,7 +221,7 @@ void WorkerRoutines() {
 				
 				ptcl->GroupInfo->ARIntegration(next_time);
 				if (!ptcl->GroupInfo->isMerger && !ptcl->GroupInfo->isTerminate)
-					ptcl->GroupInfo->isTerminate = ptcl->GroupInfo->CheckBreak();
+					ptcl->GroupInfo->isTerminate = ptcl->GroupInfo->CheckBreak2();
 
 				if (ptcl->GroupInfo->isTerminate) {
 					if (ptcl->getBinaryInterruptState() == BinaryInterruptState::none)

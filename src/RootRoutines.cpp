@@ -823,12 +823,13 @@ void RootRoutines() {
 						if (ptcl->CurrentBlockReg + ptcl->TimeBlockReg == NextRegTimeBlock)
 							RegularList.insert(ptcl->ParticleIndex);
 #endif // multimap
-
+						/*
 						ptcl->NewNumberOfMember = 0;
 						for (int j=OriginalParticleListSize; j<ThisLevelNode->ParticleList.size(); j++) {
 							if (i == j) continue;
 							ptcl->NewMembers[ptcl->NewNumberOfMember++] = ThisLevelNode->ParticleList[j];
 						}
+						*/
 						/*
 						if (ptcl->TimeStepIrr * EnzoTimeStep * 1e4 < TSEARCH)
 							ptcl->checkNewGroup4();
@@ -882,6 +883,7 @@ void RootRoutines() {
 
 				// std::cerr << "FB search ended" << std::endl;
 				*/
+#ifdef unused
 				for (int ptcl_id : ThisLevelNode->ParticleList)
 				{
 					ptcl = &particles[ptcl_id];
@@ -904,6 +906,7 @@ void RootRoutines() {
 					}
 					*/
 				}
+#endif
 #ifdef DEBUG
 				std::cout << "FB search ended" << std::endl;
 #endif
@@ -1011,10 +1014,6 @@ void RootRoutines() {
 							std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_BSE - start_point_BSE).count();
 #endif
 #endif
-						// Temporary test... If this works, RegularMap version should be updated too by EW 2025.08.18 // It works well!!
-						for (int i = 0; i < ptclCM->NewNumberOfMember; i++)
-							RegularList.erase(ptclCM->NewMembers[i]);
-
 						queue.task = MakeGroup;
 						queue.pid = ptclCM->ParticleIndex;
 						workers[rank_new].addQueue(queue);
@@ -1031,6 +1030,11 @@ void RootRoutines() {
 							std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_map - start_point_map).count();
 #endif
 #else // no multimap
+						// Temporary test... If this works, RegularMap version should be updated too by EW 2025.08.18 // It works well!!
+						for (int i = 0; i < ptclCM->NewNumberOfMember; i++) {
+							RegularList.erase(ptclCM->NewMembers[i]);
+							particles[ptclCM->NewMembers[i]].NewNumberOfMember = 0;
+						}
 						if (ptclCM->CurrentBlockReg + ptclCM->TimeBlockReg == NextRegTimeBlock)
 							RegularList.insert(ptclCM->ParticleIndex); // VERY IMPORTANT BUG FIXED by EW 2025.7.18
 #endif

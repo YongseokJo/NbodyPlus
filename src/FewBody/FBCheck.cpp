@@ -422,6 +422,48 @@ bool Group::CheckBreak() {
             }
         }
         */
+        for (int i=0; i<n_member; i++) {
+            Particle* ptcl1 = &particles[groupCM->Members[i]];
+            ptcl1->NewNumberOfMember = 0;
+        }
+        if (sym_int.particles.getSize() == 3) {
+            for (int k=0; k<2; k++) {
+                if (bin_root.isMemberTree(k)) {
+                    auto memberTree = bin_root.getMemberAsTree(k);
+                    Particle* ptcl1 = &particles[memberTree->getLeftMember()->ParticleIndex];
+                    Particle* ptcl2 = &particles[memberTree->getRightMember()->ParticleIndex];
+                    ptcl1->NewMembers[ptcl1->NewNumberOfMember++] = ptcl2->ParticleIndex;
+                }
+            }
+        }
+        if (sym_int.particles.getSize() == 4) {
+            if (bin_root.isMemberTree(0) && bin_root.isMemberTree(1)) {
+                auto memberTree1 = bin_root.getMemberAsTree(0);
+                auto memberTree2 = bin_root.getMemberAsTree(1);
+                Particle* ptcl1 = &particles[memberTree1->getLeftMember()->ParticleIndex];
+                Particle* ptcl2 = &particles[memberTree1->getRightMember()->ParticleIndex];
+                Particle* ptcl3 = &particles[memberTree2->getLeftMember()->ParticleIndex];
+                Particle* ptcl4 = &particles[memberTree2->getRightMember()->ParticleIndex];
+                ptcl1->NewMembers[ptcl1->NewNumberOfMember++] = ptcl2->ParticleIndex;
+                ptcl3->NewMembers[ptcl3->NewNumberOfMember++] = ptcl4->ParticleIndex;
+            } else {
+                int outgoingPID = bin_root.getLeftMember()->PID != -1 ? bin_root.getLeftMember()->PID : bin_root.getRightMember()->PID;
+                for (int i=0; i<4; i++) {
+                    Particle* ptcl1 = &particles[groupCM->Members[i]];
+                    if (ptcl1->PID == outgoingPID)
+                        continue;
+                    else {
+                        for (int j=0; j<4; j++) {
+                            Particle* ptcl2 = &particles[groupCM->Members[j]];
+                            if (ptcl2->PID != ptcl1->PID && ptcl2->PID != outgoingPID) {
+                                ptcl1->NewMembers[ptcl1->NewNumberOfMember++] = ptcl2->ParticleIndex;
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+        }
         fflush(workerout);
         return true;
     }
@@ -481,6 +523,48 @@ bool Group::CheckBreak() {
                 }
             }
             */
+            for (int i=0; i<n_member; i++) {
+                Particle* ptcl1 = &particles[groupCM->Members[i]];
+                ptcl1->NewNumberOfMember = 0;
+            }
+            if (sym_int.particles.getSize() == 3) {
+                for (int k=0; k<2; k++) {
+                    if (bin_root.isMemberTree(k)) {
+                        auto memberTree = bin_root.getMemberAsTree(k);
+                        Particle* ptcl1 = &particles[memberTree->getLeftMember()->ParticleIndex];
+                        Particle* ptcl2 = &particles[memberTree->getRightMember()->ParticleIndex];
+                        ptcl1->NewMembers[ptcl1->NewNumberOfMember++] = ptcl2->ParticleIndex;
+                    }
+                }
+            }
+            if (sym_int.particles.getSize() == 4) {
+                if (bin_root.isMemberTree(0) && bin_root.isMemberTree(1)) {
+                    auto memberTree1 = bin_root.getMemberAsTree(0);
+                    auto memberTree2 = bin_root.getMemberAsTree(1);
+                    Particle* ptcl1 = &particles[memberTree1->getLeftMember()->ParticleIndex];
+                    Particle* ptcl2 = &particles[memberTree1->getRightMember()->ParticleIndex];
+                    Particle* ptcl3 = &particles[memberTree2->getLeftMember()->ParticleIndex];
+                    Particle* ptcl4 = &particles[memberTree2->getRightMember()->ParticleIndex];
+                    ptcl1->NewMembers[ptcl1->NewNumberOfMember++] = ptcl2->ParticleIndex;
+                    ptcl3->NewMembers[ptcl3->NewNumberOfMember++] = ptcl4->ParticleIndex;
+                } else {
+                    int outgoingPID = bin_root.getLeftMember()->PID != -1 ? bin_root.getLeftMember()->PID : bin_root.getRightMember()->PID;
+                    for (int i=0; i<4; i++) {
+                        Particle* ptcl1 = &particles[groupCM->Members[i]];
+                        if (ptcl1->PID == outgoingPID)
+                            continue;
+                        else {
+                            for (int j=0; j<4; j++) {
+                                Particle* ptcl2 = &particles[groupCM->Members[j]];
+                                if (ptcl2->PID != ptcl1->PID && ptcl2->PID != outgoingPID) {
+                                    ptcl1->NewMembers[ptcl1->NewNumberOfMember++] = ptcl2->ParticleIndex;
+                                }
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
             fflush(workerout);
             return true;
         }
@@ -576,6 +660,48 @@ bool Group::CheckBreak() {
                     }
                 }
                 */
+                for (int i=0; i<n_member; i++) {
+                    Particle* ptcl1 = &particles[groupCM->Members[i]];
+                    ptcl1->NewNumberOfMember = 0;
+                }
+                if (sym_int.particles.getSize() == 3) {
+                    for (int k=0; k<2; k++) {
+                        if (bin_root.isMemberTree(k)) {
+                            auto memberTree = bin_root.getMemberAsTree(k);
+                            Particle* ptcl1 = &particles[memberTree->getLeftMember()->ParticleIndex];
+                            Particle* ptcl2 = &particles[memberTree->getRightMember()->ParticleIndex];
+                            ptcl1->NewMembers[ptcl1->NewNumberOfMember++] = ptcl2->ParticleIndex;
+                        }
+                    }
+                }
+                if (sym_int.particles.getSize() == 4) {
+                    if (bin_root.isMemberTree(0) && bin_root.isMemberTree(1)) {
+                        auto memberTree1 = bin_root.getMemberAsTree(0);
+                        auto memberTree2 = bin_root.getMemberAsTree(1);
+                        Particle* ptcl1 = &particles[memberTree1->getLeftMember()->ParticleIndex];
+                        Particle* ptcl2 = &particles[memberTree1->getRightMember()->ParticleIndex];
+                        Particle* ptcl3 = &particles[memberTree2->getLeftMember()->ParticleIndex];
+                        Particle* ptcl4 = &particles[memberTree2->getRightMember()->ParticleIndex];
+                        ptcl1->NewMembers[ptcl1->NewNumberOfMember++] = ptcl2->ParticleIndex;
+                        ptcl3->NewMembers[ptcl3->NewNumberOfMember++] = ptcl4->ParticleIndex;
+                    } else {
+                        int outgoingPID = bin_root.getLeftMember()->PID != -1 ? bin_root.getLeftMember()->PID : bin_root.getRightMember()->PID;
+                        for (int i=0; i<4; i++) {
+                            Particle* ptcl1 = &particles[groupCM->Members[i]];
+                            if (ptcl1->PID == outgoingPID)
+                                continue;
+                            else {
+                                for (int j=0; j<4; j++) {
+                                    Particle* ptcl2 = &particles[groupCM->Members[j]];
+                                    if (ptcl2->PID != ptcl1->PID && ptcl2->PID != outgoingPID) {
+                                        ptcl1->NewMembers[ptcl1->NewNumberOfMember++] = ptcl2->ParticleIndex;
+                                    }
+                                }
+                                break;
+                            }
+                        }
+                    }
+                }
                 fflush(workerout);
                 return true;
             }
@@ -615,7 +741,7 @@ bool Group::CheckBreak() {
 
     }
     // return false;
-// /* // test_1e4_2
+/* // test_1e4_2
     // check strong perturbed binary case (only check further if it is outgoing case)
     // calculate slowdown in a consistent way like in checknewgroup to avoid switching
     // fcm may not properly represent the perturbation force (perturber mass is unknown)
@@ -664,8 +790,77 @@ bool Group::CheckBreak() {
             }
         }
     }
-// */ // test_1e4_2
+*/ // test_1e4_2
     return false;
 
+}
+
+bool Group::CheckBreak2() {
+
+    sym_int.info.generateBinaryTree(sym_int.particles, manager.interaction.gravitational_constant);
+    auto& bin_root = sym_int.info.getBinaryTreeRoot();
+
+    if (bin_root.r > RSEARCH/position_unit) {
+
+        if (bin_root.semi > 0.0 && bin_root.ecca < 0.0) // incoming binary
+            return false;
+
+        fprintf(workerout, "Break group: r > RSEARCH! (CM PID: %d)\n\t", groupCM->PID);
+        fprintf(workerout, "time: %e Myr\n\t", CurrentTime*EnzoTimeStep*1e4);
+        fprintf(workerout, "N_member: %d\n\t", sym_int.particles.getSize());
+        fprintf(workerout, "separation: %e pc\n\t", bin_root.r*position_unit);
+        fprintf(workerout, "semi: %e pc\n\t", bin_root.semi*position_unit);
+        fprintf(workerout, "ecc: %e \n\t", bin_root.ecc);
+        fprintf(workerout, "ecca: %e \n\t", bin_root.ecca);
+        fprintf(workerout, "peri: %e pc\n\t", bin_root.semi*(1-bin_root.ecc)*position_unit);
+        fprintf(workerout, "apo: %e pc\n\n", bin_root.semi*(1+bin_root.ecc)*position_unit);
+        fflush(workerout);
+
+        for (int i=0; i<sym_int.particles.getSize(); i++) {
+            Particle* ptcl1 = &particles[groupCM->Members[i]];
+            ptcl1->NewNumberOfMember = 0;
+        }
+
+        if (sym_int.particles.getSize() == 3) {
+            for (int k=0; k<2; k++) {
+                if (bin_root.isMemberTree(k)) {
+                    auto memberTree = bin_root.getMemberAsTree(k);
+                    Particle* ptcl1 = &particles[memberTree->getLeftMember()->ParticleIndex];
+                    Particle* ptcl2 = &particles[memberTree->getRightMember()->ParticleIndex];
+                    ptcl1->NewMembers[ptcl1->NewNumberOfMember++] = ptcl2->ParticleIndex;
+                }
+            }
+        }
+        if (sym_int.particles.getSize() == 4) {
+            if (bin_root.isMemberTree(0) && bin_root.isMemberTree(1)) {
+                auto memberTree1 = bin_root.getMemberAsTree(0);
+                auto memberTree2 = bin_root.getMemberAsTree(1);
+                Particle* ptcl1 = &particles[memberTree1->getLeftMember()->ParticleIndex];
+                Particle* ptcl2 = &particles[memberTree1->getRightMember()->ParticleIndex];
+                Particle* ptcl3 = &particles[memberTree2->getLeftMember()->ParticleIndex];
+                Particle* ptcl4 = &particles[memberTree2->getRightMember()->ParticleIndex];
+                ptcl1->NewMembers[ptcl1->NewNumberOfMember++] = ptcl2->ParticleIndex;
+                ptcl3->NewMembers[ptcl3->NewNumberOfMember++] = ptcl4->ParticleIndex;
+            } else {
+                int outgoingPID = bin_root.getLeftMember()->PID != -1 ? bin_root.getLeftMember()->PID : bin_root.getRightMember()->PID;
+                for (int i=0; i<4; i++) {
+                    Particle* ptcl1 = &particles[groupCM->Members[i]];
+                    if (ptcl1->PID == outgoingPID)
+                        continue;
+                    else {
+                        for (int j=0; j<4; j++) {
+                            Particle* ptcl2 = &particles[groupCM->Members[j]];
+                            if (ptcl2->PID != ptcl1->PID && ptcl2->PID != outgoingPID) {
+                                ptcl1->NewMembers[ptcl1->NewNumberOfMember++] = ptcl2->ParticleIndex;
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+        return true;
+    }
+    return false;
 }
 #endif

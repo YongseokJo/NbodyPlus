@@ -35,17 +35,19 @@ void FBTermination(Particle* ptclCM) {
 			continue;
 		
 		NumberOfParticle++;
-
+		/*
 		if (ptclCM->NumberOfMember == 2)
 			members->setBinaryInterruptState(BinaryInterruptState::none);
 		else if (ptclCM->NumberOfMember > 3)
 			members->setBinaryInterruptState(BinaryInterruptState::manybody);
+		*/
+		members->setBinaryInterruptState(BinaryInterruptState::none);
 
 		// members->CurrentTimeIrr		= ptclCM->CurrentTimeIrr;
 		members->CurrentTimeReg		= ptclCM->CurrentTimeReg;
 		members->CurrentBlockIrr	= ptclCM->CurrentBlockIrr;
 		members->CurrentBlockReg	= ptclCM->CurrentBlockReg;
-		members->NewCurrentBlockIrr	= ptclCM->NewCurrentBlockIrr;
+		members->NewCurrentBlockIrr	= ptclCM->CurrentBlockIrr; // modified by EW 2025.9.12
 
 		/* newly added by EW 2025.7.18 */
 		members->TimeStepIrr     = ptclCM->TimeStepIrr;
@@ -131,20 +133,21 @@ void FBTermination(Particle* ptclCM) {
 		if (members->NumberOfNeighbor != 0) {
 			members->calculateTimeStepIrr2();
 			// members->calculateTimeStepIrr();
-
+			/*
 			if (ptclCM->NumberOfMember > 2) {
 				members->TimeLevelIrr--;
 				members->TimeStepIrr = static_cast<double>(pow(2, members->TimeLevelIrr));
 				members->TimeBlockIrr = static_cast<ULL>(pow(2, members->TimeLevelIrr-time_block));
 			}
-			members->NewCurrentBlockIrr = members->CurrentBlockIrr + members->TimeBlockIrr;
+			*/
+			// members->NewCurrentBlockIrr = members->CurrentBlockIrr + members->TimeBlockIrr; // commented out by EW 2025.9.12
 			members->NextBlockIrr = members->CurrentBlockIrr + members->TimeBlockIrr;
 		} 
 		else {
 			members->TimeStepReg = (members->CurrentBlockReg + members-> TimeBlockReg - members->CurrentBlockIrr) * time_step;
 
 			members->TimeStepIrr = members->TimeStepReg;
-			members->NewCurrentBlockIrr = members->CurrentBlockReg + members->TimeBlockReg;
+			// members->NewCurrentBlockIrr = members->CurrentBlockReg + members->TimeBlockReg; // commented out by EW 2025.9.12
 			members->NextBlockIrr = members->CurrentBlockReg + members->TimeBlockReg;
 			members->TimeBlockIrr = members->NextBlockIrr - members->CurrentBlockIrr;
 

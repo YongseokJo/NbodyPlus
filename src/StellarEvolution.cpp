@@ -556,7 +556,7 @@ void convertBinaryToSingle(Particle* ptclCM) {
 
     StarSEVN* star1 = ptclCM->BinaryEvolution->getstar(0);
     StarSEVN* star2 = ptclCM->BinaryEvolution->getstar(1);
-    if ((int)star1->get_ID() != 0){
+    if ((int)star1->get_ID() != 0) {
         fprintf(SEVNout, "In convertBinaryToSingle.. star1->get_ID(): %d, star2->get_ID(): %d\n", (int)star1->get_ID(), (int)star2->get_ID());
         assert((int)star1->get_ID() == 1);
         std::swap(star1, star2);
@@ -650,7 +650,7 @@ void BinaryEvolution(Particle* ptclCM) {
 
     Binstar* binary = ptclCM->BinaryEvolution;
     
-    if (ptclCM->WorldTime + binary->getp(BTimestep::ID) > ptclCM->NewCurrentBlockIrr * time_step * EnzoTimeStep * 1e4)
+    if (ptclCM->WorldTime + binary->getp(BTimestep::ID) > (ptclCM->CurrentTimeIrr + ptclCM->TimeStepIrr) * EnzoTimeStep * 1e4)
         return;
 
     if (ptclCM->getBinaryInterruptState() == BinaryInterruptState::merger) {
@@ -664,7 +664,7 @@ void BinaryEvolution(Particle* ptclCM) {
         return;
     }
 
-    while ((ptclCM->WorldTime + binary->getp(BTimestep::ID) <= ptclCM->NewCurrentBlockIrr * time_step * EnzoTimeStep * 1e4) &&
+    while ((ptclCM->WorldTime + binary->getp(BTimestep::ID) <= (ptclCM->CurrentTimeIrr + ptclCM->TimeStepIrr) * EnzoTimeStep * 1e4) &&
             !binary->getstar(0)->amiremnant() &&
             !binary->getstar(1)->amiremnant()) {
 

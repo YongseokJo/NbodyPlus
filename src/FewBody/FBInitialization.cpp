@@ -174,7 +174,7 @@ void NewFBInitialization(Particle* ptclCM) {
 	ptclCM->CurrentTimeReg  = ptcl->CurrentTimeReg;
 	ptclCM->CurrentBlockIrr = ptcl->CurrentBlockIrr; 
 	ptclCM->CurrentBlockReg = ptcl->CurrentBlockReg;
-	ptclCM->NewCurrentBlockIrr = ptcl->NewCurrentBlockIrr;
+	ptclCM->NewCurrentBlockIrr = ptcl->CurrentBlockIrr; // modified by EW 2025.9.12
 
 	ptclCM->TimeStepIrr     = ptcl->TimeStepIrr;
 	ptclCM->TimeBlockIrr    = ptcl->TimeBlockIrr;
@@ -251,14 +251,14 @@ void NewFBInitialization(Particle* ptclCM) {
 
 		// ptclCM->calculateTimeStepIrr();
 		ptclCM->calculateTimeStepIrr2(); // by EW 2025.1.4
-		ptclCM->NewCurrentBlockIrr = ptclCM->CurrentBlockIrr + ptclCM->TimeBlockIrr;
+		// ptclCM->NewCurrentBlockIrr = ptclCM->CurrentBlockIrr + ptclCM->TimeBlockIrr; // commented out by EW 2025.9.12
 		ptclCM->NextBlockIrr = ptclCM->CurrentBlockIrr + ptclCM->TimeBlockIrr;
 	}
 	else {
 		ptclCM->TimeStepReg = (ptclCM->CurrentBlockReg + ptclCM-> TimeBlockReg - ptclCM->CurrentBlockIrr) * time_step;
 
 		ptclCM->TimeStepIrr = ptclCM->TimeStepReg;
-		ptclCM->NewCurrentBlockIrr = ptclCM->CurrentBlockReg + ptclCM->TimeBlockReg;
+		// ptclCM->NewCurrentBlockIrr = ptclCM->CurrentBlockReg + ptclCM->TimeBlockReg; // commented out by EW 2025.9.12
 		ptclCM->NextBlockIrr = ptclCM->CurrentBlockReg + ptclCM->TimeBlockReg;
 		ptclCM->TimeBlockIrr = ptclCM->NextBlockIrr - ptclCM->CurrentBlockIrr;
 
