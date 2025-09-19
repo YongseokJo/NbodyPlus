@@ -55,6 +55,25 @@ void formBinaries(std::vector<int>& ParticleList, std::vector<int>& newCMptcls,
 	for (int i=0; i<ParticleList.size(); i++) {
 		ptcl = &particles[ParticleList[i]];
 		if (ptcl->NewNumberOfMember > 0) {
+			// /* // test by EW 2025.9.18 // It seems to work well by EW 2025.9.20
+			int OriginalNewNumberOfMember = ptcl->NewNumberOfMember;
+			for (int j = 0; j < OriginalNewNumberOfMember; j++) {
+				Particle* member = &particles[ptcl->NewMembers[j]];
+				if (!member->isActive) {
+					fprintf(stdout, "Inactive member (PID: %d) found in formBinaries! Remove it from the group candidate of PID %d\n", member->PID, ptcl->PID);
+					if (j < OriginalNewNumberOfMember - 1) {
+						ptcl->NewMembers[j] = ptcl->NewMembers[OriginalNewNumberOfMember - 1];
+						j--;
+					}
+					else
+						ptcl->NewNumberOfMember--;
+				}
+			}
+			if (ptcl->NewNumberOfMember <= 0) {
+				fprintf(stdout, "Skipping forming group for PID %d since there are no more NewMembers!\n", ptcl->PID);
+				continue;
+			}
+			// */
 			// fprintf(stdout, "GAR. Num: %d\n", ptcl->NewNumberOfMember + 1); // for debugging by EW 2025.1.23
 			// fprintf(stdout, "GAR. PID: %d\n", ptcl->PID); // for debugging by EW 2025.1.23
 			NewCM = &particles[LastParticleIndex+1];
@@ -105,6 +124,22 @@ void formBinaries(std::vector<int>& ParticleList, std::vector<int>& newCMptcls,
 	for (int i: newCMptcls) {
 		// deleteNeighbors(i);
 		NewCM = &particles[i];
+		if (NewCM->NewNumberOfMember < 2) {
+			fprintf(stderr, "Error in GroupAcceleratonRoutine.cpp: NewCM->NewNumberOfMember < 2\n");
+			for (int j=0; j<NewCM->NewNumberOfMember; j++) {
+				ptcl = &particles[NewCM->NewMembers[j]];
+				fprintf(stderr, "NewCM->NewMembers[%d]: %d\n", j, NewCM->NewMembers[j]);
+				ptcl->NewNumberOfMember = 0;
+				assert(ptcl->isActive);
+			}
+			if (i != LastParticleIndex)
+				terminated.insert({i, existing[i]});
+			else
+				LastParticleIndex--;
+			existing.erase(i);
+			NewCM->clear();
+			continue;
+		}
 		NewCM->ParticleIndex = i;
 		NewCM->NeighborsOffset = NewCM->ParticleIndex * MaxNumNeighbor;
 		NewCM->PID = NewCMPID;
