@@ -9,7 +9,6 @@ enum TaskName : int8_t {
     IrrUpdate = 2, 
     RegUpdate = 3,
     RegCuda = 4,
-    RegCudaUpdate = 5,
     InitAcc1 = 7,
     InitAcc2 = 8,
     InitTime = 9,

@@ -66,33 +66,6 @@ void WorkerRoutines() {
 			case RegUpdate: // Regular Update Particle
 
 				ptcl = &particles[ptcl_id];
-				ptcl->updateParticle();
-
-				std::memcpy(Neighbors + ptcl->NeighborsOffset, NewNeighbors + ptcl->NeighborsOffset, sizeof(int) * ptcl->NewNumberOfNeighbor);
-				ptcl->NumberOfNeighbor = ptcl->NewNumberOfNeighbor;
-
-				ptcl->CurrentBlockReg += ptcl->TimeBlockReg;
-				ptcl->CurrentTimeReg   = ptcl->CurrentBlockReg*time_step;
-				ptcl->calculateTimeStepReg();
-				// ptcl->NewCurrentBlockIrr = ptcl->CurrentBlockReg; // commented out by EW 2025.3.3 to match with RegCudaUpdate task
-				ptcl->calculateTimeStepIrr();
-				ptcl->updateRadius();
-				if (ptcl->NumberOfNeighbor == 0) {
-					ptcl->CurrentBlockIrr = ptcl->CurrentBlockReg;
-					ptcl->CurrentTimeIrr = ptcl->CurrentBlockReg*time_step;
-				}
-				ptcl->NextBlockIrr = ptcl->CurrentBlockIrr + ptcl->TimeBlockIrr; // of this particle
-				break;
-
-			case RegCuda: // Update Regular Particle CUDA
-
-				ptcl = &particles[ptcl_id];
-				ptcl->updateRegularParticleCuda();
-				break;
-
-			case RegCudaUpdate: // Update Regular Particle CUDA II
-
-				ptcl = &particles[ptcl_id];
 
 				ptcl->CurrentBlockReg += ptcl->TimeBlockReg;
 				ptcl->CurrentTimeReg = ptcl->CurrentBlockReg * time_step;
@@ -120,6 +93,12 @@ void WorkerRoutines() {
 				// */
 				ptcl->updateRadius();
 				ptcl->NextBlockIrr = ptcl->CurrentBlockIrr + ptcl->TimeBlockIrr; // of ptcl particle
+				break;
+
+			case RegCuda: // Regular Correct Particle After CUDA
+
+				ptcl = &particles[ptcl_id];
+				ptcl->updateRegularParticleCuda();
 				break;
 
 			case InitAcc1: // Initialize Acceleration(01)
@@ -297,9 +276,9 @@ void WorkerRoutines() {
 		// return that it's over
 		//task = -1;
 		if (task == IrrForce || task == RegForce || task == IrrUpdate || task == RegUpdate)
-			MPI_Isend(&ptcl_id, 1, MPI_INT, ROOT, TERMINATE_TAG, MPI_COMM_WORLD,&request);
+			MPI_Isend(&ptcl_id, 1, MPI_INT, ROOT, TERMINATE_TAG, MPI_COMM_WORLD, &request);
 		else
-			MPI_Isend(&task, 1, MPI_INT, ROOT, TERMINATE_TAG, MPI_COMM_WORLD,&request);
+			MPI_Isend(&task, 1, MPI_INT, ROOT, TERMINATE_TAG, MPI_COMM_WORLD, &request);
 
 		MPI_Wait(&request, &status);
 		//std::cerr << "Processor " << MyRank << " done." << std::endl;

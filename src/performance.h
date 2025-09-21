@@ -13,7 +13,9 @@ struct Performance {
 	long IrregularUpdate = 0;
 
 	long FewBodyTermination = 0;
+#ifdef unused
 	long FewBodySearch = 0;
+#endif
 	long FewBodyInitialization = 0;
 
 	long RegularForce = 0; // use this only if CUDA is not defined

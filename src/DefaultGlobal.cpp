@@ -4,6 +4,7 @@
 #ifdef SEVN
 #include <map>
 #endif
+#include <unordered_map>
 
 // Paremeters related to the World communicator
 int MyRank;
@@ -21,11 +22,9 @@ GlobalVariable *global_variable;
 
 MPI_Win win3;
 int* Neighbors;
-int* Neighbors_original;
 
 MPI_Win win4;
 int* NewNeighbors;
-int* NewNeighbors_original;
 
 // Custom MPI data types
 MPI_Datatype QueueType;
@@ -41,6 +40,10 @@ int NewCMPID; // The next PID to be assigned to a new CM particle
 double eta;
 int FixNumNeighbor;
 double InitialNeighborRadius;
+
+// Few-body
+std::unordered_map<int, int> CMPtclWorker; // by EW 2025.1.4 // unordered_map by EW 2025.1.11
+std::unordered_map<int, int> PrevCMPtclWorker; // by EW 2025.1.4 // unordered_map by EW 2025.1.11
 
 // Time
 double global_time;

@@ -6,6 +6,7 @@
 #include "./FewBody/Group.h"
 #include "performance.h"
 #include <mpi.h>
+#include <unordered_map>
 
 #ifdef SEVN
 #include "IO.h"
@@ -56,6 +57,10 @@ extern int NewCMPID;
 extern double eta;
 extern int FixNumNeighbor;
 extern double InitialNeighborRadius;
+
+// Few-body
+extern std::unordered_map<int, int> CMPtclWorker; // by EW 2025.1.4 // unordered_map by EW 2025.1.11
+extern std::unordered_map<int, int> PrevCMPtclWorker; // by EW 2025.1.4 // unordered_map by EW 2025.1.11
 
 // Time
 extern double global_time;

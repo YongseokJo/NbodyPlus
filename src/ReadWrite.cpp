@@ -273,9 +273,11 @@ int writeParticle(double current_time, int outputNum) {
 		std::cout << "FewBody Termination: " << performance.FewBodyTermination*1e-9 << " s";
 		std::cout << " (" << 100.0 * performance.FewBodyTermination / performance.WholeRoutine << " %)" << std::endl;
 		performance.FewBodyTermination = 0;
+#ifdef unused
 		std::cout << "FewBody Search: " << performance.FewBodySearch*1e-9 << " s";
 		std::cout << " (" << 100.0 * performance.FewBodySearch / performance.WholeRoutine << " %)" << std::endl;
 		performance.FewBodySearch = 0;
+#endif
 		std::cout << "FewBody Initialization: " << performance.FewBodyInitialization*1e-9 << " s";
 		std::cout << " (" << 100.0 * performance.FewBodyInitialization / performance.WholeRoutine << " %)" << std::endl;
 		performance.FewBodyInitialization = 0;
