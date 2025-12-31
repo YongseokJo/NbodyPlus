@@ -32,7 +32,9 @@ __global__ void compute_forces(const Iparticle* __restrict__ d_Ip, const Jpartic
 	int tid = threadIdx.x;
 	int I;
 	// int BatchSize = blockDim.x;
-	int idx_save_size = gridDim.y * m;
+	// Memory layout for coalesced writes: consecutive threads (consecutive i) write consecutive addresses
+	// Each component separated by gridDim.y * m for proper striding
+	int idx_save_size = gridDim.y * m;  // Keep original size for component separation
 
 	int j_begin = blockIdx.y * n / gridDim.y;
 	int j_end = (blockIdx.y + 1) * n / gridDim.y;
@@ -44,7 +46,8 @@ __global__ void compute_forces(const Iparticle* __restrict__ d_Ip, const Jpartic
 		// CUDA_REAL i_r2 = Ip.r2;
 		
 		int NumNeighbor = 0;
-		int idx_save = i * gridDim.y + blockIdx.y;
+		// Changed for coalesced writes: blockIdx.y * m + i gives consecutive addresses for consecutive threads
+		int idx_save = blockIdx.y * m + i;
 		// CUDA_REAL save_acc[6] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
 		CUDA_REAL ax=0, ay=0, az=0;
 		CUDA_REAL jx=0, jy=0, jz=0;
@@ -116,8 +119,8 @@ __global__ void compute_forces(const Iparticle* __restrict__ d_Ip, const Jpartic
 
 __global__ void reduce_forces_kernel(const CUDA_REAL *diff,  // [6 * m * n] total
                                      CUDA_REAL       *result, // [6 * m] output
-                                     int n, // "rows" in each component
-                                     int m  // "columns"
+                                     int n, // "rows" = number of blocks (GridDimY)
+                                     int m  // "columns" = number of targets (NumTarget)
                                     )
 {
     // Each thread handles one (component, column).
@@ -131,11 +134,10 @@ __global__ void reduce_forces_kernel(const CUDA_REAL *diff,  // [6 * m * n] tota
 
     CUDA_REAL sumVal = 0.0;
     // sum over the "row" dimension i in [0..n-1]
-    // component c is offset by comp*m*n
-    // column j is offset by col*n
-    // row i is just + i
-    for (int i = 0; i < n; i++){
-        sumVal += diff[comp * m * n + (col * n) + i];
+    // New layout: data at diff[(comp * n + row) * m + col]
+    // This matches coalesced write pattern from compute_forces
+    for (int row = 0; row < n; row++){
+        sumVal += diff[(comp * n + row) * m + col];
     }
 
     // store interleaved in the output: result[j*6 + comp]
@@ -156,17 +158,18 @@ __global__ void gather_neighbor(const int* neighbor_block, const int* num_neighb
     if (i >= m) return;
 
     // Calculate where in the final gathered array this thread should start writing
+    // New layout: b * m + i (block_idx * num_targets + target_idx)
     int neighbor_start_index = 0;
     for (int j = 0; j < b; j++) {
-        neighbor_start_index += num_neighbor[i * num_blocks_per_m + j];
+        neighbor_start_index += num_neighbor[j * m + i];
     }
 
-    int local_neighbor_count = num_neighbor[i * num_blocks_per_m + b];
+    int local_neighbor_count = num_neighbor[b * m + i];
     assert (neighbor_start_index + local_neighbor_count < MaxNumNeighbor);
 
     for (int n = 0; n < local_neighbor_count; n++) {
         gathered_neighbor[i * MaxNumNeighbor + neighbor_start_index + n] =
-            neighbor_block[(i * num_blocks_per_m + b) * num_neighbors_per_block + n];
+            neighbor_block[(b * m + i) * num_neighbors_per_block + n];
     }
 }
 
@@ -176,8 +179,9 @@ __global__ void gather_numneighbor(const int* numneighbor_block, int* gathered_n
     if (i >= m) return;
 
 	int temp = 0;
+	// New layout: j * m + i (block_idx * num_targets + target_idx)
 	for (int j = 0; j < GridDimY; j++) {
-		temp += numneighbor_block[i * GridDimY + j];
+		temp += numneighbor_block[j * m + i];
 	}
 	gathered_numneighbor[i] = temp;
 }

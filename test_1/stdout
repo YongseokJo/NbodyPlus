@@ -1,7 +1,7 @@
 MyRank = 0, NumberOfProcessor = 36 : Shared Rank = 0, Shared size = 36
 Initializing CUDA ...
 There are 1 GPUs.
-# GPU initialization - MyRank: 0; HOST: qgpu0210; NGPU: 1; device: 0 NVIDIA A100-PCIE-40GB
+# GPU initialization - MyRank: 0; HOST: qgpu0602; NGPU: 1; device: 0 NVIDIA L40S
 [Rank 0] Current device from driver context = 0
 Configuration file: config.txt
 IC file name: nbody.dat
@@ -300052,18 +300052,18 @@ atot (0): -8.665893e+09, 4.855787e+09, -4.016892e+09
 areg (0): -1.420630e+09, -7.352388e+08, 5.741749e+08
 airr (0): -7.245263e+09, 5.591025e+09, -4.591067e+09
 TimeStepIrr (Myr): 1.525879e-05, TimeStepReg (Myr): 1.220703e-04
-Elapsed time from the last output: 21.97 s
-Irregular Force: 6.45 s (29.34 %)
-Irregular Update: 0.79 s (3.59 %)
-FewBody Termination: 0.10 s (0.47 %)
-FewBody Initialization: 0.11 s (0.52 %)
-Regular SendToGPU: 0.49 s (2.23 %)
-Regular GPU: 11.09 s (50.48 %)
-Regular Adjust: 1.20 s (5.47 %)
-Regular Update: 0.78 s (3.54 %)
-SkipList Create: 0.33 s (1.49 %)
-SkipList Update: 0.16 s (0.73 %)
-UpdateNextRegTime: 0.41 s (1.87 %)
+Elapsed time from the last output: 10.99 s
+Irregular Force: 3.66 s (33.28 %)
+Irregular Update: 0.47 s (4.28 %)
+FewBody Termination: 0.04 s (0.39 %)
+FewBody Initialization: 0.05 s (0.46 %)
+Regular SendToGPU: 0.26 s (2.34 %)
+Regular GPU: 4.97 s (45.26 %)
+Regular Adjust: 0.66 s (6.02 %)
+Regular Update: 0.42 s (3.85 %)
+SkipList Create: 0.17 s (1.58 %)
+SkipList Update: 0.09 s (0.78 %)
+UpdateNextRegTime: 0.16 s (1.45 %)
 -----------------------------------------------
 Data is being written...
 Data written to output.txt successfully!
@@ -300075,9 +300075,9 @@ Position (pc):-3.629946e-01, -5.193568e-01, -2.811284e-01
 Velocity (km/s): -1.107819e+01, -1.924030e+01, 2.066070e+01
 Mass (Msun): 2.332066e+00
 NumNeighbor: 152, ACRadius (pc): 1.677962e-01
-atot (0): -9.341218e+08, 3.035218e+09, 6.979899e+09
+atot (0): -9.341220e+08, 3.035218e+09, 6.979899e+09
 areg (0): 5.656096e+09, 8.453834e+09, 4.797364e+09
-airr (0): -6.621603e+09, -5.429468e+09, 2.213276e+09
+airr (0): -6.621603e+09, -5.429468e+09, 2.213277e+09
 TimeStepIrr (Myr): 1.907349e-06, TimeStepReg (Myr): 9.765625e-04
 Particle Info with minimum TimeStepReg...
 PID: 55816, ParticleIndex: 55816, ParticleType: 0
@@ -300085,22 +300085,22 @@ Position (pc):-1.003063e-01, 9.313054e-02, -2.969808e-02
 Velocity (km/s): -1.383483e+01, 1.354114e+01, 1.371413e+01
 Mass (Msun): 1.832670e+00
 NumNeighbor: 148, ACRadius (pc): 1.300488e-01
-atot (0): -2.100707e+11, -1.421156e+11, -9.616167e+10
+atot (0): -2.100707e+11, -1.421156e+11, -9.616168e+10
 areg (0): 8.205920e+08, -2.181866e+09, 7.190574e+07
 airr (0): -2.108913e+11, -1.399337e+11, -9.623358e+10
 TimeStepIrr (Myr): 1.907349e-06, TimeStepReg (Myr): 6.103516e-05
-Elapsed time from the last output: 22.96 s
-Irregular Force: 6.38 s (27.78 %)
-Irregular Update: 0.79 s (3.46 %)
-FewBody Termination: 0.10 s (0.44 %)
-FewBody Initialization: 0.11 s (0.48 %)
-Regular SendToGPU: 0.39 s (1.72 %)
-Regular GPU: 12.05 s (52.48 %)
-Regular Adjust: 1.15 s (5.00 %)
-Regular Update: 0.83 s (3.63 %)
-SkipList Create: 0.41 s (1.76 %)
-SkipList Update: 0.15 s (0.64 %)
-UpdateNextRegTime: 0.54 s (2.35 %)
+Elapsed time from the last output: 11.36 s
+Irregular Force: 3.65 s (32.13 %)
+Irregular Update: 0.47 s (4.14 %)
+FewBody Termination: 0.04 s (0.36 %)
+FewBody Initialization: 0.05 s (0.43 %)
+Regular SendToGPU: 0.14 s (1.20 %)
+Regular GPU: 5.42 s (47.68 %)
+Regular Adjust: 0.62 s (5.45 %)
+Regular Update: 0.46 s (4.01 %)
+SkipList Create: 0.20 s (1.79 %)
+SkipList Update: 0.08 s (0.69 %)
+UpdateNextRegTime: 0.21 s (1.81 %)
 -----------------------------------------------
 Data is being written...
 Data written to output.txt successfully!
@@ -300117,27 +300117,27 @@ areg (0): -4.033345e+09, 6.692184e+09, -3.331204e+09
 airr (0): -1.000675e+11, 2.038772e+11, -1.694814e+11
 TimeStepIrr (Myr): 9.536743e-07, TimeStepReg (Myr): 4.882812e-04
 Particle Info with minimum TimeStepReg...
-PID: 559, ParticleIndex: 559, ParticleType: 0
-Position (pc):-7.077846e-02, -1.133779e-01, 4.943482e-02
-Velocity (km/s): -2.825875e+01, -2.396963e+01, -4.098610e+00
-Mass (Msun): 1.525066e+00
-NumNeighbor: 152, ACRadius (pc): 1.343150e-01
-atot (0): 2.404083e+08, 3.162716e+09, 1.293633e+09
-areg (0): -3.494415e+08, 2.015582e+09, -1.042870e+09
-airr (0): 5.898498e+08, 1.147133e+09, 2.336504e+09
-TimeStepIrr (Myr): 6.103516e-05, TimeStepReg (Myr): 1.220703e-04
-Elapsed time from the last output: 22.65 s
-Irregular Force: 6.40 s (28.24 %)
-Irregular Update: 0.80 s (3.54 %)
-FewBody Termination: 0.10 s (0.46 %)
-FewBody Initialization: 0.11 s (0.49 %)
-Regular SendToGPU: 0.38 s (1.67 %)
-Regular GPU: 11.83 s (52.23 %)
-Regular Adjust: 1.07 s (4.72 %)
-Regular Update: 0.83 s (3.66 %)
-SkipList Create: 0.40 s (1.75 %)
-SkipList Update: 0.15 s (0.67 %)
-UpdateNextRegTime: 0.52 s (2.30 %)
+PID: 1272, ParticleIndex: 1272, ParticleType: 0
+Position (pc):-9.149714e-02, -6.070546e-02, -7.671921e-02
+Velocity (km/s): 1.586804e+01, -3.044703e+01, 1.022901e+01
+Mass (Msun): 4.900948e+00
+NumNeighbor: 151, ACRadius (pc): 1.340573e-01
+atot (0): 1.914286e+09, 5.914023e+08, 1.131808e+09
+areg (0): 1.039951e+09, 9.191223e+08, 1.551069e+09
+airr (0): 8.743353e+08, -3.277201e+08, -4.192613e+08
+TimeStepIrr (Myr): 3.051758e-05, TimeStepReg (Myr): 1.220703e-04
+Elapsed time from the last output: 11.33 s
+Irregular Force: 3.66 s (32.29 %)
+Irregular Update: 0.47 s (4.15 %)
+FewBody Termination: 0.04 s (0.37 %)
+FewBody Initialization: 0.05 s (0.43 %)
+Regular SendToGPU: 0.13 s (1.16 %)
+Regular GPU: 5.43 s (47.89 %)
+Regular Adjust: 0.59 s (5.17 %)
+Regular Update: 0.45 s (4.01 %)
+SkipList Create: 0.20 s (1.77 %)
+SkipList Update: 0.08 s (0.70 %)
+UpdateNextRegTime: 0.20 s (1.77 %)
 -----------------------------------------------
 Data is being written...
 Data written to output.txt successfully!
@@ -300149,9 +300149,9 @@ Position (pc):-5.740311e-01, -6.664771e-01, -3.446511e-01
 Velocity (km/s): -2.964904e+01, -6.476691e+00, -1.042834e+01
 Mass (Msun): 1.318230e+00
 NumNeighbor: 68, ACRadius (pc): 1.563672e-01
-atot (0): 1.345744e+11, -2.861216e+11, -1.050781e+11
+atot (0): 1.345745e+11, -2.861216e+11, -1.050781e+11
 areg (0): 6.586409e+09, 7.817737e+09, 4.277196e+09
-airr (0): 1.279880e+11, -2.939393e+11, -1.093553e+11
+airr (0): 1.279881e+11, -2.939394e+11, -1.093553e+11
 TimeStepIrr (Myr): 4.768372e-07, TimeStepReg (Myr): 4.882812e-04
 Particle Info with minimum TimeStepReg...
 PID: 1604, ParticleIndex: 1604, ParticleType: 0
@@ -300161,20 +300161,20 @@ Mass (Msun): 1.607749e+00
 NumNeighbor: 156, ACRadius (pc): 1.319297e-01
 atot (0): 1.650827e+09, -1.781034e+09, 2.724241e+09
 areg (0): 1.826929e+09, -1.297369e+09, 1.361793e+09
-airr (0): -1.761014e+08, -4.836652e+08, 1.362449e+09
+airr (0): -1.761015e+08, -4.836653e+08, 1.362448e+09
 TimeStepIrr (Myr): 1.525879e-05, TimeStepReg (Myr): 1.220703e-04
-Elapsed time from the last output: 22.81 s
-Irregular Force: 6.35 s (27.85 %)
-Irregular Update: 0.80 s (3.52 %)
-FewBody Termination: 0.10 s (0.45 %)
-FewBody Initialization: 0.11 s (0.49 %)
-Regular SendToGPU: 0.32 s (1.42 %)
-Regular GPU: 12.10 s (53.04 %)
-Regular Adjust: 1.12 s (4.92 %)
-Regular Update: 0.90 s (3.94 %)
-SkipList Create: 0.34 s (1.48 %)
-SkipList Update: 0.16 s (0.71 %)
-UpdateNextRegTime: 0.44 s (1.92 %)
+Elapsed time from the last output: 11.38 s
+Irregular Force: 3.63 s (31.87 %)
+Irregular Update: 0.47 s (4.11 %)
+FewBody Termination: 0.04 s (0.37 %)
+FewBody Initialization: 0.05 s (0.43 %)
+Regular SendToGPU: 0.11 s (0.93 %)
+Regular GPU: 5.53 s (48.59 %)
+Regular Adjust: 0.61 s (5.35 %)
+Regular Update: 0.49 s (4.29 %)
+SkipList Create: 0.18 s (1.54 %)
+SkipList Update: 0.08 s (0.74 %)
+UpdateNextRegTime: 0.17 s (1.48 %)
 -----------------------------------------------
 Data is being written...
 Data written to output.txt successfully!
@@ -300186,844 +300186,30 @@ Position (pc):1.598300e-01, 3.235394e-01, -1.144337e+00
 Velocity (km/s): -2.709263e+00, -1.313095e+01, -1.373645e+01
 Mass (Msun): 1.909286e+00
 NumNeighbor: 57, ACRadius (pc): 1.759087e-01
-atot (0): -2.033631e+11, 2.609092e+11, 1.422750e+11
-areg (0): -1.084023e+09, -2.395441e+09, 9.633299e+09
-airr (0): -2.022641e+11, 2.632793e+11, 1.326610e+11
+atot (0): -2.033632e+11, 2.609092e+11, 1.422750e+11
+areg (0): -1.084023e+09, -2.395441e+09, 9.633298e+09
+airr (0): -2.022642e+11, 2.632794e+11, 1.326609e+11
 TimeStepIrr (Myr): 9.536743e-07, TimeStepReg (Myr): 9.765625e-04
 Particle Info with minimum TimeStepReg...
-PID: 39, ParticleIndex: 39, ParticleType: 0
-Position (pc):-3.539098e-02, 7.399876e-04, -1.058281e-01
-Velocity (km/s): -6.806813e+00, -3.322656e+01, -6.134603e+00
-Mass (Msun): 1.500633e+00
-NumNeighbor: 139, ACRadius (pc): 1.295532e-01
-atot (0): 2.252488e+09, 1.052589e+09, 1.637545e+09
-areg (0): 1.584413e+09, 3.338291e+08, 1.512182e+09
-airr (0): 6.680756e+08, 7.187599e+08, 1.253624e+08
-TimeStepIrr (Myr): 6.103516e-05, TimeStepReg (Myr): 1.220703e-04
-Elapsed time from the last output: 22.08 s
-Irregular Force: 6.29 s (28.48 %)
-Irregular Update: 0.80 s (3.62 %)
-FewBody Termination: 0.10 s (0.46 %)
-FewBody Initialization: 0.11 s (0.50 %)
-Regular SendToGPU: 0.30 s (1.36 %)
-Regular GPU: 11.59 s (52.47 %)
-Regular Adjust: 1.03 s (4.69 %)
-Regular Update: 0.84 s (3.82 %)
-SkipList Create: 0.35 s (1.58 %)
-SkipList Update: 0.16 s (0.71 %)
-UpdateNextRegTime: 0.45 s (2.03 %)
------------------------------------------------
-Data is being written...
-Data written to output.txt successfully!
---------------Performance-Summary--------------
-Simulation Time: 0.060059 Myr
-Particle Info with minimum TimeStepIrr...
-PID: 6315, ParticleIndex: 6315, ParticleType: 0
-Position (pc):3.020805e-02, 1.155190e-01, 5.996821e-01
-Velocity (km/s): -2.485852e+01, 8.995059e+00, -1.172056e+01
-Mass (Msun): 1.019451e+00
-NumNeighbor: 210, ACRadius (pc): 1.774018e-01
-atot (0): -2.534568e+11, 3.230922e+10, 2.605719e+11
-areg (0): -9.262692e+08, -1.816403e+09, -8.950889e+09
-airr (0): -2.525306e+11, 3.412563e+10, 2.695228e+11
-TimeStepIrr (Myr): 9.536743e-07, TimeStepReg (Myr): 4.882812e-04
-Particle Info with minimum TimeStepReg...
-PID: 32025, ParticleIndex: 32025, ParticleType: 0
-Position (pc):8.651912e-02, 6.436540e-02, -5.680275e-02
-Velocity (km/s): -1.279794e+01, -3.099914e+01, -2.082995e+00
-Mass (Msun): 1.942325e+00
-NumNeighbor: 173, ACRadius (pc): 1.356581e-01
-atot (0): 6.734493e+07, 9.200155e+09, -3.068147e+09
-areg (0): -1.752872e+09, -6.102322e+08, -1.250412e+08
-airr (0): 1.820217e+09, 9.810387e+09, -2.943105e+09
-TimeStepIrr (Myr): 1.907349e-06, TimeStepReg (Myr): 6.103516e-05
-Elapsed time from the last output: 22.24 s
-Irregular Force: 6.27 s (28.19 %)
-Irregular Update: 0.80 s (3.60 %)
-FewBody Termination: 0.10 s (0.46 %)
-FewBody Initialization: 0.11 s (0.50 %)
-Regular SendToGPU: 0.31 s (1.39 %)
-Regular GPU: 11.76 s (52.89 %)
-Regular Adjust: 1.05 s (4.74 %)
-Regular Update: 0.87 s (3.91 %)
-SkipList Create: 0.33 s (1.49 %)
-SkipList Update: 0.16 s (0.73 %)
-UpdateNextRegTime: 0.41 s (1.82 %)
------------------------------------------------
-Data is being written...
-Data written to output.txt successfully!
---------------Performance-Summary--------------
-Simulation Time: 0.070068 Myr
-Particle Info with minimum TimeStepIrr...
-PID: 44274, ParticleIndex: 44274, ParticleType: 0
-Position (pc):-9.737181e-02, 8.754743e-02, 1.415340e-01
-Velocity (km/s): 8.329428e+00, 1.145943e+01, 1.199649e+01
-Mass (Msun): 1.129872e+00
-NumNeighbor: 118, ACRadius (pc): 1.289341e-01
-atot (0): 1.859457e+12, -3.297264e+12, -7.409858e+09
-areg (0): 2.873315e+09, -1.967754e+09, -3.190475e+09
-airr (0): 1.856583e+12, -3.295296e+12, -4.219383e+09
-TimeStepIrr (Myr): 4.768372e-07, TimeStepReg (Myr): 6.103516e-05
-Particle Info with minimum TimeStepReg...
-PID: 44274, ParticleIndex: 44274, ParticleType: 0
-Position (pc):-9.737181e-02, 8.754743e-02, 1.415340e-01
-Velocity (km/s): 8.329428e+00, 1.145943e+01, 1.199649e+01
-Mass (Msun): 1.129872e+00
-NumNeighbor: 118, ACRadius (pc): 1.289341e-01
-atot (0): 1.859457e+12, -3.297264e+12, -7.409858e+09
-areg (0): 2.873315e+09, -1.967754e+09, -3.190475e+09
-airr (0): 1.856583e+12, -3.295296e+12, -4.219383e+09
-TimeStepIrr (Myr): 4.768372e-07, TimeStepReg (Myr): 6.103516e-05
-Elapsed time from the last output: 22.00 s
-Irregular Force: 6.32 s (28.72 %)
-Irregular Update: 0.81 s (3.66 %)
-FewBody Termination: 0.11 s (0.49 %)
-FewBody Initialization: 0.11 s (0.52 %)
-Regular SendToGPU: 0.28 s (1.26 %)
-Regular GPU: 11.53 s (52.40 %)
-Regular Adjust: 1.03 s (4.68 %)
-Regular Update: 0.86 s (3.90 %)
-SkipList Create: 0.33 s (1.50 %)
-SkipList Update: 0.16 s (0.75 %)
-UpdateNextRegTime: 0.41 s (1.87 %)
------------------------------------------------
-Data is being written...
-Data written to output.txt successfully!
---------------Performance-Summary--------------
-Simulation Time: 0.080078 Myr
-Particle Info with minimum TimeStepIrr...
-PID: 1798, ParticleIndex: 1798, ParticleType: 0
-Position (pc):6.138600e-01, 1.424739e-02, -3.775293e-01
-Velocity (km/s): -1.146342e+00, -6.081577e+00, -1.400148e+01
-Mass (Msun): 1.080831e+00
-NumNeighbor: 94, ACRadius (pc): 1.472243e-01
-atot (0): 1.525120e+10, -1.140987e+11, 8.506046e+10
-areg (0): -1.054195e+10, -2.579986e+08, 5.869363e+09
-airr (0): 2.579316e+10, -1.138407e+11, 7.919110e+10
-TimeStepIrr (Myr): 9.536743e-07, TimeStepReg (Myr): 4.882812e-04
-Particle Info with minimum TimeStepReg...
-PID: 234, ParticleIndex: 234, ParticleType: 0
-Position (pc):-1.204407e-01, -3.305153e-02, 3.403950e-02
-Velocity (km/s): 1.264458e+00, 2.491367e+01, 3.304754e+01
-Mass (Msun): 1.276757e+00
-NumNeighbor: 158, ACRadius (pc): 1.398875e-01
-atot (0): 3.219339e+09, -1.342568e+09, 1.264651e+09
-areg (0): 3.181442e+09, 8.325409e+08, -1.432309e+09
-airr (0): 3.789660e+07, -2.175109e+09, 2.696960e+09
-TimeStepIrr (Myr): 3.051758e-05, TimeStepReg (Myr): 1.220703e-04
-Elapsed time from the last output: 23.42 s
-Irregular Force: 6.35 s (27.11 %)
-Irregular Update: 0.80 s (3.43 %)
-FewBody Termination: 0.11 s (0.46 %)
-FewBody Initialization: 0.12 s (0.49 %)
-Regular SendToGPU: 0.31 s (1.32 %)
-Regular GPU: 12.66 s (54.07 %)
-Regular Adjust: 1.10 s (4.71 %)
-Regular Update: 0.94 s (4.00 %)
-SkipList Create: 0.35 s (1.51 %)
-SkipList Update: 0.16 s (0.68 %)
-UpdateNextRegTime: 0.46 s (1.97 %)
------------------------------------------------
-Data is being written...
-Data written to output.txt successfully!
---------------Performance-Summary--------------
-Simulation Time: 0.090088 Myr
-Particle Info with minimum TimeStepIrr...
-PID: 36558, ParticleIndex: 36558, ParticleType: 0
-Position (pc):2.096422e-01, 2.165265e-01, -1.066581e-01
-Velocity (km/s): -3.729186e+01, -1.016774e+01, -6.391857e+00
-Mass (Msun): 1.152531e+00
-NumNeighbor: 199, ACRadius (pc): 1.558545e-01
-atot (0): 1.135527e+11, -9.964623e+10, -1.286619e+11
-areg (0): -4.671090e+09, -5.240045e+09, 1.578215e+09
-airr (0): 1.182238e+11, -9.440619e+10, -1.302401e+11
-TimeStepIrr (Myr): 9.536743e-07, TimeStepReg (Myr): 2.441406e-04
-Particle Info with minimum TimeStepReg...
-PID: 1750, ParticleIndex: 1750, ParticleType: 0
-Position (pc):7.826189e-02, 2.308096e-02, 1.892319e-01
-Velocity (km/s): -1.604604e+01, 2.501095e+00, 1.491191e+01
-Mass (Msun): 1.187775e+00
-NumNeighbor: 154, ACRadius (pc): 1.348265e-01
-atot (0): 1.361040e+08, -1.893522e+09, -7.507163e+09
-areg (0): -1.099330e+09, -8.158794e+08, -4.548302e+09
-airr (0): 1.235434e+09, -1.077643e+09, -2.958861e+09
-TimeStepIrr (Myr): 6.103516e-05, TimeStepReg (Myr): 1.220703e-04
-Elapsed time from the last output: 22.88 s
-Irregular Force: 6.34 s (27.70 %)
-Irregular Update: 0.80 s (3.48 %)
-FewBody Termination: 0.11 s (0.47 %)
-FewBody Initialization: 0.11 s (0.50 %)
-Regular SendToGPU: 0.34 s (1.49 %)
-Regular GPU: 12.17 s (53.18 %)
-Regular Adjust: 1.05 s (4.57 %)
-Regular Update: 0.88 s (3.84 %)
-SkipList Create: 0.37 s (1.64 %)
-SkipList Update: 0.15 s (0.68 %)
-UpdateNextRegTime: 0.50 s (2.19 %)
------------------------------------------------
-Data is being written...
-Data written to output.txt successfully!
---------------Performance-Summary--------------
-Simulation Time: 0.100098 Myr
-Particle Info with minimum TimeStepIrr...
-PID: 22806, ParticleIndex: 22806, ParticleType: 0
-Position (pc):3.929101e-01, 6.892690e-02, -7.782001e-02
-Velocity (km/s): -1.570253e+00, 1.619108e+01, 1.634473e+01
-Mass (Msun): 1.160995e+00
-NumNeighbor: 145, ACRadius (pc): 1.428018e-01
-atot (0): -3.393114e+12, -1.179478e+12, -1.748246e+12
-areg (0): -8.717400e+09, -1.602563e+09, 2.258376e+09
-airr (0): -3.384397e+12, -1.177876e+12, -1.750505e+12
-TimeStepIrr (Myr): 4.768372e-07, TimeStepReg (Myr): 4.882812e-04
-Particle Info with minimum TimeStepReg...
-PID: 781, ParticleIndex: 781, ParticleType: 0
-Position (pc):-7.540708e-01, -1.046984e-01, -5.089984e-01
-Velocity (km/s): -3.245686e+01, 7.286158e+00, -5.212711e+00
-Mass (Msun): 1.544507e+00
-NumNeighbor: 49, ACRadius (pc): 1.399388e-01
-atot (0): 1.044062e+10, 2.718250e+09, 5.325236e+09
-areg (0): 9.103845e+09, 1.622604e+09, 5.838472e+09
-airr (0): 1.336777e+09, 1.095646e+09, -5.132353e+08
-TimeStepIrr (Myr): 3.051758e-05, TimeStepReg (Myr): 1.220703e-04
-Elapsed time from the last output: 23.15 s
-Irregular Force: 6.33 s (27.36 %)
-Irregular Update: 0.80 s (3.46 %)
-FewBody Termination: 0.11 s (0.46 %)
-FewBody Initialization: 0.11 s (0.48 %)
-Regular SendToGPU: 0.38 s (1.62 %)
-Regular GPU: 12.38 s (53.47 %)
-Regular Adjust: 1.07 s (4.61 %)
-Regular Update: 0.90 s (3.90 %)
-SkipList Create: 0.37 s (1.61 %)
-SkipList Update: 0.15 s (0.66 %)
-UpdateNextRegTime: 0.49 s (2.12 %)
------------------------------------------------
-Data is being written...
-Data written to output.txt successfully!
---------------Performance-Summary--------------
-Simulation Time: 0.110046 Myr
-Particle Info with minimum TimeStepIrr...
-PID: 8744, ParticleIndex: 8744, ParticleType: 0
-Position (pc):-5.660999e-01, -9.214291e-02, 5.287168e-01
-Velocity (km/s): 2.202077e+01, -1.022671e+01, -1.812617e+00
-Mass (Msun): 1.212299e+00
-NumNeighbor: 165, ACRadius (pc): 1.954239e-01
-atot (0): -2.735849e+11, 3.960656e+10, -2.983768e+10
-areg (0): 7.533879e+09, 1.173027e+09, -6.758861e+09
-airr (0): -2.811222e+11, 3.842483e+10, -2.305432e+10
-TimeStepIrr (Myr): 9.536743e-07, TimeStepReg (Myr): 4.882812e-04
-Particle Info with minimum TimeStepReg...
-PID: 13073, ParticleIndex: 13073, ParticleType: 0
-Position (pc):5.689512e-03, -1.756480e-02, -7.666684e-02
-Velocity (km/s): 1.970045e+01, 2.756342e+00, 1.187926e+01
-Mass (Msun): 2.948417e+00
-NumNeighbor: 158, ACRadius (pc): 1.296239e-01
-atot (0): 2.718858e+08, 1.463605e+09, -1.191724e+08
-areg (0): -6.843317e+07, 5.086682e+08, 6.635962e+08
-airr (0): 3.403190e+08, 9.549369e+08, -7.827685e+08
+PID: 3827, ParticleIndex: 3827, ParticleType: 0
+Position (pc):3.143659e-02, 1.974638e-02, -5.685132e-02
+Velocity (km/s): 1.964547e+01, -6.300873e+00, 2.253822e+01
+Mass (Msun): 1.328253e+00
+NumNeighbor: 152, ACRadius (pc): 1.320472e-01
+atot (0): 1.606138e+09, -1.194874e+08, 9.198443e+08
+areg (0): -5.891911e+08, 1.126538e+08, -1.740746e+08
+airr (0): 2.195329e+09, -2.321412e+08, 1.093919e+09
 TimeStepIrr (Myr): 3.051758e-05, TimeStepReg (Myr): 6.103516e-05
-Elapsed time from the last output: 22.85 s
-Irregular Force: 6.21 s (27.17 %)
-Irregular Update: 0.79 s (3.46 %)
-FewBody Termination: 0.10 s (0.45 %)
-FewBody Initialization: 0.11 s (0.48 %)
-Regular SendToGPU: 0.35 s (1.54 %)
-Regular GPU: 12.26 s (53.66 %)
-Regular Adjust: 1.04 s (4.57 %)
-Regular Update: 0.89 s (3.90 %)
-SkipList Create: 0.38 s (1.65 %)
-SkipList Update: 0.15 s (0.65 %)
-UpdateNextRegTime: 0.51 s (2.21 %)
------------------------------------------------
-Data is being written...
-Data written to output.txt successfully!
---------------Performance-Summary--------------
-Simulation Time: 0.120117 Myr
-Particle Info with minimum TimeStepIrr...
-PID: 69171, ParticleIndex: 69171, ParticleType: 0
-Position (pc):4.150495e-01, 2.478126e-01, -7.955132e-02
-Velocity (km/s): 1.323122e+01, 1.508806e+01, 8.800863e-01
-Mass (Msun): 1.211521e+00
-NumNeighbor: 90, ACRadius (pc): 1.269723e-01
-atot (0): -8.792838e+10, 3.008846e+11, 2.708607e+11
-areg (0): -7.205500e+09, -3.908869e+09, 1.088091e+09
-airr (0): -8.072288e+10, 3.047935e+11, 2.697726e+11
-TimeStepIrr (Myr): 4.768372e-07, TimeStepReg (Myr): 4.882812e-04
-Particle Info with minimum TimeStepReg...
-PID: 717, ParticleIndex: 717, ParticleType: 0
-Position (pc):-8.924776e-02, 4.555281e-02, -2.795988e-01
-Velocity (km/s): 1.560326e+01, 9.890211e-01, -1.070027e+01
-Mass (Msun): 1.311642e+00
-NumNeighbor: 137, ACRadius (pc): 1.318285e-01
-atot (0): 3.477383e+09, -4.813149e+08, 6.246626e+09
-areg (0): 1.780178e+09, -1.760112e+08, 5.047712e+09
-airr (0): 1.697204e+09, -3.053037e+08, 1.198915e+09
-TimeStepIrr (Myr): 6.103516e-05, TimeStepReg (Myr): 1.220703e-04
-Elapsed time from the last output: 23.20 s
-Irregular Force: 6.43 s (27.70 %)
-Irregular Update: 0.82 s (3.52 %)
-FewBody Termination: 0.11 s (0.46 %)
-FewBody Initialization: 0.11 s (0.49 %)
-Regular SendToGPU: 0.28 s (1.22 %)
-Regular GPU: 12.43 s (53.58 %)
-Regular Adjust: 1.09 s (4.69 %)
-Regular Update: 0.94 s (4.05 %)
-SkipList Create: 0.34 s (1.45 %)
-SkipList Update: 0.16 s (0.71 %)
-UpdateNextRegTime: 0.43 s (1.86 %)
------------------------------------------------
-Data is being written...
-Data written to output.txt successfully!
---------------Performance-Summary--------------
-Simulation Time: 0.130005 Myr
-Particle Info with minimum TimeStepIrr...
-PID: 13290, ParticleIndex: 13290, ParticleType: 0
-Position (pc):-5.596092e-01, -1.366445e-01, -1.362426e-01
-Velocity (km/s): 4.973659e+00, -6.731927e+00, -1.076128e+01
-Mass (Msun): 1.218544e+00
-NumNeighbor: 101, ACRadius (pc): 1.451165e-01
-atot (0): 4.313127e+10, -5.834565e+10, 8.100316e+10
-areg (0): 9.713822e+09, 2.446850e+09, 2.081338e+09
-airr (0): 3.342175e+10, -6.079055e+10, 7.892445e+10
-TimeStepIrr (Myr): 9.536743e-07, TimeStepReg (Myr): 4.882812e-04
-Particle Info with minimum TimeStepReg...
-PID: 2324, ParticleIndex: 2324, ParticleType: 0
-Position (pc):3.431301e-02, -4.627666e-02, -3.209143e-02
-Velocity (km/s): -1.133121e+01, -1.400544e+01, 1.669163e+01
-Mass (Msun): 3.627713e+00
-NumNeighbor: 150, ACRadius (pc): 1.333289e-01
-atot (0): -3.361118e+09, 2.695220e+08, -2.791243e+09
-areg (0): -2.840807e+08, 1.145289e+09, -5.121834e+08
-airr (0): -3.077037e+09, -8.757670e+08, -2.279059e+09
-TimeStepIrr (Myr): 1.525879e-05, TimeStepReg (Myr): 1.220703e-04
-Elapsed time from the last output: 22.53 s
-Irregular Force: 6.26 s (27.81 %)
-Irregular Update: 0.80 s (3.56 %)
-FewBody Termination: 0.10 s (0.46 %)
-FewBody Initialization: 0.11 s (0.50 %)
-Regular SendToGPU: 0.29 s (1.28 %)
-Regular GPU: 12.02 s (53.37 %)
-Regular Adjust: 1.03 s (4.57 %)
-Regular Update: 0.90 s (3.98 %)
-SkipList Create: 0.34 s (1.52 %)
-SkipList Update: 0.16 s (0.71 %)
-UpdateNextRegTime: 0.45 s (1.98 %)
------------------------------------------------
-Data is being written...
-Data written to output.txt successfully!
---------------Performance-Summary--------------
-Simulation Time: 0.140015 Myr
-Particle Info with minimum TimeStepIrr...
-PID: 20075, ParticleIndex: 20075, ParticleType: 0
-Position (pc):-3.714286e-02, 3.227871e-01, 5.844305e-01
-Velocity (km/s): -1.356339e+01, 5.820100e+00, -3.039988e-01
-Mass (Msun): 1.797314e+00
-NumNeighbor: 99, ACRadius (pc): 1.442946e-01
-atot (0): 2.381487e+10, 3.628094e+10, 4.553498e+09
-areg (0): 6.657101e+08, -4.878135e+09, -9.476682e+09
-airr (0): 2.313681e+10, 4.118171e+10, 1.403001e+10
-TimeStepIrr (Myr): 9.536743e-07, TimeStepReg (Myr): 9.765625e-04
-Particle Info with minimum TimeStepReg...
-PID: 416, ParticleIndex: 416, ParticleType: 0
-Position (pc):-1.915613e-02, -1.491013e-02, -2.010135e-01
-Velocity (km/s): -9.142689e+00, -1.039636e+01, -1.611017e+01
-Mass (Msun): 1.019002e+00
-NumNeighbor: 134, ACRadius (pc): 1.254538e-01
-atot (0): -8.334545e+08, 5.881700e+09, 1.165290e+10
-areg (0): 1.617620e+09, 1.616891e+09, 4.247598e+09
-airr (0): -2.451075e+09, 4.264809e+09, 7.405301e+09
-TimeStepIrr (Myr): 1.525879e-05, TimeStepReg (Myr): 1.220703e-04
-Elapsed time from the last output: 23.18 s
-Irregular Force: 6.33 s (27.31 %)
-Irregular Update: 0.81 s (3.48 %)
-FewBody Termination: 0.10 s (0.45 %)
-FewBody Initialization: 0.11 s (0.48 %)
-Regular SendToGPU: 0.35 s (1.53 %)
-Regular GPU: 12.42 s (53.57 %)
-Regular Adjust: 1.03 s (4.44 %)
-Regular Update: 0.90 s (3.89 %)
-SkipList Create: 0.38 s (1.64 %)
-SkipList Update: 0.15 s (0.66 %)
-UpdateNextRegTime: 0.53 s (2.29 %)
------------------------------------------------
-Data is being written...
-Data written to output.txt successfully!
---------------Performance-Summary--------------
-Simulation Time: 0.150024 Myr
-Particle Info with minimum TimeStepIrr...
-PID: 2444, ParticleIndex: 2444, ParticleType: 0
-Position (pc):9.699927e-02, 3.208094e-01, 4.464259e-02
-Velocity (km/s): 1.058714e+01, 7.211851e+00, 1.973997e+01
-Mass (Msun): 1.791249e+00
-NumNeighbor: 123, ACRadius (pc): 1.302469e-01
-atot (0): -1.315386e+11, -1.806287e+11, 1.382804e+11
-areg (0): -9.944291e+08, -6.596775e+09, -2.159725e+09
-airr (0): -1.305434e+11, -1.740225e+11, 1.404598e+11
-TimeStepIrr (Myr): 4.768372e-07, TimeStepReg (Myr): 2.441406e-04
-Particle Info with minimum TimeStepReg...
-PID: 25, ParticleIndex: 25, ParticleType: 0
-Position (pc):1.301421e-02, -1.681319e-01, 3.029087e-02
-Velocity (km/s): 1.742282e+01, -3.476307e+01, 5.908731e+00
-Mass (Msun): 1.163288e+00
-NumNeighbor: 140, ACRadius (pc): 1.302174e-01
-atot (0): -3.547675e+09, 6.893428e+09, -3.244741e+09
-areg (0): -2.865677e+08, 3.846131e+09, -1.069699e+09
-airr (0): -3.261108e+09, 3.047297e+09, -2.175041e+09
-TimeStepIrr (Myr): 7.629395e-06, TimeStepReg (Myr): 1.220703e-04
-Elapsed time from the last output: 23.14 s
-Irregular Force: 6.34 s (27.38 %)
-Irregular Update: 0.81 s (3.48 %)
-FewBody Termination: 0.11 s (0.47 %)
-FewBody Initialization: 0.11 s (0.49 %)
-Regular SendToGPU: 0.30 s (1.31 %)
-Regular GPU: 12.46 s (53.83 %)
-Regular Adjust: 1.07 s (4.63 %)
-Regular Update: 0.93 s (4.00 %)
-SkipList Create: 0.35 s (1.49 %)
-SkipList Update: 0.16 s (0.69 %)
-UpdateNextRegTime: 0.46 s (1.97 %)
------------------------------------------------
-Data is being written...
-Data written to output.txt successfully!
---------------Performance-Summary--------------
-Simulation Time: 0.160034 Myr
-Particle Info with minimum TimeStepIrr...
-PID: 2675, ParticleIndex: 2675, ParticleType: 0
-Position (pc):9.500167e-02, 2.763134e-01, 7.064987e-01
-Velocity (km/s): 9.443510e+00, 2.085956e+01, 1.950829e+01
-Mass (Msun): 1.779559e+00
-NumNeighbor: 84, ACRadius (pc): 1.405241e-01
-atot (0): -2.155985e+10, 1.840061e+10, -3.120424e+09
-areg (0): -8.949580e+08, -4.154816e+09, -1.031319e+10
-airr (0): -2.063108e+10, 2.252270e+10, 7.084732e+09
-TimeStepIrr (Myr): 1.907349e-06, TimeStepReg (Myr): 4.882812e-04
-Particle Info with minimum TimeStepReg...
-PID: 262, ParticleIndex: 262, ParticleType: 0
-Position (pc):5.068514e-02, -2.021234e-02, -1.413037e-02
-Velocity (km/s): -4.576120e+00, 1.568735e+01, 3.374961e+00
-Mass (Msun): 1.489906e+00
-NumNeighbor: 124, ACRadius (pc): 1.223267e-01
-atot (0): -8.248631e+08, 1.929289e+09, -1.169973e+09
-areg (0): -1.359501e+09, 1.518847e+09, -5.347653e+08
-airr (0): 5.346382e+08, 4.104414e+08, -6.352075e+08
-TimeStepIrr (Myr): 3.051758e-05, TimeStepReg (Myr): 1.220703e-04
-Elapsed time from the last output: 22.88 s
-Irregular Force: 6.25 s (27.30 %)
-Irregular Update: 0.80 s (3.48 %)
-FewBody Termination: 0.10 s (0.46 %)
-FewBody Initialization: 0.11 s (0.49 %)
-Regular SendToGPU: 0.33 s (1.43 %)
-Regular GPU: 12.28 s (53.66 %)
-Regular Adjust: 1.04 s (4.53 %)
-Regular Update: 0.91 s (3.99 %)
-SkipList Create: 0.36 s (1.59 %)
-SkipList Update: 0.15 s (0.67 %)
-UpdateNextRegTime: 0.49 s (2.14 %)
------------------------------------------------
-Data is being written...
-Data written to output.txt successfully!
---------------Performance-Summary--------------
-Simulation Time: 0.170044 Myr
-Particle Info with minimum TimeStepIrr...
-PID: 43177, ParticleIndex: 43177, ParticleType: 0
-Position (pc):-3.371059e-01, -4.696559e-01, -1.673345e-01
-Velocity (km/s): -1.535013e+00, -3.770398e+01, 7.357391e+00
-Mass (Msun): 2.405905e+00
-NumNeighbor: 126, ACRadius (pc): 1.501446e-01
-atot (0): -1.929640e+10, 8.198030e+09, 4.000627e+10
-areg (0): 6.055361e+09, 8.051250e+09, 3.275421e+09
-airr (0): -2.533007e+10, 1.529930e+08, 3.674302e+10
-TimeStepIrr (Myr): 9.536743e-07, TimeStepReg (Myr): 4.882812e-04
-Particle Info with minimum TimeStepReg...
-PID: 262, ParticleIndex: 262, ParticleType: 0
-Position (pc):3.110744e-03, 1.418458e-01, 1.664341e-02
-Velocity (km/s): -4.638776e+00, 1.573295e+01, 2.582174e+00
-Mass (Msun): 1.489906e+00
-NumNeighbor: 90, ACRadius (pc): 1.206205e-01
-atot (0): -1.970177e+08, -1.378885e+09, -2.132458e+09
-areg (0): -3.481956e+08, -2.387371e+09, -5.005130e+08
-airr (0): 1.511779e+08, 1.008486e+09, -1.631945e+09
-TimeStepIrr (Myr): 6.103516e-05, TimeStepReg (Myr): 1.220703e-04
-Elapsed time from the last output: 24.15 s
-Irregular Force: 6.32 s (26.17 %)
-Irregular Update: 0.81 s (3.36 %)
-FewBody Termination: 0.11 s (0.44 %)
-FewBody Initialization: 0.11 s (0.47 %)
-Regular SendToGPU: 0.37 s (1.54 %)
-Regular GPU: 13.23 s (54.81 %)
-Regular Adjust: 1.10 s (4.57 %)
-Regular Update: 0.98 s (4.07 %)
-SkipList Create: 0.38 s (1.57 %)
-SkipList Update: 0.16 s (0.65 %)
-UpdateNextRegTime: 0.51 s (2.10 %)
------------------------------------------------
-Data is being written...
-Data written to output.txt successfully!
---------------Performance-Summary--------------
-Simulation Time: 0.180054 Myr
-Particle Info with minimum TimeStepIrr...
-PID: 21877, ParticleIndex: 21877, ParticleType: 0
-Position (pc):1.229926e+00, -5.624180e-01, 1.764408e-01
-Velocity (km/s): -5.234594e+00, -2.302505e+01, 3.429233e+00
-Mass (Msun): 1.149105e+00
-NumNeighbor: 52, ACRadius (pc): 2.000000e-01
-atot (0): 8.442762e+10, -1.108044e+11, -1.160196e+11
-areg (0): -8.244541e+09, 3.909877e+09, -1.176102e+09
-airr (0): 9.264674e+10, -1.147467e+11, -1.148575e+11
-TimeStepIrr (Myr): 4.768372e-07, TimeStepReg (Myr): 4.882812e-04
-Particle Info with minimum TimeStepReg...
-PID: 52511, ParticleIndex: 52511, ParticleType: 0
-Position (pc):2.795248e-02, 1.594572e-02, 3.388267e-02
-Velocity (km/s): 9.674034e+00, 2.649637e+01, 4.706746e+00
-Mass (Msun): 1.255808e+00
-NumNeighbor: 127, ACRadius (pc): 1.236820e-01
-atot (0): -6.394755e+08, -2.430691e+08, 5.153683e+08
-areg (0): -2.291457e+08, -1.571767e+08, 4.915756e+06
-airr (0): -4.103299e+08, -8.589241e+07, 5.104526e+08
-TimeStepIrr (Myr): 3.051758e-05, TimeStepReg (Myr): 6.103516e-05
-Elapsed time from the last output: 23.39 s
-Irregular Force: 6.41 s (27.40 %)
-Irregular Update: 0.81 s (3.46 %)
-FewBody Termination: 0.11 s (0.47 %)
-FewBody Initialization: 0.11 s (0.49 %)
-Regular SendToGPU: 0.35 s (1.51 %)
-Regular GPU: 12.52 s (53.53 %)
-Regular Adjust: 1.04 s (4.44 %)
-Regular Update: 0.92 s (3.95 %)
-SkipList Create: 0.39 s (1.65 %)
-SkipList Update: 0.16 s (0.66 %)
-UpdateNextRegTime: 0.51 s (2.18 %)
------------------------------------------------
-Data is being written...
-Data written to output.txt successfully!
---------------Performance-Summary--------------
-Simulation Time: 0.190002 Myr
-Particle Info with minimum TimeStepIrr...
-PID: 54316, ParticleIndex: 54316, ParticleType: 0
-Position (pc):2.099729e-01, -6.914385e-02, 1.427756e-01
-Velocity (km/s): -7.026159e+00, -6.863148e+00, 3.299819e+01
-Mass (Msun): 3.225966e+00
-NumNeighbor: 149, ACRadius (pc): 1.295624e-01
-atot (0): 2.250966e+10, 3.495922e+10, 1.370605e+10
-areg (0): -4.873978e+09, 2.902514e+09, -3.312117e+09
-airr (0): 2.738641e+10, 3.207232e+10, 1.701171e+10
-TimeStepIrr (Myr): 9.536743e-07, TimeStepReg (Myr): 2.441406e-04
-Particle Info with minimum TimeStepReg...
-PID: 11741, ParticleIndex: 11741, ParticleType: 0
-Position (pc):6.568117e-02, 4.975521e-02, 6.221979e-02
-Velocity (km/s): 1.900644e-01, -3.673646e+01, 1.512814e+00
-Mass (Msun): 2.356019e+00
-NumNeighbor: 170, ACRadius (pc): 1.282760e-01
-atot (0): 1.363296e+09, -7.202629e+08, -1.235224e+09
-areg (0): -2.183609e+08, -5.811281e+08, -4.605100e+08
-airr (0): 1.581657e+09, -1.391349e+08, -7.747141e+08
-TimeStepIrr (Myr): 1.525879e-05, TimeStepReg (Myr): 6.103516e-05
-Elapsed time from the last output: 23.54 s
-Irregular Force: 6.33 s (26.90 %)
-Irregular Update: 0.81 s (3.44 %)
-FewBody Termination: 0.11 s (0.46 %)
-FewBody Initialization: 0.11 s (0.48 %)
-Regular SendToGPU: 0.35 s (1.49 %)
-Regular GPU: 12.70 s (53.96 %)
-Regular Adjust: 1.06 s (4.52 %)
-Regular Update: 0.94 s (3.98 %)
-SkipList Create: 0.38 s (1.62 %)
-SkipList Update: 0.15 s (0.66 %)
-UpdateNextRegTime: 0.52 s (2.23 %)
------------------------------------------------
-Data is being written...
-Data written to output.txt successfully!
---------------Performance-Summary--------------
-Simulation Time: 0.200012 Myr
-Particle Info with minimum TimeStepIrr...
-PID: 2014, ParticleIndex: 2014, ParticleType: 0
-Position (pc):-3.099850e-01, -3.693879e-01, 7.402190e-02
-Velocity (km/s): 3.450522e+00, 3.139838e+01, -4.958602e+00
-Mass (Msun): 2.555321e+00
-NumNeighbor: 153, ACRadius (pc): 1.479477e-01
-atot (0): -1.439282e+10, 6.737950e+10, -4.541883e+09
-areg (0): 6.316418e+09, 7.648118e+09, -1.107523e+09
-airr (0): -2.071973e+10, 5.973466e+10, -3.433064e+09
-TimeStepIrr (Myr): 1.907349e-06, TimeStepReg (Myr): 2.441406e-04
-Particle Info with minimum TimeStepReg...
-PID: 42985, ParticleIndex: 42985, ParticleType: 0
-Position (pc):5.122742e-02, 3.117344e-02, 1.863188e-02
-Velocity (km/s): -1.999310e+01, -2.106187e+01, 4.911486e+00
-Mass (Msun): 1.136477e+00
-NumNeighbor: 139, ACRadius (pc): 1.245752e-01
-atot (0): 7.325094e+07, -4.025857e+08, -5.684949e+08
-areg (0): -5.890613e+08, -1.979845e+07, 1.608039e+08
-airr (0): 6.623123e+08, -3.827872e+08, -7.292988e+08
-TimeStepIrr (Myr): 3.051758e-05, TimeStepReg (Myr): 6.103516e-05
-Elapsed time from the last output: 23.19 s
-Irregular Force: 6.36 s (27.42 %)
-Irregular Update: 0.82 s (3.53 %)
-FewBody Termination: 0.11 s (0.47 %)
-FewBody Initialization: 0.11 s (0.49 %)
-Regular SendToGPU: 0.33 s (1.40 %)
-Regular GPU: 12.45 s (53.70 %)
-Regular Adjust: 1.02 s (4.41 %)
-Regular Update: 0.92 s (3.97 %)
-SkipList Create: 0.37 s (1.58 %)
-SkipList Update: 0.16 s (0.68 %)
-UpdateNextRegTime: 0.48 s (2.07 %)
------------------------------------------------
-Data is being written...
-Data written to output.txt successfully!
---------------Performance-Summary--------------
-Simulation Time: 0.210022 Myr
-Particle Info with minimum TimeStepIrr...
-PID: 4529, ParticleIndex: 4529, ParticleType: 0
-Position (pc):2.664772e-01, 7.901660e-02, 6.459596e-02
-Velocity (km/s): 1.655306e+01, -1.240550e+01, -1.169073e+01
-Mass (Msun): 5.344205e+00
-NumNeighbor: 150, ACRadius (pc): 1.324683e-01
-atot (0): 2.118237e+09, 2.760743e+10, 3.896334e+10
-areg (0): -5.887505e+09, -8.543082e+08, -1.131549e+09
-airr (0): 8.010202e+09, 2.845163e+10, 4.010372e+10
-TimeStepIrr (Myr): 9.536743e-07, TimeStepReg (Myr): 2.441406e-04
-Particle Info with minimum TimeStepReg...
-PID: 23774, ParticleIndex: 23774, ParticleType: 0
-Position (pc):-1.709342e-02, -2.311055e-02, 2.853311e-02
-Velocity (km/s): -3.341564e+01, -4.268814e+00, 1.388482e+01
-Mass (Msun): 1.989976e+00
-NumNeighbor: 162, ACRadius (pc): 1.337543e-01
-atot (0): 1.108489e+09, -1.030786e+09, -2.134909e+09
-areg (0): 8.223594e+08, 9.474606e+08, 1.199372e+08
-airr (0): 2.861294e+08, -1.978247e+09, -2.254846e+09
-TimeStepIrr (Myr): 1.525879e-05, TimeStepReg (Myr): 6.103516e-05
-Elapsed time from the last output: 23.86 s
-Irregular Force: 6.37 s (26.71 %)
-Irregular Update: 0.82 s (3.44 %)
-FewBody Termination: 0.11 s (0.46 %)
-FewBody Initialization: 0.11 s (0.48 %)
-Regular SendToGPU: 0.32 s (1.33 %)
-Regular GPU: 13.01 s (54.53 %)
-Regular Adjust: 1.07 s (4.50 %)
-Regular Update: 0.97 s (4.08 %)
-SkipList Create: 0.36 s (1.52 %)
-SkipList Update: 0.16 s (0.67 %)
-UpdateNextRegTime: 0.48 s (2.01 %)
------------------------------------------------
-Data is being written...
-Data written to output.txt successfully!
---------------Performance-Summary--------------
-Simulation Time: 0.220093 Myr
-Particle Info with minimum TimeStepIrr...
-PID: 67678, ParticleIndex: 67678, ParticleType: 0
-Position (pc):1.142569e-02, -2.942945e-01, -7.519190e-02
-Velocity (km/s): -1.279398e+01, -1.445924e+01, -5.271541e+00
-Mass (Msun): 1.118931e+00
-NumNeighbor: 95, ACRadius (pc): 1.260076e-01
-atot (0): 2.389575e+11, 2.304796e+11, 2.566374e+11
-areg (0): -2.822856e+08, 7.157459e+09, 1.924841e+09
-airr (0): 2.392339e+11, 2.233732e+11, 2.547800e+11
-TimeStepIrr (Myr): 4.768372e-07, TimeStepReg (Myr): 4.882812e-04
-Particle Info with minimum TimeStepReg...
-PID: 609, ParticleIndex: 609, ParticleType: 0
-Position (pc):-3.341710e-02, 1.130383e-02, 9.409218e-02
-Velocity (km/s): 7.934536e+00, 2.526099e+01, -5.306284e+00
-Mass (Msun): 2.617379e+00
-NumNeighbor: 131, ACRadius (pc): 1.269157e-01
-atot (0): 1.009230e+09, 2.003236e+08, 9.406137e+08
-areg (0): 1.202340e+09, 7.418953e+08, -9.153409e+08
-airr (0): -1.931108e+08, -5.415717e+08, 1.855955e+09
-TimeStepIrr (Myr): 3.051758e-05, TimeStepReg (Myr): 1.220703e-04
-Elapsed time from the last output: 23.49 s
-Irregular Force: 6.33 s (26.96 %)
-Irregular Update: 0.82 s (3.47 %)
-FewBody Termination: 0.11 s (0.45 %)
-FewBody Initialization: 0.11 s (0.48 %)
-Regular SendToGPU: 0.35 s (1.50 %)
-Regular GPU: 12.68 s (53.99 %)
-Regular Adjust: 1.03 s (4.40 %)
-Regular Update: 0.93 s (3.97 %)
-SkipList Create: 0.38 s (1.62 %)
-SkipList Update: 0.15 s (0.66 %)
-UpdateNextRegTime: 0.52 s (2.22 %)
------------------------------------------------
-Data is being written...
-Data written to output.txt successfully!
---------------Performance-Summary--------------
-Simulation Time: 0.230103 Myr
-Particle Info with minimum TimeStepIrr...
-PID: 59854, ParticleIndex: 59854, ParticleType: 0
-Position (pc):2.231072e-01, 4.983764e-01, -1.230691e-01
-Velocity (km/s): 6.316229e+00, 1.829809e+01, 3.905834e-01
-Mass (Msun): 1.081578e+00
-NumNeighbor: 82, ACRadius (pc): 1.266997e-01
-atot (0): 1.476691e+10, -8.113346e+09, 1.839169e+10
-areg (0): -5.092518e+09, -8.364293e+09, 2.135954e+09
-airr (0): 1.985567e+10, 2.555033e+08, 1.629189e+10
-TimeStepIrr (Myr): 9.536743e-07, TimeStepReg (Myr): 2.441406e-04
-Particle Info with minimum TimeStepReg...
-PID: 447, ParticleIndex: 447, ParticleType: 0
-Position (pc):3.687949e-02, -9.619579e-03, 2.059519e-01
-Velocity (km/s): 3.234000e+01, -1.058132e+01, 1.414564e+01
-Mass (Msun): 4.447626e+00
-NumNeighbor: 129, ACRadius (pc): 1.292366e-01
-atot (0): -3.234697e+09, 1.472352e+09, -3.101176e+09
-areg (0): -2.185250e+09, 1.688164e+09, -3.905886e+09
-airr (0): -1.049448e+09, -2.158125e+08, 8.047107e+08
-TimeStepIrr (Myr): 1.525879e-05, TimeStepReg (Myr): 1.220703e-04
-Elapsed time from the last output: 24.12 s
-Irregular Force: 6.38 s (26.46 %)
-Irregular Update: 0.81 s (3.37 %)
-FewBody Termination: 0.11 s (0.44 %)
-FewBody Initialization: 0.11 s (0.47 %)
-Regular SendToGPU: 0.39 s (1.60 %)
-Regular GPU: 13.13 s (54.46 %)
-Regular Adjust: 1.05 s (4.36 %)
-Regular Update: 0.95 s (3.93 %)
-SkipList Create: 0.41 s (1.69 %)
-SkipList Update: 0.15 s (0.62 %)
-UpdateNextRegTime: 0.57 s (2.35 %)
------------------------------------------------
-Data is being written...
-Data written to output.txt successfully!
---------------Performance-Summary--------------
-Simulation Time: 0.240112 Myr
-Particle Info with minimum TimeStepIrr...
-PID: 670, ParticleIndex: 670, ParticleType: 0
-Position (pc):-3.165495e-01, -1.386252e-01, -8.271882e-01
-Velocity (km/s): 1.323864e+01, 2.009941e+01, -1.410013e+01
-Mass (Msun): 2.017200e+00
-NumNeighbor: 148, ACRadius (pc): 1.878157e-01
-atot (0): 5.174559e+09, 2.175786e+10, 1.441747e+10
-areg (0): 4.023220e+09, 2.083620e+09, 1.029200e+10
-airr (0): 1.210910e+09, 1.972525e+10, 4.117016e+09
-TimeStepIrr (Myr): 1.907349e-06, TimeStepReg (Myr): 4.882812e-04
-Particle Info with minimum TimeStepReg...
-PID: 2131, ParticleIndex: 2131, ParticleType: 0
-Position (pc):3.850128e-02, -4.529845e-02, 7.318305e-02
-Velocity (km/s): 1.723411e+01, 1.808286e+01, 1.968467e+00
-Mass (Msun): 1.204612e+00
-NumNeighbor: 134, ACRadius (pc): 1.272425e-01
-atot (0): -1.743587e+09, -2.072770e+08, 3.344753e+08
-areg (0): -1.214190e+09, 1.389153e+09, -2.478734e+08
-airr (0): -5.293964e+08, -1.596430e+09, 5.823487e+08
-TimeStepIrr (Myr): 6.103516e-05, TimeStepReg (Myr): 1.220703e-04
-Elapsed time from the last output: 23.14 s
-Irregular Force: 6.32 s (27.33 %)
-Irregular Update: 0.82 s (3.52 %)
-FewBody Termination: 0.11 s (0.47 %)
-FewBody Initialization: 0.11 s (0.50 %)
-Regular SendToGPU: 0.30 s (1.29 %)
-Regular GPU: 12.49 s (54.00 %)
-Regular Adjust: 1.03 s (4.47 %)
-Regular Update: 0.93 s (4.03 %)
-SkipList Create: 0.35 s (1.51 %)
-SkipList Update: 0.16 s (0.70 %)
-UpdateNextRegTime: 0.44 s (1.92 %)
------------------------------------------------
-Data is being written...
-Data written to output.txt successfully!
---------------Performance-Summary--------------
-Simulation Time: 0.250122 Myr
-Particle Info with minimum TimeStepIrr...
-PID: 12323, ParticleIndex: 12323, ParticleType: 0
-Position (pc):-2.665633e-01, -3.383140e-01, -6.652178e-01
-Velocity (km/s): 5.889694e+00, 3.041297e+01, -2.469815e+01
-Mass (Msun): 1.466086e+00
-NumNeighbor: 148, ACRadius (pc): 1.863488e-01
-atot (0): -4.324124e+10, -6.636539e+09, 3.567232e+10
-areg (0): 3.556223e+09, 5.072373e+09, 9.314428e+09
-airr (0): -4.679830e+10, -1.169469e+10, 2.635925e+10
-TimeStepIrr (Myr): 9.536743e-07, TimeStepReg (Myr): 4.882812e-04
-Particle Info with minimum TimeStepReg...
-PID: 1030, ParticleIndex: 1030, ParticleType: 0
-Position (pc):-1.562258e-02, 1.942636e-03, -4.104897e-02
-Velocity (km/s): 1.360813e+01, 4.270686e+00, 6.864194e+00
-Mass (Msun): 1.222776e+00
-NumNeighbor: 109, ACRadius (pc): 1.231118e-01
-atot (0): 1.012933e+09, -4.546396e+08, -1.262734e+09
-areg (0): -5.921346e+08, -2.863169e+08, 9.200026e+08
-airr (0): 1.605068e+09, -1.683227e+08, -2.182737e+09
-TimeStepIrr (Myr): 3.051758e-05, TimeStepReg (Myr): 1.220703e-04
-Elapsed time from the last output: 24.62 s
-Irregular Force: 6.29 s (25.53 %)
-Irregular Update: 0.81 s (3.30 %)
-FewBody Termination: 0.11 s (0.43 %)
-FewBody Initialization: 0.11 s (0.46 %)
-Regular SendToGPU: 0.34 s (1.39 %)
-Regular GPU: 13.75 s (55.84 %)
-Regular Adjust: 1.10 s (4.47 %)
-Regular Update: 1.01 s (4.10 %)
-SkipList Create: 0.37 s (1.52 %)
-SkipList Update: 0.15 s (0.62 %)
-UpdateNextRegTime: 0.51 s (2.08 %)
------------------------------------------------
-Data is being written...
-Data written to output.txt successfully!
---------------Performance-Summary--------------
-Simulation Time: 0.260010 Myr
-Particle Info with minimum TimeStepIrr...
-PID: 57457, ParticleIndex: 57457, ParticleType: 0
-Position (pc):-1.010563e-01, -4.720853e-01, -8.163227e-03
-Velocity (km/s): -5.754344e+00, 1.628060e+01, -1.078932e+01
-Mass (Msun): 1.086045e+00
-NumNeighbor: 111, ACRadius (pc): 1.335494e-01
-atot (0): 1.871181e+10, -3.198709e+10, 2.287215e+10
-areg (0): 1.640228e+09, 9.074133e+09, -2.859484e+08
-airr (0): 1.702453e+10, -4.112059e+10, 2.315851e+10
-TimeStepIrr (Myr): 9.536743e-07, TimeStepReg (Myr): 4.882812e-04
-Particle Info with minimum TimeStepReg...
-PID: 12170, ParticleIndex: 12170, ParticleType: 0
-Position (pc):-4.480607e-02, 1.806662e-02, 1.738330e-02
-Velocity (km/s): -2.290570e+01, -1.309523e+01, 7.544917e+00
-Mass (Msun): 1.102999e+00
-NumNeighbor: 134, ACRadius (pc): 1.259006e-01
-atot (0): 3.999295e+09, -1.190683e+08, -1.424526e+09
-areg (0): 1.121200e+08, -1.937158e+08, 3.951858e+07
-airr (0): 3.887175e+09, 7.464753e+07, -1.464045e+09
-TimeStepIrr (Myr): 7.629395e-06, TimeStepReg (Myr): 6.103516e-05
-Elapsed time from the last output: 23.08 s
-Irregular Force: 6.23 s (26.99 %)
-Irregular Update: 0.80 s (3.48 %)
-FewBody Termination: 0.11 s (0.46 %)
-FewBody Initialization: 0.11 s (0.48 %)
-Regular SendToGPU: 0.32 s (1.39 %)
-Regular GPU: 12.52 s (54.25 %)
-Regular Adjust: 1.02 s (4.41 %)
-Regular Update: 0.93 s (4.04 %)
-SkipList Create: 0.36 s (1.55 %)
-SkipList Update: 0.16 s (0.68 %)
-UpdateNextRegTime: 0.47 s (2.02 %)
------------------------------------------------
-Data is being written...
-Data written to output.txt successfully!
---------------Performance-Summary--------------
-Simulation Time: 0.270020 Myr
-Particle Info with minimum TimeStepIrr...
-PID: 42834, ParticleIndex: 42834, ParticleType: 0
-Position (pc):3.478074e-01, -1.058409e+00, 2.204438e-01
-Velocity (km/s): -4.171963e+00, -1.113124e+01, 2.114792e+01
-Mass (Msun): 1.397905e+00
-NumNeighbor: 53, ACRadius (pc): 1.716040e-01
-atot (0): 6.923617e+09, 1.361049e+09, 1.220621e+10
-areg (0): -3.312009e+09, 9.273674e+09, -1.861784e+09
-airr (0): 1.023563e+10, -7.912625e+09, 1.406799e+10
-TimeStepIrr (Myr): 9.536743e-07, TimeStepReg (Myr): 4.882812e-04
-Particle Info with minimum TimeStepReg...
-PID: 1704, ParticleIndex: 1704, ParticleType: 0
-Position (pc):-3.087953e-01, -8.315928e-02, 2.021110e-01
-Velocity (km/s): 6.296452e+00, -1.193471e+01, -2.297603e+01
-Mass (Msun): 1.245349e+00
-NumNeighbor: 150, ACRadius (pc): 1.399853e-01
-atot (0): 8.001414e+09, 6.830003e+08, -4.871290e+09
-areg (0): 6.107987e+09, 1.327496e+09, -4.115109e+09
-airr (0): 1.893427e+09, -6.444957e+08, -7.561813e+08
-TimeStepIrr (Myr): 6.103516e-05, TimeStepReg (Myr): 1.220703e-04
-Elapsed time from the last output: 23.34 s
-Irregular Force: 6.30 s (26.99 %)
-Irregular Update: 0.81 s (3.49 %)
-FewBody Termination: 0.11 s (0.46 %)
-FewBody Initialization: 0.11 s (0.49 %)
-Regular SendToGPU: 0.31 s (1.33 %)
-Regular GPU: 12.65 s (54.21 %)
-Regular Adjust: 1.06 s (4.54 %)
-Regular Update: 0.96 s (4.09 %)
-SkipList Create: 0.35 s (1.52 %)
-SkipList Update: 0.16 s (0.68 %)
-UpdateNextRegTime: 0.45 s (1.95 %)
+Elapsed time from the last output: 11.05 s
+Irregular Force: 3.63 s (32.89 %)
+Irregular Update: 0.47 s (4.21 %)
+FewBody Termination: 0.04 s (0.37 %)
+FewBody Initialization: 0.05 s (0.44 %)
+Regular SendToGPU: 0.11 s (0.98 %)
+Regular GPU: 5.25 s (47.57 %)
+Regular Adjust: 0.57 s (5.13 %)
+Regular Update: 0.46 s (4.18 %)
+SkipList Create: 0.18 s (1.60 %)
+SkipList Update: 0.08 s (0.75 %)
+UpdateNextRegTime: 0.17 s (1.57 %)
 -----------------------------------------------
