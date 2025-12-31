@@ -372,22 +372,30 @@ void _InitializeDevice(){
 	}
 
 	// Use CUDA Driver API to get the device associated with the current context
-    CUdevice cuDev;
-    CUcontext context;
-    CUresult resCtx = cuCtxGetCurrent(&context); 
-    if ((resCtx == CUDA_SUCCESS) && (context != nullptr)) {
-        if (cuCtxGetDevice(&cuDev) == CUDA_SUCCESS) {
-            devid = (int)cuDev;
-            std::cout << "[Rank " << MyRank << "] Current device from driver context = " << devid << std::endl;
-            // Check if devId is valid
-            if (devid < 0 || devid >= deviceCount) {
-                std::cerr << "Invalid device ID from context: " << devid << std::endl;
-            }
-        }
-    } else {
-        std::cerr << "Failed to get CUDA context on root processor. "
-                  << "cuCtxGetCurrent returned: " << resCtx << std::endl;
-    }
+	// Only attempt this if we have GPUs available
+	if (deviceCount > 0) {
+		CUdevice cuDev;
+		CUcontext context;
+		CUresult resCtx = cuCtxGetCurrent(&context); 
+		if ((resCtx == CUDA_SUCCESS) && (context != nullptr)) {
+			if (cuCtxGetDevice(&cuDev) == CUDA_SUCCESS) {
+				devid = (int)cuDev;
+				std::cout << "[Rank " << MyRank << "] Current device from driver context = " << devid << std::endl;
+				// Check if devId is valid
+				if (devid < 0 || devid >= deviceCount) {
+					std::cerr << "Invalid device ID from context: " << devid << std::endl;
+				}
+			}
+		} else {
+			std::cerr << "Failed to get CUDA context on root processor. "
+					  << "cuCtxGetCurrent returned: " << resCtx << std::endl;
+		}
+	} else {
+		if (MyRank == ROOT) {
+			std::cout << "No GPUs detected - will use CPU-only mode." << std::endl;
+		}
+		devid = -1;
+	}
 }
 
 

@@ -3,7 +3,8 @@
 
 #include <cstdint>
 
-enum TaskName : int8_t {
+// Changed from int8_t to int to match MPI_INT used in MPI_Send/MPI_Recv calls
+enum TaskName : int {
     IrrForce = 0,
     RegForce = 1,
     IrrUpdate = 2, 

@@ -1,6 +1,7 @@
 # Compiler
 #CXX = icc
-CXX = mpiicpc
+#CXX = mpiicpx
+CXX = mpicxx
 #CXX = g++
 
 # Compiler flags
@@ -13,7 +14,8 @@ CXXFLAGS  = -O2 -march=native -ftree-vectorize -std=c++11 -Wall -Wextra -Wuninit
 
 # Libraries
 #LDFLAGS = -L/usr/local/cuda-11.8/lib64/ -lcudart -lcublas -lnvToolsExt -lm -lcuda -lmpi #node14
-LDFLAGS = -lm -lmpi
+# NOTE: Do not add "-lmpi" manually; it can accidentally link against a different MPI (e.g. OpenMPI) than the compiler wrapper.
+LDFLAGS = -lm
 # LDFLAGS = -L/usr/local/cuda/lib64/ -lm -lmpi #node15
 #add -lnvToolsExt for <nvToolsExt.h>
 #LDFLAGS = -L/mnt/sw/nix/store/zi2wc26znf75csf5hhz77p0d2bbz53ih-cuda-11.8.0/lib64/ -lcudart
@@ -30,12 +32,15 @@ CXX_SRCS = main.cpp DefaultGlobal.cpp MPIRoutines.cpp readParameterFile.cpp Work
 CXXFLAGS += -I./../SDAR/src -DAR_TTL -DAR_SLOWDOWN_TREE -DAR_SLOWDOWN_TIMESCALE -DFEWBODY
 CXX_SRCS += FewBody/FBCheck.cpp FewBody/FBInitialization.cpp FewBody/FBIntegration.cpp FewBody/FBTermination.cpp FewBody/GroupAccelerationRoutine.cpp
 
+# CUDA (overridable; typically set by `module add cuda`)
+CUDA_HOME ?= /usr/local/cuda
+
 ifdef USE_CUDA
-	CXXFLAGS += -I./cuda -DCUDA -DNSIGHT
+	CXXFLAGS += -I./cuda -I$(CUDA_HOME)/include -DCUDA -DNSIGHT
 	NVCC = nvcc
-	NVCCFLAGS = -O2 --std=c++11 -G -Xcompiler -rdynamic -g -lineinfo -Xptxas=-v -lcuda -lcudart -lcompute-sanitizer -I./../SDAR/src
+	NVCCFLAGS = -O2 --std=c++11 -G -Xcompiler -rdynamic -g -lineinfo -Xptxas=-v -lcuda -lcudart -lcompute-sanitizer -I./../SDAR/src -I$(CUDA_HOME)/include
 	NVCC_FLAGS_DEBUG = -g -G --device-debug -lineinfo
-	LDFLAGS += -L/usr/local/cuda/lib64/ -lcudart -lcublas -lnvToolsExt -lcuda
+	LDFLAGS += -L$(CUDA_HOME)/lib64 -lcudart -lcublas -lnvToolsExt -lcuda
 	CXX_SRCS += cuda/CalculateRegularAcceleration.cpp
 	CU_SRCS = cuda/cuda_my_acceleration.cu cuda/cuda_kernels.cu
 endif

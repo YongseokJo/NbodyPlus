@@ -3,6 +3,7 @@
 #include <cmath>
 #include <cassert>
 #include <algorithm>
+#include <limits>
 #include "../global.h"
 #include "../QueueScheduler.h"
 #include "cuda_functions.h"
@@ -288,7 +289,9 @@ void sendAllParticlesToGPU_Worker(double new_time) {
 
 	}
 
-	int sizes[2] = {Jparticles.size(), Iparticles.size()};
+	assert(Jparticles.size() <= static_cast<size_t>(std::numeric_limits<int>::max()));
+	assert(Iparticles.size() <= static_cast<size_t>(std::numeric_limits<int>::max()));
+	int sizes[2] = {static_cast<int>(Jparticles.size()), static_cast<int>(Iparticles.size())};
 	MPI_Gather(sizes, 2, MPI_INT, nullptr, 0, MPI_INT, ROOT, MPI_COMM_WORLD);
 
 	MPI_Gatherv(Jparticles.data(), sizes[0], JparticleType,	

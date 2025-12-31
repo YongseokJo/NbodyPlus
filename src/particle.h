@@ -2,6 +2,7 @@
 #define PARTICLE_H
 
 #include "def.h"
+#include <cassert>
 #include <cmath>
 #include "cstring"
 #include <vector>
