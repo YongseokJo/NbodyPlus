@@ -33,11 +33,11 @@ CUDA is mendatory as of now.
 - Cosmic ray
 - Developement of engines for acceleration computation
 
-For these projects, if interested, please feel free to contact Yongseok Jo (g.kerex@gmail.com).
+For these projects, if interested, please feel free to contact Yongseok Jo (me@yongseokjo.com).
   
 
 ## Contributions ###
-* Yongseok Jo     @ Columbia University
+* Yongseok Jo     @ SkAI Institute
 * Eunwoo Chung    @ Seoul National Univeristy
 * Minyong Jung    @ Seoul National University
 * Seoyoung Kim    @ University of Wisconsin-Madison
@@ -49,6 +49,6 @@ For these projects, if interested, please feel free to contact Yongseok Jo (g.ke
 
 ## Contact
 
-Yongseok Jo @ [yj2812@columbia.edu](mailto:yj2812@columbia.edu)
+Yongseok Jo @ [me@yongseokjo.com](mailto:me@yongseokjo.com)
 
 Enzo-Abyss repository : [https://github.com/YongseokJo/enzo-nbody](https://github.com/YongseokJo/enzo-nbody)
