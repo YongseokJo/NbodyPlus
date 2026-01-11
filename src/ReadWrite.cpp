@@ -6,6 +6,7 @@
 #include <iomanip>
 #include "global.h"
 #include "Queue.h"
+#include "PerformanceLog.h"
 
 int getLineNumber();
 void write_out(std::ofstream& outputFile, const Particle* ptcl, const double *pos, const double *vel);
@@ -248,8 +249,10 @@ int writeParticle(double current_time, int outputNum) {
 
 #ifdef PERFORMANCETRACE
 	if (outputNum != 0) {
+		const double sim_time_myr = current_time*EnzoTimeStep*1e10/1e6;
+		WritePerformanceLogCsv(directoryPath, foutput, outputNum, sim_time_myr, performance, NumberOfParticle);
 		std::cout << "--------------Performance-Summary--------------" << std::endl;
-		fprintf(stdout, "Simulation Time: %f Myr\n", current_time*EnzoTimeStep*1e10/1e6);
+		fprintf(stdout, "Simulation Time: %f Myr\n", sim_time_myr);
 
 		Particle* members = &particles[Index_minIrr];
 		fprintf(stdout, "Particle Info with minimum TimeStepIrr...\n");

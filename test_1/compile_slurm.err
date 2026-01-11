@@ -1,0 +1,1784 @@
+In file included from ./FewBody/Group.h:13,
+                 from global.h:6,
+                 from QueueScheduler.h:8,
+                 from InitializationRoutines.cpp:1:
+./../SDAR/src/AR/symplectic_integrator.h:3496: warning: ignoring '#pragma omp critical' [-Wunknown-pragmas]
+ 3496 | #pragma omp critical
+      | 
+In file included from ./FewBody/Group.h:13,
+                 from global.h:6,
+                 from readParameterFile.cpp:8:
+./../SDAR/src/AR/symplectic_integrator.h:3496: warning: ignoring '#pragma omp critical' [-Wunknown-pragmas]
+ 3496 | #pragma omp critical
+      | 
+In file included from ./FewBody/Group.h:13,
+                 from global.h:6,
+                 from MPIRoutines.cpp:7:
+./../SDAR/src/AR/symplectic_integrator.h:3496: warning: ignoring '#pragma omp critical' [-Wunknown-pragmas]
+ 3496 | #pragma omp critical
+      | 
+In file included from ./FewBody/Group.h:13,
+                 from global.h:6,
+                 from QueueScheduler.h:8,
+                 from IrregularRoutines.cpp:1:
+./../SDAR/src/AR/symplectic_integrator.h:3496: warning: ignoring '#pragma omp critical' [-Wunknown-pragmas]
+ 3496 | #pragma omp critical
+      | 
+In file included from ./FewBody/Group.h:13,
+                 from global.h:6,
+                 from main.cpp:12:
+./../SDAR/src/AR/symplectic_integrator.h:3496: warning: ignoring '#pragma omp critical' [-Wunknown-pragmas]
+ 3496 | #pragma omp critical
+      | 
+In file included from ./FewBody/Group.h:13,
+                 from global.h:6,
+                 from RootRoutines.cpp:8:
+./../SDAR/src/AR/symplectic_integrator.h:3496: warning: ignoring '#pragma omp critical' [-Wunknown-pragmas]
+ 3496 | #pragma omp critical
+      | 
+In file included from ./FewBody/Group.h:13,
+                 from global.h:6,
+                 from WorkerRoutines.cpp:4:
+./../SDAR/src/AR/symplectic_integrator.h:3496: warning: ignoring '#pragma omp critical' [-Wunknown-pragmas]
+ 3496 | #pragma omp critical
+      | 
+In file included from ./FewBody/Group.h:13,
+                 from global.h:6,
+                 from DefaultGlobal.cpp:3:
+./../SDAR/src/AR/symplectic_integrator.h:3496: warning: ignoring '#pragma omp critical' [-Wunknown-pragmas]
+ 3496 | #pragma omp critical
+      | 
+In file included from ./FewBody/ar_interaction.hpp:11,
+                 from ./FewBody/Group.h:15,
+                 from global.h:6,
+                 from DefaultGlobal.cpp:3:
+./FewBody/ar_perturber.hpp: In member function 'void Perturber::calcSoftPertMin(AR::BinaryTree<Particle>&, Float)':
+./FewBody/ar_perturber.hpp:33:58: warning: unused parameter '_bin' [-Wunused-parameter]
+   33 |     void calcSoftPertMin(const AR::BinaryTree<Particle>& _bin, const Float _G) {
+      |                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~
+./FewBody/ar_perturber.hpp:33:76: warning: unused parameter '_G' [-Wunused-parameter]
+   33 |     void calcSoftPertMin(const AR::BinaryTree<Particle>& _bin, const Float _G) {
+      |                                                                ~~~~~~~~~~~~^~
+./FewBody/ar_perturber.hpp: In member function 'void Perturber::printColumnTitle(std::ostream&, int)':
+./FewBody/ar_perturber.hpp:42:42: warning: unused parameter '_fout' [-Wunused-parameter]
+   42 |     void printColumnTitle(std::ostream & _fout, const int _width=20) {
+      |                           ~~~~~~~~~~~~~~~^~~~~
+./FewBody/ar_perturber.hpp:42:59: warning: unused parameter '_width' [-Wunused-parameter]
+   42 |     void printColumnTitle(std::ostream & _fout, const int _width=20) {
+      |                                                 ~~~~~~~~~~^~~~~~~~~
+./FewBody/ar_perturber.hpp: In member function 'void Perturber::printColumn(std::ostream&, int)':
+./FewBody/ar_perturber.hpp:50:37: warning: unused parameter '_fout' [-Wunused-parameter]
+   50 |     void printColumn(std::ostream & _fout, const int _width=20){
+      |                      ~~~~~~~~~~~~~~~^~~~~
+./FewBody/ar_perturber.hpp:50:54: warning: unused parameter '_width' [-Wunused-parameter]
+   50 |     void printColumn(std::ostream & _fout, const int _width=20){
+      |                                            ~~~~~~~~~~^~~~~~~~~
+./FewBody/ar_perturber.hpp: In member function 'void Perturber::writeBinary(FILE*) const':
+./FewBody/ar_perturber.hpp:56:28: warning: unused parameter '_fp' [-Wunused-parameter]
+   56 |     void writeBinary(FILE *_fp) const {
+      |                      ~~~~~~^~~
+./FewBody/ar_perturber.hpp: In member function 'void Perturber::readBinary(FILE*)':
+./FewBody/ar_perturber.hpp:62:27: warning: unused parameter '_fin' [-Wunused-parameter]
+   62 |     void readBinary(FILE *_fin) {
+      |                     ~~~~~~^~~~
+In file included from ./FewBody/ar_interaction.hpp:11,
+                 from ./FewBody/Group.h:15,
+                 from global.h:6,
+                 from MPIRoutines.cpp:7:
+./FewBody/ar_perturber.hpp: In member function 'void Perturber::calcSoftPertMin(AR::BinaryTree<Particle>&, Float)':
+./FewBody/ar_perturber.hpp:33:58: warning: unused parameter '_bin' [-Wunused-parameter]
+   33 |     void calcSoftPertMin(const AR::BinaryTree<Particle>& _bin, const Float _G) {
+      |                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~
+./FewBody/ar_perturber.hpp:33:76: warning: unused parameter '_G' [-Wunused-parameter]
+   33 |     void calcSoftPertMin(const AR::BinaryTree<Particle>& _bin, const Float _G) {
+      |                                                                ~~~~~~~~~~~~^~
+./FewBody/ar_perturber.hpp: In member function 'void Perturber::printColumnTitle(std::ostream&, int)':
+./FewBody/ar_perturber.hpp:42:42: warning: unused parameter '_fout' [-Wunused-parameter]
+   42 |     void printColumnTitle(std::ostream & _fout, const int _width=20) {
+      |                           ~~~~~~~~~~~~~~~^~~~~
+./FewBody/ar_perturber.hpp:42:59: warning: unused parameter '_width' [-Wunused-parameter]
+   42 |     void printColumnTitle(std::ostream & _fout, const int _width=20) {
+      |                                                 ~~~~~~~~~~^~~~~~~~~
+./FewBody/ar_perturber.hpp: In member function 'void Perturber::printColumn(std::ostream&, int)':
+./FewBody/ar_perturber.hpp:50:37: warning: unused parameter '_fout' [-Wunused-parameter]
+   50 |     void printColumn(std::ostream & _fout, const int _width=20){
+      |                      ~~~~~~~~~~~~~~~^~~~~
+./FewBody/ar_perturber.hpp:50:54: warning: unused parameter '_width' [-Wunused-parameter]
+   50 |     void printColumn(std::ostream & _fout, const int _width=20){
+      |                                            ~~~~~~~~~~^~~~~~~~~
+./FewBody/ar_perturber.hpp: In member function 'void Perturber::writeBinary(FILE*) const':
+./FewBody/ar_perturber.hpp:56:28: warning: unused parameter '_fp' [-Wunused-parameter]
+   56 |     void writeBinary(FILE *_fp) const {
+      |                      ~~~~~~^~~
+./FewBody/ar_perturber.hpp: In member function 'void Perturber::readBinary(FILE*)':
+./FewBody/ar_perturber.hpp:62:27: warning: unused parameter '_fin' [-Wunused-parameter]
+   62 |     void readBinary(FILE *_fin) {
+      |                     ~~~~~~^~~~
+In file included from ./FewBody/ar_interaction.hpp:11,
+                 from ./FewBody/Group.h:15,
+                 from global.h:6,
+                 from WorkerRoutines.cpp:4:
+./FewBody/ar_perturber.hpp: In member function 'void Perturber::calcSoftPertMin(AR::BinaryTree<Particle>&, Float)':
+./FewBody/ar_perturber.hpp:33:58: warning: unused parameter '_bin' [-Wunused-parameter]
+   33 |     void calcSoftPertMin(const AR::BinaryTree<Particle>& _bin, const Float _G) {
+      |                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~
+./FewBody/ar_perturber.hpp:33:76: warning: unused parameter '_G' [-Wunused-parameter]
+   33 |     void calcSoftPertMin(const AR::BinaryTree<Particle>& _bin, const Float _G) {
+      |                                                                ~~~~~~~~~~~~^~
+./FewBody/ar_perturber.hpp: In member function 'void Perturber::printColumnTitle(std::ostream&, int)':
+./FewBody/ar_perturber.hpp:42:42: warning: unused parameter '_fout' [-Wunused-parameter]
+   42 |     void printColumnTitle(std::ostream & _fout, const int _width=20) {
+      |                           ~~~~~~~~~~~~~~~^~~~~
+./FewBody/ar_perturber.hpp:42:59: warning: unused parameter '_width' [-Wunused-parameter]
+   42 |     void printColumnTitle(std::ostream & _fout, const int _width=20) {
+      |                                                 ~~~~~~~~~~^~~~~~~~~
+./FewBody/ar_perturber.hpp: In member function 'void Perturber::printColumn(std::ostream&, int)':
+./FewBody/ar_perturber.hpp:50:37: warning: unused parameter '_fout' [-Wunused-parameter]
+   50 |     void printColumn(std::ostream & _fout, const int _width=20){
+      |                      ~~~~~~~~~~~~~~~^~~~~
+./FewBody/ar_perturber.hpp:50:54: warning: unused parameter '_width' [-Wunused-parameter]
+   50 |     void printColumn(std::ostream & _fout, const int _width=20){
+      |                                            ~~~~~~~~~~^~~~~~~~~
+./FewBody/ar_perturber.hpp: In member function 'void Perturber::writeBinary(FILE*) const':
+./FewBody/ar_perturber.hpp:56:28: warning: unused parameter '_fp' [-Wunused-parameter]
+   56 |     void writeBinary(FILE *_fp) const {
+      |                      ~~~~~~^~~
+./FewBody/ar_perturber.hpp: In member function 'void Perturber::readBinary(FILE*)':
+./FewBody/ar_perturber.hpp:62:27: warning: unused parameter '_fin' [-Wunused-parameter]
+   62 |     void readBinary(FILE *_fin) {
+      |                     ~~~~~~^~~~
+In file included from ./FewBody/ar_interaction.hpp:11,
+                 from ./FewBody/Group.h:15,
+                 from global.h:6,
+                 from QueueScheduler.h:8,
+                 from InitializationRoutines.cpp:1:
+./FewBody/ar_perturber.hpp: In member function 'void Perturber::calcSoftPertMin(AR::BinaryTree<Particle>&, Float)':
+./FewBody/ar_perturber.hpp:33:58: warning: unused parameter '_bin' [-Wunused-parameter]
+   33 |     void calcSoftPertMin(const AR::BinaryTree<Particle>& _bin, const Float _G) {
+      |                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~
+./FewBody/ar_perturber.hpp:33:76: warning: unused parameter '_G' [-Wunused-parameter]
+   33 |     void calcSoftPertMin(const AR::BinaryTree<Particle>& _bin, const Float _G) {
+      |                                                                ~~~~~~~~~~~~^~
+./FewBody/ar_perturber.hpp: In member function 'void Perturber::printColumnTitle(std::ostream&, int)':
+./FewBody/ar_perturber.hpp:42:42: warning: unused parameter '_fout' [-Wunused-parameter]
+   42 |     void printColumnTitle(std::ostream & _fout, const int _width=20) {
+      |                           ~~~~~~~~~~~~~~~^~~~~
+./FewBody/ar_perturber.hpp:42:59: warning: unused parameter '_width' [-Wunused-parameter]
+   42 |     void printColumnTitle(std::ostream & _fout, const int _width=20) {
+      |                                                 ~~~~~~~~~~^~~~~~~~~
+./FewBody/ar_perturber.hpp: In member function 'void Perturber::printColumn(std::ostream&, int)':
+./FewBody/ar_perturber.hpp:50:37: warning: unused parameter '_fout' [-Wunused-parameter]
+   50 |     void printColumn(std::ostream & _fout, const int _width=20){
+      |                      ~~~~~~~~~~~~~~~^~~~~
+./FewBody/ar_perturber.hpp:50:54: warning: unused parameter '_width' [-Wunused-parameter]
+   50 |     void printColumn(std::ostream & _fout, const int _width=20){
+      |                                            ~~~~~~~~~~^~~~~~~~~
+./FewBody/ar_perturber.hpp: In member function 'void Perturber::writeBinary(FILE*) const':
+./FewBody/ar_perturber.hpp:56:28: warning: unused parameter '_fp' [-Wunused-parameter]
+   56 |     void writeBinary(FILE *_fp) const {
+      |                      ~~~~~~^~~
+./FewBody/ar_perturber.hpp: In member function 'void Perturber::readBinary(FILE*)':
+./FewBody/ar_perturber.hpp:62:27: warning: unused parameter '_fin' [-Wunused-parameter]
+   62 |     void readBinary(FILE *_fin) {
+      |                     ~~~~~~^~~~
+In file included from ./FewBody/ar_interaction.hpp:11,
+                 from ./FewBody/Group.h:15,
+                 from global.h:6,
+                 from QueueScheduler.h:8,
+                 from IrregularRoutines.cpp:1:
+./FewBody/ar_perturber.hpp: In member function 'void Perturber::calcSoftPertMin(AR::BinaryTree<Particle>&, Float)':
+./FewBody/ar_perturber.hpp:33:58: warning: unused parameter '_bin' [-Wunused-parameter]
+   33 |     void calcSoftPertMin(const AR::BinaryTree<Particle>& _bin, const Float _G) {
+      |                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~
+./FewBody/ar_perturber.hpp:33:76: warning: unused parameter '_G' [-Wunused-parameter]
+   33 |     void calcSoftPertMin(const AR::BinaryTree<Particle>& _bin, const Float _G) {
+      |                                                                ~~~~~~~~~~~~^~
+./FewBody/ar_perturber.hpp: In member function 'void Perturber::printColumnTitle(std::ostream&, int)':
+./FewBody/ar_perturber.hpp:42:42: warning: unused parameter '_fout' [-Wunused-parameter]
+   42 |     void printColumnTitle(std::ostream & _fout, const int _width=20) {
+      |                           ~~~~~~~~~~~~~~~^~~~~
+./FewBody/ar_perturber.hpp:42:59: warning: unused parameter '_width' [-Wunused-parameter]
+   42 |     void printColumnTitle(std::ostream & _fout, const int _width=20) {
+      |                                                 ~~~~~~~~~~^~~~~~~~~
+./FewBody/ar_perturber.hpp: In member function 'void Perturber::printColumn(std::ostream&, int)':
+./FewBody/ar_perturber.hpp:50:37: warning: unused parameter '_fout' [-Wunused-parameter]
+   50 |     void printColumn(std::ostream & _fout, const int _width=20){
+      |                      ~~~~~~~~~~~~~~~^~~~~
+./FewBody/ar_perturber.hpp:50:54: warning: unused parameter '_width' [-Wunused-parameter]
+   50 |     void printColumn(std::ostream & _fout, const int _width=20){
+      |                                            ~~~~~~~~~~^~~~~~~~~
+./FewBody/ar_perturber.hpp: In member function 'void Perturber::writeBinary(FILE*) const':
+./FewBody/ar_perturber.hpp:56:28: warning: unused parameter '_fp' [-Wunused-parameter]
+   56 |     void writeBinary(FILE *_fp) const {
+      |                      ~~~~~~^~~
+./FewBody/ar_perturber.hpp: In member function 'void Perturber::readBinary(FILE*)':
+./FewBody/ar_perturber.hpp:62:27: warning: unused parameter '_fin' [-Wunused-parameter]
+   62 |     void readBinary(FILE *_fin) {
+      |                     ~~~~~~^~~~
+In file included from ./FewBody/ar_interaction.hpp:11,
+                 from ./FewBody/Group.h:15,
+                 from global.h:6,
+                 from main.cpp:12:
+./FewBody/ar_perturber.hpp: In member function 'void Perturber::calcSoftPertMin(AR::BinaryTree<Particle>&, Float)':
+./FewBody/ar_perturber.hpp:33:58: warning: unused parameter '_bin' [-Wunused-parameter]
+   33 |     void calcSoftPertMin(const AR::BinaryTree<Particle>& _bin, const Float _G) {
+      |                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~
+./FewBody/ar_perturber.hpp:33:76: warning: unused parameter '_G' [-Wunused-parameter]
+   33 |     void calcSoftPertMin(const AR::BinaryTree<Particle>& _bin, const Float _G) {
+      |                                                                ~~~~~~~~~~~~^~
+./FewBody/ar_perturber.hpp: In member function 'void Perturber::printColumnTitle(std::ostream&, int)':
+./FewBody/ar_perturber.hpp:42:42: warning: unused parameter '_fout' [-Wunused-parameter]
+   42 |     void printColumnTitle(std::ostream & _fout, const int _width=20) {
+      |                           ~~~~~~~~~~~~~~~^~~~~
+./FewBody/ar_perturber.hpp:42:59: warning: unused parameter '_width' [-Wunused-parameter]
+   42 |     void printColumnTitle(std::ostream & _fout, const int _width=20) {
+      |                                                 ~~~~~~~~~~^~~~~~~~~
+./FewBody/ar_perturber.hpp: In member function 'void Perturber::printColumn(std::ostream&, int)':
+./FewBody/ar_perturber.hpp:50:37: warning: unused parameter '_fout' [-Wunused-parameter]
+   50 |     void printColumn(std::ostream & _fout, const int _width=20){
+      |                      ~~~~~~~~~~~~~~~^~~~~
+./FewBody/ar_perturber.hpp:50:54: warning: unused parameter '_width' [-Wunused-parameter]
+   50 |     void printColumn(std::ostream & _fout, const int _width=20){
+      |                                            ~~~~~~~~~~^~~~~~~~~
+./FewBody/ar_perturber.hpp: In member function 'void Perturber::writeBinary(FILE*) const':
+./FewBody/ar_perturber.hpp:56:28: warning: unused parameter '_fp' [-Wunused-parameter]
+   56 |     void writeBinary(FILE *_fp) const {
+      |                      ~~~~~~^~~
+./FewBody/ar_perturber.hpp: In member function 'void Perturber::readBinary(FILE*)':
+./FewBody/ar_perturber.hpp:62:27: warning: unused parameter '_fin' [-Wunused-parameter]
+   62 |     void readBinary(FILE *_fin) {
+      |                     ~~~~~~^~~~
+In file included from ./FewBody/Group.h:15,
+                 from global.h:6,
+                 from QueueScheduler.h:8,
+                 from InitializationRoutines.cpp:1:
+./FewBody/ar_interaction.hpp: In member function 'void Interaction::calcAccPert(AR::Force*, const Particle*, int, const Particle&, const Perturber&, Float)':
+./FewBody/ar_interaction.hpp:190:139: warning: unused parameter '_perturber' [-Wunused-parameter]
+  190 |     void calcAccPert(AR::Force* _force, const Particle* _particles, const int _n_particle, const Particle& _particle_cm, const Perturber& _perturber, const Float _time) {
+      |                                                                                                                          ~~~~~~~~~~~~~~~~~^~~~~~~~~~
+In file included from ./FewBody/ar_interaction.hpp:11,
+                 from ./FewBody/Group.h:15,
+                 from global.h:6,
+                 from readParameterFile.cpp:8:
+./FewBody/ar_perturber.hpp: In member function 'void Perturber::calcSoftPertMin(AR::BinaryTree<Particle>&, Float)':
+./FewBody/ar_perturber.hpp:33:58: warning: unused parameter '_bin' [-Wunused-parameter]
+   33 |     void calcSoftPertMin(const AR::BinaryTree<Particle>& _bin, const Float _G) {
+      |                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~
+./FewBody/ar_perturber.hpp:33:76: warning: unused parameter '_G' [-Wunused-parameter]
+   33 |     void calcSoftPertMin(const AR::BinaryTree<Particle>& _bin, const Float _G) {
+      |                                                                ~~~~~~~~~~~~^~
+./FewBody/ar_perturber.hpp: In member function 'void Perturber::printColumnTitle(std::ostream&, int)':
+./FewBody/ar_perturber.hpp:42:42: warning: unused parameter '_fout' [-Wunused-parameter]
+   42 |     void printColumnTitle(std::ostream & _fout, const int _width=20) {
+      |                           ~~~~~~~~~~~~~~~^~~~~
+./FewBody/ar_perturber.hpp:42:59: warning: unused parameter '_width' [-Wunused-parameter]
+   42 |     void printColumnTitle(std::ostream & _fout, const int _width=20) {
+      |                                                 ~~~~~~~~~~^~~~~~~~~
+./FewBody/ar_perturber.hpp: In member function 'void Perturber::printColumn(std::ostream&, int)':
+./FewBody/ar_perturber.hpp:50:37: warning: unused parameter '_fout' [-Wunused-parameter]
+   50 |     void printColumn(std::ostream & _fout, const int _width=20){
+      |                      ~~~~~~~~~~~~~~~^~~~~
+./FewBody/ar_perturber.hpp:50:54: warning: unused parameter '_width' [-Wunused-parameter]
+   50 |     void printColumn(std::ostream & _fout, const int _width=20){
+      |                                            ~~~~~~~~~~^~~~~~~~~
+./FewBody/ar_perturber.hpp: In member function 'void Perturber::writeBinary(FILE*) const':
+./FewBody/ar_perturber.hpp:56:28: warning: unused parameter '_fp' [-Wunused-parameter]
+   56 |     void writeBinary(FILE *_fp) const {
+      |                      ~~~~~~^~~
+./FewBody/ar_perturber.hpp: In member function 'void Perturber::readBinary(FILE*)':
+./FewBody/ar_perturber.hpp:62:27: warning: unused parameter '_fin' [-Wunused-parameter]
+   62 |     void readBinary(FILE *_fin) {
+      |                     ~~~~~~^~~~
+./FewBody/ar_interaction.hpp: In member function 'int Interaction::modifyOneParticle(Particle&, const Float&, const Float&)':
+./FewBody/ar_interaction.hpp:632:37: warning: unused parameter '_p' [-Wunused-parameter]
+  632 |     int modifyOneParticle(Particle& _p, const Float& _time_now, const Float& _time_end) {
+      |                           ~~~~~~~~~~^~
+./FewBody/ar_interaction.hpp:632:54: warning: unused parameter '_time_now' [-Wunused-parameter]
+  632 |     int modifyOneParticle(Particle& _p, const Float& _time_now, const Float& _time_end) {
+      |                                         ~~~~~~~~~~~~~^~~~~~~~~
+./FewBody/ar_interaction.hpp:632:78: warning: unused parameter '_time_end' [-Wunused-parameter]
+  632 |     int modifyOneParticle(Particle& _p, const Float& _time_now, const Float& _time_end) {
+      |                                                                 ~~~~~~~~~~~~~^~~~~~~~~
+In file included from ./FewBody/Group.h:15,
+                 from global.h:6,
+                 from DefaultGlobal.cpp:3:
+./FewBody/ar_interaction.hpp: In member function 'void Interaction::calcAccPert(AR::Force*, const Particle*, int, const Particle&, const Perturber&, Float)':
+./FewBody/ar_interaction.hpp:190:139: warning: unused parameter '_perturber' [-Wunused-parameter]
+  190 |     void calcAccPert(AR::Force* _force, const Particle* _particles, const int _n_particle, const Particle& _particle_cm, const Perturber& _perturber, const Float _time) {
+      |                                                                                                                          ~~~~~~~~~~~~~~~~~^~~~~~~~~~
+In file included from ./FewBody/Group.h:15,
+                 from global.h:6,
+                 from QueueScheduler.h:8,
+                 from IrregularRoutines.cpp:1:
+./FewBody/ar_interaction.hpp: In member function 'void Interaction::calcAccPert(AR::Force*, const Particle*, int, const Particle&, const Perturber&, Float)':
+./FewBody/ar_interaction.hpp:190:139: warning: unused parameter '_perturber' [-Wunused-parameter]
+  190 |     void calcAccPert(AR::Force* _force, const Particle* _particles, const int _n_particle, const Particle& _particle_cm, const Perturber& _perturber, const Float _time) {
+      |                                                                                                                          ~~~~~~~~~~~~~~~~~^~~~~~~~~~
+In file included from ./FewBody/Group.h:15,
+                 from global.h:6,
+                 from MPIRoutines.cpp:7:
+./FewBody/ar_interaction.hpp: In member function 'void Interaction::calcAccPert(AR::Force*, const Particle*, int, const Particle&, const Perturber&, Float)':
+./FewBody/ar_interaction.hpp:190:139: warning: unused parameter '_perturber' [-Wunused-parameter]
+  190 |     void calcAccPert(AR::Force* _force, const Particle* _particles, const int _n_particle, const Particle& _particle_cm, const Perturber& _perturber, const Float _time) {
+      |                                                                                                                          ~~~~~~~~~~~~~~~~~^~~~~~~~~~
+In file included from ./FewBody/Group.h:15,
+                 from global.h:6,
+                 from WorkerRoutines.cpp:4:
+./FewBody/ar_interaction.hpp: In member function 'void Interaction::calcAccPert(AR::Force*, const Particle*, int, const Particle&, const Perturber&, Float)':
+./FewBody/ar_interaction.hpp:190:139: warning: unused parameter '_perturber' [-Wunused-parameter]
+  190 |     void calcAccPert(AR::Force* _force, const Particle* _particles, const int _n_particle, const Particle& _particle_cm, const Perturber& _perturber, const Float _time) {
+      |                                                                                                                          ~~~~~~~~~~~~~~~~~^~~~~~~~~~
+./FewBody/ar_interaction.hpp: In member function 'void Interaction::modifyAndInterruptKepler(AR::InterruptBinary<Particle>&, AR::BinaryTree<Particle>&, double)':
+./FewBody/ar_interaction.hpp:737:19: warning: unused variable 'period' [-Wunused-variable]
+  737 |             Float period = 2*M_PI/mean_motion;
+      |                   ^~~~~~
+./FewBody/ar_interaction.hpp: In member function 'void Interaction::writeBinary(FILE*) const':
+./FewBody/ar_interaction.hpp:759:28: warning: unused parameter '_fp' [-Wunused-parameter]
+  759 |     void writeBinary(FILE *_fp) const {
+      |                      ~~~~~~^~~
+./FewBody/ar_interaction.hpp: In member function 'void Interaction::readBinary(FILE*)':
+./FewBody/ar_interaction.hpp:765:27: warning: unused parameter '_fin' [-Wunused-parameter]
+  765 |     void readBinary(FILE *_fin) {
+      |                     ~~~~~~^~~~
+./FewBody/ar_interaction.hpp: In member function 'int Interaction::modifyOneParticle(Particle&, const Float&, const Float&)':
+./FewBody/ar_interaction.hpp:632:37: warning: unused parameter '_p' [-Wunused-parameter]
+  632 |     int modifyOneParticle(Particle& _p, const Float& _time_now, const Float& _time_end) {
+      |                           ~~~~~~~~~~^~
+./FewBody/ar_interaction.hpp:632:54: warning: unused parameter '_time_now' [-Wunused-parameter]
+  632 |     int modifyOneParticle(Particle& _p, const Float& _time_now, const Float& _time_end) {
+      |                                         ~~~~~~~~~~~~~^~~~~~~~~
+./FewBody/ar_interaction.hpp:632:78: warning: unused parameter '_time_end' [-Wunused-parameter]
+  632 |     int modifyOneParticle(Particle& _p, const Float& _time_now, const Float& _time_end) {
+      |                                                                 ~~~~~~~~~~~~~^~~~~~~~~
+./FewBody/ar_interaction.hpp: In member function 'int Interaction::modifyOneParticle(Particle&, const Float&, const Float&)':
+./FewBody/ar_interaction.hpp:632:37: warning: unused parameter '_p' [-Wunused-parameter]
+  632 |     int modifyOneParticle(Particle& _p, const Float& _time_now, const Float& _time_end) {
+      |                           ~~~~~~~~~~^~
+./FewBody/ar_interaction.hpp:632:54: warning: unused parameter '_time_now' [-Wunused-parameter]
+  632 |     int modifyOneParticle(Particle& _p, const Float& _time_now, const Float& _time_end) {
+      |                                         ~~~~~~~~~~~~~^~~~~~~~~
+./FewBody/ar_interaction.hpp:632:78: warning: unused parameter '_time_end' [-Wunused-parameter]
+  632 |     int modifyOneParticle(Particle& _p, const Float& _time_now, const Float& _time_end) {
+      |                                                                 ~~~~~~~~~~~~~^~~~~~~~~
+./FewBody/ar_interaction.hpp: In member function 'int Interaction::modifyOneParticle(Particle&, const Float&, const Float&)':
+./FewBody/ar_interaction.hpp:632:37: warning: unused parameter '_p' [-Wunused-parameter]
+  632 |     int modifyOneParticle(Particle& _p, const Float& _time_now, const Float& _time_end) {
+      |                           ~~~~~~~~~~^~
+./FewBody/ar_interaction.hpp:632:54: warning: unused parameter '_time_now' [-Wunused-parameter]
+  632 |     int modifyOneParticle(Particle& _p, const Float& _time_now, const Float& _time_end) {
+      |                                         ~~~~~~~~~~~~~^~~~~~~~~
+./FewBody/ar_interaction.hpp:632:78: warning: unused parameter '_time_end' [-Wunused-parameter]
+  632 |     int modifyOneParticle(Particle& _p, const Float& _time_now, const Float& _time_end) {
+      |                                                                 ~~~~~~~~~~~~~^~~~~~~~~
+./FewBody/ar_interaction.hpp: In member function 'int Interaction::modifyOneParticle(Particle&, const Float&, const Float&)':
+./FewBody/ar_interaction.hpp:632:37: warning: unused parameter '_p' [-Wunused-parameter]
+  632 |     int modifyOneParticle(Particle& _p, const Float& _time_now, const Float& _time_end) {
+      |                           ~~~~~~~~~~^~
+./FewBody/ar_interaction.hpp:632:54: warning: unused parameter '_time_now' [-Wunused-parameter]
+  632 |     int modifyOneParticle(Particle& _p, const Float& _time_now, const Float& _time_end) {
+      |                                         ~~~~~~~~~~~~~^~~~~~~~~
+./FewBody/ar_interaction.hpp:632:78: warning: unused parameter '_time_end' [-Wunused-parameter]
+  632 |     int modifyOneParticle(Particle& _p, const Float& _time_now, const Float& _time_end) {
+      |                                                                 ~~~~~~~~~~~~~^~~~~~~~~
+./FewBody/ar_interaction.hpp: In member function 'void Interaction::modifyAndInterruptKepler(AR::InterruptBinary<Particle>&, AR::BinaryTree<Particle>&, double)':
+./FewBody/ar_interaction.hpp:737:19: warning: unused variable 'period' [-Wunused-variable]
+  737 |             Float period = 2*M_PI/mean_motion;
+      |                   ^~~~~~
+./FewBody/ar_interaction.hpp: In member function 'void Interaction::writeBinary(FILE*) const':
+./FewBody/ar_interaction.hpp:759:28: warning: unused parameter '_fp' [-Wunused-parameter]
+  759 |     void writeBinary(FILE *_fp) const {
+      |                      ~~~~~~^~~
+./FewBody/ar_interaction.hpp: In member function 'void Interaction::readBinary(FILE*)':
+./FewBody/ar_interaction.hpp:765:27: warning: unused parameter '_fin' [-Wunused-parameter]
+  765 |     void readBinary(FILE *_fin) {
+      |                     ~~~~~~^~~~
+./FewBody/ar_interaction.hpp: In member function 'void Interaction::modifyAndInterruptKepler(AR::InterruptBinary<Particle>&, AR::BinaryTree<Particle>&, double)':
+./FewBody/ar_interaction.hpp:737:19: warning: unused variable 'period' [-Wunused-variable]
+  737 |             Float period = 2*M_PI/mean_motion;
+      |                   ^~~~~~
+./FewBody/ar_interaction.hpp: In member function 'void Interaction::writeBinary(FILE*) const':
+./FewBody/ar_interaction.hpp:759:28: warning: unused parameter '_fp' [-Wunused-parameter]
+  759 |     void writeBinary(FILE *_fp) const {
+      |                      ~~~~~~^~~
+./FewBody/ar_interaction.hpp: In member function 'void Interaction::readBinary(FILE*)':
+./FewBody/ar_interaction.hpp:765:27: warning: unused parameter '_fin' [-Wunused-parameter]
+  765 |     void readBinary(FILE *_fin) {
+      |                     ~~~~~~^~~~
+./FewBody/ar_interaction.hpp: In member function 'void Interaction::modifyAndInterruptKepler(AR::InterruptBinary<Particle>&, AR::BinaryTree<Particle>&, double)':
+./FewBody/ar_interaction.hpp:737:19: warning: unused variable 'period' [-Wunused-variable]
+  737 |             Float period = 2*M_PI/mean_motion;
+      |                   ^~~~~~
+./FewBody/ar_interaction.hpp: In member function 'void Interaction::writeBinary(FILE*) const':
+./FewBody/ar_interaction.hpp:759:28: warning: unused parameter '_fp' [-Wunused-parameter]
+  759 |     void writeBinary(FILE *_fp) const {
+      |                      ~~~~~~^~~
+./FewBody/ar_interaction.hpp: In member function 'void Interaction::readBinary(FILE*)':
+./FewBody/ar_interaction.hpp:765:27: warning: unused parameter '_fin' [-Wunused-parameter]
+  765 |     void readBinary(FILE *_fin) {
+      |                     ~~~~~~^~~~
+./FewBody/ar_interaction.hpp: In member function 'void Interaction::modifyAndInterruptKepler(AR::InterruptBinary<Particle>&, AR::BinaryTree<Particle>&, double)':
+./FewBody/ar_interaction.hpp:737:19: warning: unused variable 'period' [-Wunused-variable]
+  737 |             Float period = 2*M_PI/mean_motion;
+      |                   ^~~~~~
+./FewBody/ar_interaction.hpp: In member function 'void Interaction::writeBinary(FILE*) const':
+./FewBody/ar_interaction.hpp:759:28: warning: unused parameter '_fp' [-Wunused-parameter]
+  759 |     void writeBinary(FILE *_fp) const {
+      |                      ~~~~~~^~~
+./FewBody/ar_interaction.hpp: In member function 'void Interaction::readBinary(FILE*)':
+./FewBody/ar_interaction.hpp:765:27: warning: unused parameter '_fin' [-Wunused-parameter]
+  765 |     void readBinary(FILE *_fin) {
+      |                     ~~~~~~^~~~
+In file included from ./FewBody/Group.h:15,
+                 from global.h:6,
+                 from readParameterFile.cpp:8:
+./FewBody/ar_interaction.hpp: In member function 'void Interaction::calcAccPert(AR::Force*, const Particle*, int, const Particle&, const Perturber&, Float)':
+./FewBody/ar_interaction.hpp:190:139: warning: unused parameter '_perturber' [-Wunused-parameter]
+  190 |     void calcAccPert(AR::Force* _force, const Particle* _particles, const int _n_particle, const Particle& _particle_cm, const Perturber& _perturber, const Float _time) {
+      |                                                                                                                          ~~~~~~~~~~~~~~~~~^~~~~~~~~~
+./FewBody/ar_interaction.hpp: In member function 'int Interaction::modifyOneParticle(Particle&, const Float&, const Float&)':
+./FewBody/ar_interaction.hpp:632:37: warning: unused parameter '_p' [-Wunused-parameter]
+  632 |     int modifyOneParticle(Particle& _p, const Float& _time_now, const Float& _time_end) {
+      |                           ~~~~~~~~~~^~
+./FewBody/ar_interaction.hpp:632:54: warning: unused parameter '_time_now' [-Wunused-parameter]
+  632 |     int modifyOneParticle(Particle& _p, const Float& _time_now, const Float& _time_end) {
+      |                                         ~~~~~~~~~~~~~^~~~~~~~~
+./FewBody/ar_interaction.hpp:632:78: warning: unused parameter '_time_end' [-Wunused-parameter]
+  632 |     int modifyOneParticle(Particle& _p, const Float& _time_now, const Float& _time_end) {
+      |                                                                 ~~~~~~~~~~~~~^~~~~~~~~
+./FewBody/ar_interaction.hpp: In member function 'void Interaction::modifyAndInterruptKepler(AR::InterruptBinary<Particle>&, AR::BinaryTree<Particle>&, double)':
+./FewBody/ar_interaction.hpp:737:19: warning: unused variable 'period' [-Wunused-variable]
+  737 |             Float period = 2*M_PI/mean_motion;
+      |                   ^~~~~~
+./FewBody/ar_interaction.hpp: In member function 'void Interaction::writeBinary(FILE*) const':
+./FewBody/ar_interaction.hpp:759:28: warning: unused parameter '_fp' [-Wunused-parameter]
+  759 |     void writeBinary(FILE *_fp) const {
+      |                      ~~~~~~^~~
+./FewBody/ar_interaction.hpp: In member function 'void Interaction::readBinary(FILE*)':
+./FewBody/ar_interaction.hpp:765:27: warning: unused parameter '_fin' [-Wunused-parameter]
+  765 |     void readBinary(FILE *_fin) {
+      |                     ~~~~~~^~~~
+In file included from ./FewBody/ar_interaction.hpp:11,
+                 from ./FewBody/Group.h:15,
+                 from global.h:6,
+                 from RootRoutines.cpp:8:
+./FewBody/ar_perturber.hpp: In member function 'void Perturber::calcSoftPertMin(AR::BinaryTree<Particle>&, Float)':
+./FewBody/ar_perturber.hpp:33:58: warning: unused parameter '_bin' [-Wunused-parameter]
+   33 |     void calcSoftPertMin(const AR::BinaryTree<Particle>& _bin, const Float _G) {
+      |                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~
+./FewBody/ar_perturber.hpp:33:76: warning: unused parameter '_G' [-Wunused-parameter]
+   33 |     void calcSoftPertMin(const AR::BinaryTree<Particle>& _bin, const Float _G) {
+      |                                                                ~~~~~~~~~~~~^~
+./FewBody/ar_perturber.hpp: In member function 'void Perturber::printColumnTitle(std::ostream&, int)':
+./FewBody/ar_perturber.hpp:42:42: warning: unused parameter '_fout' [-Wunused-parameter]
+   42 |     void printColumnTitle(std::ostream & _fout, const int _width=20) {
+      |                           ~~~~~~~~~~~~~~~^~~~~
+./FewBody/ar_perturber.hpp:42:59: warning: unused parameter '_width' [-Wunused-parameter]
+   42 |     void printColumnTitle(std::ostream & _fout, const int _width=20) {
+      |                                                 ~~~~~~~~~~^~~~~~~~~
+./FewBody/ar_perturber.hpp: In member function 'void Perturber::printColumn(std::ostream&, int)':
+./FewBody/ar_perturber.hpp:50:37: warning: unused parameter '_fout' [-Wunused-parameter]
+   50 |     void printColumn(std::ostream & _fout, const int _width=20){
+      |                      ~~~~~~~~~~~~~~~^~~~~
+./FewBody/ar_perturber.hpp:50:54: warning: unused parameter '_width' [-Wunused-parameter]
+   50 |     void printColumn(std::ostream & _fout, const int _width=20){
+      |                                            ~~~~~~~~~~^~~~~~~~~
+./FewBody/ar_perturber.hpp: In member function 'void Perturber::writeBinary(FILE*) const':
+./FewBody/ar_perturber.hpp:56:28: warning: unused parameter '_fp' [-Wunused-parameter]
+   56 |     void writeBinary(FILE *_fp) const {
+      |                      ~~~~~~^~~
+./FewBody/ar_perturber.hpp: In member function 'void Perturber::readBinary(FILE*)':
+./FewBody/ar_perturber.hpp:62:27: warning: unused parameter '_fin' [-Wunused-parameter]
+   62 |     void readBinary(FILE *_fin) {
+      |                     ~~~~~~^~~~
+In file included from ./FewBody/Group.h:15,
+                 from global.h:6,
+                 from main.cpp:12:
+./FewBody/ar_interaction.hpp: In member function 'void Interaction::calcAccPert(AR::Force*, const Particle*, int, const Particle&, const Perturber&, Float)':
+./FewBody/ar_interaction.hpp:190:139: warning: unused parameter '_perturber' [-Wunused-parameter]
+  190 |     void calcAccPert(AR::Force* _force, const Particle* _particles, const int _n_particle, const Particle& _particle_cm, const Perturber& _perturber, const Float _time) {
+      |                                                                                                                          ~~~~~~~~~~~~~~~~~^~~~~~~~~~
+./FewBody/ar_interaction.hpp: In member function 'int Interaction::modifyOneParticle(Particle&, const Float&, const Float&)':
+./FewBody/ar_interaction.hpp:632:37: warning: unused parameter '_p' [-Wunused-parameter]
+  632 |     int modifyOneParticle(Particle& _p, const Float& _time_now, const Float& _time_end) {
+      |                           ~~~~~~~~~~^~
+./FewBody/ar_interaction.hpp:632:54: warning: unused parameter '_time_now' [-Wunused-parameter]
+  632 |     int modifyOneParticle(Particle& _p, const Float& _time_now, const Float& _time_end) {
+      |                                         ~~~~~~~~~~~~~^~~~~~~~~
+./FewBody/ar_interaction.hpp:632:78: warning: unused parameter '_time_end' [-Wunused-parameter]
+  632 |     int modifyOneParticle(Particle& _p, const Float& _time_now, const Float& _time_end) {
+      |                                                                 ~~~~~~~~~~~~~^~~~~~~~~
+./FewBody/ar_interaction.hpp: In member function 'void Interaction::modifyAndInterruptKepler(AR::InterruptBinary<Particle>&, AR::BinaryTree<Particle>&, double)':
+./FewBody/ar_interaction.hpp:737:19: warning: unused variable 'period' [-Wunused-variable]
+  737 |             Float period = 2*M_PI/mean_motion;
+      |                   ^~~~~~
+./FewBody/ar_interaction.hpp: In member function 'void Interaction::writeBinary(FILE*) const':
+./FewBody/ar_interaction.hpp:759:28: warning: unused parameter '_fp' [-Wunused-parameter]
+  759 |     void writeBinary(FILE *_fp) const {
+      |                      ~~~~~~^~~
+./FewBody/ar_interaction.hpp: In member function 'void Interaction::readBinary(FILE*)':
+./FewBody/ar_interaction.hpp:765:27: warning: unused parameter '_fin' [-Wunused-parameter]
+  765 |     void readBinary(FILE *_fin) {
+      |                     ~~~~~~^~~~
+In file included from ./FewBody/Group.h:15,
+                 from global.h:6,
+                 from RootRoutines.cpp:8:
+./FewBody/ar_interaction.hpp: In member function 'void Interaction::calcAccPert(AR::Force*, const Particle*, int, const Particle&, const Perturber&, Float)':
+./FewBody/ar_interaction.hpp:190:139: warning: unused parameter '_perturber' [-Wunused-parameter]
+  190 |     void calcAccPert(AR::Force* _force, const Particle* _particles, const int _n_particle, const Particle& _particle_cm, const Perturber& _perturber, const Float _time) {
+      |                                                                                                                          ~~~~~~~~~~~~~~~~~^~~~~~~~~~
+./FewBody/ar_interaction.hpp: In member function 'int Interaction::modifyOneParticle(Particle&, const Float&, const Float&)':
+./FewBody/ar_interaction.hpp:632:37: warning: unused parameter '_p' [-Wunused-parameter]
+  632 |     int modifyOneParticle(Particle& _p, const Float& _time_now, const Float& _time_end) {
+      |                           ~~~~~~~~~~^~
+./FewBody/ar_interaction.hpp:632:54: warning: unused parameter '_time_now' [-Wunused-parameter]
+  632 |     int modifyOneParticle(Particle& _p, const Float& _time_now, const Float& _time_end) {
+      |                                         ~~~~~~~~~~~~~^~~~~~~~~
+./FewBody/ar_interaction.hpp:632:78: warning: unused parameter '_time_end' [-Wunused-parameter]
+  632 |     int modifyOneParticle(Particle& _p, const Float& _time_now, const Float& _time_end) {
+      |                                                                 ~~~~~~~~~~~~~^~~~~~~~~
+./FewBody/ar_interaction.hpp: In member function 'void Interaction::modifyAndInterruptKepler(AR::InterruptBinary<Particle>&, AR::BinaryTree<Particle>&, double)':
+./FewBody/ar_interaction.hpp:737:19: warning: unused variable 'period' [-Wunused-variable]
+  737 |             Float period = 2*M_PI/mean_motion;
+      |                   ^~~~~~
+./FewBody/ar_interaction.hpp: In member function 'void Interaction::writeBinary(FILE*) const':
+./FewBody/ar_interaction.hpp:759:28: warning: unused parameter '_fp' [-Wunused-parameter]
+  759 |     void writeBinary(FILE *_fp) const {
+      |                      ~~~~~~^~~
+./FewBody/ar_interaction.hpp: In member function 'void Interaction::readBinary(FILE*)':
+./FewBody/ar_interaction.hpp:765:27: warning: unused parameter '_fin' [-Wunused-parameter]
+  765 |     void readBinary(FILE *_fin) {
+      |                     ~~~~~~^~~~
+MPIRoutines.cpp: In function 'void InitialAssignmentOfTasks(std::vector<int>&, double, int, int)':
+MPIRoutines.cpp:82:90: warning: unused parameter 'TAG' [-Wunused-parameter]
+   82 | void InitialAssignmentOfTasks(std::vector<int>& data, double next_time, int NumTask, int TAG) {
+      |                                                                                      ~~~~^~~
+MPIRoutines.cpp: In function 'void ParticleSynchronization()':
+MPIRoutines.cpp:138:7: warning: unused variable 'completed_tasks' [-Wunused-variable]
+  138 |   int completed_tasks = 0;
+      |       ^~~~~~~~~~~~~~~
+In file included from RootRoutines.cpp:9:
+QueueScheduler.h: In member function 'void QueueScheduler::printStatus()':
+QueueScheduler.h:214:81: warning: second operand of conditional expression has no effect [-Wunused-value]
+  214 |             std::cout << "|  " << std::setw(4) << workers[i].onDuty ? "T" : "F" ;
+      |                                                                                 ^
+QueueScheduler.h:214:81: warning: third operand of conditional expression has no effect [-Wunused-value]
+RootRoutines.cpp: In function 'void RootRoutines()':
+RootRoutines.cpp:40:12: warning: unused variable 'ptcl' [-Wunused-variable]
+   40 |  Particle* ptcl;
+      |            ^~~~
+RootRoutines.cpp:42:6: warning: unused variable 'total_tasks' [-Wunused-variable]
+   42 |  int total_tasks;
+      |      ^~~~~~~~~~~
+RootRoutines.cpp:43:6: warning: unused variable 'completed_tasks' [-Wunused-variable]
+   43 |  int completed_tasks=0;
+      |      ^~~~~~~~~~~~~~~
+RootRoutines.cpp:52:7: warning: unused variable 'bin_termination' [-Wunused-variable]
+   52 |  bool bin_termination = false;
+      |       ^~~~~~~~~~~~~~~
+RootRoutines.cpp:53:7: warning: unused variable 'new_binaries' [-Wunused-variable]
+   53 |  bool new_binaries = false;
+      |       ^~~~~~~~~~~~
+In file included from InitializationRoutines.cpp:1:
+QueueScheduler.h: In member function 'void QueueScheduler::printStatus()':
+QueueScheduler.h:214:81: warning: second operand of conditional expression has no effect [-Wunused-value]
+  214 |             std::cout << "|  " << std::setw(4) << workers[i].onDuty ? "T" : "F" ;
+      |                                                                                 ^
+QueueScheduler.h:214:81: warning: third operand of conditional expression has no effect [-Wunused-value]
+In file included from IrregularRoutines.cpp:1:
+QueueScheduler.h: In member function 'void QueueScheduler::printStatus()':
+QueueScheduler.h:214:81: warning: second operand of conditional expression has no effect [-Wunused-value]
+  214 |             std::cout << "|  " << std::setw(4) << workers[i].onDuty ? "T" : "F" ;
+      |                                                                                 ^
+QueueScheduler.h:214:81: warning: third operand of conditional expression has no effect [-Wunused-value]
+In file included from IrregularRoutines.cpp:2:
+SkipList.h: In member function 'void SkipList::display()':
+SkipList.h:231:21: warning: comparison of integer expressions of different signedness: 'int' and 'std::vector<int>::size_type' {aka 'long unsigned int'} [-Wsign-compare]
+  231 |      for (int i=0; i<node->ParticleList.size(); i++) {
+      |                    ~^~~~~~~~~~~~~~~~~~~~~~~~~~
+IrregularRoutines.cpp: In function 'bool IrregularRoutines(QueueScheduler&, Worker*, std::unordered_set<int>&)':
+IrregularRoutines.cpp:456:51: warning: comparison of integer expressions of different signedness: 'int' and 'std::vector<int>::size_type' {aka 'long unsigned int'} [-Wsign-compare]
+  456 |             for (int i=OriginalParticleListSize; i<ThisLevelNode->ParticleList.size(); i++) {
+      |                                                  ~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+IrregularRoutines.cpp:586:38: warning: comparison of integer expressions of different signedness: 'int' and 'std::vector<int>::size_type' {aka 'long unsigned int'} [-Wsign-compare]
+  586 |         if (OriginalParticleListSize != ThisLevelNode->ParticleList.size()) {
+      |             ~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+IrregularRoutines.cpp:595:28: warning: comparison of integer expressions of different signedness: 'int' and 'std::vector<int>::size_type' {aka 'long unsigned int'} [-Wsign-compare]
+  595 |             for (int i=0; i<newCMptcls.size(); i++) {
+      |                           ~^~~~~~~~~~~~~~~~~~
+IrregularRoutines.cpp:27:12: warning: variable 'current_time_irr' set but not used [-Wunused-but-set-variable]
+   27 |     double current_time_irr=0;
+      |            ^~~~~~~~~~~~~~~~
+QueueScheduler.h: In member function 'Worker* QueueScheduler::waitQueue(int)':
+QueueScheduler.h:155:5: warning: control reaches end of non-void function [-Wreturn-type]
+  155 |     }
+      |     ^
+In file included from IrregularRoutines.cpp:1:
+QueueScheduler.h: In member function 'Worker* QueueScheduler::waitQueue(int)':
+QueueScheduler.h:155:5: warning: control reaches end of non-void function [-Wreturn-type]
+  155 |     }
+      |     ^
+In file included from ./FewBody/Group.h:13,
+                 from global.h:6,
+                 from QueueScheduler.h:8,
+                 from RegularRoutines.cpp:1:
+./../SDAR/src/AR/symplectic_integrator.h:3496: warning: ignoring '#pragma omp critical' [-Wunknown-pragmas]
+ 3496 | #pragma omp critical
+      | 
+In file included from ./FewBody/Group.h:13,
+                 from global.h:6,
+                 from TimeStepRoutines.cpp:1:
+./../SDAR/src/AR/symplectic_integrator.h:3496: warning: ignoring '#pragma omp critical' [-Wunknown-pragmas]
+ 3496 | #pragma omp critical
+      | 
+In file included from ./FewBody/Group.h:13,
+                 from global.h:6,
+                 from parser.cpp:2:
+./../SDAR/src/AR/symplectic_integrator.h:3496: warning: ignoring '#pragma omp critical' [-Wunknown-pragmas]
+ 3496 | #pragma omp critical
+      | 
+In file included from ./FewBody/Group.h:13,
+                 from global.h:6,
+                 from ReadWrite.cpp:7:
+./../SDAR/src/AR/symplectic_integrator.h:3496: warning: ignoring '#pragma omp critical' [-Wunknown-pragmas]
+ 3496 | #pragma omp critical
+      | 
+In file included from QueueScheduler.h:9,
+                 from IrregularRoutines.cpp:1:
+Worker.h: In function 'bool IrregularRoutines(QueueScheduler&, Worker*, std::unordered_set<int>&)':
+Worker.h:54:23: warning: 'queue.Queue::next_time' may be used uninitialized in this function [-Wmaybe-uninitialized]
+   54 |         queues[index] = queue;
+      |         ~~~~~~~~~~~~~~^~~~~~~
+IrregularRoutines.cpp:32:11: note: 'queue.Queue::next_time' was declared here
+   32 |     Queue queue;
+      |           ^~~~~
+IrregularRoutines.cpp:338:30: warning: 'accretor' may be used uninitialized in this function [-Wmaybe-uninitialized]
+  338 |                         Merge(donor, accretor);
+      |                         ~~~~~^~~~~~~~~~~~~~~~~
+IrregularRoutines.cpp:338:30: warning: 'donor' may be used uninitialized in this function [-Wmaybe-uninitialized]
+In file included from Particle/.././FewBody/Group.h:13,
+                 from Particle/../global.h:6,
+                 from Particle/Initialize.cpp:1:
+./../SDAR/src/AR/symplectic_integrator.h:3496: warning: ignoring '#pragma omp critical' [-Wunknown-pragmas]
+ 3496 | #pragma omp critical
+      | 
+In file included from ./FewBody/ar_interaction.hpp:11,
+                 from ./FewBody/Group.h:15,
+                 from global.h:6,
+                 from TimeStepRoutines.cpp:1:
+./FewBody/ar_perturber.hpp: In member function 'void Perturber::calcSoftPertMin(AR::BinaryTree<Particle>&, Float)':
+./FewBody/ar_perturber.hpp:33:58: warning: unused parameter '_bin' [-Wunused-parameter]
+   33 |     void calcSoftPertMin(const AR::BinaryTree<Particle>& _bin, const Float _G) {
+      |                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~
+./FewBody/ar_perturber.hpp:33:76: warning: unused parameter '_G' [-Wunused-parameter]
+   33 |     void calcSoftPertMin(const AR::BinaryTree<Particle>& _bin, const Float _G) {
+      |                                                                ~~~~~~~~~~~~^~
+./FewBody/ar_perturber.hpp: In member function 'void Perturber::printColumnTitle(std::ostream&, int)':
+./FewBody/ar_perturber.hpp:42:42: warning: unused parameter '_fout' [-Wunused-parameter]
+   42 |     void printColumnTitle(std::ostream & _fout, const int _width=20) {
+      |                           ~~~~~~~~~~~~~~~^~~~~
+./FewBody/ar_perturber.hpp:42:59: warning: unused parameter '_width' [-Wunused-parameter]
+   42 |     void printColumnTitle(std::ostream & _fout, const int _width=20) {
+      |                                                 ~~~~~~~~~~^~~~~~~~~
+./FewBody/ar_perturber.hpp: In member function 'void Perturber::printColumn(std::ostream&, int)':
+./FewBody/ar_perturber.hpp:50:37: warning: unused parameter '_fout' [-Wunused-parameter]
+   50 |     void printColumn(std::ostream & _fout, const int _width=20){
+      |                      ~~~~~~~~~~~~~~~^~~~~
+./FewBody/ar_perturber.hpp:50:54: warning: unused parameter '_width' [-Wunused-parameter]
+   50 |     void printColumn(std::ostream & _fout, const int _width=20){
+      |                                            ~~~~~~~~~~^~~~~~~~~
+./FewBody/ar_perturber.hpp: In member function 'void Perturber::writeBinary(FILE*) const':
+./FewBody/ar_perturber.hpp:56:28: warning: unused parameter '_fp' [-Wunused-parameter]
+   56 |     void writeBinary(FILE *_fp) const {
+      |                      ~~~~~~^~~
+./FewBody/ar_perturber.hpp: In member function 'void Perturber::readBinary(FILE*)':
+./FewBody/ar_perturber.hpp:62:27: warning: unused parameter '_fin' [-Wunused-parameter]
+   62 |     void readBinary(FILE *_fin) {
+      |                     ~~~~~~^~~~
+In file included from ./FewBody/ar_interaction.hpp:11,
+                 from ./FewBody/Group.h:15,
+                 from global.h:6,
+                 from parser.cpp:2:
+./FewBody/ar_perturber.hpp: In member function 'void Perturber::calcSoftPertMin(AR::BinaryTree<Particle>&, Float)':
+./FewBody/ar_perturber.hpp:33:58: warning: unused parameter '_bin' [-Wunused-parameter]
+   33 |     void calcSoftPertMin(const AR::BinaryTree<Particle>& _bin, const Float _G) {
+      |                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~
+./FewBody/ar_perturber.hpp:33:76: warning: unused parameter '_G' [-Wunused-parameter]
+   33 |     void calcSoftPertMin(const AR::BinaryTree<Particle>& _bin, const Float _G) {
+      |                                                                ~~~~~~~~~~~~^~
+./FewBody/ar_perturber.hpp: In member function 'void Perturber::printColumnTitle(std::ostream&, int)':
+./FewBody/ar_perturber.hpp:42:42: warning: unused parameter '_fout' [-Wunused-parameter]
+   42 |     void printColumnTitle(std::ostream & _fout, const int _width=20) {
+      |                           ~~~~~~~~~~~~~~~^~~~~
+./FewBody/ar_perturber.hpp:42:59: warning: unused parameter '_width' [-Wunused-parameter]
+   42 |     void printColumnTitle(std::ostream & _fout, const int _width=20) {
+      |                                                 ~~~~~~~~~~^~~~~~~~~
+./FewBody/ar_perturber.hpp: In member function 'void Perturber::printColumn(std::ostream&, int)':
+./FewBody/ar_perturber.hpp:50:37: warning: unused parameter '_fout' [-Wunused-parameter]
+   50 |     void printColumn(std::ostream & _fout, const int _width=20){
+      |                      ~~~~~~~~~~~~~~~^~~~~
+./FewBody/ar_perturber.hpp:50:54: warning: unused parameter '_width' [-Wunused-parameter]
+   50 |     void printColumn(std::ostream & _fout, const int _width=20){
+      |                                            ~~~~~~~~~~^~~~~~~~~
+./FewBody/ar_perturber.hpp: In member function 'void Perturber::writeBinary(FILE*) const':
+./FewBody/ar_perturber.hpp:56:28: warning: unused parameter '_fp' [-Wunused-parameter]
+   56 |     void writeBinary(FILE *_fp) const {
+      |                      ~~~~~~^~~
+./FewBody/ar_perturber.hpp: In member function 'void Perturber::readBinary(FILE*)':
+./FewBody/ar_perturber.hpp:62:27: warning: unused parameter '_fin' [-Wunused-parameter]
+   62 |     void readBinary(FILE *_fin) {
+      |                     ~~~~~~^~~~
+In file included from ./FewBody/ar_interaction.hpp:11,
+                 from ./FewBody/Group.h:15,
+                 from global.h:6,
+                 from QueueScheduler.h:8,
+                 from RegularRoutines.cpp:1:
+./FewBody/ar_perturber.hpp: In member function 'void Perturber::calcSoftPertMin(AR::BinaryTree<Particle>&, Float)':
+./FewBody/ar_perturber.hpp:33:58: warning: unused parameter '_bin' [-Wunused-parameter]
+   33 |     void calcSoftPertMin(const AR::BinaryTree<Particle>& _bin, const Float _G) {
+      |                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~
+./FewBody/ar_perturber.hpp:33:76: warning: unused parameter '_G' [-Wunused-parameter]
+   33 |     void calcSoftPertMin(const AR::BinaryTree<Particle>& _bin, const Float _G) {
+      |                                                                ~~~~~~~~~~~~^~
+./FewBody/ar_perturber.hpp: In member function 'void Perturber::printColumnTitle(std::ostream&, int)':
+./FewBody/ar_perturber.hpp:42:42: warning: unused parameter '_fout' [-Wunused-parameter]
+   42 |     void printColumnTitle(std::ostream & _fout, const int _width=20) {
+      |                           ~~~~~~~~~~~~~~~^~~~~
+./FewBody/ar_perturber.hpp:42:59: warning: unused parameter '_width' [-Wunused-parameter]
+   42 |     void printColumnTitle(std::ostream & _fout, const int _width=20) {
+      |                                                 ~~~~~~~~~~^~~~~~~~~
+./FewBody/ar_perturber.hpp: In member function 'void Perturber::printColumn(std::ostream&, int)':
+./FewBody/ar_perturber.hpp:50:37: warning: unused parameter '_fout' [-Wunused-parameter]
+   50 |     void printColumn(std::ostream & _fout, const int _width=20){
+      |                      ~~~~~~~~~~~~~~~^~~~~
+./FewBody/ar_perturber.hpp:50:54: warning: unused parameter '_width' [-Wunused-parameter]
+   50 |     void printColumn(std::ostream & _fout, const int _width=20){
+      |                                            ~~~~~~~~~~^~~~~~~~~
+./FewBody/ar_perturber.hpp: In member function 'void Perturber::writeBinary(FILE*) const':
+./FewBody/ar_perturber.hpp:56:28: warning: unused parameter '_fp' [-Wunused-parameter]
+   56 |     void writeBinary(FILE *_fp) const {
+      |                      ~~~~~~^~~
+./FewBody/ar_perturber.hpp: In member function 'void Perturber::readBinary(FILE*)':
+./FewBody/ar_perturber.hpp:62:27: warning: unused parameter '_fin' [-Wunused-parameter]
+   62 |     void readBinary(FILE *_fin) {
+      |                     ~~~~~~^~~~
+In file included from ./FewBody/Group.h:15,
+                 from global.h:6,
+                 from QueueScheduler.h:8,
+                 from RegularRoutines.cpp:1:
+./FewBody/ar_interaction.hpp: In member function 'void Interaction::calcAccPert(AR::Force*, const Particle*, int, const Particle&, const Perturber&, Float)':
+./FewBody/ar_interaction.hpp:190:139: warning: unused parameter '_perturber' [-Wunused-parameter]
+  190 |     void calcAccPert(AR::Force* _force, const Particle* _particles, const int _n_particle, const Particle& _particle_cm, const Perturber& _perturber, const Float _time) {
+      |                                                                                                                          ~~~~~~~~~~~~~~~~~^~~~~~~~~~
+./FewBody/ar_interaction.hpp: In member function 'int Interaction::modifyOneParticle(Particle&, const Float&, const Float&)':
+./FewBody/ar_interaction.hpp:632:37: warning: unused parameter '_p' [-Wunused-parameter]
+  632 |     int modifyOneParticle(Particle& _p, const Float& _time_now, const Float& _time_end) {
+      |                           ~~~~~~~~~~^~
+./FewBody/ar_interaction.hpp:632:54: warning: unused parameter '_time_now' [-Wunused-parameter]
+  632 |     int modifyOneParticle(Particle& _p, const Float& _time_now, const Float& _time_end) {
+      |                                         ~~~~~~~~~~~~~^~~~~~~~~
+./FewBody/ar_interaction.hpp:632:78: warning: unused parameter '_time_end' [-Wunused-parameter]
+  632 |     int modifyOneParticle(Particle& _p, const Float& _time_now, const Float& _time_end) {
+      |                                                                 ~~~~~~~~~~~~~^~~~~~~~~
+./FewBody/ar_interaction.hpp: In member function 'void Interaction::modifyAndInterruptKepler(AR::InterruptBinary<Particle>&, AR::BinaryTree<Particle>&, double)':
+./FewBody/ar_interaction.hpp:737:19: warning: unused variable 'period' [-Wunused-variable]
+  737 |             Float period = 2*M_PI/mean_motion;
+      |                   ^~~~~~
+./FewBody/ar_interaction.hpp: In member function 'void Interaction::writeBinary(FILE*) const':
+./FewBody/ar_interaction.hpp:759:28: warning: unused parameter '_fp' [-Wunused-parameter]
+  759 |     void writeBinary(FILE *_fp) const {
+      |                      ~~~~~~^~~
+./FewBody/ar_interaction.hpp: In member function 'void Interaction::readBinary(FILE*)':
+./FewBody/ar_interaction.hpp:765:27: warning: unused parameter '_fin' [-Wunused-parameter]
+  765 |     void readBinary(FILE *_fin) {
+      |                     ~~~~~~^~~~
+In file included from ./FewBody/Group.h:15,
+                 from global.h:6,
+                 from TimeStepRoutines.cpp:1:
+./FewBody/ar_interaction.hpp: In member function 'void Interaction::calcAccPert(AR::Force*, const Particle*, int, const Particle&, const Perturber&, Float)':
+./FewBody/ar_interaction.hpp:190:139: warning: unused parameter '_perturber' [-Wunused-parameter]
+  190 |     void calcAccPert(AR::Force* _force, const Particle* _particles, const int _n_particle, const Particle& _particle_cm, const Perturber& _perturber, const Float _time) {
+      |                                                                                                                          ~~~~~~~~~~~~~~~~~^~~~~~~~~~
+./FewBody/ar_interaction.hpp: In member function 'int Interaction::modifyOneParticle(Particle&, const Float&, const Float&)':
+./FewBody/ar_interaction.hpp:632:37: warning: unused parameter '_p' [-Wunused-parameter]
+  632 |     int modifyOneParticle(Particle& _p, const Float& _time_now, const Float& _time_end) {
+      |                           ~~~~~~~~~~^~
+./FewBody/ar_interaction.hpp:632:54: warning: unused parameter '_time_now' [-Wunused-parameter]
+  632 |     int modifyOneParticle(Particle& _p, const Float& _time_now, const Float& _time_end) {
+      |                                         ~~~~~~~~~~~~~^~~~~~~~~
+./FewBody/ar_interaction.hpp:632:78: warning: unused parameter '_time_end' [-Wunused-parameter]
+  632 |     int modifyOneParticle(Particle& _p, const Float& _time_now, const Float& _time_end) {
+      |                                                                 ~~~~~~~~~~~~~^~~~~~~~~
+./FewBody/ar_interaction.hpp: In member function 'void Interaction::modifyAndInterruptKepler(AR::InterruptBinary<Particle>&, AR::BinaryTree<Particle>&, double)':
+./FewBody/ar_interaction.hpp:737:19: warning: unused variable 'period' [-Wunused-variable]
+  737 |             Float period = 2*M_PI/mean_motion;
+      |                   ^~~~~~
+./FewBody/ar_interaction.hpp: In member function 'void Interaction::writeBinary(FILE*) const':
+./FewBody/ar_interaction.hpp:759:28: warning: unused parameter '_fp' [-Wunused-parameter]
+  759 |     void writeBinary(FILE *_fp) const {
+      |                      ~~~~~~^~~
+./FewBody/ar_interaction.hpp: In member function 'void Interaction::readBinary(FILE*)':
+./FewBody/ar_interaction.hpp:765:27: warning: unused parameter '_fin' [-Wunused-parameter]
+  765 |     void readBinary(FILE *_fin) {
+      |                     ~~~~~~^~~~
+In file included from ./FewBody/Group.h:15,
+                 from global.h:6,
+                 from parser.cpp:2:
+./FewBody/ar_interaction.hpp: In member function 'void Interaction::calcAccPert(AR::Force*, const Particle*, int, const Particle&, const Perturber&, Float)':
+./FewBody/ar_interaction.hpp:190:139: warning: unused parameter '_perturber' [-Wunused-parameter]
+  190 |     void calcAccPert(AR::Force* _force, const Particle* _particles, const int _n_particle, const Particle& _particle_cm, const Perturber& _perturber, const Float _time) {
+      |                                                                                                                          ~~~~~~~~~~~~~~~~~^~~~~~~~~~
+In file included from ./FewBody/ar_interaction.hpp:11,
+                 from ./FewBody/Group.h:15,
+                 from global.h:6,
+                 from ReadWrite.cpp:7:
+./FewBody/ar_perturber.hpp: In member function 'void Perturber::calcSoftPertMin(AR::BinaryTree<Particle>&, Float)':
+./FewBody/ar_perturber.hpp:33:58: warning: unused parameter '_bin' [-Wunused-parameter]
+   33 |     void calcSoftPertMin(const AR::BinaryTree<Particle>& _bin, const Float _G) {
+      |                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~
+./FewBody/ar_perturber.hpp:33:76: warning: unused parameter '_G' [-Wunused-parameter]
+   33 |     void calcSoftPertMin(const AR::BinaryTree<Particle>& _bin, const Float _G) {
+      |                                                                ~~~~~~~~~~~~^~
+./FewBody/ar_perturber.hpp: In member function 'void Perturber::printColumnTitle(std::ostream&, int)':
+./FewBody/ar_perturber.hpp:42:42: warning: unused parameter '_fout' [-Wunused-parameter]
+   42 |     void printColumnTitle(std::ostream & _fout, const int _width=20) {
+      |                           ~~~~~~~~~~~~~~~^~~~~
+./FewBody/ar_perturber.hpp:42:59: warning: unused parameter '_width' [-Wunused-parameter]
+   42 |     void printColumnTitle(std::ostream & _fout, const int _width=20) {
+      |                                                 ~~~~~~~~~~^~~~~~~~~
+./FewBody/ar_perturber.hpp: In member function 'void Perturber::printColumn(std::ostream&, int)':
+./FewBody/ar_perturber.hpp:50:37: warning: unused parameter '_fout' [-Wunused-parameter]
+   50 |     void printColumn(std::ostream & _fout, const int _width=20){
+      |                      ~~~~~~~~~~~~~~~^~~~~
+./FewBody/ar_perturber.hpp:50:54: warning: unused parameter '_width' [-Wunused-parameter]
+   50 |     void printColumn(std::ostream & _fout, const int _width=20){
+      |                                            ~~~~~~~~~~^~~~~~~~~
+./FewBody/ar_perturber.hpp: In member function 'void Perturber::writeBinary(FILE*) const':
+./FewBody/ar_perturber.hpp:56:28: warning: unused parameter '_fp' [-Wunused-parameter]
+   56 |     void writeBinary(FILE *_fp) const {
+      |                      ~~~~~~^~~
+./FewBody/ar_perturber.hpp: In member function 'void Perturber::readBinary(FILE*)':
+./FewBody/ar_perturber.hpp:62:27: warning: unused parameter '_fin' [-Wunused-parameter]
+   62 |     void readBinary(FILE *_fin) {
+      |                     ~~~~~~^~~~
+./FewBody/ar_interaction.hpp: In member function 'int Interaction::modifyOneParticle(Particle&, const Float&, const Float&)':
+./FewBody/ar_interaction.hpp:632:37: warning: unused parameter '_p' [-Wunused-parameter]
+  632 |     int modifyOneParticle(Particle& _p, const Float& _time_now, const Float& _time_end) {
+      |                           ~~~~~~~~~~^~
+./FewBody/ar_interaction.hpp:632:54: warning: unused parameter '_time_now' [-Wunused-parameter]
+  632 |     int modifyOneParticle(Particle& _p, const Float& _time_now, const Float& _time_end) {
+      |                                         ~~~~~~~~~~~~~^~~~~~~~~
+./FewBody/ar_interaction.hpp:632:78: warning: unused parameter '_time_end' [-Wunused-parameter]
+  632 |     int modifyOneParticle(Particle& _p, const Float& _time_now, const Float& _time_end) {
+      |                                                                 ~~~~~~~~~~~~~^~~~~~~~~
+./FewBody/ar_interaction.hpp: In member function 'void Interaction::modifyAndInterruptKepler(AR::InterruptBinary<Particle>&, AR::BinaryTree<Particle>&, double)':
+./FewBody/ar_interaction.hpp:737:19: warning: unused variable 'period' [-Wunused-variable]
+  737 |             Float period = 2*M_PI/mean_motion;
+      |                   ^~~~~~
+./FewBody/ar_interaction.hpp: In member function 'void Interaction::writeBinary(FILE*) const':
+./FewBody/ar_interaction.hpp:759:28: warning: unused parameter '_fp' [-Wunused-parameter]
+  759 |     void writeBinary(FILE *_fp) const {
+      |                      ~~~~~~^~~
+./FewBody/ar_interaction.hpp: In member function 'void Interaction::readBinary(FILE*)':
+./FewBody/ar_interaction.hpp:765:27: warning: unused parameter '_fin' [-Wunused-parameter]
+  765 |     void readBinary(FILE *_fin) {
+      |                     ~~~~~~^~~~
+In file included from ./FewBody/Group.h:15,
+                 from global.h:6,
+                 from ReadWrite.cpp:7:
+./FewBody/ar_interaction.hpp: In member function 'void Interaction::calcAccPert(AR::Force*, const Particle*, int, const Particle&, const Perturber&, Float)':
+./FewBody/ar_interaction.hpp:190:139: warning: unused parameter '_perturber' [-Wunused-parameter]
+  190 |     void calcAccPert(AR::Force* _force, const Particle* _particles, const int _n_particle, const Particle& _particle_cm, const Perturber& _perturber, const Float _time) {
+      |                                                                                                                          ~~~~~~~~~~~~~~~~~^~~~~~~~~~
+./FewBody/ar_interaction.hpp: In member function 'int Interaction::modifyOneParticle(Particle&, const Float&, const Float&)':
+./FewBody/ar_interaction.hpp:632:37: warning: unused parameter '_p' [-Wunused-parameter]
+  632 |     int modifyOneParticle(Particle& _p, const Float& _time_now, const Float& _time_end) {
+      |                           ~~~~~~~~~~^~
+./FewBody/ar_interaction.hpp:632:54: warning: unused parameter '_time_now' [-Wunused-parameter]
+  632 |     int modifyOneParticle(Particle& _p, const Float& _time_now, const Float& _time_end) {
+      |                                         ~~~~~~~~~~~~~^~~~~~~~~
+./FewBody/ar_interaction.hpp:632:78: warning: unused parameter '_time_end' [-Wunused-parameter]
+  632 |     int modifyOneParticle(Particle& _p, const Float& _time_now, const Float& _time_end) {
+      |                                                                 ~~~~~~~~~~~~~^~~~~~~~~
+./FewBody/ar_interaction.hpp: In member function 'void Interaction::modifyAndInterruptKepler(AR::InterruptBinary<Particle>&, AR::BinaryTree<Particle>&, double)':
+./FewBody/ar_interaction.hpp:737:19: warning: unused variable 'period' [-Wunused-variable]
+  737 |             Float period = 2*M_PI/mean_motion;
+      |                   ^~~~~~
+./FewBody/ar_interaction.hpp: In member function 'void Interaction::writeBinary(FILE*) const':
+./FewBody/ar_interaction.hpp:759:28: warning: unused parameter '_fp' [-Wunused-parameter]
+  759 |     void writeBinary(FILE *_fp) const {
+      |                      ~~~~~~^~~
+./FewBody/ar_interaction.hpp: In member function 'void Interaction::readBinary(FILE*)':
+./FewBody/ar_interaction.hpp:765:27: warning: unused parameter '_fin' [-Wunused-parameter]
+  765 |     void readBinary(FILE *_fin) {
+      |                     ~~~~~~^~~~
+In file included from RegularRoutines.cpp:1:
+QueueScheduler.h: In member function 'void QueueScheduler::printStatus()':
+QueueScheduler.h:214:81: warning: second operand of conditional expression has no effect [-Wunused-value]
+  214 |             std::cout << "|  " << std::setw(4) << workers[i].onDuty ? "T" : "F" ;
+      |                                                                                 ^
+QueueScheduler.h:214:81: warning: third operand of conditional expression has no effect [-Wunused-value]
+TimeStepRoutines.cpp: In function 'double getNewTimeStepReg(double*, double (*)[4])':
+TimeStepRoutines.cpp:12:9: warning: variable 'v2' set but not used [-Wunused-but-set-variable]
+   12 |  double v2, F2, Fdot2, F2dot2, F3dot2, TimeStep, DivergentPrevent;
+      |         ^~
+TimeStepRoutines.cpp:12:40: warning: unused variable 'TimeStep' [-Wunused-variable]
+   12 |  double v2, F2, Fdot2, F2dot2, F3dot2, TimeStep, DivergentPrevent;
+      |                                        ^~~~~~~~
+TimeStepRoutines.cpp:12:50: warning: unused variable 'DivergentPrevent' [-Wunused-variable]
+   12 |  double v2, F2, Fdot2, F2dot2, F3dot2, TimeStep, DivergentPrevent;
+      |                                                  ^~~~~~~~~~~~~~~~
+TimeStepRoutines.cpp: In function 'double getNewTimeStepIrr(double (*)[4], double (*)[4])':
+TimeStepRoutines.cpp:30:46: warning: unused variable 'DivergentPrevent' [-Wunused-variable]
+   30 |  double F2, Fdot2, F2dot2, F3dot2, TimeStep, DivergentPrevent;
+      |                                              ^~~~~~~~~~~~~~~~
+TimeStepRoutines.cpp: In function 'double getNewTimeStep(double (*)[4], double (*)[4])':
+TimeStepRoutines.cpp:67:46: warning: unused variable 'DivergentPrevent' [-Wunused-variable]
+   67 |  double F2, Fdot2, F2dot2, F3dot2, TimeStep, DivergentPrevent;
+      |                                              ^~~~~~~~~~~~~~~~
+RegularRoutines.cpp: In function 'void RegularRoutines(QueueScheduler&, Worker*, std::unordered_set<int>&)':
+RegularRoutines.cpp:14:12: warning: unused variable 'next_time' [-Wunused-variable]
+   14 |     double next_time = NextRegTimeBlock*time_step;
+      |            ^~~~~~~~~
+RegularRoutines.cpp:12:63: warning: unused parameter 'workers' [-Wunused-parameter]
+   12 | void RegularRoutines(QueueScheduler &queue_scheduler, Worker *workers, std::unordered_set<int>& RegularList) {
+      |                                                       ~~~~~~~~^~~~~~~
+In file included from Particle/.././FewBody/Group.h:13,
+                 from Particle/../global.h:6,
+                 from Particle/UpdateParticle.cpp:5:
+./../SDAR/src/AR/symplectic_integrator.h:3496: warning: ignoring '#pragma omp critical' [-Wunknown-pragmas]
+ 3496 | #pragma omp critical
+      | 
+In file included from RegularRoutines.cpp:1:
+QueueScheduler.h: In member function 'Worker* QueueScheduler::waitQueue(int)':
+QueueScheduler.h:155:5: warning: control reaches end of non-void function [-Wreturn-type]
+  155 |     }
+      |     ^
+In file included from Particle/.././FewBody/ar_interaction.hpp:11,
+                 from Particle/.././FewBody/Group.h:15,
+                 from Particle/../global.h:6,
+                 from Particle/Initialize.cpp:1:
+Particle/.././FewBody/ar_perturber.hpp: In member function 'void Perturber::calcSoftPertMin(AR::BinaryTree<Particle>&, Float)':
+Particle/.././FewBody/ar_perturber.hpp:33:58: warning: unused parameter '_bin' [-Wunused-parameter]
+   33 |     void calcSoftPertMin(const AR::BinaryTree<Particle>& _bin, const Float _G) {
+      |                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~
+Particle/.././FewBody/ar_perturber.hpp:33:76: warning: unused parameter '_G' [-Wunused-parameter]
+   33 |     void calcSoftPertMin(const AR::BinaryTree<Particle>& _bin, const Float _G) {
+      |                                                                ~~~~~~~~~~~~^~
+Particle/.././FewBody/ar_perturber.hpp: In member function 'void Perturber::printColumnTitle(std::ostream&, int)':
+Particle/.././FewBody/ar_perturber.hpp:42:42: warning: unused parameter '_fout' [-Wunused-parameter]
+   42 |     void printColumnTitle(std::ostream & _fout, const int _width=20) {
+      |                           ~~~~~~~~~~~~~~~^~~~~
+Particle/.././FewBody/ar_perturber.hpp:42:59: warning: unused parameter '_width' [-Wunused-parameter]
+   42 |     void printColumnTitle(std::ostream & _fout, const int _width=20) {
+      |                                                 ~~~~~~~~~~^~~~~~~~~
+Particle/.././FewBody/ar_perturber.hpp: In member function 'void Perturber::printColumn(std::ostream&, int)':
+Particle/.././FewBody/ar_perturber.hpp:50:37: warning: unused parameter '_fout' [-Wunused-parameter]
+   50 |     void printColumn(std::ostream & _fout, const int _width=20){
+      |                      ~~~~~~~~~~~~~~~^~~~~
+Particle/.././FewBody/ar_perturber.hpp:50:54: warning: unused parameter '_width' [-Wunused-parameter]
+   50 |     void printColumn(std::ostream & _fout, const int _width=20){
+      |                                            ~~~~~~~~~~^~~~~~~~~
+Particle/.././FewBody/ar_perturber.hpp: In member function 'void Perturber::writeBinary(FILE*) const':
+Particle/.././FewBody/ar_perturber.hpp:56:28: warning: unused parameter '_fp' [-Wunused-parameter]
+   56 |     void writeBinary(FILE *_fp) const {
+      |                      ~~~~~~^~~
+Particle/.././FewBody/ar_perturber.hpp: In member function 'void Perturber::readBinary(FILE*)':
+Particle/.././FewBody/ar_perturber.hpp:62:27: warning: unused parameter '_fin' [-Wunused-parameter]
+   62 |     void readBinary(FILE *_fin) {
+      |                     ~~~~~~^~~~
+In file included from Particle/.././FewBody/Group.h:13,
+                 from Particle/../global.h:6,
+                 from Particle/ComputeAcceleration.cpp:6:
+./../SDAR/src/AR/symplectic_integrator.h:3496: warning: ignoring '#pragma omp critical' [-Wunknown-pragmas]
+ 3496 | #pragma omp critical
+      | 
+In file included from Particle/.././FewBody/Group.h:15,
+                 from Particle/../global.h:6,
+                 from Particle/Initialize.cpp:1:
+Particle/.././FewBody/ar_interaction.hpp: In member function 'void Interaction::calcAccPert(AR::Force*, const Particle*, int, const Particle&, const Perturber&, Float)':
+Particle/.././FewBody/ar_interaction.hpp:190:139: warning: unused parameter '_perturber' [-Wunused-parameter]
+  190 |     void calcAccPert(AR::Force* _force, const Particle* _particles, const int _n_particle, const Particle& _particle_cm, const Perturber& _perturber, const Float _time) {
+      |                                                                                                                          ~~~~~~~~~~~~~~~~~^~~~~~~~~~
+Particle/.././FewBody/ar_interaction.hpp: In member function 'int Interaction::modifyOneParticle(Particle&, const Float&, const Float&)':
+Particle/.././FewBody/ar_interaction.hpp:632:37: warning: unused parameter '_p' [-Wunused-parameter]
+  632 |     int modifyOneParticle(Particle& _p, const Float& _time_now, const Float& _time_end) {
+      |                           ~~~~~~~~~~^~
+Particle/.././FewBody/ar_interaction.hpp:632:54: warning: unused parameter '_time_now' [-Wunused-parameter]
+  632 |     int modifyOneParticle(Particle& _p, const Float& _time_now, const Float& _time_end) {
+      |                                         ~~~~~~~~~~~~~^~~~~~~~~
+Particle/.././FewBody/ar_interaction.hpp:632:78: warning: unused parameter '_time_end' [-Wunused-parameter]
+  632 |     int modifyOneParticle(Particle& _p, const Float& _time_now, const Float& _time_end) {
+      |                                                                 ~~~~~~~~~~~~~^~~~~~~~~
+Particle/.././FewBody/ar_interaction.hpp: In member function 'void Interaction::modifyAndInterruptKepler(AR::InterruptBinary<Particle>&, AR::BinaryTree<Particle>&, double)':
+Particle/.././FewBody/ar_interaction.hpp:737:19: warning: unused variable 'period' [-Wunused-variable]
+  737 |             Float period = 2*M_PI/mean_motion;
+      |                   ^~~~~~
+Particle/.././FewBody/ar_interaction.hpp: In member function 'void Interaction::writeBinary(FILE*) const':
+Particle/.././FewBody/ar_interaction.hpp:759:28: warning: unused parameter '_fp' [-Wunused-parameter]
+  759 |     void writeBinary(FILE *_fp) const {
+      |                      ~~~~~~^~~
+Particle/.././FewBody/ar_interaction.hpp: In member function 'void Interaction::readBinary(FILE*)':
+Particle/.././FewBody/ar_interaction.hpp:765:27: warning: unused parameter '_fin' [-Wunused-parameter]
+  765 |     void readBinary(FILE *_fin) {
+      |                     ~~~~~~^~~~
+In file included from Particle/.././FewBody/ar_interaction.hpp:11,
+                 from Particle/.././FewBody/Group.h:15,
+                 from Particle/../global.h:6,
+                 from Particle/UpdateParticle.cpp:5:
+Particle/.././FewBody/ar_perturber.hpp: In member function 'void Perturber::calcSoftPertMin(AR::BinaryTree<Particle>&, Float)':
+Particle/.././FewBody/ar_perturber.hpp:33:58: warning: unused parameter '_bin' [-Wunused-parameter]
+   33 |     void calcSoftPertMin(const AR::BinaryTree<Particle>& _bin, const Float _G) {
+      |                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~
+Particle/.././FewBody/ar_perturber.hpp:33:76: warning: unused parameter '_G' [-Wunused-parameter]
+   33 |     void calcSoftPertMin(const AR::BinaryTree<Particle>& _bin, const Float _G) {
+      |                                                                ~~~~~~~~~~~~^~
+Particle/.././FewBody/ar_perturber.hpp: In member function 'void Perturber::printColumnTitle(std::ostream&, int)':
+Particle/.././FewBody/ar_perturber.hpp:42:42: warning: unused parameter '_fout' [-Wunused-parameter]
+   42 |     void printColumnTitle(std::ostream & _fout, const int _width=20) {
+      |                           ~~~~~~~~~~~~~~~^~~~~
+Particle/.././FewBody/ar_perturber.hpp:42:59: warning: unused parameter '_width' [-Wunused-parameter]
+   42 |     void printColumnTitle(std::ostream & _fout, const int _width=20) {
+      |                                                 ~~~~~~~~~~^~~~~~~~~
+Particle/.././FewBody/ar_perturber.hpp: In member function 'void Perturber::printColumn(std::ostream&, int)':
+Particle/.././FewBody/ar_perturber.hpp:50:37: warning: unused parameter '_fout' [-Wunused-parameter]
+   50 |     void printColumn(std::ostream & _fout, const int _width=20){
+      |                      ~~~~~~~~~~~~~~~^~~~~
+Particle/.././FewBody/ar_perturber.hpp:50:54: warning: unused parameter '_width' [-Wunused-parameter]
+   50 |     void printColumn(std::ostream & _fout, const int _width=20){
+      |                                            ~~~~~~~~~~^~~~~~~~~
+Particle/.././FewBody/ar_perturber.hpp: In member function 'void Perturber::writeBinary(FILE*) const':
+Particle/.././FewBody/ar_perturber.hpp:56:28: warning: unused parameter '_fp' [-Wunused-parameter]
+   56 |     void writeBinary(FILE *_fp) const {
+      |                      ~~~~~~^~~
+Particle/.././FewBody/ar_perturber.hpp: In member function 'void Perturber::readBinary(FILE*)':
+Particle/.././FewBody/ar_perturber.hpp:62:27: warning: unused parameter '_fin' [-Wunused-parameter]
+   62 |     void readBinary(FILE *_fin) {
+      |                     ~~~~~~^~~~
+In file included from FewBody/.././FewBody/Group.h:13,
+                 from FewBody/../global.h:6,
+                 from FewBody/FBCheck.cpp:2:
+./../SDAR/src/AR/symplectic_integrator.h:3496: warning: ignoring '#pragma omp critical' [-Wunknown-pragmas]
+ 3496 | #pragma omp critical
+      | 
+In file included from Particle/.././FewBody/Group.h:15,
+                 from Particle/../global.h:6,
+                 from Particle/UpdateParticle.cpp:5:
+Particle/.././FewBody/ar_interaction.hpp: In member function 'void Interaction::calcAccPert(AR::Force*, const Particle*, int, const Particle&, const Perturber&, Float)':
+Particle/.././FewBody/ar_interaction.hpp:190:139: warning: unused parameter '_perturber' [-Wunused-parameter]
+  190 |     void calcAccPert(AR::Force* _force, const Particle* _particles, const int _n_particle, const Particle& _particle_cm, const Perturber& _perturber, const Float _time) {
+      |                                                                                                                          ~~~~~~~~~~~~~~~~~^~~~~~~~~~
+Particle/.././FewBody/ar_interaction.hpp: In member function 'int Interaction::modifyOneParticle(Particle&, const Float&, const Float&)':
+Particle/.././FewBody/ar_interaction.hpp:632:37: warning: unused parameter '_p' [-Wunused-parameter]
+  632 |     int modifyOneParticle(Particle& _p, const Float& _time_now, const Float& _time_end) {
+      |                           ~~~~~~~~~~^~
+Particle/.././FewBody/ar_interaction.hpp:632:54: warning: unused parameter '_time_now' [-Wunused-parameter]
+  632 |     int modifyOneParticle(Particle& _p, const Float& _time_now, const Float& _time_end) {
+      |                                         ~~~~~~~~~~~~~^~~~~~~~~
+Particle/.././FewBody/ar_interaction.hpp:632:78: warning: unused parameter '_time_end' [-Wunused-parameter]
+  632 |     int modifyOneParticle(Particle& _p, const Float& _time_now, const Float& _time_end) {
+      |                                                                 ~~~~~~~~~~~~~^~~~~~~~~
+Particle/.././FewBody/ar_interaction.hpp: In member function 'void Interaction::modifyAndInterruptKepler(AR::InterruptBinary<Particle>&, AR::BinaryTree<Particle>&, double)':
+Particle/.././FewBody/ar_interaction.hpp:737:19: warning: unused variable 'period' [-Wunused-variable]
+  737 |             Float period = 2*M_PI/mean_motion;
+      |                   ^~~~~~
+Particle/.././FewBody/ar_interaction.hpp: In member function 'void Interaction::writeBinary(FILE*) const':
+Particle/.././FewBody/ar_interaction.hpp:759:28: warning: unused parameter '_fp' [-Wunused-parameter]
+  759 |     void writeBinary(FILE *_fp) const {
+      |                      ~~~~~~^~~
+Particle/.././FewBody/ar_interaction.hpp: In member function 'void Interaction::readBinary(FILE*)':
+Particle/.././FewBody/ar_interaction.hpp:765:27: warning: unused parameter '_fin' [-Wunused-parameter]
+  765 |     void readBinary(FILE *_fin) {
+      |                     ~~~~~~^~~~
+In file included from Particle/.././FewBody/ar_interaction.hpp:11,
+                 from Particle/.././FewBody/Group.h:15,
+                 from Particle/../global.h:6,
+                 from Particle/ComputeAcceleration.cpp:6:
+Particle/.././FewBody/ar_perturber.hpp: In member function 'void Perturber::calcSoftPertMin(AR::BinaryTree<Particle>&, Float)':
+Particle/.././FewBody/ar_perturber.hpp:33:58: warning: unused parameter '_bin' [-Wunused-parameter]
+   33 |     void calcSoftPertMin(const AR::BinaryTree<Particle>& _bin, const Float _G) {
+      |                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~
+Particle/.././FewBody/ar_perturber.hpp:33:76: warning: unused parameter '_G' [-Wunused-parameter]
+   33 |     void calcSoftPertMin(const AR::BinaryTree<Particle>& _bin, const Float _G) {
+      |                                                                ~~~~~~~~~~~~^~
+Particle/.././FewBody/ar_perturber.hpp: In member function 'void Perturber::printColumnTitle(std::ostream&, int)':
+Particle/.././FewBody/ar_perturber.hpp:42:42: warning: unused parameter '_fout' [-Wunused-parameter]
+   42 |     void printColumnTitle(std::ostream & _fout, const int _width=20) {
+      |                           ~~~~~~~~~~~~~~~^~~~~
+Particle/.././FewBody/ar_perturber.hpp:42:59: warning: unused parameter '_width' [-Wunused-parameter]
+   42 |     void printColumnTitle(std::ostream & _fout, const int _width=20) {
+      |                                                 ~~~~~~~~~~^~~~~~~~~
+Particle/.././FewBody/ar_perturber.hpp: In member function 'void Perturber::printColumn(std::ostream&, int)':
+Particle/.././FewBody/ar_perturber.hpp:50:37: warning: unused parameter '_fout' [-Wunused-parameter]
+   50 |     void printColumn(std::ostream & _fout, const int _width=20){
+      |                      ~~~~~~~~~~~~~~~^~~~~
+Particle/.././FewBody/ar_perturber.hpp:50:54: warning: unused parameter '_width' [-Wunused-parameter]
+   50 |     void printColumn(std::ostream & _fout, const int _width=20){
+      |                                            ~~~~~~~~~~^~~~~~~~~
+Particle/.././FewBody/ar_perturber.hpp: In member function 'void Perturber::writeBinary(FILE*) const':
+Particle/.././FewBody/ar_perturber.hpp:56:28: warning: unused parameter '_fp' [-Wunused-parameter]
+   56 |     void writeBinary(FILE *_fp) const {
+      |                      ~~~~~~^~~
+Particle/.././FewBody/ar_perturber.hpp: In member function 'void Perturber::readBinary(FILE*)':
+Particle/.././FewBody/ar_perturber.hpp:62:27: warning: unused parameter '_fin' [-Wunused-parameter]
+   62 |     void readBinary(FILE *_fin) {
+      |                     ~~~~~~^~~~
+In file included from Particle/.././FewBody/Group.h:15,
+                 from Particle/../global.h:6,
+                 from Particle/ComputeAcceleration.cpp:6:
+Particle/.././FewBody/ar_interaction.hpp: In member function 'void Interaction::calcAccPert(AR::Force*, const Particle*, int, const Particle&, const Perturber&, Float)':
+Particle/.././FewBody/ar_interaction.hpp:190:139: warning: unused parameter '_perturber' [-Wunused-parameter]
+  190 |     void calcAccPert(AR::Force* _force, const Particle* _particles, const int _n_particle, const Particle& _particle_cm, const Perturber& _perturber, const Float _time) {
+      |                                                                                                                          ~~~~~~~~~~~~~~~~~^~~~~~~~~~
+Particle/.././FewBody/ar_interaction.hpp: In member function 'int Interaction::modifyOneParticle(Particle&, const Float&, const Float&)':
+Particle/.././FewBody/ar_interaction.hpp:632:37: warning: unused parameter '_p' [-Wunused-parameter]
+  632 |     int modifyOneParticle(Particle& _p, const Float& _time_now, const Float& _time_end) {
+      |                           ~~~~~~~~~~^~
+Particle/.././FewBody/ar_interaction.hpp:632:54: warning: unused parameter '_time_now' [-Wunused-parameter]
+  632 |     int modifyOneParticle(Particle& _p, const Float& _time_now, const Float& _time_end) {
+      |                                         ~~~~~~~~~~~~~^~~~~~~~~
+Particle/.././FewBody/ar_interaction.hpp:632:78: warning: unused parameter '_time_end' [-Wunused-parameter]
+  632 |     int modifyOneParticle(Particle& _p, const Float& _time_now, const Float& _time_end) {
+      |                                                                 ~~~~~~~~~~~~~^~~~~~~~~
+Particle/.././FewBody/ar_interaction.hpp: In member function 'void Interaction::modifyAndInterruptKepler(AR::InterruptBinary<Particle>&, AR::BinaryTree<Particle>&, double)':
+Particle/.././FewBody/ar_interaction.hpp:737:19: warning: unused variable 'period' [-Wunused-variable]
+  737 |             Float period = 2*M_PI/mean_motion;
+      |                   ^~~~~~
+Particle/.././FewBody/ar_interaction.hpp: In member function 'void Interaction::writeBinary(FILE*) const':
+Particle/.././FewBody/ar_interaction.hpp:759:28: warning: unused parameter '_fp' [-Wunused-parameter]
+  759 |     void writeBinary(FILE *_fp) const {
+      |                      ~~~~~~^~~
+Particle/.././FewBody/ar_interaction.hpp: In member function 'void Interaction::readBinary(FILE*)':
+Particle/.././FewBody/ar_interaction.hpp:765:27: warning: unused parameter '_fin' [-Wunused-parameter]
+  765 |     void readBinary(FILE *_fin) {
+      |                     ~~~~~~^~~~
+Particle/ComputeAcceleration.cpp: In member function 'void Particle::computeAccelerationIrr()':
+Particle/ComputeAcceleration.cpp:23:13: warning: unused variable 'mdot' [-Wunused-variable]
+   23 |  double dt, mdot, epsilon=1e-6;
+      |             ^~~~
+Particle/ComputeAcceleration.cpp:23:19: warning: unused variable 'epsilon' [-Wunused-variable]
+   23 |  double dt, mdot, epsilon=1e-6;
+      |                   ^~~~~~~
+Particle/ComputeAcceleration.cpp:162:9: warning: unused variable 'A' [-Wunused-variable]
+  162 |  double A, B, C;
+      |         ^
+Particle/ComputeAcceleration.cpp:162:12: warning: unused variable 'B' [-Wunused-variable]
+  162 |  double A, B, C;
+      |            ^
+Particle/ComputeAcceleration.cpp:162:15: warning: unused variable 'C' [-Wunused-variable]
+  162 |  double A, B, C;
+      |               ^
+In file included from /gpfs/software/spack_v20d1/spack/opt/spack/linux-rhel7-x86_64/gcc-4.8.5/gcc-10.4.0-y2t6fi3dfqcypuagzpqf4fgiaydqfuio/bin/../lib/gcc/x86_64-pc-linux-gnu/10.4.0/../../../../include/c++/10.4.0/cassert:44,
+                 from Particle/.././FewBody/ar_interaction.hpp:12,
+                 from Particle/.././FewBody/Group.h:15,
+                 from Particle/../global.h:6,
+                 from Particle/ComputeAcceleration.cpp:6:
+Particle/ComputeAcceleration.cpp: In member function 'void Particle::computeAccelerationReg()':
+Particle/ComputeAcceleration.cpp:359:11: warning: comparison of integer expressions of different signedness: 'int' and 'std::unordered_set<int>::size_type' {aka 'long unsigned int'} [-Wsign-compare]
+  359 |  assert(j == RealNeighbors.size());
+      |         ~~^~~~~~~~~~~~~~~~~~~~~~~
+Particle/ComputeAcceleration.cpp:237:13: warning: unused variable 'mdot' [-Wunused-variable]
+  237 |  double dt, mdot, epsilon=1e-6;
+      |             ^~~~
+Particle/ComputeAcceleration.cpp:237:19: warning: unused variable 'epsilon' [-Wunused-variable]
+  237 |  double dt, mdot, epsilon=1e-6;
+      |                   ^~~~~~~
+In file included from FewBody/.././FewBody/ar_interaction.hpp:11,
+                 from FewBody/.././FewBody/Group.h:15,
+                 from FewBody/../global.h:6,
+                 from FewBody/FBCheck.cpp:2:
+FewBody/.././FewBody/ar_perturber.hpp: In member function 'void Perturber::calcSoftPertMin(AR::BinaryTree<Particle>&, Float)':
+FewBody/.././FewBody/ar_perturber.hpp:33:58: warning: unused parameter '_bin' [-Wunused-parameter]
+   33 |     void calcSoftPertMin(const AR::BinaryTree<Particle>& _bin, const Float _G) {
+      |                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~
+FewBody/.././FewBody/ar_perturber.hpp:33:76: warning: unused parameter '_G' [-Wunused-parameter]
+   33 |     void calcSoftPertMin(const AR::BinaryTree<Particle>& _bin, const Float _G) {
+      |                                                                ~~~~~~~~~~~~^~
+FewBody/.././FewBody/ar_perturber.hpp: In member function 'void Perturber::printColumnTitle(std::ostream&, int)':
+FewBody/.././FewBody/ar_perturber.hpp:42:42: warning: unused parameter '_fout' [-Wunused-parameter]
+   42 |     void printColumnTitle(std::ostream & _fout, const int _width=20) {
+      |                           ~~~~~~~~~~~~~~~^~~~~
+FewBody/.././FewBody/ar_perturber.hpp:42:59: warning: unused parameter '_width' [-Wunused-parameter]
+   42 |     void printColumnTitle(std::ostream & _fout, const int _width=20) {
+      |                                                 ~~~~~~~~~~^~~~~~~~~
+FewBody/.././FewBody/ar_perturber.hpp: In member function 'void Perturber::printColumn(std::ostream&, int)':
+FewBody/.././FewBody/ar_perturber.hpp:50:37: warning: unused parameter '_fout' [-Wunused-parameter]
+   50 |     void printColumn(std::ostream & _fout, const int _width=20){
+      |                      ~~~~~~~~~~~~~~~^~~~~
+FewBody/.././FewBody/ar_perturber.hpp:50:54: warning: unused parameter '_width' [-Wunused-parameter]
+   50 |     void printColumn(std::ostream & _fout, const int _width=20){
+      |                                            ~~~~~~~~~~^~~~~~~~~
+FewBody/.././FewBody/ar_perturber.hpp: In member function 'void Perturber::writeBinary(FILE*) const':
+FewBody/.././FewBody/ar_perturber.hpp:56:28: warning: unused parameter '_fp' [-Wunused-parameter]
+   56 |     void writeBinary(FILE *_fp) const {
+      |                      ~~~~~~^~~
+FewBody/.././FewBody/ar_perturber.hpp: In member function 'void Perturber::readBinary(FILE*)':
+FewBody/.././FewBody/ar_perturber.hpp:62:27: warning: unused parameter '_fin' [-Wunused-parameter]
+   62 |     void readBinary(FILE *_fin) {
+      |                     ~~~~~~^~~~
+In file included from FewBody/.././FewBody/Group.h:15,
+                 from FewBody/../global.h:6,
+                 from FewBody/FBCheck.cpp:2:
+FewBody/.././FewBody/ar_interaction.hpp: In member function 'void Interaction::calcAccPert(AR::Force*, const Particle*, int, const Particle&, const Perturber&, Float)':
+FewBody/.././FewBody/ar_interaction.hpp:190:139: warning: unused parameter '_perturber' [-Wunused-parameter]
+  190 |     void calcAccPert(AR::Force* _force, const Particle* _particles, const int _n_particle, const Particle& _particle_cm, const Perturber& _perturber, const Float _time) {
+      |                                                                                                                          ~~~~~~~~~~~~~~~~~^~~~~~~~~~
+FewBody/.././FewBody/ar_interaction.hpp: In member function 'int Interaction::modifyOneParticle(Particle&, const Float&, const Float&)':
+FewBody/.././FewBody/ar_interaction.hpp:632:37: warning: unused parameter '_p' [-Wunused-parameter]
+  632 |     int modifyOneParticle(Particle& _p, const Float& _time_now, const Float& _time_end) {
+      |                           ~~~~~~~~~~^~
+FewBody/.././FewBody/ar_interaction.hpp:632:54: warning: unused parameter '_time_now' [-Wunused-parameter]
+  632 |     int modifyOneParticle(Particle& _p, const Float& _time_now, const Float& _time_end) {
+      |                                         ~~~~~~~~~~~~~^~~~~~~~~
+FewBody/.././FewBody/ar_interaction.hpp:632:78: warning: unused parameter '_time_end' [-Wunused-parameter]
+  632 |     int modifyOneParticle(Particle& _p, const Float& _time_now, const Float& _time_end) {
+      |                                                                 ~~~~~~~~~~~~~^~~~~~~~~
+FewBody/.././FewBody/ar_interaction.hpp: In member function 'void Interaction::modifyAndInterruptKepler(AR::InterruptBinary<Particle>&, AR::BinaryTree<Particle>&, double)':
+FewBody/.././FewBody/ar_interaction.hpp:737:19: warning: unused variable 'period' [-Wunused-variable]
+  737 |             Float period = 2*M_PI/mean_motion;
+      |                   ^~~~~~
+FewBody/.././FewBody/ar_interaction.hpp: In member function 'void Interaction::writeBinary(FILE*) const':
+FewBody/.././FewBody/ar_interaction.hpp:759:28: warning: unused parameter '_fp' [-Wunused-parameter]
+  759 |     void writeBinary(FILE *_fp) const {
+      |                      ~~~~~~^~~
+FewBody/.././FewBody/ar_interaction.hpp: In member function 'void Interaction::readBinary(FILE*)':
+FewBody/.././FewBody/ar_interaction.hpp:765:27: warning: unused parameter '_fin' [-Wunused-parameter]
+  765 |     void readBinary(FILE *_fin) {
+      |                     ~~~~~~^~~~
+In file included from FewBody/.././FewBody/Group.h:13,
+                 from FewBody/../global.h:6,
+                 from FewBody/FBInitialization.cpp:2:
+./../SDAR/src/AR/symplectic_integrator.h:3496: warning: ignoring '#pragma omp critical' [-Wunknown-pragmas]
+ 3496 | #pragma omp critical
+      | 
+In file included from FewBody/.././FewBody/Group.h:13,
+                 from FewBody/../global.h:6,
+                 from FewBody/FBIntegration.cpp:2:
+./../SDAR/src/AR/symplectic_integrator.h:3496: warning: ignoring '#pragma omp critical' [-Wunknown-pragmas]
+ 3496 | #pragma omp critical
+      | 
+FewBody/FBCheck.cpp: In member function 'void Particle::checkNewGroup2()':
+FewBody/FBCheck.cpp:157:17: warning: unused variable 'kappa_org_crit' [-Wunused-variable]
+  157 |     const Float kappa_org_crit = 1e-2; // kappa_org criterion for new group kappa_org>kappa_org_crit
+      |                 ^~~~~~~~~~~~~~
+FewBody/FBCheck.cpp: In member function 'bool Group::CheckBreak()':
+FewBody/FBCheck.cpp:364:17: warning: unused variable 'kappa_org_crit' [-Wunused-variable]
+  364 |     const Float kappa_org_crit = 1e-2;
+      |                 ^~~~~~~~~~~~~~
+FewBody/FBCheck.cpp:371:10: warning: variable 'outgoing_flag' set but not used [-Wunused-but-set-variable]
+  371 |     bool outgoing_flag = false; // Indicate whether it is a outgoing case or income case
+      |          ^~~~~~~~~~~~~
+ReadWrite.cpp: In function 'int writeParticle(double, int)':
+ReadWrite.cpp:261:24: warning: 'Index_minReg' may be used uninitialized in this function [-Wmaybe-uninitialized]
+  261 |   members = &particles[Index_minReg];
+      |                        ^~~~~~~~~~~~
+ReadWrite.cpp:257:34: warning: 'Index_minIrr' may be used uninitialized in this function [-Wmaybe-uninitialized]
+  257 |   Particle* members = &particles[Index_minIrr];
+      |                                  ^~~~~~~~~~~~
+In file included from FewBody/.././FewBody/Group.h:13,
+                 from FewBody/../global.h:6,
+                 from FewBody/FBTermination.cpp:2:
+./../SDAR/src/AR/symplectic_integrator.h:3496: warning: ignoring '#pragma omp critical' [-Wunknown-pragmas]
+ 3496 | #pragma omp critical
+      | 
+In file included from FewBody/.././FewBody/ar_interaction.hpp:11,
+                 from FewBody/.././FewBody/Group.h:15,
+                 from FewBody/../global.h:6,
+                 from FewBody/FBInitialization.cpp:2:
+FewBody/.././FewBody/ar_perturber.hpp: In member function 'void Perturber::calcSoftPertMin(AR::BinaryTree<Particle>&, Float)':
+FewBody/.././FewBody/ar_perturber.hpp:33:58: warning: unused parameter '_bin' [-Wunused-parameter]
+   33 |     void calcSoftPertMin(const AR::BinaryTree<Particle>& _bin, const Float _G) {
+      |                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~
+FewBody/.././FewBody/ar_perturber.hpp:33:76: warning: unused parameter '_G' [-Wunused-parameter]
+   33 |     void calcSoftPertMin(const AR::BinaryTree<Particle>& _bin, const Float _G) {
+      |                                                                ~~~~~~~~~~~~^~
+FewBody/.././FewBody/ar_perturber.hpp: In member function 'void Perturber::printColumnTitle(std::ostream&, int)':
+FewBody/.././FewBody/ar_perturber.hpp:42:42: warning: unused parameter '_fout' [-Wunused-parameter]
+   42 |     void printColumnTitle(std::ostream & _fout, const int _width=20) {
+      |                           ~~~~~~~~~~~~~~~^~~~~
+FewBody/.././FewBody/ar_perturber.hpp:42:59: warning: unused parameter '_width' [-Wunused-parameter]
+   42 |     void printColumnTitle(std::ostream & _fout, const int _width=20) {
+      |                                                 ~~~~~~~~~~^~~~~~~~~
+FewBody/.././FewBody/ar_perturber.hpp: In member function 'void Perturber::printColumn(std::ostream&, int)':
+FewBody/.././FewBody/ar_perturber.hpp:50:37: warning: unused parameter '_fout' [-Wunused-parameter]
+   50 |     void printColumn(std::ostream & _fout, const int _width=20){
+      |                      ~~~~~~~~~~~~~~~^~~~~
+FewBody/.././FewBody/ar_perturber.hpp:50:54: warning: unused parameter '_width' [-Wunused-parameter]
+   50 |     void printColumn(std::ostream & _fout, const int _width=20){
+      |                                            ~~~~~~~~~~^~~~~~~~~
+FewBody/.././FewBody/ar_perturber.hpp: In member function 'void Perturber::writeBinary(FILE*) const':
+FewBody/.././FewBody/ar_perturber.hpp:56:28: warning: unused parameter '_fp' [-Wunused-parameter]
+   56 |     void writeBinary(FILE *_fp) const {
+      |                      ~~~~~~^~~
+FewBody/.././FewBody/ar_perturber.hpp: In member function 'void Perturber::readBinary(FILE*)':
+FewBody/.././FewBody/ar_perturber.hpp:62:27: warning: unused parameter '_fin' [-Wunused-parameter]
+   62 |     void readBinary(FILE *_fin) {
+      |                     ~~~~~~^~~~
+In file included from FewBody/.././FewBody/Group.h:15,
+                 from FewBody/../global.h:6,
+                 from FewBody/FBInitialization.cpp:2:
+FewBody/.././FewBody/ar_interaction.hpp: In member function 'void Interaction::calcAccPert(AR::Force*, const Particle*, int, const Particle&, const Perturber&, Float)':
+FewBody/.././FewBody/ar_interaction.hpp:190:139: warning: unused parameter '_perturber' [-Wunused-parameter]
+  190 |     void calcAccPert(AR::Force* _force, const Particle* _particles, const int _n_particle, const Particle& _particle_cm, const Perturber& _perturber, const Float _time) {
+      |                                                                                                                          ~~~~~~~~~~~~~~~~~^~~~~~~~~~
+FewBody/.././FewBody/ar_interaction.hpp: In member function 'int Interaction::modifyOneParticle(Particle&, const Float&, const Float&)':
+FewBody/.././FewBody/ar_interaction.hpp:632:37: warning: unused parameter '_p' [-Wunused-parameter]
+  632 |     int modifyOneParticle(Particle& _p, const Float& _time_now, const Float& _time_end) {
+      |                           ~~~~~~~~~~^~
+FewBody/.././FewBody/ar_interaction.hpp:632:54: warning: unused parameter '_time_now' [-Wunused-parameter]
+  632 |     int modifyOneParticle(Particle& _p, const Float& _time_now, const Float& _time_end) {
+      |                                         ~~~~~~~~~~~~~^~~~~~~~~
+FewBody/.././FewBody/ar_interaction.hpp:632:78: warning: unused parameter '_time_end' [-Wunused-parameter]
+  632 |     int modifyOneParticle(Particle& _p, const Float& _time_now, const Float& _time_end) {
+      |                                                                 ~~~~~~~~~~~~~^~~~~~~~~
+FewBody/.././FewBody/ar_interaction.hpp: In member function 'void Interaction::modifyAndInterruptKepler(AR::InterruptBinary<Particle>&, AR::BinaryTree<Particle>&, double)':
+FewBody/.././FewBody/ar_interaction.hpp:737:19: warning: unused variable 'period' [-Wunused-variable]
+  737 |             Float period = 2*M_PI/mean_motion;
+      |                   ^~~~~~
+FewBody/.././FewBody/ar_interaction.hpp: In member function 'void Interaction::writeBinary(FILE*) const':
+FewBody/.././FewBody/ar_interaction.hpp:759:28: warning: unused parameter '_fp' [-Wunused-parameter]
+  759 |     void writeBinary(FILE *_fp) const {
+      |                      ~~~~~~^~~
+FewBody/.././FewBody/ar_interaction.hpp: In member function 'void Interaction::readBinary(FILE*)':
+FewBody/.././FewBody/ar_interaction.hpp:765:27: warning: unused parameter '_fin' [-Wunused-parameter]
+  765 |     void readBinary(FILE *_fin) {
+      |                     ~~~~~~^~~~
+In file included from FewBody/.././FewBody/ar_interaction.hpp:11,
+                 from FewBody/.././FewBody/Group.h:15,
+                 from FewBody/../global.h:6,
+                 from FewBody/FBIntegration.cpp:2:
+FewBody/.././FewBody/ar_perturber.hpp: In member function 'void Perturber::calcSoftPertMin(AR::BinaryTree<Particle>&, Float)':
+FewBody/.././FewBody/ar_perturber.hpp:33:58: warning: unused parameter '_bin' [-Wunused-parameter]
+   33 |     void calcSoftPertMin(const AR::BinaryTree<Particle>& _bin, const Float _G) {
+      |                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~
+FewBody/.././FewBody/ar_perturber.hpp:33:76: warning: unused parameter '_G' [-Wunused-parameter]
+   33 |     void calcSoftPertMin(const AR::BinaryTree<Particle>& _bin, const Float _G) {
+      |                                                                ~~~~~~~~~~~~^~
+FewBody/.././FewBody/ar_perturber.hpp: In member function 'void Perturber::printColumnTitle(std::ostream&, int)':
+FewBody/.././FewBody/ar_perturber.hpp:42:42: warning: unused parameter '_fout' [-Wunused-parameter]
+   42 |     void printColumnTitle(std::ostream & _fout, const int _width=20) {
+      |                           ~~~~~~~~~~~~~~~^~~~~
+FewBody/.././FewBody/ar_perturber.hpp:42:59: warning: unused parameter '_width' [-Wunused-parameter]
+   42 |     void printColumnTitle(std::ostream & _fout, const int _width=20) {
+      |                                                 ~~~~~~~~~~^~~~~~~~~
+FewBody/.././FewBody/ar_perturber.hpp: In member function 'void Perturber::printColumn(std::ostream&, int)':
+FewBody/.././FewBody/ar_perturber.hpp:50:37: warning: unused parameter '_fout' [-Wunused-parameter]
+   50 |     void printColumn(std::ostream & _fout, const int _width=20){
+      |                      ~~~~~~~~~~~~~~~^~~~~
+FewBody/.././FewBody/ar_perturber.hpp:50:54: warning: unused parameter '_width' [-Wunused-parameter]
+   50 |     void printColumn(std::ostream & _fout, const int _width=20){
+      |                                            ~~~~~~~~~~^~~~~~~~~
+FewBody/.././FewBody/ar_perturber.hpp: In member function 'void Perturber::writeBinary(FILE*) const':
+FewBody/.././FewBody/ar_perturber.hpp:56:28: warning: unused parameter '_fp' [-Wunused-parameter]
+   56 |     void writeBinary(FILE *_fp) const {
+      |                      ~~~~~~^~~
+FewBody/.././FewBody/ar_perturber.hpp: In member function 'void Perturber::readBinary(FILE*)':
+FewBody/.././FewBody/ar_perturber.hpp:62:27: warning: unused parameter '_fin' [-Wunused-parameter]
+   62 |     void readBinary(FILE *_fin) {
+      |                     ~~~~~~^~~~
+In file included from FewBody/.././FewBody/Group.h:13,
+                 from FewBody/../global.h:6,
+                 from FewBody/GroupAccelerationRoutine.cpp:4:
+./../SDAR/src/AR/symplectic_integrator.h:3496: warning: ignoring '#pragma omp critical' [-Wunknown-pragmas]
+ 3496 | #pragma omp critical
+      | 
+In file included from FewBody/.././FewBody/Group.h:15,
+                 from FewBody/../global.h:6,
+                 from FewBody/FBIntegration.cpp:2:
+FewBody/.././FewBody/ar_interaction.hpp: In member function 'void Interaction::calcAccPert(AR::Force*, const Particle*, int, const Particle&, const Perturber&, Float)':
+FewBody/.././FewBody/ar_interaction.hpp:190:139: warning: unused parameter '_perturber' [-Wunused-parameter]
+  190 |     void calcAccPert(AR::Force* _force, const Particle* _particles, const int _n_particle, const Particle& _particle_cm, const Perturber& _perturber, const Float _time) {
+      |                                                                                                                          ~~~~~~~~~~~~~~~~~^~~~~~~~~~
+FewBody/.././FewBody/ar_interaction.hpp: In member function 'int Interaction::modifyOneParticle(Particle&, const Float&, const Float&)':
+FewBody/.././FewBody/ar_interaction.hpp:632:37: warning: unused parameter '_p' [-Wunused-parameter]
+  632 |     int modifyOneParticle(Particle& _p, const Float& _time_now, const Float& _time_end) {
+      |                           ~~~~~~~~~~^~
+FewBody/.././FewBody/ar_interaction.hpp:632:54: warning: unused parameter '_time_now' [-Wunused-parameter]
+  632 |     int modifyOneParticle(Particle& _p, const Float& _time_now, const Float& _time_end) {
+      |                                         ~~~~~~~~~~~~~^~~~~~~~~
+FewBody/.././FewBody/ar_interaction.hpp:632:78: warning: unused parameter '_time_end' [-Wunused-parameter]
+  632 |     int modifyOneParticle(Particle& _p, const Float& _time_now, const Float& _time_end) {
+      |                                                                 ~~~~~~~~~~~~~^~~~~~~~~
+FewBody/.././FewBody/ar_interaction.hpp: In member function 'void Interaction::modifyAndInterruptKepler(AR::InterruptBinary<Particle>&, AR::BinaryTree<Particle>&, double)':
+FewBody/.././FewBody/ar_interaction.hpp:737:19: warning: unused variable 'period' [-Wunused-variable]
+  737 |             Float period = 2*M_PI/mean_motion;
+      |                   ^~~~~~
+FewBody/.././FewBody/ar_interaction.hpp: In member function 'void Interaction::writeBinary(FILE*) const':
+FewBody/.././FewBody/ar_interaction.hpp:759:28: warning: unused parameter '_fp' [-Wunused-parameter]
+  759 |     void writeBinary(FILE *_fp) const {
+      |                      ~~~~~~^~~
+FewBody/.././FewBody/ar_interaction.hpp: In member function 'void Interaction::readBinary(FILE*)':
+FewBody/.././FewBody/ar_interaction.hpp:765:27: warning: unused parameter '_fin' [-Wunused-parameter]
+  765 |     void readBinary(FILE *_fin) {
+      |                     ~~~~~~^~~~
+nvcc warning : '--device-debug (-G)' overrides '--generate-line-info (-lineinfo)'
+In file included from cuda/.././FewBody/Group.h:13,
+                 from cuda/../global.h:6,
+                 from cuda/CalculateRegularAcceleration.cpp:6:
+./../SDAR/src/AR/symplectic_integrator.h:3496: warning: ignoring '#pragma omp critical' [-Wunknown-pragmas]
+ 3496 | #pragma omp critical
+      | 
+In file included from FewBody/.././FewBody/ar_interaction.hpp:11,
+                 from FewBody/.././FewBody/Group.h:15,
+                 from FewBody/../global.h:6,
+                 from FewBody/FBTermination.cpp:2:
+FewBody/.././FewBody/ar_perturber.hpp: In member function 'void Perturber::calcSoftPertMin(AR::BinaryTree<Particle>&, Float)':
+FewBody/.././FewBody/ar_perturber.hpp:33:58: warning: unused parameter '_bin' [-Wunused-parameter]
+   33 |     void calcSoftPertMin(const AR::BinaryTree<Particle>& _bin, const Float _G) {
+      |                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~
+FewBody/.././FewBody/ar_perturber.hpp:33:76: warning: unused parameter '_G' [-Wunused-parameter]
+   33 |     void calcSoftPertMin(const AR::BinaryTree<Particle>& _bin, const Float _G) {
+      |                                                                ~~~~~~~~~~~~^~
+FewBody/.././FewBody/ar_perturber.hpp: In member function 'void Perturber::printColumnTitle(std::ostream&, int)':
+FewBody/.././FewBody/ar_perturber.hpp:42:42: warning: unused parameter '_fout' [-Wunused-parameter]
+   42 |     void printColumnTitle(std::ostream & _fout, const int _width=20) {
+      |                           ~~~~~~~~~~~~~~~^~~~~
+FewBody/.././FewBody/ar_perturber.hpp:42:59: warning: unused parameter '_width' [-Wunused-parameter]
+   42 |     void printColumnTitle(std::ostream & _fout, const int _width=20) {
+      |                                                 ~~~~~~~~~~^~~~~~~~~
+FewBody/.././FewBody/ar_perturber.hpp: In member function 'void Perturber::printColumn(std::ostream&, int)':
+FewBody/.././FewBody/ar_perturber.hpp:50:37: warning: unused parameter '_fout' [-Wunused-parameter]
+   50 |     void printColumn(std::ostream & _fout, const int _width=20){
+      |                      ~~~~~~~~~~~~~~~^~~~~
+FewBody/.././FewBody/ar_perturber.hpp:50:54: warning: unused parameter '_width' [-Wunused-parameter]
+   50 |     void printColumn(std::ostream & _fout, const int _width=20){
+      |                                            ~~~~~~~~~~^~~~~~~~~
+FewBody/.././FewBody/ar_perturber.hpp: In member function 'void Perturber::writeBinary(FILE*) const':
+FewBody/.././FewBody/ar_perturber.hpp:56:28: warning: unused parameter '_fp' [-Wunused-parameter]
+   56 |     void writeBinary(FILE *_fp) const {
+      |                      ~~~~~~^~~
+FewBody/.././FewBody/ar_perturber.hpp: In member function 'void Perturber::readBinary(FILE*)':
+FewBody/.././FewBody/ar_perturber.hpp:62:27: warning: unused parameter '_fin' [-Wunused-parameter]
+   62 |     void readBinary(FILE *_fin) {
+      |                     ~~~~~~^~~~
+In file included from FewBody/.././FewBody/Group.h:15,
+                 from FewBody/../global.h:6,
+                 from FewBody/FBTermination.cpp:2:
+FewBody/.././FewBody/ar_interaction.hpp: In member function 'void Interaction::calcAccPert(AR::Force*, const Particle*, int, const Particle&, const Perturber&, Float)':
+FewBody/.././FewBody/ar_interaction.hpp:190:139: warning: unused parameter '_perturber' [-Wunused-parameter]
+  190 |     void calcAccPert(AR::Force* _force, const Particle* _particles, const int _n_particle, const Particle& _particle_cm, const Perturber& _perturber, const Float _time) {
+      |                                                                                                                          ~~~~~~~~~~~~~~~~~^~~~~~~~~~
+FewBody/.././FewBody/ar_interaction.hpp: In member function 'int Interaction::modifyOneParticle(Particle&, const Float&, const Float&)':
+FewBody/.././FewBody/ar_interaction.hpp:632:37: warning: unused parameter '_p' [-Wunused-parameter]
+  632 |     int modifyOneParticle(Particle& _p, const Float& _time_now, const Float& _time_end) {
+      |                           ~~~~~~~~~~^~
+FewBody/.././FewBody/ar_interaction.hpp:632:54: warning: unused parameter '_time_now' [-Wunused-parameter]
+  632 |     int modifyOneParticle(Particle& _p, const Float& _time_now, const Float& _time_end) {
+      |                                         ~~~~~~~~~~~~~^~~~~~~~~
+FewBody/.././FewBody/ar_interaction.hpp:632:78: warning: unused parameter '_time_end' [-Wunused-parameter]
+  632 |     int modifyOneParticle(Particle& _p, const Float& _time_now, const Float& _time_end) {
+      |                                                                 ~~~~~~~~~~~~~^~~~~~~~~
+FewBody/.././FewBody/ar_interaction.hpp: In member function 'void Interaction::modifyAndInterruptKepler(AR::InterruptBinary<Particle>&, AR::BinaryTree<Particle>&, double)':
+FewBody/.././FewBody/ar_interaction.hpp:737:19: warning: unused variable 'period' [-Wunused-variable]
+  737 |             Float period = 2*M_PI/mean_motion;
+      |                   ^~~~~~
+FewBody/.././FewBody/ar_interaction.hpp: In member function 'void Interaction::writeBinary(FILE*) const':
+FewBody/.././FewBody/ar_interaction.hpp:759:28: warning: unused parameter '_fp' [-Wunused-parameter]
+  759 |     void writeBinary(FILE *_fp) const {
+      |                      ~~~~~~^~~
+FewBody/.././FewBody/ar_interaction.hpp: In member function 'void Interaction::readBinary(FILE*)':
+FewBody/.././FewBody/ar_interaction.hpp:765:27: warning: unused parameter '_fin' [-Wunused-parameter]
+  765 |     void readBinary(FILE *_fin) {
+      |                     ~~~~~~^~~~
+FewBody/FBTermination.cpp: In function 'void computeMemberAccelerationIrr(Particle*, double)':
+FewBody/FBTermination.cpp:536:9: warning: unused variable 'A' [-Wunused-variable]
+  536 |  double A, B, C;
+      |         ^
+FewBody/FBTermination.cpp:536:12: warning: unused variable 'B' [-Wunused-variable]
+  536 |  double A, B, C;
+      |            ^
+FewBody/FBTermination.cpp:536:15: warning: unused variable 'C' [-Wunused-variable]
+  536 |  double A, B, C;
+      |               ^
+In file included from FewBody/.././FewBody/ar_interaction.hpp:11,
+                 from FewBody/.././FewBody/Group.h:15,
+                 from FewBody/../global.h:6,
+                 from FewBody/GroupAccelerationRoutine.cpp:4:
+FewBody/.././FewBody/ar_perturber.hpp: In member function 'void Perturber::calcSoftPertMin(AR::BinaryTree<Particle>&, Float)':
+FewBody/.././FewBody/ar_perturber.hpp:33:58: warning: unused parameter '_bin' [-Wunused-parameter]
+   33 |     void calcSoftPertMin(const AR::BinaryTree<Particle>& _bin, const Float _G) {
+      |                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~
+FewBody/.././FewBody/ar_perturber.hpp:33:76: warning: unused parameter '_G' [-Wunused-parameter]
+   33 |     void calcSoftPertMin(const AR::BinaryTree<Particle>& _bin, const Float _G) {
+      |                                                                ~~~~~~~~~~~~^~
+FewBody/.././FewBody/ar_perturber.hpp: In member function 'void Perturber::printColumnTitle(std::ostream&, int)':
+FewBody/.././FewBody/ar_perturber.hpp:42:42: warning: unused parameter '_fout' [-Wunused-parameter]
+   42 |     void printColumnTitle(std::ostream & _fout, const int _width=20) {
+      |                           ~~~~~~~~~~~~~~~^~~~~
+FewBody/.././FewBody/ar_perturber.hpp:42:59: warning: unused parameter '_width' [-Wunused-parameter]
+   42 |     void printColumnTitle(std::ostream & _fout, const int _width=20) {
+      |                                                 ~~~~~~~~~~^~~~~~~~~
+FewBody/.././FewBody/ar_perturber.hpp: In member function 'void Perturber::printColumn(std::ostream&, int)':
+FewBody/.././FewBody/ar_perturber.hpp:50:37: warning: unused parameter '_fout' [-Wunused-parameter]
+   50 |     void printColumn(std::ostream & _fout, const int _width=20){
+      |                      ~~~~~~~~~~~~~~~^~~~~
+FewBody/.././FewBody/ar_perturber.hpp:50:54: warning: unused parameter '_width' [-Wunused-parameter]
+   50 |     void printColumn(std::ostream & _fout, const int _width=20){
+      |                                            ~~~~~~~~~~^~~~~~~~~
+FewBody/.././FewBody/ar_perturber.hpp: In member function 'void Perturber::writeBinary(FILE*) const':
+FewBody/.././FewBody/ar_perturber.hpp:56:28: warning: unused parameter '_fp' [-Wunused-parameter]
+   56 |     void writeBinary(FILE *_fp) const {
+      |                      ~~~~~~^~~
+FewBody/.././FewBody/ar_perturber.hpp: In member function 'void Perturber::readBinary(FILE*)':
+FewBody/.././FewBody/ar_perturber.hpp:62:27: warning: unused parameter '_fin' [-Wunused-parameter]
+   62 |     void readBinary(FILE *_fin) {
+      |                     ~~~~~~^~~~
+In file included from FewBody/.././FewBody/Group.h:15,
+                 from FewBody/../global.h:6,
+                 from FewBody/GroupAccelerationRoutine.cpp:4:
+FewBody/.././FewBody/ar_interaction.hpp: In member function 'void Interaction::calcAccPert(AR::Force*, const Particle*, int, const Particle&, const Perturber&, Float)':
+FewBody/.././FewBody/ar_interaction.hpp:190:139: warning: unused parameter '_perturber' [-Wunused-parameter]
+  190 |     void calcAccPert(AR::Force* _force, const Particle* _particles, const int _n_particle, const Particle& _particle_cm, const Perturber& _perturber, const Float _time) {
+      |                                                                                                                          ~~~~~~~~~~~~~~~~~^~~~~~~~~~
+FewBody/.././FewBody/ar_interaction.hpp: In member function 'int Interaction::modifyOneParticle(Particle&, const Float&, const Float&)':
+FewBody/.././FewBody/ar_interaction.hpp:632:37: warning: unused parameter '_p' [-Wunused-parameter]
+  632 |     int modifyOneParticle(Particle& _p, const Float& _time_now, const Float& _time_end) {
+      |                           ~~~~~~~~~~^~
+FewBody/.././FewBody/ar_interaction.hpp:632:54: warning: unused parameter '_time_now' [-Wunused-parameter]
+  632 |     int modifyOneParticle(Particle& _p, const Float& _time_now, const Float& _time_end) {
+      |                                         ~~~~~~~~~~~~~^~~~~~~~~
+FewBody/.././FewBody/ar_interaction.hpp:632:78: warning: unused parameter '_time_end' [-Wunused-parameter]
+  632 |     int modifyOneParticle(Particle& _p, const Float& _time_now, const Float& _time_end) {
+      |                                                                 ~~~~~~~~~~~~~^~~~~~~~~
+FewBody/.././FewBody/ar_interaction.hpp: In member function 'void Interaction::modifyAndInterruptKepler(AR::InterruptBinary<Particle>&, AR::BinaryTree<Particle>&, double)':
+FewBody/.././FewBody/ar_interaction.hpp:737:19: warning: unused variable 'period' [-Wunused-variable]
+  737 |             Float period = 2*M_PI/mean_motion;
+      |                   ^~~~~~
+FewBody/.././FewBody/ar_interaction.hpp: In member function 'void Interaction::writeBinary(FILE*) const':
+FewBody/.././FewBody/ar_interaction.hpp:759:28: warning: unused parameter '_fp' [-Wunused-parameter]
+  759 |     void writeBinary(FILE *_fp) const {
+      |                      ~~~~~~^~~
+FewBody/.././FewBody/ar_interaction.hpp: In member function 'void Interaction::readBinary(FILE*)':
+FewBody/.././FewBody/ar_interaction.hpp:765:27: warning: unused parameter '_fin' [-Wunused-parameter]
+  765 |     void readBinary(FILE *_fin) {
+      |                     ~~~~~~^~~~
+FewBody/GroupAccelerationRoutine.cpp: In function 'void formBinaries(std::vector<int>&, std::vector<int>&, std::unordered_map<int, int>&, std::unordered_map<int, int>&)':
+FewBody/GroupAccelerationRoutine.cpp:55:17: warning: comparison of integer expressions of different signedness: 'int' and 'std::vector<int>::size_type' {aka 'long unsigned int'} [-Wsign-compare]
+   55 |  for (int i=0; i<ParticleList.size(); i++) {
+      |                ~^~~~~~~~~~~~~~~~~~~~
+In file included from cuda/.././FewBody/ar_interaction.hpp:11,
+                 from cuda/.././FewBody/Group.h:15,
+                 from cuda/../global.h:6,
+                 from cuda/CalculateRegularAcceleration.cpp:6:
+cuda/.././FewBody/ar_perturber.hpp: In member function 'void Perturber::calcSoftPertMin(AR::BinaryTree<Particle>&, Float)':
+cuda/.././FewBody/ar_perturber.hpp:33:58: warning: unused parameter '_bin' [-Wunused-parameter]
+   33 |     void calcSoftPertMin(const AR::BinaryTree<Particle>& _bin, const Float _G) {
+      |                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~
+cuda/.././FewBody/ar_perturber.hpp:33:76: warning: unused parameter '_G' [-Wunused-parameter]
+   33 |     void calcSoftPertMin(const AR::BinaryTree<Particle>& _bin, const Float _G) {
+      |                                                                ~~~~~~~~~~~~^~
+cuda/.././FewBody/ar_perturber.hpp: In member function 'void Perturber::printColumnTitle(std::ostream&, int)':
+cuda/.././FewBody/ar_perturber.hpp:42:42: warning: unused parameter '_fout' [-Wunused-parameter]
+   42 |     void printColumnTitle(std::ostream & _fout, const int _width=20) {
+      |                           ~~~~~~~~~~~~~~~^~~~~
+cuda/.././FewBody/ar_perturber.hpp:42:59: warning: unused parameter '_width' [-Wunused-parameter]
+   42 |     void printColumnTitle(std::ostream & _fout, const int _width=20) {
+      |                                                 ~~~~~~~~~~^~~~~~~~~
+cuda/.././FewBody/ar_perturber.hpp: In member function 'void Perturber::printColumn(std::ostream&, int)':
+cuda/.././FewBody/ar_perturber.hpp:50:37: warning: unused parameter '_fout' [-Wunused-parameter]
+   50 |     void printColumn(std::ostream & _fout, const int _width=20){
+      |                      ~~~~~~~~~~~~~~~^~~~~
+cuda/.././FewBody/ar_perturber.hpp:50:54: warning: unused parameter '_width' [-Wunused-parameter]
+   50 |     void printColumn(std::ostream & _fout, const int _width=20){
+      |                                            ~~~~~~~~~~^~~~~~~~~
+cuda/.././FewBody/ar_perturber.hpp: In member function 'void Perturber::writeBinary(FILE*) const':
+cuda/.././FewBody/ar_perturber.hpp:56:28: warning: unused parameter '_fp' [-Wunused-parameter]
+   56 |     void writeBinary(FILE *_fp) const {
+      |                      ~~~~~~^~~
+cuda/.././FewBody/ar_perturber.hpp: In member function 'void Perturber::readBinary(FILE*)':
+cuda/.././FewBody/ar_perturber.hpp:62:27: warning: unused parameter '_fin' [-Wunused-parameter]
+   62 |     void readBinary(FILE *_fin) {
+      |                     ~~~~~~^~~~
+In file included from cuda/.././FewBody/Group.h:15,
+                 from cuda/../global.h:6,
+                 from cuda/CalculateRegularAcceleration.cpp:6:
+cuda/.././FewBody/ar_interaction.hpp: In member function 'void Interaction::calcAccPert(AR::Force*, const Particle*, int, const Particle&, const Perturber&, Float)':
+cuda/.././FewBody/ar_interaction.hpp:190:139: warning: unused parameter '_perturber' [-Wunused-parameter]
+  190 |     void calcAccPert(AR::Force* _force, const Particle* _particles, const int _n_particle, const Particle& _particle_cm, const Perturber& _perturber, const Float _time) {
+      |                                                                                                                          ~~~~~~~~~~~~~~~~~^~~~~~~~~~
+cuda/.././FewBody/ar_interaction.hpp: In member function 'int Interaction::modifyOneParticle(Particle&, const Float&, const Float&)':
+cuda/.././FewBody/ar_interaction.hpp:632:37: warning: unused parameter '_p' [-Wunused-parameter]
+  632 |     int modifyOneParticle(Particle& _p, const Float& _time_now, const Float& _time_end) {
+      |                           ~~~~~~~~~~^~
+cuda/.././FewBody/ar_interaction.hpp:632:54: warning: unused parameter '_time_now' [-Wunused-parameter]
+  632 |     int modifyOneParticle(Particle& _p, const Float& _time_now, const Float& _time_end) {
+      |                                         ~~~~~~~~~~~~~^~~~~~~~~
+cuda/.././FewBody/ar_interaction.hpp:632:78: warning: unused parameter '_time_end' [-Wunused-parameter]
+  632 |     int modifyOneParticle(Particle& _p, const Float& _time_now, const Float& _time_end) {
+      |                                                                 ~~~~~~~~~~~~~^~~~~~~~~
+cuda/.././FewBody/ar_interaction.hpp: In member function 'void Interaction::modifyAndInterruptKepler(AR::InterruptBinary<Particle>&, AR::BinaryTree<Particle>&, double)':
+cuda/.././FewBody/ar_interaction.hpp:737:19: warning: unused variable 'period' [-Wunused-variable]
+  737 |             Float period = 2*M_PI/mean_motion;
+      |                   ^~~~~~
+cuda/.././FewBody/ar_interaction.hpp: In member function 'void Interaction::writeBinary(FILE*) const':
+cuda/.././FewBody/ar_interaction.hpp:759:28: warning: unused parameter '_fp' [-Wunused-parameter]
+  759 |     void writeBinary(FILE *_fp) const {
+      |                      ~~~~~~^~~
+cuda/.././FewBody/ar_interaction.hpp: In member function 'void Interaction::readBinary(FILE*)':
+cuda/.././FewBody/ar_interaction.hpp:765:27: warning: unused parameter '_fin' [-Wunused-parameter]
+  765 |     void readBinary(FILE *_fin) {
+      |                     ~~~~~~^~~~
+nvcc warning : '--device-debug (-G)' overrides '--generate-line-info (-lineinfo)'
+In file included from cuda/CalculateRegularAcceleration.cpp:7:
+cuda/../QueueScheduler.h: In member function 'void QueueScheduler::printStatus()':
+cuda/../QueueScheduler.h:214:81: warning: second operand of conditional expression has no effect [-Wunused-value]
+  214 |             std::cout << "|  " << std::setw(4) << workers[i].onDuty ? "T" : "F" ;
+      |                                                                                 ^
+cuda/../QueueScheduler.h:214:81: warning: third operand of conditional expression has no effect [-Wunused-value]
+cuda/CalculateRegularAcceleration.cpp: In function 'void calculateRegAccelerationOnGPU(std::unordered_set<int>&, QueueScheduler&)':
+cuda/CalculateRegularAcceleration.cpp:34:12: warning: unused variable 'ptcl' [-Wunused-variable]
+   34 |  Particle *ptcl;
+      |            ^~~~
+cuda/CalculateRegularAcceleration.cpp: In function 'void sendAllParticlesToGPU_Worker(double)':
+cuda/CalculateRegularAcceleration.cpp:291:33: warning: narrowing conversion of 'Jparticles.std::vector<Jparticle>::size()' from 'std::vector<Jparticle>::size_type' {aka 'long unsigned int'} to 'int' [-Wnarrowing]
+  291 |  int sizes[2] = {Jparticles.size(), Iparticles.size()};
+      |                  ~~~~~~~~~~~~~~~^~
+cuda/CalculateRegularAcceleration.cpp:291:52: warning: narrowing conversion of 'Iparticles.std::vector<Iparticle>::size()' from 'std::vector<Iparticle>::size_type' {aka 'long unsigned int'} to 'int' [-Wnarrowing]
+  291 |  int sizes[2] = {Jparticles.size(), Iparticles.size()};
+      |                                     ~~~~~~~~~~~~~~~^~
+In file included from cuda/CalculateRegularAcceleration.cpp:7:
+cuda/../QueueScheduler.h: In member function 'Worker* QueueScheduler::waitQueue(int)':
+cuda/../QueueScheduler.h:155:5: warning: control reaches end of non-void function [-Wreturn-type]
+  155 |     }
+      |     ^
+cuda/cuda_my_acceleration.cu(193): warning #177-D: variable "target_idx" was declared but never referenced
+     int target_idx = TargetStart + j;
+         ^
+
+Remark: The warnings can be suppressed with "-diag-suppress <warning-number>"
+
+cuda/cuda_my_acceleration.cu(270): warning #177-D: variable "cudaStatus" was declared but never referenced
+   cudaError_t cudaStatus;
+               ^
+
+cuda/cuda_my_acceleration.cu(328): warning #177-D: variable "chunkPerGpu" was declared but never referenced
+   int chunkPerGpu = (NNB + deviceCount - 1) / deviceCount;
+       ^
+
+cuda/cuda_my_acceleration.cu(28): warning #550-D: variable "time_send" was set but never used
+  static CUDA_REAL time_send, time_grav, time_out, time_nb;
+                   ^
+
+cuda/cuda_my_acceleration.cu(28): warning #550-D: variable "time_grav" was set but never used
+  static CUDA_REAL time_send, time_grav, time_out, time_nb;
+                              ^
+
+cuda/cuda_my_acceleration.cu(28): warning #550-D: variable "time_out" was set but never used
+  static CUDA_REAL time_send, time_grav, time_out, time_nb;
+                                         ^
+
+cuda/cuda_my_acceleration.cu(28): warning #550-D: variable "time_nb" was set but never used
+  static CUDA_REAL time_send, time_grav, time_out, time_nb;
+                                                   ^
+
+cuda/cuda_my_acceleration.cu(29): warning #550-D: variable "numInter" was set but never used
+  static long long numInter;
+                   ^
+
+cuda/cuda_my_acceleration.cu(30): warning #550-D: variable "icall" was set but never used
+  static int icall,ini,isend;
+             ^
+
+cuda/cuda_my_acceleration.cu(30): warning #550-D: variable "ini" was set but never used
+  static int icall,ini,isend;
+                   ^
+
+ptxas warning : Conflicting options --device-debug and --generate-line-info specified, ignoring --generate-line-info option
+ptxas info    : 0 bytes gmem
+cuda/cuda_kernels.cu(33): warning #177-D: variable "I" was declared but never referenced
+   int I;
+       ^
+
+Remark: The warnings can be suppressed with "-diag-suppress <warning-number>"
+
+cuda/cuda_kernels.cu(151): warning #177-D: variable "t" was declared but never referenced
+      int t = threadIdx.y;
+          ^
+
+cuda/cuda_kernels.cu(245): warning #177-D: variable "j" was declared but never referenced
+    int j = idx % n;
+        ^
+
+cuda/cuda_kernels.cu(277): warning #177-D: variable "i" was declared but never referenced
+    int i = idx / n;
+        ^
+
+ptxas warning : Conflicting options --device-debug and --generate-line-info specified, ignoring --generate-line-info option
+ptxas info    : 444 bytes gmem
+ptxas info    : Function properties for _Z10warpReducef
+    8 bytes stack frame, 8 bytes spill stores, 8 bytes spill loads
+ptxas info    : Compiling entry function '_Z19print_forces_subsetPfii' for 'sm_52'
+ptxas info    : Function properties for _Z19print_forces_subsetPfii
+    16 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 24 registers, 16 bytes cumulative stack size, 336 bytes cmem[0]
+ptxas info    : Compiling entry function '_Z14compute_forcesPK9IparticlePK9JparticlePfPiS6_iii' for 'sm_52'
+ptxas info    : Function properties for _Z14compute_forcesPK9IparticlePK9JparticlePfPiS6_iii
+    32 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 94 registers, 40 bytes cumulative stack size, 2048 bytes smem, 372 bytes cmem[0]
+ptxas info    : Compiling entry function '_Z20reduce_forces_kernelPKfPfii' for 'sm_52'
+ptxas info    : Function properties for _Z20reduce_forces_kernelPKfPfii
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 14 registers, 344 bytes cmem[0]
+ptxas info    : Compiling entry function '_Z15gather_neighborPKiS0_Pii' for 'sm_52'
+ptxas info    : Function properties for _Z15gather_neighborPKiS0_Pii
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 26 registers, 348 bytes cmem[0]
+ptxas info    : Compiling entry function '_Z18gather_numneighborPKiPii' for 'sm_52'
+ptxas info    : Function properties for _Z18gather_numneighborPKiPii
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 12 registers, 340 bytes cmem[0]
+ptxas info    : Compiling entry function '_Z10initializePfS_iiPi' for 'sm_52'
+ptxas info    : Function properties for _Z10initializePfS_iiPi
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 17 registers, 352 bytes cmem[0]
+ptxas info    : Compiling entry function '_Z28compute_pairwise_diff_subsetPKfPfiiPKii' for 'sm_52'
+ptxas info    : Function properties for _Z28compute_pairwise_diff_subsetPKfPfiiPKii
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 17 registers, 356 bytes cmem[0]
+ptxas info    : Compiling entry function '_Z25compute_magnitudes_subsetPKfS0_PfiiPiPbi' for 'sm_52'
+ptxas info    : Function properties for _Z25compute_magnitudes_subsetPKfS0_PfiiPiPbi
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 21 registers, 372 bytes cmem[0]
+ptxas info    : Compiling entry function '_Z21compute_forces_subsetPKfPfS0_iiPKi' for 'sm_52'
+ptxas info    : Function properties for _Z21compute_forces_subsetPKfPfS0_iiPKi
+    24 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 28 registers, 24 bytes cumulative stack size, 360 bytes cmem[0]
+ptxas info    : Compiling entry function '_Z13reduce_forcesPKfPfii' for 'sm_52'
+ptxas info    : Function properties for _Z13reduce_forcesPKfPfii
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 32 registers, 8 bytes cumulative stack size, 280 bytes smem, 344 bytes cmem[0]
+ptxas info    : Compiling entry function '_Z15assign_neighborPiS_PKfS1_iiPKi' for 'sm_52'
+ptxas info    : Function properties for _Z15assign_neighborPiS_PKfS1_iiPKi
+    56 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 54 registers, 64 bytes cumulative stack size, 16 bytes smem, 368 bytes cmem[0]
+ptxas info    : Function properties for __assert_fail
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Function properties for min
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Function properties for umin
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Function properties for max
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Function properties for rsqrtf
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Function properties for sqrtf
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Function properties for _ZN46_INTERNAL_9ee48681_15_cuda_kernels_cu_b52c01215rsqrtEf
+    8 bytes stack frame, 4 bytes spill stores, 4 bytes spill loads
+ptxas info    : Function properties for _ZN46_INTERNAL_9ee48681_15_cuda_kernels_cu_b52c01213minEij
+    8 bytes stack frame, 8 bytes spill stores, 8 bytes spill loads
+ptxas info    : Function properties for _ZN46_INTERNAL_9ee48681_15_cuda_kernels_cu_b52c012116__shfl_down_syncEjfji
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+Reading specs from /gpfs/software/spack_v20d1/spack/opt/spack/linux-rhel7-x86_64/gcc-4.8.5/gcc-10.4.0-y2t6fi3dfqcypuagzpqf4fgiaydqfuio/bin/../lib/gcc/x86_64-pc-linux-gnu/10.4.0/specs
+COLLECT_GCC=/hpc/software/spack_v20d1/spack/opt/spack/linux-rhel7-x86_64/gcc-4.8.5/gcc-10.4.0-y2t6fi3dfqcypuagzpqf4fgiaydqfuio/bin/g++
+COLLECT_LTO_WRAPPER=/gpfs/software/spack_v20d1/spack/opt/spack/linux-rhel7-x86_64/gcc-4.8.5/gcc-10.4.0-y2t6fi3dfqcypuagzpqf4fgiaydqfuio/bin/../libexec/gcc/x86_64-pc-linux-gnu/10.4.0/lto-wrapper
+Target: x86_64-pc-linux-gnu
+Configured with: /tmp/sbc538/spack-stage/spack-stage-gcc-10.4.0-y2t6fi3dfqcypuagzpqf4fgiaydqfuio/spack-src/configure --prefix=/hpc/software/spack_v20d1/spack/opt/spack/linux-rhel7-x86_64/gcc-4.8.5/gcc-10.4.0-y2t6fi3dfqcypuagzpqf4fgiaydqfuio --with-pkgversion='Spack GCC' --with-bugurl=https://github.com/spack/spack/issues --disable-multilib --enable-languages=c,c++,fortran,jit,lto,obj-c++,objc --disable-nls --disable-canonical-system-headers --with-system-zlib --with-zstd-include=/hpc/software/spack_v20d1/spack/opt/spack/linux-rhel7-x86_64/gcc-4.8.5/zstd-1.5.5-xei6bsaidnatmkietoaf4rzlw2surcwv/include --with-zstd-lib=/hpc/software/spack_v20d1/spack/opt/spack/linux-rhel7-x86_64/gcc-4.8.5/zstd-1.5.5-xei6bsaidnatmkietoaf4rzlw2surcwv/lib --enable-host-shared --with-gnu-ld --with-ld=/hpc/software/spack_v20d1/spack/opt/spack/linux-rhel7-x86_64/gcc-4.8.5/binutils-2.40-gd2enw2337ete4ec3z6pskv5ixdoe2nj/bin/ld --with-gnu-as --with-as=/hpc/software/spack_v20d1/spack/opt/spack/linux-rhel7-x86_64/gcc-4.8.5/binutils-2.40-gd2enw2337ete4ec3z6pskv5ixdoe2nj/bin/as --enable-bootstrap --with-mpfr-include=/hpc/software/spack_v20d1/spack/opt/spack/linux-rhel7-x86_64/gcc-4.8.5/mpfr-4.2.0-f5lkwqb6hedumxl7stkqjfezjpo2yb66/include --with-mpfr-lib=/hpc/software/spack_v20d1/spack/opt/spack/linux-rhel7-x86_64/gcc-4.8.5/mpfr-4.2.0-f5lkwqb6hedumxl7stkqjfezjpo2yb66/lib --with-gmp-include=/hpc/software/spack_v20d1/spack/opt/spack/linux-rhel7-x86_64/gcc-4.8.5/gmp-6.2.1-qn4d24af3ob66wc5j27ukjw5hhdrrrxd/include --with-gmp-lib=/hpc/software/spack_v20d1/spack/opt/spack/linux-rhel7-x86_64/gcc-4.8.5/gmp-6.2.1-qn4d24af3ob66wc5j27ukjw5hhdrrrxd/lib --with-mpc-include=/hpc/software/spack_v20d1/spack/opt/spack/linux-rhel7-x86_64/gcc-4.8.5/mpc-1.3.1-zmsfepdatv2sruhwfd4wrqq2qjk35bnp/include --with-mpc-lib=/hpc/software/spack_v20d1/spack/opt/spack/linux-rhel7-x86_64/gcc-4.8.5/mpc-1.3.1-zmsfepdatv2sruhwfd4wrqq2qjk35bnp/lib --without-isl --with-stage1-ldflags='-Wl,-rpath,/hpc/software/spack_v20d1/spack/opt/spack/linux-rhel7-x86_64/gcc-4.8.5/gcc-10.4.0-y2t6fi3dfqcypuagzpqf4fgiaydqfuio/lib -Wl,-rpath,/hpc/software/spack_v20d1/spack/opt/spack/linux-rhel7-x86_64/gcc-4.8.5/gcc-10.4.0-y2t6fi3dfqcypuagzpqf4fgiaydqfuio/lib64 -Wl,-rpath,/hpc/software/spack_v20d1/spack/opt/spack/linux-rhel7-x86_64/gcc-4.8.5/binutils-2.40-gd2enw2337ete4ec3z6pskv5ixdoe2nj/lib -Wl,-rpath,/hpc/software/spack_v20d1/spack/opt/spack/linux-rhel7-x86_64/gcc-4.8.5/gmp-6.2.1-qn4d24af3ob66wc5j27ukjw5hhdrrrxd/lib -Wl,-rpath,/hpc/software/spack_v20d1/spack/opt/spack/linux-rhel7-x86_64/gcc-4.8.5/mpc-1.3.1-zmsfepdatv2sruhwfd4wrqq2qjk35bnp/lib -Wl,-rpath,/hpc/software/spack_v20d1/spack/opt/spack/linux-rhel7-x86_64/gcc-4.8.5/mpfr-4.2.0-f5lkwqb6hedumxl7stkqjfezjpo2yb66/lib -Wl,-rpath,/hpc/software/spack_v20d1/spack/opt/spack/linux-rhel7-x86_64/gcc-4.8.5/zlib-1.2.13-ltksq3qrz5cydrfqpwytmsd3kzideze7/lib -Wl,-rpath,/hpc/software/spack_v20d1/spack/opt/spack/linux-rhel7-x86_64/gcc-4.8.5/zstd-1.5.5-xei6bsaidnatmkietoaf4rzlw2surcwv/lib' --with-boot-ldflags='-Wl,-rpath,/hpc/software/spack_v20d1/spack/opt/spack/linux-rhel7-x86_64/gcc-4.8.5/gcc-10.4.0-y2t6fi3dfqcypuagzpqf4fgiaydqfuio/lib -Wl,-rpath,/hpc/software/spack_v20d1/spack/opt/spack/linux-rhel7-x86_64/gcc-4.8.5/gcc-10.4.0-y2t6fi3dfqcypuagzpqf4fgiaydqfuio/lib64 -Wl,-rpath,/hpc/software/spack_v20d1/spack/opt/spack/linux-rhel7-x86_64/gcc-4.8.5/binutils-2.40-gd2enw2337ete4ec3z6pskv5ixdoe2nj/lib -Wl,-rpath,/hpc/software/spack_v20d1/spack/opt/spack/linux-rhel7-x86_64/gcc-4.8.5/gmp-6.2.1-qn4d24af3ob66wc5j27ukjw5hhdrrrxd/lib -Wl,-rpath,/hpc/software/spack_v20d1/spack/opt/spack/linux-rhel7-x86_64/gcc-4.8.5/mpc-1.3.1-zmsfepdatv2sruhwfd4wrqq2qjk35bnp/lib -Wl,-rpath,/hpc/software/spack_v20d1/spack/opt/spack/linux-rhel7-x86_64/gcc-4.8.5/mpfr-4.2.0-f5lkwqb6hedumxl7stkqjfezjpo2yb66/lib -Wl,-rpath,/hpc/software/spack_v20d1/spack/opt/spack/linux-rhel7-x86_64/gcc-4.8.5/zlib-1.2.13-ltksq3qrz5cydrfqpwytmsd3kzideze7/lib -Wl,-rpath,/hpc/software/spack_v20d1/spack/opt/spack/linux-rhel7-x86_64/gcc-4.8.5/zstd-1.5.5-xei6bsaidnatmkietoaf4rzlw2surcwv/lib -static-libstdc++ -static-libgcc' --with-build-config=spack
+Thread model: posix
+Supported LTO compression algorithms: zlib zstd
+gcc version 10.4.0 (Spack GCC) 
+MAKEFLAGS= -j8  -- CXX=mpic++
+COMPILER_PATH=/gpfs/software/spack_v20d1/spack/opt/spack/linux-rhel7-x86_64/gcc-4.8.5/gcc-10.4.0-y2t6fi3dfqcypuagzpqf4fgiaydqfuio/bin/../libexec/gcc/x86_64-pc-linux-gnu/10.4.0/:/gpfs/software/spack_v20d1/spack/opt/spack/linux-rhel7-x86_64/gcc-4.8.5/gcc-10.4.0-y2t6fi3dfqcypuagzpqf4fgiaydqfuio/bin/../libexec/gcc/
+LIBRARY_PATH=/gpfs/software/spack_v20d1/spack/opt/spack/linux-rhel7-x86_64/gcc-4.8.5/gcc-10.4.0-y2t6fi3dfqcypuagzpqf4fgiaydqfuio/bin/../lib/gcc/x86_64-pc-linux-gnu/10.4.0/:/gpfs/software/spack_v20d1/spack/opt/spack/linux-rhel7-x86_64/gcc-4.8.5/gcc-10.4.0-y2t6fi3dfqcypuagzpqf4fgiaydqfuio/bin/../lib/gcc/:/gpfs/software/spack_v20d1/spack/opt/spack/linux-rhel7-x86_64/gcc-4.8.5/gcc-10.4.0-y2t6fi3dfqcypuagzpqf4fgiaydqfuio/bin/../lib/gcc/x86_64-pc-linux-gnu/10.4.0/../../../../lib64/:/lib/../lib64/:/usr/lib/../lib64/:/hpc/software/spack_v20d1/spack/opt/spack/linux-rhel7-x86_64/gcc-10.4.0/cuda-12.2.2-ff3jeuelnvd5upofvsukb2bcul4gynko/lib64/:/hpc/software/spack_v20d1/spack/opt/spack/linux-rhel7-x86_64/gcc-10.4.0/libxml2-2.10.3-edt2xh7x7aww3ahxusnspminb6suqmq2/lib/:/hpc/software/spack_v20d1/spack/opt/spack/linux-rhel7-x86_64/gcc-10.4.0/xz-5.4.1-nvalsc4yudizy7s3rtxmdpdmauxpjked/lib/:/hpc/software/spack_v20d1/spack/opt/spack/linux-rhel7-x86_64/gcc-10.4.0/libiconv-1.17-qkvfzrdacd4klm46riptl6fnqkj4r4hj/lib/:/hpc/software/spack_v20d1/spack/opt/spack/linux-rhel7-x86_64/gcc-10.4.0/openmpi-4.1.7-dqxkhin3ctdwl3fddcuhzvay2wejz2nd/lib/:/usr/local/pmix/pmix-4.2.6/lib/:/hpc/software/spack_v20d1/spack/opt/spack/linux-rhel7-x86_64/gcc-10.4.0/numactl-2.0.14-bdmdlzau3gjxve72enrvlv2nsxfysww3/lib/:/usr/local/libevent/libevent-2.1.12/lib/:/usr/local/hwloc/hwloc-2.9.1/lib/:/hpc/software/spack_v20d1/spack/opt/spack/linux-rhel7-x86_64/gcc-10.4.0/zlib-1.2.13-ibwwqz6uiafnym6c4bdnbimkfiuwcpue/lib/:/gpfs/software/spack_v20d1/spack/opt/spack/linux-rhel7-x86_64/gcc-4.8.5/gcc-10.4.0-y2t6fi3dfqcypuagzpqf4fgiaydqfuio/bin/../lib/gcc/x86_64-pc-linux-gnu/10.4.0/../../../:/lib/:/usr/lib/
+COLLECT_GCC_OPTIONS='-O2' '-march=native' '-ftree-vectorize' '-std=c++11' '-Wall' '-Wextra' '-Wuninitialized' '-g' '-D' 'PERFORMANCETRACE' '-I' './../SDAR/src' '-D' 'AR_TTL' '-D' 'AR_SLOWDOWN_TREE' '-D' 'AR_SLOWDOWN_TIMESCALE' '-D' 'FEWBODY' '-I' './cuda' '-D' 'CUDA' '-D' 'NSIGHT' '-o' 'abyss.exe' '-v' '-L/usr/local/cuda/lib64/' '-I' '/hpc/software/spack_v20d1/spack/opt/spack/linux-rhel7-x86_64/gcc-10.4.0/openmpi-4.1.7-dqxkhin3ctdwl3fddcuhzvay2wejz2nd/include' '-fexceptions' '-pthread' '-L/hpc/software/spack_v20d1/spack/opt/spack/linux-rhel7-x86_64/gcc-10.4.0/openmpi-4.1.7-dqxkhin3ctdwl3fddcuhzvay2wejz2nd/lib' '-L/usr/local/hwloc/hwloc-2.9.1//lib' '-L/usr/local/ucx-1.13.0/lib' '-L/usr/local/libevent/libevent-2.1.12//lib' '-L/usr/local/pmix/pmix-4.2.6//lib' '-L/usr/lib64' '-shared-libgcc'
+ /gpfs/software/spack_v20d1/spack/opt/spack/linux-rhel7-x86_64/gcc-4.8.5/gcc-10.4.0-y2t6fi3dfqcypuagzpqf4fgiaydqfuio/bin/../libexec/gcc/x86_64-pc-linux-gnu/10.4.0/collect2 -plugin /gpfs/software/spack_v20d1/spack/opt/spack/linux-rhel7-x86_64/gcc-4.8.5/gcc-10.4.0-y2t6fi3dfqcypuagzpqf4fgiaydqfuio/bin/../libexec/gcc/x86_64-pc-linux-gnu/10.4.0/liblto_plugin.so -plugin-opt=/gpfs/software/spack_v20d1/spack/opt/spack/linux-rhel7-x86_64/gcc-4.8.5/gcc-10.4.0-y2t6fi3dfqcypuagzpqf4fgiaydqfuio/bin/../libexec/gcc/x86_64-pc-linux-gnu/10.4.0/lto-wrapper -plugin-opt=-fresolution=/tmp/ccW4AWzT.res -plugin-opt=-pass-through=-lgcc_s -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lpthread -plugin-opt=-pass-through=-lc -plugin-opt=-pass-through=-lgcc_s -plugin-opt=-pass-through=-lgcc --eh-frame-hdr -m elf_x86_64 -dynamic-linker /lib64/ld-linux-x86-64.so.2 -o abyss.exe /lib/../lib64/crt1.o /lib/../lib64/crti.o /gpfs/software/spack_v20d1/spack/opt/spack/linux-rhel7-x86_64/gcc-4.8.5/gcc-10.4.0-y2t6fi3dfqcypuagzpqf4fgiaydqfuio/bin/../lib/gcc/x86_64-pc-linux-gnu/10.4.0/crtbegin.o -L/usr/local/cuda/lib64/ -L/hpc/software/spack_v20d1/spack/opt/spack/linux-rhel7-x86_64/gcc-10.4.0/openmpi-4.1.7-dqxkhin3ctdwl3fddcuhzvay2wejz2nd/lib -L/usr/local/hwloc/hwloc-2.9.1//lib -L/usr/local/ucx-1.13.0/lib -L/usr/local/libevent/libevent-2.1.12//lib -L/usr/local/pmix/pmix-4.2.6//lib -L/usr/lib64 -rpath /hpc/software/spack_v20d1/spack/opt/spack/linux-rhel7-x86_64/gcc-4.8.5/gcc-10.4.0-y2t6fi3dfqcypuagzpqf4fgiaydqfuio/lib -rpath /hpc/software/spack_v20d1/spack/opt/spack/linux-rhel7-x86_64/gcc-4.8.5/gcc-10.4.0-y2t6fi3dfqcypuagzpqf4fgiaydqfuio/lib64 -L/gpfs/software/spack_v20d1/spack/opt/spack/linux-rhel7-x86_64/gcc-4.8.5/gcc-10.4.0-y2t6fi3dfqcypuagzpqf4fgiaydqfuio/bin/../lib/gcc/x86_64-pc-linux-gnu/10.4.0 -L/gpfs/software/spack_v20d1/spack/opt/spack/linux-rhel7-x86_64/gcc-4.8.5/gcc-10.4.0-y2t6fi3dfqcypuagzpqf4fgiaydqfuio/bin/../lib/gcc -L/gpfs/software/spack_v20d1/spack/opt/spack/linux-rhel7-x86_64/gcc-4.8.5/gcc-10.4.0-y2t6fi3dfqcypuagzpqf4fgiaydqfuio/bin/../lib/gcc/x86_64-pc-linux-gnu/10.4.0/../../../../lib64 -L/lib/../lib64 -L/usr/lib/../lib64 -L/hpc/software/spack_v20d1/spack/opt/spack/linux-rhel7-x86_64/gcc-10.4.0/cuda-12.2.2-ff3jeuelnvd5upofvsukb2bcul4gynko/lib64 -L/hpc/software/spack_v20d1/spack/opt/spack/linux-rhel7-x86_64/gcc-10.4.0/libxml2-2.10.3-edt2xh7x7aww3ahxusnspminb6suqmq2/lib -L/hpc/software/spack_v20d1/spack/opt/spack/linux-rhel7-x86_64/gcc-10.4.0/xz-5.4.1-nvalsc4yudizy7s3rtxmdpdmauxpjked/lib -L/hpc/software/spack_v20d1/spack/opt/spack/linux-rhel7-x86_64/gcc-10.4.0/libiconv-1.17-qkvfzrdacd4klm46riptl6fnqkj4r4hj/lib -L/hpc/software/spack_v20d1/spack/opt/spack/linux-rhel7-x86_64/gcc-10.4.0/openmpi-4.1.7-dqxkhin3ctdwl3fddcuhzvay2wejz2nd/lib -L/usr/local/pmix/pmix-4.2.6/lib -L/hpc/software/spack_v20d1/spack/opt/spack/linux-rhel7-x86_64/gcc-10.4.0/numactl-2.0.14-bdmdlzau3gjxve72enrvlv2nsxfysww3/lib -L/usr/local/libevent/libevent-2.1.12/lib -L/usr/local/hwloc/hwloc-2.9.1/lib -L/hpc/software/spack_v20d1/spack/opt/spack/linux-rhel7-x86_64/gcc-10.4.0/zlib-1.2.13-ibwwqz6uiafnym6c4bdnbimkfiuwcpue/lib -L/gpfs/software/spack_v20d1/spack/opt/spack/linux-rhel7-x86_64/gcc-4.8.5/gcc-10.4.0-y2t6fi3dfqcypuagzpqf4fgiaydqfuio/bin/../lib/gcc/x86_64-pc-linux-gnu/10.4.0/../../.. main.o DefaultGlobal.o MPIRoutines.o readParameterFile.o WorkerRoutines.o RootRoutines.o InitializationRoutines.o IrregularRoutines.o RegularRoutines.o TimeStepRoutines.o parser.o ReadWrite.o PerformanceLog.o Particle/Initialize.o Particle/UpdateParticle.o Particle/ComputeAcceleration.o FewBody/FBCheck.o FewBody/FBInitialization.o FewBody/FBIntegration.o FewBody/FBTermination.o FewBody/GroupAccelerationRoutine.o cuda/CalculateRegularAcceleration.o cuda/cuda_my_acceleration.o cuda/cuda_kernels.o -lmpi -lcudart -lcublas -lnvToolsExt -lcuda -rpath /hpc/software/spack_v20d1/spack/opt/spack/linux-rhel7-x86_64/gcc-4.8.5/gcc-10.4.0-y2t6fi3dfqcypuagzpqf4fgiaydqfuio/lib/gcc/x86_64-pc-linux-gnu/10.4.0 -rpath /hpc/software/spack_v20d1/spack/opt/spack/linux-rhel7-x86_64/gcc-4.8.5/gcc-10.4.0-y2t6fi3dfqcypuagzpqf4fgiaydqfuio/lib64 -rpath /hpc/software/spack_v20d1/spack/opt/spack/linux-rhel7-x86_64/gcc-10.4.0/openmpi-4.1.7-dqxkhin3ctdwl3fddcuhzvay2wejz2nd/lib -rpath /usr/local/hwloc/hwloc-2.9.1//lib -rpath /usr/local/ucx-1.13.0/lib -rpath /usr/local/libevent/libevent-2.1.12//lib -rpath /usr/local/pmix/pmix-4.2.6//lib -rpath /usr/lib64 -lmpi_cxx -lmpi -lstdc++ -lm -lgcc_s -lgcc -lpthread -lc -lgcc_s -lgcc /gpfs/software/spack_v20d1/spack/opt/spack/linux-rhel7-x86_64/gcc-4.8.5/gcc-10.4.0-y2t6fi3dfqcypuagzpqf4fgiaydqfuio/bin/../lib/gcc/x86_64-pc-linux-gnu/10.4.0/crtend.o /lib/../lib64/crtn.o
+COLLECT_GCC_OPTIONS='-O2' '-march=native' '-ftree-vectorize' '-std=c++11' '-Wall' '-Wextra' '-Wuninitialized' '-g' '-D' 'PERFORMANCETRACE' '-I' './../SDAR/src' '-D' 'AR_TTL' '-D' 'AR_SLOWDOWN_TREE' '-D' 'AR_SLOWDOWN_TIMESCALE' '-D' 'FEWBODY' '-I' './cuda' '-D' 'CUDA' '-D' 'NSIGHT' '-o' 'abyss.exe' '-v' '-L/usr/local/cuda/lib64/' '-I' '/hpc/software/spack_v20d1/spack/opt/spack/linux-rhel7-x86_64/gcc-10.4.0/openmpi-4.1.7-dqxkhin3ctdwl3fddcuhzvay2wejz2nd/include' '-fexceptions' '-pthread' '-L/hpc/software/spack_v20d1/spack/opt/spack/linux-rhel7-x86_64/gcc-10.4.0/openmpi-4.1.7-dqxkhin3ctdwl3fddcuhzvay2wejz2nd/lib' '-L/usr/local/hwloc/hwloc-2.9.1//lib' '-L/usr/local/ucx-1.13.0/lib' '-L/usr/local/libevent/libevent-2.1.12//lib' '-L/usr/local/pmix/pmix-4.2.6//lib' '-L/usr/lib64' '-shared-libgcc'
