@@ -7,6 +7,7 @@
 #include "../QueueScheduler.h"
 #include "cuda_functions.h"
 #include <cstring>
+#include <cuda_runtime.h>
 #include "cuda_defs.h"
 
 #ifdef NSIGHT
@@ -45,7 +46,7 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int>& RegularList, QueueSc
 	nvtxRangePushA("sendAllParticlesToGPU");
 #endif
 	int RegularListSize = RegularList.size();
-	std::vector<int> RegularListIndices;
+	static std::vector<int> RegularListIndices;
 	sendAllParticlesToGPU(new_time, RegularListSize, RegularListIndices);  // needs to be updated
 #ifdef NSIGHT
 	nvtxRangePop();
@@ -165,6 +166,41 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int>& RegularList, QueueSc
 
 
 void sendAllParticlesToGPU(double new_time, const int& RegularListSize, std::vector<int>& RegularListIndices) {
+	static std::vector<Jparticle> Jparticles;
+	static std::vector<Iparticle> Iparticles;
+	static std::vector<int> counts;
+	static std::vector<int> Jcounts;
+	static std::vector<int> Icounts;
+	static std::vector<int> Jdispls;
+	static std::vector<int> Idispls;
+	static void* pinned_J_ptr = nullptr;
+	static size_t pinned_J_bytes = 0;
+	static void* pinned_I_ptr = nullptr;
+	static size_t pinned_I_bytes = 0;
+
+	auto ensurePinned = [](void* ptr, size_t bytes, void*& pinned_ptr, size_t& pinned_bytes, const char* label) {
+		if (bytes == 0) {
+			return;
+		}
+		if (ptr == pinned_ptr && bytes <= pinned_bytes) {
+			return;
+		}
+		if (pinned_ptr != nullptr) {
+			cudaError_t unreg = cudaHostUnregister(pinned_ptr);
+			if (unreg != cudaSuccess) {
+				fprintf(stderr, "cudaHostUnregister failed for %s: %s\n", label, cudaGetErrorString(unreg));
+			}
+		}
+		cudaError_t reg = cudaHostRegister(ptr, bytes, cudaHostRegisterPortable);
+		if (reg != cudaSuccess) {
+			fprintf(stderr, "cudaHostRegister failed for %s: %s\n", label, cudaGetErrorString(reg));
+			pinned_ptr = nullptr;
+			pinned_bytes = 0;
+			return;
+		}
+		pinned_ptr = ptr;
+		pinned_bytes = bytes;
+	};
 
 /*
 #ifdef PERFORMANCETRACE
@@ -177,31 +213,30 @@ void sendAllParticlesToGPU(double new_time, const int& RegularListSize, std::vec
 	for (int i = 0; i < NumberOfWorker; i++)
 		MPI_Isend(&queue, 1, QueueType, i+1, QUEUE_TAG, MPI_COMM_WORLD, &requests[i]);
 
-	std::vector<Jparticle> Jparticles;
+	if (Jparticles.capacity() < static_cast<size_t>(NumberOfParticle)) {
+		Jparticles.reserve(NumberOfParticle);
+	}
 	Jparticles.resize(NumberOfParticle);
 
-	std::vector<Iparticle> Iparticles;
+	if (Iparticles.capacity() < static_cast<size_t>(RegularListSize)) {
+		Iparticles.reserve(RegularListSize);
+	}
 	Iparticles.resize(RegularListSize);
 
 	RegularListIndices.resize(RegularListSize);
 
-	std::vector<int> counts;
 	counts.resize(NumberOfProcessor * 2);
 	int send_buf[2] = {0, 0};
 
-	std::vector<int> Jcounts;
 	Jcounts.resize(NumberOfProcessor);
 	Jcounts[0] = 0;
 
-	std::vector<int> Icounts;
 	Icounts.resize(NumberOfProcessor);
 	Icounts[0] = 0;
 
-	std::vector<int> Jdispls;
 	Jdispls.resize(NumberOfProcessor);
 	Jdispls[0] = 0;
 
-	std::vector<int> Idispls;
 	Idispls.resize(NumberOfProcessor);
 	Idispls[0] = 0;
 
@@ -232,6 +267,9 @@ void sendAllParticlesToGPU(double new_time, const int& RegularListSize, std::vec
 	}
 	assert(Jdispls[NumberOfProcessor - 1] + Jcounts[NumberOfProcessor - 1] == NumberOfParticle);
 	assert(Idispls[NumberOfProcessor - 1] + Icounts[NumberOfProcessor - 1] == RegularListSize);
+
+	ensurePinned(Jparticles.data(), Jparticles.size() * sizeof(Jparticle), pinned_J_ptr, pinned_J_bytes, "Jparticles");
+	ensurePinned(Iparticles.data(), Iparticles.size() * sizeof(Iparticle), pinned_I_ptr, pinned_I_bytes, "Iparticles");
 
 	MPI_Gatherv(nullptr, 0, JparticleType, 
 				Jparticles.data(), Jcounts.data(), Jdispls.data(), JparticleType, ROOT, MPI_COMM_WORLD);
@@ -267,12 +305,24 @@ void sendAllParticlesToGPU(double new_time, const int& RegularListSize, std::vec
 void sendAllParticlesToGPU_Worker(double new_time) {
 
 	Particle* ptcl;
-	std::vector<Jparticle> Jparticles;
-	std::vector<Iparticle> Iparticles;
-	std::vector<int> LocalRegularList;
+	static std::vector<Jparticle> Jparticles;
+	static std::vector<Iparticle> Iparticles;
+	static std::vector<int> LocalRegularList;
 
 	int J_start = (MyRank - 1) * (global_variable->LastParticleIndex + 1) / NumberOfWorker;
 	int J_end   = MyRank * (global_variable->LastParticleIndex + 1) / NumberOfWorker;
+
+	Jparticles.clear();
+	Iparticles.clear();
+	LocalRegularList.clear();
+
+	if (Jparticles.capacity() < static_cast<size_t>(J_end - J_start)) {
+		Jparticles.reserve(J_end - J_start);
+	}
+	if (Iparticles.capacity() < static_cast<size_t>(J_end - J_start)) {
+		Iparticles.reserve(J_end - J_start);
+		LocalRegularList.reserve(J_end - J_start);
+	}
 
 	for (int j = J_start; j < J_end; j++) {
 

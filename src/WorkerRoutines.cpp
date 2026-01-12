@@ -275,12 +275,30 @@ void WorkerRoutines() {
 
 		// return that it's over
 		//task = -1;
-		if (task == IrrForce || task == RegForce || task == IrrUpdate || task == RegUpdate)
-			MPI_Isend(&ptcl_id, 1, MPI_INT, ROOT, TERMINATE_TAG, MPI_COMM_WORLD, &request);
-		else
-			MPI_Isend(&task, 1, MPI_INT, ROOT, TERMINATE_TAG, MPI_COMM_WORLD, &request);
+		int mpi_rc = MPI_SUCCESS;
+		if (task == IrrForce || task == RegForce || task == IrrUpdate || task == RegUpdate) {
+			mpi_rc = MPI_Isend(&ptcl_id, 1, MPI_INT, ROOT, TERMINATE_TAG, MPI_COMM_WORLD, &request);
+		} else {
+			int task_value = static_cast<int>(task);
+			mpi_rc = MPI_Isend(&task_value, 1, MPI_INT, ROOT, TERMINATE_TAG, MPI_COMM_WORLD, &request);
+		}
+		if (mpi_rc != MPI_SUCCESS) {
+			char err[MPI_MAX_ERROR_STRING];
+			int err_len = 0;
+			MPI_Error_string(mpi_rc, err, &err_len);
+			fprintf(stderr, "MPI_Isend failed in WorkerRoutines (rc=%d): %s\n", mpi_rc, err);
+			MPI_Abort(MPI_COMM_WORLD, mpi_rc);
+		}
 
-		MPI_Wait(&request, &status);
+		mpi_rc = MPI_Wait(&request, &status);
+		if (mpi_rc != MPI_SUCCESS || status.MPI_ERROR != MPI_SUCCESS) {
+			char err[MPI_MAX_ERROR_STRING];
+			int err_len = 0;
+			int status_rc = (mpi_rc != MPI_SUCCESS) ? mpi_rc : status.MPI_ERROR;
+			MPI_Error_string(status_rc, err, &err_len);
+			fprintf(stderr, "MPI_Wait failed in WorkerRoutines (rc=%d): %s\n", status_rc, err);
+			MPI_Abort(MPI_COMM_WORLD, status_rc);
+		}
 		//std::cerr << "Processor " << MyRank << " done." << std::endl;
 	}
 }

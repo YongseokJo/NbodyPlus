@@ -193,8 +193,24 @@ void InitializationRoutines(QueueScheduler &queue_scheduler, Worker *workers) {
     //MPI_Win_sync(win);  // Synchronize memory
     //MPI_Barrier(shared_comm);
     while (completed_tasks < total_tasks) {
-        MPI_Irecv(&task, 1, MPI_INT, MPI_ANY_SOURCE, TERMINATE_TAG, MPI_COMM_WORLD, &request);
-        MPI_Wait(&request, &status);
+        int recv_task = 0; // TaskName is int8_t; receive into int to match MPI_INT.
+        int mpi_rc = MPI_Irecv(&recv_task, 1, MPI_INT, MPI_ANY_SOURCE, TERMINATE_TAG, MPI_COMM_WORLD, &request);
+        if (mpi_rc != MPI_SUCCESS) {
+            char err[MPI_MAX_ERROR_STRING];
+            int err_len = 0;
+            MPI_Error_string(mpi_rc, err, &err_len);
+            fprintf(stderr, "MPI_Irecv failed in TimeSync (rc=%d): %s\n", mpi_rc, err);
+            MPI_Abort(MPI_COMM_WORLD, mpi_rc);
+        }
+        mpi_rc = MPI_Wait(&request, &status);
+        if (mpi_rc != MPI_SUCCESS || status.MPI_ERROR != MPI_SUCCESS) {
+            char err[MPI_MAX_ERROR_STRING];
+            int err_len = 0;
+            int status_rc = (mpi_rc != MPI_SUCCESS) ? mpi_rc : status.MPI_ERROR;
+            MPI_Error_string(status_rc, err, &err_len);
+            fprintf(stderr, "MPI_Wait failed in TimeSync (rc=%d): %s\n", status_rc, err);
+            MPI_Abort(MPI_COMM_WORLD, status_rc);
+        }
         completed_tasks++;
     }
     fprintf(stdout, "MyRank = %d time_block = %d, EnzoTimeStep = %e\n", MyRank, time_block, EnzoTimeStep);

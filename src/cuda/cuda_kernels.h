@@ -24,6 +24,10 @@ __global__ void reduce_forces_kernel(const CUDA_REAL *diff,  // [6 * m * n] tota
                                      int n, // "rows" in each component
                                      int m  // "columns"
                                     );
+__global__ void reduce_forces_kernel_fixed(const CUDA_REAL *diff,  // [6 * m * GridDimY] total
+                                           CUDA_REAL       *result, // [6 * m] output
+                                           int m  // "columns"
+                                          );
 /*
 __device__ void _addition(Result &result, const Result res);
 __device__ void _copy(Result &result, const Result res);

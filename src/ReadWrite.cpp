@@ -3,6 +3,7 @@
 #include <vector>
 #include <sstream>
 #include <sys/stat.h>
+#include <cerrno>
 #include <iomanip>
 #include "global.h"
 #include "Queue.h"
@@ -124,9 +125,12 @@ bool createDirectory(const std::string& path) {
 	if (status == 0) {
 		std::cout << "Folder created successfully." << std::endl;
 	} else {
-		std::cerr << "Error creating folder." << std::endl;
-		// You can use perror to print the error message for more details
-		perror("mkdir");
+		if (errno != EEXIST) {
+			std::cerr << "Error creating folder." << std::endl;
+			// You can use perror to print the error message for more details
+			perror("mkdir");
+			return false;
+		}
 	}
 	return true;
 }

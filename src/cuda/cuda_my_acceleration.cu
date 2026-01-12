@@ -145,8 +145,8 @@ void GetAcceleration(
 
 			dim3 blockDim3(16, 6);       // 16 threads along X, 6 along Y
 			dim3 gridDim3((NumTarget+15)/16, 1);
-			reduce_forces_kernel<<<gridDim3, blockDim3, 0, gpu[i].stream>>>(
-				gpu[i].d_result_block, gpu[i].d_result, GridDimY, NumTarget);
+			reduce_forces_kernel_fixed<<<gridDim3, blockDim3, 0, gpu[i].stream>>>(
+				gpu[i].d_result_block, gpu[i].d_result, NumTarget);
 
             gather_neighbor<<<gridDim2, blockDim2, 0, gpu[i].stream>>>(
                 gpu[i].d_neighbor_block, 
@@ -512,4 +512,3 @@ extern "C" {
 		GetAcceleration(*NumTargetTotal, RegularList);
 	}
 }
-

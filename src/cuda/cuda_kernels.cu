@@ -143,6 +143,24 @@ __global__ void reduce_forces_kernel(const CUDA_REAL *diff,  // [6 * m * n] tota
     result[col * 6 + comp] = sumVal;
 }
 
+__global__ void reduce_forces_kernel_fixed(const CUDA_REAL *diff,  // [6 * m * GridDimY] total
+                                           CUDA_REAL       *result, // [6 * m] output
+                                           int m  // "columns"
+                                          )
+{
+    int col = blockIdx.x * blockDim.x + threadIdx.x;
+    int comp = blockIdx.y * blockDim.y + threadIdx.y;
+
+    if (comp >= 6 || col >= m) return;
+
+    CUDA_REAL sumVal = 0.0;
+#pragma unroll
+    for (int i = 0; i < GridDimY; i++){
+        sumVal += diff[comp * m * GridDimY + (col * GridDimY) + i];
+    }
+
+    result[col * 6 + comp] = sumVal;
+}
 
 // using uint16 type?
 __global__ void gather_neighbor(const int* neighbor_block, const int* num_neighbor, int* gathered_neighbor, int m) {
@@ -176,6 +194,7 @@ __global__ void gather_numneighbor(const int* numneighbor_block, int* gathered_n
     if (i >= m) return;
 
 	int temp = 0;
+#pragma unroll
 	for (int j = 0; j < GridDimY; j++) {
 		temp += numneighbor_block[i * GridDimY + j];
 	}
@@ -709,4 +728,3 @@ __global__ void assign_neighbor(int *neighbor, int* num_neighbor, const REAL* r2
 }
 
 #endif
-
