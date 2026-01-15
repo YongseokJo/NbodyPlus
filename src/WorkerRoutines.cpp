@@ -274,11 +274,13 @@ void WorkerRoutines() {
 		}
 
 		// return that it's over
-		//task = -1;
+		// NOTE: TaskName is int8_t; always send an int buffer with MPI_INT.
+		int done_signal;
 		if (task == IrrForce || task == RegForce || task == IrrUpdate || task == RegUpdate)
-			MPI_Isend(&ptcl_id, 1, MPI_INT, ROOT, TERMINATE_TAG, MPI_COMM_WORLD, &request);
+			done_signal = ptcl_id;
 		else
-			MPI_Isend(&task, 1, MPI_INT, ROOT, TERMINATE_TAG, MPI_COMM_WORLD, &request);
+			done_signal = static_cast<int>(task);
+		MPI_Isend(&done_signal, 1, MPI_INT, ROOT, TERMINATE_TAG, MPI_COMM_WORLD, &request);
 
 		MPI_Wait(&request, &status);
 		//std::cerr << "Processor " << MyRank << " done." << std::endl;

@@ -47,3 +47,8 @@ config.secret
 *.class
 *.jar
 *.err
+
+# Workflow artifacts
+logs/
+workflow/runs/
+workflow/config.local.sh

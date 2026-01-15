@@ -28,6 +28,10 @@ extern int MyRank;
 extern int NumberOfProcessor;
 extern int NumberOfWorker;
 
+// Size of the node-local communicator used for shared windows.
+// If this is 1 while NumberOfProcessor>1, shared windows are effectively disabled.
+extern int SharedCommSize;
+
 extern MPI_Comm shared_comm;
 
 extern MPI_Win win;

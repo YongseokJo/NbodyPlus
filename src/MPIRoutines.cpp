@@ -7,6 +7,7 @@
 #include "global.h"
 #include <mpi.h>
 #include <cstddef>
+#include <cstdlib>
 #include "Queue.h"
 #include "cuda/cuda_defs.h"
 
@@ -43,9 +44,60 @@ void initializeMPI(int argc, char *argv[]) {
 	int shared_rank, shared_size;
 	MPI_Comm_rank(shared_comm, &shared_rank);
 	MPI_Comm_size(shared_comm, &shared_size);
+	SharedCommSize = shared_size;
 
 	if (MyRank == ROOT)
 		fprintf(stdout, "MyRank = %d, NumberOfProcessor = %d : Shared Rank = %d, Shared size = %d\n", MyRank, NumberOfProcessor, shared_rank, shared_size);
+
+	// Some environments return shared_size==1 (e.g., due to isolation that prevents true
+	// cross-process shared memory). In those cases, forcing a node communicator can make
+	// MPI_Win_allocate_shared fail. Only enable the hostname-based fallback when explicitly
+	// requested.
+	const char* force_node_comm_env = std::getenv("ABYSS_FORCE_HOSTNAME_SHARED_COMM");
+	const bool force_node_comm = (force_node_comm_env != nullptr) && (std::string(force_node_comm_env) != "0");
+	if (force_node_comm && NumberOfProcessor > 1 && shared_size == 1) {
+		char host[256];
+		if (gethostname(host, sizeof(host)) != 0) {
+			snprintf(host, sizeof(host), "unknown");
+		}
+		host[sizeof(host) - 1] = '\0';
+
+		std::vector<char> all_hosts(NumberOfProcessor * sizeof(host), '\0');
+		MPI_Allgather(host, sizeof(host), MPI_CHAR, all_hosts.data(), sizeof(host), MPI_CHAR, MPI_COMM_WORLD);
+
+		bool all_same = true;
+		for (int r = 1; r < NumberOfProcessor; ++r) {
+			if (strncmp(all_hosts.data(), all_hosts.data() + r * sizeof(host), sizeof(host)) != 0) {
+				all_same = false;
+				break;
+			}
+		}
+
+		auto hash_host = [](const char* s) -> int {
+			// djb2
+			unsigned long h = 5381;
+			for (const unsigned char* p = (const unsigned char*)s; *p; ++p) {
+				h = ((h << 5) + h) + *p;
+			}
+			return static_cast<int>(h & 0x7fffffff);
+		};
+
+		int color = all_same ? 0 : hash_host(host);
+		MPI_Comm shared_comm_fallback;
+		MPI_Comm_split(MPI_COMM_WORLD, color, MyRank, &shared_comm_fallback);
+
+		MPI_Comm_free(&shared_comm);
+		shared_comm = shared_comm_fallback;
+
+		MPI_Comm_rank(shared_comm, &shared_rank);
+		MPI_Comm_size(shared_comm, &shared_size);
+		SharedCommSize = shared_size;
+		if (MyRank == ROOT) {
+			fprintf(stdout,
+				"[MPI] WARNING: MPI_COMM_TYPE_SHARED gave shared_size=1; using hostname-based node comm (shared_size=%d)\n",
+				shared_size);
+		}
+	}
 
 	// Allocate shared memory
 	if (shared_rank == 0) {
@@ -213,7 +265,7 @@ MPI_Datatype createJparticleType() {
 							MPI_FLOAT, MPI_FLOAT, MPI_FLOAT, MPI_INT};
 #else
 	MPI_Datatype types[8] = {MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE,
-							MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_LONG_LONG};
+							MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_INT};
 #endif
 	MPI_Aint disp[8], base;
 

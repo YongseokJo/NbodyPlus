@@ -1,0 +1,32 @@
+#!/bin/bash
+# Generated PBS job script (do not edit directly)
+
+#PBS -N {{JOB_NAME}}
+#PBS -A {{ACCOUNT}}
+{{PBS_QUEUE_LINE}}
+#PBS -l select={{NODES}}:ncpus={{CPUS_TOTAL}}:ngpus={{GPUS}}
+#PBS -l walltime={{WALLTIME}}
+#PBS -o {{LOG_OUT}}
+#PBS -e {{LOG_ERR}}
+
+set -euo pipefail
+
+ABYSS_ROOT="{{ABYSS_ROOT}}"
+RUN_DIR="{{RUN_DIR}}"
+
+mkdir -p "$RUN_DIR"
+
+export OMPI_MCA_btl_vader_backing_directory="{{OMPI_BACKING_DIR}}"
+export OMPI_MCA_osc_sm_backing_directory="{{OMPI_BACKING_DIR}}"
+export OMPI_MCA_shmem_mmap_backing_file_base_dir="{{OMPI_BACKING_DIR}}"
+
+cd "$ABYSS_ROOT"
+
+echo "[job] host=$(hostname) start=$(date)"
+echo "[job] run_dir=$RUN_DIR"
+
+bash workflow/bin/compile.sh "$RUN_DIR"
+bash workflow/bin/run.sh "$RUN_DIR"
+bash workflow/bin/analyze.sh "$RUN_DIR"
+
+echo "[job] done=$(date)"

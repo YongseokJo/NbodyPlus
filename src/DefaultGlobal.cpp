@@ -11,6 +11,8 @@ int MyRank;
 int NumberOfProcessor;
 int NumberOfWorker;
 
+int SharedCommSize;
+
 // Shared memory communicator
 MPI_Comm shared_comm;
 

@@ -59,8 +59,18 @@ int main(int argc, char *argv[]) {
 	readParameterFile();
 
 	// Write Particles
-	if (MyRank == ROOT && !readData())
-		fprintf(stderr, "Read Data Failed!\n");
+	// If shared windows are not actually shared (SharedCommSize==1), each rank must
+	// load the initial condition data to avoid workers reading uninitialized memory.
+	if (SharedCommSize == 1) {
+		if (!readData()) {
+			fprintf(stderr, "Read Data Failed!\n");
+		}
+		MPI_Barrier(MPI_COMM_WORLD);
+	} else {
+		if (MyRank == ROOT && !readData())
+			fprintf(stderr, "Read Data Failed!\n");
+		MPI_Barrier(MPI_COMM_WORLD);
+	}
 	
 
 	if (MyRank == ROOT) {

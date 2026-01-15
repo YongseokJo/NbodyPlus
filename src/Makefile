@@ -9,6 +9,10 @@ CXXFLAGS  = -O2 -march=native -ftree-vectorize -std=c++11 -Wall -Wextra -Wuninit
 #CXXFLAGS  = -O0 -std=c++11 -Wall -Wextra -Wuninitialized -I./Particle -I./ -g -fopenmp  -fsanitize=thread
 #CXXFLAGS  = -O2 -std=c++11 -Wall -Wextra -Wuninitialized -I./Particle -I./ -g -fopenmp  #-fsanitize=thread
 
+# Optional extra flags (e.g., for small test builds):
+#   make EXTRA_CXXFLAGS='-DMaxNumParticle=2000 -DMaxNumNeighbor=200'
+CXXFLAGS += $(EXTRA_CXXFLAGS)
+
 #NVCC_FLAGS_PROFILE = -g -lineinfo
 
 # Libraries
@@ -34,6 +38,7 @@ ifdef USE_CUDA
 	CXXFLAGS += -I./cuda -DCUDA -DNSIGHT
 	NVCC = nvcc
 	NVCCFLAGS = -O2 --std=c++11 -G -Xcompiler -rdynamic -g -lineinfo -Xptxas=-v -lcuda -lcudart -lcompute-sanitizer -I./../SDAR/src
+	NVCCFLAGS += $(EXTRA_NVCCFLAGS)
 	NVCC_FLAGS_DEBUG = -g -G --device-debug -lineinfo
 	LDFLAGS += -L/usr/local/cuda/lib64/ -lcudart -lcublas -lnvToolsExt -lcuda
 	CXX_SRCS += cuda/CalculateRegularAcceleration.cpp
