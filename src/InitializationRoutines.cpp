@@ -192,8 +192,9 @@ void InitializationRoutines(QueueScheduler &queue_scheduler, Worker *workers) {
     fflush(stdout);
     //MPI_Win_sync(win);  // Synchronize memory
     //MPI_Barrier(shared_comm);
+    int task_signal = 0; // Use int buffer for MPI_INT payloads.
     while (completed_tasks < total_tasks) {
-        MPI_Irecv(&task, 1, MPI_INT, MPI_ANY_SOURCE, TERMINATE_TAG, MPI_COMM_WORLD, &request);
+        MPI_Irecv(&task_signal, 1, MPI_INT, MPI_ANY_SOURCE, TERMINATE_TAG, MPI_COMM_WORLD, &request);
         MPI_Wait(&request, &status);
         completed_tasks++;
     }

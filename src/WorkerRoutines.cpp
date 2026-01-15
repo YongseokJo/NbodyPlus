@@ -275,10 +275,10 @@ void WorkerRoutines() {
 
 		// return that it's over
 		//task = -1;
-		if (task == IrrForce || task == RegForce || task == IrrUpdate || task == RegUpdate)
-			MPI_Isend(&ptcl_id, 1, MPI_INT, ROOT, TERMINATE_TAG, MPI_COMM_WORLD, &request);
-		else
-			MPI_Isend(&task, 1, MPI_INT, ROOT, TERMINATE_TAG, MPI_COMM_WORLD, &request);
+		int send_value = ptcl_id;
+		if (!(task == IrrForce || task == RegForce || task == IrrUpdate || task == RegUpdate))
+			send_value = static_cast<int>(task);
+		MPI_Isend(&send_value, 1, MPI_INT, ROOT, TERMINATE_TAG, MPI_COMM_WORLD, &request);
 
 		MPI_Wait(&request, &status);
 		//std::cerr << "Processor " << MyRank << " done." << std::endl;
