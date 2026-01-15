@@ -1,17 +1,49 @@
 # Ignore compiled files
 *.o
-*.txt
-*.out
 *.exe
-# Ignore log files
-*.log
+*.so
 
-# Ignore build directories
+# Logs and temp files (keep important test outputs and perf CSVs)
+*.log
+*.core
+*.tmp
+*.swp
+
+# Editor/IDE files
+.vscode/
+.idea/
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+
+# Build directories
 build/
 src/output
 src/stderr
 src/stdout
 
+# Keep perf CSVs and test output performance logs in the repo
+!/perf_runs/*.csv
+!/perf_runs/*.txt
+!/test_*/output/*_perf.csv
+
 # Ignore configuration files with secrets
 config.secret
 
+*.out
+*.perf
+*.csv
+*.txt
+*.stderr
+*.stdout
+*.log
+*.tmp
+*.swp
+*.bak
+*.old
+*.backup
+*.class
+*.jar
+*.err
