@@ -23,6 +23,7 @@ void sendAllParticlesToGPU(double new_time, const int& RegularListSize, std::vec
  */
 void calculateRegAccelerationOnGPU(std::unordered_set<int>& RegularList, QueueScheduler &queue_scheduler){
 
+// Performance tracing variables (kept for backward compatibility)
 #ifdef PERFORMANCETRACE
 	std::chrono::high_resolution_clock::time_point start_point_routine;
 	std::chrono::high_resolution_clock::time_point end_point_routine;
@@ -33,6 +34,7 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int>& RegularList, QueueSc
 
 	Particle *ptcl;
 
+	PROFILE_START(TimerID::RegularSendToGPU);
 #ifdef PERFORMANCETRACE
 	start_point_routine = std::chrono::high_resolution_clock::now();
 #endif
@@ -60,7 +62,9 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int>& RegularList, QueueSc
 	performance.RegularSendAllParticlesToGPU +=
 		std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
 #endif
+	PROFILE_STOP(TimerID::RegularSendToGPU);
 
+	PROFILE_START(TimerID::RegularGPU);
 #ifdef PERFORMANCETRACE
 	start_point_routine = std::chrono::high_resolution_clock::now();
 #endif
@@ -88,7 +92,9 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int>& RegularList, QueueSc
 	performance.RegularGPU +=
 		std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
 #endif
+	PROFILE_STOP(TimerID::RegularGPU);
 
+	PROFILE_START(TimerID::RegularAdjust);
 #ifdef PERFORMANCETRACE
 	start_point_routine = std::chrono::high_resolution_clock::now();
 #endif
@@ -159,6 +165,7 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int>& RegularList, QueueSc
 	performance.RegularAdjust +=
 		std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
 #endif
+	PROFILE_STOP(TimerID::RegularAdjust);
 
 	//CloseDevice();
 } // calculate 0th, 1st derivative of force + neighbors on GPU ends

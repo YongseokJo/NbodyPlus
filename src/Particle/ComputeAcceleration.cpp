@@ -95,7 +95,7 @@ void Particle::computeAccelerationIrr() {
 			vx += v[dim]*x[dim];
 		}
 
-		if (sqrt(r2) < RSEARCH/position_unit && vx < 0)
+		if (sqrt(r2) < RSearch && vx < 0)
 			this->NewMembers[this->NewNumberOfMember++] = ptcl->ParticleIndex;
 
 		//mdot = ptcl->evolveStarMass(CurrentTimeIrr,
@@ -139,7 +139,7 @@ void Particle::computeAccelerationIrr() {
 			vx += v[dim]*x[dim];
 		}
 
-		if (sqrt(r2) < RSEARCH/position_unit && vx < 0)
+		if (sqrt(r2) < RSearch && vx < 0)
 			this->NewMembers[this->NewNumberOfMember++] = i;
 
 		//mdot = ptcl->evolveStarMass(CurrentTimeIrr,

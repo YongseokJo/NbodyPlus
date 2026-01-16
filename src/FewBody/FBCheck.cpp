@@ -25,7 +25,7 @@ Float calcDrDv(const double *pos1, const double *pos2, const double *vel1, const
 void Particle::checkNewGroup() {
 
     const Float kappa_org_crit = 1e-2; // kappa_org criterion for new group kappa_org>kappa_org_crit
-    const double r_crit = RSEARCH/position_unit; // distance criterion
+    const double r_crit = RSearch; // distance criterion
 
     double pos1[Dim], vel1[Dim];
 
@@ -45,7 +45,7 @@ void Particle::checkNewGroup() {
         }
 
         // if (ptcl2->TimeStepIrr > this->TimeStepIrr) // test_1e5_4 & 5: this must make the same result!
-        if (ptcl2->TimeStepIrr*EnzoTimeStep*1e4 > TSEARCH) // fiducial: 1e-5 but for RSEARCH = 0.00025 pc, 1e-6 Myr seems good
+        if (ptcl2->TimeStepIrr > TSearch) // fiducial: 1e-5 but for RSEARCH = 0.00025 pc, 1e-6 Myr seems good
             continue;
 
         double time_ptcl2 = (ptcl2->NumberOfNeighbor == 0) ? ptcl2->CurrentTimeReg : ptcl2->CurrentTimeIrr;
@@ -103,7 +103,7 @@ void Particle::checkNewGroup() {
         }
 
         // if (ptcl2->TimeStepIrr > this->TimeStepIrr) // test_1e5_4 & 5: this must make the same result!
-        if (ptcl2->TimeStepIrr*EnzoTimeStep*1e4 > TSEARCH) // fiducial: 1e-5 but for RSEARCH = 0.00025 pc, 1e-6 Myr seems good
+        if (ptcl2->TimeStepIrr > TSearch) // fiducial: 1e-5 but for RSEARCH = 0.00025 pc, 1e-6 Myr seems good
             continue;
 
         double time_ptcl2 = (ptcl2->NumberOfNeighbor == 0) ? ptcl2->CurrentTimeReg : ptcl2->CurrentTimeIrr;
@@ -155,7 +155,7 @@ void Particle::checkNewGroup() {
 void Particle::checkNewGroup2() {
     
     const Float kappa_org_crit = 1e-2; // kappa_org criterion for new group kappa_org>kappa_org_crit
-    const double r_crit = RSEARCH/position_unit; // distance criterion
+    const double r_crit = RSearch; // distance criterion
 
     double pos1[Dim], vel1[Dim];
 
@@ -248,7 +248,7 @@ void Particle::checkNewGroup3() {
 
         const Float dr = sqrt((pos1[0]-pos2[0])*(pos1[0]-pos2[0])+(pos1[1]-pos2[1])*(pos1[1]-pos2[1])+(pos1[2]-pos2[2])*(pos1[2]-pos2[2]));
 
-        if (dr > RSEARCH/position_unit) continue;
+        if (dr > RSearch) continue;
 
         Float fcm[3] = {this->Mass*this->a_tot[0][0] + ptcl2->Mass*ptcl2->a_tot[0][0], 
         this->Mass*this->a_tot[1][0] + ptcl2->Mass*ptcl2->a_tot[1][0], 
@@ -277,7 +277,7 @@ void Particle::checkNewGroup3() {
 
 void Particle::checkNewGroup4() {
 
-    const double r_crit = RSEARCH/position_unit; // distance criterion
+    const double r_crit = RSearch; // distance criterion
 
     double pos1[Dim], vel1[Dim];
 
@@ -297,7 +297,7 @@ void Particle::checkNewGroup4() {
         }
 
         // if (ptcl2->TimeStepIrr > this->TimeStepIrr) // test_1e5_4 & 5: this must make the same result!
-        if (ptcl2->TimeStepIrr*EnzoTimeStep*1e4 > TSEARCH) // fiducial: 1e-5 but for RSEARCH = 0.00025 pc, 1e-6 Myr seems good
+        if (ptcl2->TimeStepIrr > TSearch) // fiducial: 1e-5 but for RSEARCH = 0.00025 pc, 1e-6 Myr seems good
             continue;
 
         double time_ptcl2 = (ptcl2->NumberOfNeighbor == 0) ? ptcl2->CurrentTimeReg : ptcl2->CurrentTimeIrr;
@@ -333,7 +333,7 @@ void Particle::checkNewGroup4() {
         }
 
         // if (ptcl2->TimeStepIrr > this->TimeStepIrr) // test_1e5_4 & 5: this must make the same result!
-        if (ptcl2->TimeStepIrr*EnzoTimeStep*1e4 > TSEARCH) // fiducial: 1e-5 but for RSEARCH = 0.00025 pc, 1e-6 Myr seems good
+        if (ptcl2->TimeStepIrr > TSearch) // fiducial: 1e-5 but for RSEARCH = 0.00025 pc, 1e-6 Myr seems good
             continue;
 
         double time_ptcl2 = (ptcl2->NumberOfNeighbor == 0) ? ptcl2->CurrentTimeReg : ptcl2->CurrentTimeIrr;
@@ -373,7 +373,7 @@ bool Group::CheckBreak() {
     // check whether periapsis distance >  2e-3 pc
     // Periapsis is too far and binary is not close enough to use regularized technique.
     // if (bin_root.semi*(1-bin_root.ecc) > 2e-3/position_unit){ // test7
-    if (bin_root.semi*(1-bin_root.ecc) > RSEARCH/position_unit && bin_root.r > 2 * RSEARCH/position_unit) { // test8 // fiducial
+    if (bin_root.semi*(1-bin_root.ecc) > RSearch && bin_root.r > 2 * RSearch) { // test8 // fiducial
     // if (bin_root.semi*(1-bin_root.ecc) > 1.2e-3/position_unit){ // test12
         fprintf(workerout, "Break group: too far periapsis! (CM PID: %d)\n\t", groupCM->PID);
         fprintf(workerout, "time: %e Myr\n\t", CurrentTime*EnzoTimeStep*1e4);
@@ -474,7 +474,7 @@ bool Group::CheckBreak() {
         outgoing_flag = true;
         // check whether separation is larger than distance criterion. 
         // /*
-        if (bin_root.r > sym_int.info.r_break_crit && bin_root.r > 2 * RSEARCH/position_unit) { // test8 // fiducial
+        if (bin_root.r > sym_int.info.r_break_crit && bin_root.r > 2 * RSearch) { // test8 // fiducial
         // if (bin_root.r > sym_int.info.r_break_crit && bin_root.r > 1.2e-3/position_unit) { // test12
             fprintf(workerout, "Break group: binary escape! (CM PID: %d)\n\t", groupCM->PID);
             fprintf(workerout, "time: %e Myr\n\t", CurrentTime*EnzoTimeStep*1e4);
@@ -613,7 +613,7 @@ bool Group::CheckBreak() {
         if (drdv>0.0) {
             outgoing_flag = true;
             // check distance criterion
-            if (bin_root.r > 2 * RSEARCH/position_unit) { // test8 // seems good! // fiducial
+            if (bin_root.r > 2 * RSearch) { // test8 // seems good! // fiducial
             // if (bin_root.r > 1.2e-3/position_unit) { // test12
                 fprintf(workerout, "Break group: hyperbolic escape! (CM PID: %d)\n\t", groupCM->PID);
                 fprintf(workerout, "time: %e Myr\n\t", CurrentTime*EnzoTimeStep*1e4);
@@ -768,7 +768,7 @@ bool Group::CheckBreak() {
             // in binary case, only break when apo is larger than distance criterion
             Float apo = bin_root.semi * (1.0 + bin_root.ecc);
             // if (apo>sym_int.info.r_break_crit||bin_root.semi<0.0) {
-            if (apo>sym_int.info.r_break_crit && bin_root.r > 2 * RSEARCH/position_unit) { // test8 // fiducial
+            if (apo>sym_int.info.r_break_crit && bin_root.r > 2 * RSearch) { // test8 // fiducial
             // if ((apo>sym_int.info.r_break_crit && bin_root.r > 1.2e-3/position_unit)||bin_root.semi<0.0) { // test12
                 auto& sd_root = sym_int.info.getBinaryTreeRoot().slowdown;
 
@@ -800,7 +800,7 @@ bool Group::CheckBreak2() {
     sym_int.info.generateBinaryTree(sym_int.particles, manager.interaction.gravitational_constant);
     auto& bin_root = sym_int.info.getBinaryTreeRoot();
 
-    if (bin_root.r > RSEARCH/position_unit) {
+    if (bin_root.r > RSearch) {
 
         if (bin_root.semi > 0.0 && bin_root.ecca < 0.0) // incoming binary
             return false;

@@ -125,7 +125,9 @@ public:
 
         if (type == 0) // blocking
         {
+            PROFILE_START(TimerID::QueueWait);
             MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &_status);
+            PROFILE_STOP(TimerID::QueueWait);
             _completed_queues++;
             // Retrieve the rank of the source processor
             _rank = _status.MPI_SOURCE;
@@ -140,7 +142,7 @@ public:
         else if (type == 1) // non-blocking
         {
             MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &_flag, &_status);
-            if (_flag) 
+            if (_flag)
             {
                 _rank = _status.MPI_SOURCE;
                 //fprintf(stdout,"Iprobe probed someting on rank %d.\n", _rank);
@@ -152,6 +154,7 @@ public:
                 return nullptr;
             }
         }
+        return nullptr;  // Safety return for undefined type
     }
 
 

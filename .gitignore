@@ -1,3 +1,6 @@
+# Workflow artifacts
+workflow/runs/
+workflow/config.local.sh
 # Ignore compiled files
 *.o
 *.exe
@@ -47,3 +50,7 @@ config.secret
 *.class
 *.jar
 *.err
+*.png
+*.h5
+
+*.tar.gz

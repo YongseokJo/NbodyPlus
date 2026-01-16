@@ -153,7 +153,7 @@ void WorkerRoutines() {
 				}
 				else {
 					ptcl->NewNumberOfMember = 0;
-					if (ptcl->TimeStepIrr*EnzoTimeStep*1e4 < TSEARCH)
+					if (ptcl->TimeStepIrr < TSearch)
 						ptcl->checkNewGroup();
 				}
 				/*
@@ -163,7 +163,7 @@ void WorkerRoutines() {
 				}
 				else {
 					ptcl->NewNumberOfMember = 0;
-					if (ptcl->TimeStepIrr*EnzoTimeStep*1e4 < TSEARCH)
+					if (ptcl->TimeStepIrr < TSearch)
 						ptcl->checkNewGroup();
 				}
 				*/

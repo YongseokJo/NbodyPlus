@@ -3,9 +3,10 @@
 #define MaxNumNeighbor 1000 // 10000 -> 2000 modified by EW 2025.1.11
 #define MaxNeighborRadius 0.2 // Let's set MaxNeighborRadius as 0.2 pc // Newly set by EW 2025.8.18 // This can be set in config file later.
 
-// SDAR // These should be set in config file, not in macro here!!! by EW 2025.8.28
-#define RSEARCH 2.5e-4 // 1e-4 // pc
-#define TSEARCH 1e-6 // 1e-6 // Myr // unused anymore by EW 2025.9.15
+// SDAR // Now configured via TOML config file (RSearch, TSearch global variables) by EW 2025.8.28
+// Legacy macros - kept for reference only
+// #define RSEARCH 2.5e-4 // 1e-4 // pc (default in config)
+// #define TSEARCH 1e-6 // 1e-6 // Myr (default in config)
 
 // Particle Type in line with SEVN by EW 2025.7.5
 #define NO_FEEDBACK_STAR            0

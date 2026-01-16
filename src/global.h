@@ -5,8 +5,10 @@
 #include "GlobalVariable.h"
 #include "./FewBody/Group.h"
 #include "performance.h"
+#include "profiler.h"
 #include <mpi.h>
 #include <unordered_map>
+#include <string>
 
 #ifdef SEVN
 #include "IO.h"
@@ -53,10 +55,20 @@ extern int LastParticleIndex;
 extern int NumberOfParticle;
 extern int NewCMPID;
 
-// Parameters deterined in config file
+// Parameters determined in config file
 extern double eta;
 extern int FixNumNeighbor;
 extern double InitialNeighborRadius;
+extern double RSearch;              // Few-body search radius (code units)
+extern double TSearch;              // Few-body search time (code units)
+
+// Output settings
+extern bool UseCompression;         // Enable HDF5 compression
+extern int CompressionLevel;        // GZIP compression level (1-9)
+
+// Restart settings
+extern bool RestartEnabled;
+extern std::string CheckpointFile;
 
 // Few-body
 extern std::unordered_map<int, int> CMPtclWorker; // by EW 2025.1.4 // unordered_map by EW 2025.1.11

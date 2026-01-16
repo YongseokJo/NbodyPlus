@@ -65,6 +65,7 @@ void RootRoutines() {
 		workers[i].initialize(i);
 	}
 
+// Performance tracing variables (kept for backward compatibility)
 #ifdef PERFORMANCETRACE
 	std::chrono::high_resolution_clock::time_point start_point_whole;
 	std::chrono::high_resolution_clock::time_point end_point_whole;
@@ -100,12 +101,14 @@ void RootRoutines() {
 				return;
 			}
 
+			PROFILE_START(TimerID::WholeRoutine);
 #ifdef PERFORMANCETRACE
 			start_point_whole = std::chrono::high_resolution_clock::now();
 #endif
 
 #ifndef MULTIMAP
 
+			PROFILE_START(TimerID::UpdateNextRegTime);
 #ifdef PERFORMANCETRACE
 			start_point_routine = std::chrono::high_resolution_clock::now();
 #endif
@@ -121,6 +124,7 @@ void RootRoutines() {
 			performance.UpdateNextRegTime +=
 				std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
 #endif
+			PROFILE_STOP(TimerID::UpdateNextRegTime);
 
 #endif // no multimap
 
@@ -133,6 +137,7 @@ void RootRoutines() {
 
 #ifdef SEVN
 
+			PROFILE_START(TimerID::StellarEvolution);
 #ifdef PERFORMANCETRACE
 			start_point_routine = std::chrono::high_resolution_clock::now();
 #endif
@@ -145,6 +150,7 @@ void RootRoutines() {
 			performance.StellarEvolution +=
 				std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
 #endif
+			PROFILE_STOP(TimerID::StellarEvolution);
 
 #endif
 
@@ -153,6 +159,7 @@ void RootRoutines() {
 			performance.WholeRoutine +=
 				std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_whole - start_point_whole).count();
 #endif
+			PROFILE_STOP(TimerID::WholeRoutine);
 			//exit(SUCCESS);
 		} // While(1)
 	} // Actual Loop

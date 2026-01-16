@@ -76,7 +76,9 @@ struct Worker {
 
     void callback() {
         int return_value;
+        PROFILE_START(TimerID::MPIRecv);
         MPI_Recv(&return_value, 1, MPI_INT, this->MyRank, TERMINATE_TAG, MPI_COMM_WORLD, &_status);
+        PROFILE_STOP(TimerID::MPIRecv);
         if (!onDuty) {
             fprintf(stderr, "Something's worng! the worker %d was not on duty.\n", this->MyRank);
             fprintf(stdout, "Something's worng! the worker %d was not on duty.\n", this->MyRank);
@@ -102,7 +104,9 @@ struct Worker {
 
 
     void sendTask(Queue &_queue) {
+        PROFILE_START(TimerID::MPISend);
         MPI_Send(&_queue,   1,  QueueType,  this->MyRank,   QUEUE_TAG,  MPI_COMM_WORLD);
+        PROFILE_STOP(TimerID::MPISend);
         onDuty = true;
     }
 

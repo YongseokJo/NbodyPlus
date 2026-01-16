@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+#PBS -A {{ACCOUNT}}
+#PBS -q {{PARTITION}}
+#PBS -N {{JOB_NAME}}
+#PBS -l select={{NODES}}:ncpus={{CPUS_PER_TASK}}:ngpus={{GPUS}}
+#PBS -l walltime={{WALLTIME}}
+#PBS -o {{RUN_DIR}}/pbs_stdout.log
+#PBS -e {{RUN_DIR}}/pbs_stderr.log
+
+set -euo pipefail
+
+REPO_ROOT="{{REPO_ROOT}}"
+RUN_DIR="{{RUN_DIR}}"
+
+cd "$REPO_ROOT"
+
+./workflow/bin/compile.sh "$RUN_DIR"
+./workflow/bin/run.sh "$RUN_DIR"
+./workflow/bin/analyze.sh "$RUN_DIR"

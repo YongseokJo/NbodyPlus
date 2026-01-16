@@ -77,7 +77,7 @@ void Group::initialIntegrator(int NumMembers) {
 	fprintf(workerout, "\n");
 	fflush(workerout);
 
-	sym_int.info.r_break_crit = RSEARCH/position_unit; // distance criterion for checking stability
+	sym_int.info.r_break_crit = RSearch; // distance criterion for checking stability (already in code units)
 	// more information in symplectic_integrator.h
 	// ar.cxx: 1e-3 pc
 	// check whether the system is stable for 10000 out period and the apo-center is below break criterion

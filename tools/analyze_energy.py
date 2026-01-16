@@ -1,11 +1,21 @@
-#!/usr/bin/env python3
+"""
+Analyze energy conservation for ABYSS HDF5 output files.
+
+This script reads HDF5 output from ABYSS simulations and computes:
+- Kinetic, potential, and total energy at each timestep
+- Energy conservation (dE/E0) over time
+- Creates plots of energy evolution
+
+Usage:
+    python analyze_energy.py <output.h5> [--plot <path>] [--csv <path>]
+"""
+
 import argparse
-import glob
-import os
-import re
 import sys
+from pathlib import Path
 
 import numpy as np
+import h5py
 
 try:
     import matplotlib.pyplot as plt
@@ -24,133 +34,185 @@ SEC_PER_YR = 3.1536e7
 KM_S_TO_PC_YR = SEC_PER_YR / PC_IN_KM
 
 
-def parse_snapshot(path):
-    time_myr = None
-    masses = []
-    pos = []
-    vel = []
-    header_found = False
+def read_hdf5_step(filename, step_name):
+    """Read particle data from a specific timestep in HDF5 file."""
+    with h5py.File(filename, 'r') as f:
+        step = f[step_name]
 
-    with open(path, "r") as handle:
-        for raw in handle:
-            line = raw.strip()
-            if not line:
-                continue
-            if line.startswith("Time"):
-                match = re.search(r"Time\s*=\s*([0-9eE+\-.]+)", line)
-                if match:
-                    time_myr = float(match.group(1))
-                continue
-            if line.startswith("PID"):
-                header_found = True
-                continue
-            if not header_found:
-                continue
+        # Read metadata (convert to Python float to avoid numpy scalar issues)
+        time_myr = float(step.attrs['Time_Myr'])
 
-            parts = line.split()
-            if len(parts) < 8:
-                continue
-            try:
-                m_msun = float(parts[1])
-                x = float(parts[2])
-                y = float(parts[3])
-                z = float(parts[4])
-                vx = float(parts[5])
-                vy = float(parts[6])
-                vz = float(parts[7])
-            except ValueError:
-                continue
-            masses.append(m_msun)
-            pos.append((x, y, z))
-            vel.append((vx, vy, vz))
+        # Read particle data
+        masses = step['Mass_Msun'][:]
+        pos = np.column_stack([
+            step['X_pc'][:],
+            step['Y_pc'][:],
+            step['Z_pc'][:]
+        ])
+        vel = np.column_stack([
+            step['Vx_km_s'][:],
+            step['Vy_km_s'][:],
+            step['Vz_km_s'][:]
+        ])
 
-    if time_myr is None:
-        raise ValueError(f"Missing time header in {path}")
-    if not masses:
-        raise ValueError(f"No particle data parsed in {path}")
+        # Read energy tracking attributes if available
+        energy_attrs = {}
+        for attr in ['E_binary', 'E_binary_SD', 'E_merger', 'E_PN']:
+            if attr in step.attrs:
+                energy_attrs[attr] = step.attrs[attr]
 
-    return (
-        time_myr,
-        np.array(masses, dtype=np.float64),
-        np.array(pos, dtype=np.float64),
-        np.array(vel, dtype=np.float64),
-    )
+    return time_myr, masses, pos, vel, energy_attrs
+
+
+def get_timesteps(filename):
+    """Get sorted list of timestep names from HDF5 file."""
+    with h5py.File(filename, 'r') as f:
+        steps = [key for key in f.keys() if key.startswith('Step_')]
+        # Sort by step number
+        steps.sort(key=lambda x: int(x.split('_')[1]))
+    return steps
 
 
 def compute_energy_code_units(m_msun, pos_pc, vel_kms):
+    """
+    Compute kinetic, potential, and total energy in code units.
+
+    Parameters:
+        m_msun: masses in solar masses
+        pos_pc: positions in parsecs (N x 3)
+        vel_kms: velocities in km/s (N x 3)
+
+    Returns:
+        kinetic, potential, total energy in code units
+    """
+    # Convert to code units
     m_code = m_msun / MASS_UNIT_MSUN
     pos_code = pos_pc / POSITION_UNIT_PC
     vel_pcyr = vel_kms * KM_S_TO_PC_YR
     vel_code = vel_pcyr / VELOCITY_UNIT_PC_YR
 
+    # Kinetic energy: sum of 0.5 * m * v^2
     kinetic = 0.5 * np.sum(m_code * np.sum(vel_code ** 2, axis=1))
 
+    # Potential energy: -G * sum(mi * mj / rij) for all pairs
+    # In code units, G = 1
     n = pos_code.shape[0]
-    diff = pos_code[:, None, :] - pos_code[None, :, :]
-    r = np.linalg.norm(diff, axis=2)
-    iu = np.triu_indices(n, k=1)
-    rij = r[iu]
-    inv_r = np.where(rij > 0.0, 1.0 / rij, 0.0)
-    potential = -np.sum(m_code[iu[0]] * m_code[iu[1]] * inv_r)
+
+    # For large N, use vectorized computation
+    if n > 5000:
+        # Use chunked computation for memory efficiency
+        potential = 0.0
+        chunk_size = 1000
+        for i in range(0, n, chunk_size):
+            i_end = min(i + chunk_size, n)
+            for j in range(i, n, chunk_size):
+                j_end = min(j + chunk_size, n)
+
+                diff = pos_code[i:i_end, None, :] - pos_code[None, j:j_end, :]
+                r = np.linalg.norm(diff, axis=2)
+
+                if i == j:
+                    # Same chunk - only upper triangle
+                    iu = np.triu_indices(i_end - i, k=1)
+                    rij = r[iu]
+                    inv_r = np.where(rij > 0.0, 1.0 / rij, 0.0)
+                    potential -= np.sum(m_code[i:i_end][iu[0]] * m_code[i:i_end][iu[1]] * inv_r)
+                else:
+                    # Different chunks - all pairs
+                    inv_r = np.where(r > 0.0, 1.0 / r, 0.0)
+                    m_i = m_code[i:i_end][:, None]
+                    m_j = m_code[j:j_end][None, :]
+                    potential -= np.sum(m_i * m_j * inv_r)
+    else:
+        # Standard computation for smaller systems
+        diff = pos_code[:, None, :] - pos_code[None, :, :]
+        r = np.linalg.norm(diff, axis=2)
+        iu = np.triu_indices(n, k=1)
+        rij = r[iu]
+        inv_r = np.where(rij > 0.0, 1.0 / rij, 0.0)
+        potential = -np.sum(m_code[iu[0]] * m_code[iu[1]] * inv_r)
 
     return kinetic, potential, kinetic + potential
 
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Analyze energy conservation for ABYSS output files."
+        description="Analyze energy conservation for ABYSS HDF5 output files."
     )
     parser.add_argument(
-        "output_dir",
-        nargs="?",
-        default="test/test1/output",
-        help="Directory containing output_*.txt files.",
+        "hdf5_file",
+        help="HDF5 output file from ABYSS simulation.",
     )
     parser.add_argument(
         "--plot",
         default=None,
-        help="Path to save plot (default: <output_dir>/energy_analysis.png).",
+        help="Path to save plot (default: <input_dir>/energy_analysis.png).",
     )
     parser.add_argument(
         "--csv",
         default=None,
         help="Optional path to save CSV table.",
     )
+    parser.add_argument(
+        "--no-plot",
+        action="store_true",
+        help="Skip generating plot (useful for headless environments).",
+    )
     args = parser.parse_args()
 
-    pattern = os.path.join(args.output_dir, "output_*.txt")
-    files = glob.glob(pattern)
-    if not files:
-        raise SystemExit(f"No output files found at {pattern}")
+    hdf5_path = Path(args.hdf5_file)
+    if not hdf5_path.exists():
+        raise SystemExit(f"Error: File '{args.hdf5_file}' not found!")
 
-    def file_key(path):
-        match = re.search(r"output_(\d+)\.txt", os.path.basename(path))
-        return int(match.group(1)) if match else -1
+    print(f"\n{'='*60}")
+    print(f"Analyzing energy conservation: {hdf5_path.name}")
+    print(f"{'='*60}\n")
 
-    files = sorted(files, key=file_key)
+    # Get all timesteps
+    steps = get_timesteps(args.hdf5_file)
+    if not steps:
+        raise SystemExit(f"No timesteps found in {args.hdf5_file}")
+
+    print(f"Found {len(steps)} timesteps")
 
     times = []
     kinetic_list = []
     potential_list = []
     total_list = []
+    e_binary_list = []
+    e_merger_list = []
 
-    for path in files:
-        time_myr, masses, pos, vel = parse_snapshot(path)
+    for i, step in enumerate(steps):
+        time_myr, masses, pos, vel, energy_attrs = read_hdf5_step(args.hdf5_file, step)
         kinetic, potential, total = compute_energy_code_units(masses, pos, vel)
+
         times.append(time_myr)
         kinetic_list.append(kinetic)
         potential_list.append(potential)
         total_list.append(total)
+        e_binary_list.append(energy_attrs.get('E_binary', 0.0))
+        e_merger_list.append(energy_attrs.get('E_merger', 0.0))
+
+        if (i + 1) % 10 == 0 or i == len(steps) - 1:
+            print(f"  Processed {i + 1}/{len(steps)} timesteps...")
 
     times = np.array(times)
     kinetic_list = np.array(kinetic_list)
     potential_list = np.array(potential_list)
     total_list = np.array(total_list)
+    e_binary_list = np.array(e_binary_list)
+    e_merger_list = np.array(e_merger_list)
 
+    # Compute energy residual
     e0 = total_list[0]
     residual = (total_list - e0) / abs(e0)
     residual_abs = np.abs(residual)
     residual_plot = np.where(residual_abs > 0.0, residual_abs, np.nan)
+
+    # Print results table
+    print(f"\n{'='*60}")
+    print("Energy Analysis Results")
+    print(f"{'='*60}\n")
 
     header = (
         f"{'idx':>4} {'time_myr':>12} {'kinetic':>18} {'potential':>18} "
@@ -163,33 +225,60 @@ def main():
     ):
         print(f"{idx:4d} {t:12.6f} {k:18.8e} {u:18.8e} {e:18.8e} {de:14.6e}")
 
+    # Summary statistics
+    print(f"\n{'='*60}")
+    print("Summary")
+    print(f"{'='*60}")
+    print(f"Initial energy (E0): {e0:.8e}")
+    print(f"Final energy:        {total_list[-1]:.8e}")
+    print(f"Max |dE/E0|:         {np.nanmax(residual_abs):.6e}")
+    print(f"Mean |dE/E0|:        {np.nanmean(residual_abs):.6e}")
+    print(f"Simulation time:     {times[0]:.4f} - {times[-1]:.4f} Myr")
+
+    # Save CSV if requested
     if args.csv:
         with open(args.csv, "w") as handle:
-            handle.write("idx,time_myr,kinetic,potential,total,dE_over_E0\n")
-            for idx, (t, k, u, e, de) in enumerate(
-                zip(times, kinetic_list, potential_list, total_list, residual)
+            handle.write("idx,time_myr,kinetic,potential,total,dE_over_E0,E_binary,E_merger\n")
+            for idx, (t, k, u, e, de, eb, em) in enumerate(
+                zip(times, kinetic_list, potential_list, total_list, residual,
+                    e_binary_list, e_merger_list)
             ):
-                handle.write(f"{idx},{t},{k},{u},{e},{de}\n")
+                handle.write(f"{idx},{t},{k},{u},{e},{de},{eb},{em}\n")
+        print(f"\nCSV saved to: {args.csv}")
 
-    plot_path = args.plot or os.path.join(args.output_dir, "energy_analysis.png")
-    fig, (ax_energy, ax_residual) = plt.subplots(2, 1, figsize=(8, 8), sharex=True)
-    ax_energy.plot(times, kinetic_list, label="Kinetic")
-    ax_energy.plot(times, potential_list, label="Potential")
-    ax_energy.plot(times, total_list, label="Total")
-    ax_energy.set_ylabel("Energy (code units)")
-    ax_energy.grid(True, alpha=0.3)
-    ax_energy.legend()
+    # Create plot
+    if not args.no_plot:
+        plot_path = args.plot or str(hdf5_path.parent / "energy_analysis.png")
 
-    ax_residual.plot(times, residual_plot, label="|dE/E0|")
-    ax_residual.set_yscale("log")
-    ax_residual.set_xlabel("Time (Myr)")
-    ax_residual.set_ylabel("|dE/E0|")
-    ax_residual.grid(True, which="both", alpha=0.3)
-    ax_residual.legend()
+        fig, axes = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
 
-    fig.tight_layout()
-    fig.savefig(plot_path, dpi=150)
-    print(f"Plot saved to: {plot_path}")
+        # Energy plot
+        ax_energy = axes[0]
+        ax_energy.plot(times, kinetic_list, label="Kinetic", linewidth=1.5)
+        ax_energy.plot(times, potential_list, label="Potential", linewidth=1.5)
+        ax_energy.plot(times, total_list, label="Total", linewidth=2, color='black')
+        ax_energy.set_ylabel("Energy (code units)")
+        ax_energy.set_title("Energy Evolution")
+        ax_energy.grid(True, alpha=0.3)
+        ax_energy.legend(loc='best')
+
+        # Residual plot
+        ax_residual = axes[1]
+        ax_residual.plot(times, residual_plot, label="|dE/E0|", color='red', linewidth=1.5)
+        ax_residual.set_yscale("log")
+        ax_residual.set_xlabel("Time (Myr)")
+        ax_residual.set_ylabel("|dE/E0|")
+        ax_residual.set_title("Energy Conservation")
+        ax_residual.grid(True, which="both", alpha=0.3)
+        ax_residual.legend(loc='best')
+
+        fig.suptitle(f"ABYSS Energy Analysis: {hdf5_path.name}", fontsize=12, fontweight='bold')
+        fig.tight_layout()
+        fig.savefig(plot_path, dpi=150, bbox_inches='tight')
+        print(f"\nPlot saved to: {plot_path}")
+        plt.close(fig)
+
+    print("\nDone!")
 
 
 if __name__ == "__main__":

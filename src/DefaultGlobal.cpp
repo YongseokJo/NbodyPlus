@@ -36,10 +36,20 @@ int LastParticleIndex; // The last index of particle array
 int NumberOfParticle; // The number of active particles (single + cm)
 int NewCMPID; // The next PID to be assigned to a new CM particle
 
-// Parameters deterined in config file
+// Parameters determined in config file
 double eta;
 int FixNumNeighbor;
 double InitialNeighborRadius;
+double RSearch;              // Few-body search radius (code units)
+double TSearch;              // Few-body search time (code units)
+
+// Output settings
+bool UseCompression = true;  // Enable HDF5 compression by default
+int CompressionLevel = 6;    // GZIP compression level (1-9)
+
+// Restart settings
+bool RestartEnabled = false;
+std::string CheckpointFile;
 
 // Few-body
 std::unordered_map<int, int> CMPtclWorker; // by EW 2025.1.4 // unordered_map by EW 2025.1.11
@@ -103,6 +113,11 @@ void DefaultGlobal() {
 	eta = 0.01;
 	FixNumNeighbor = 100;
 	InitialNeighborRadius = 0.011;
+
+	// Few-body search parameters (converted to code units)
+	// Default: RSearch = 2.5e-4 pc, TSearch = 1e-6 Myr
+	RSearch = 2.5e-4 / position_unit;  // pc -> code units
+	TSearch = 1e-6 / (EnzoTimeStep * 1e4);  // Myr -> code units
 
 	E_binary = 0.0;
 	E_binary_SD = 0.0;

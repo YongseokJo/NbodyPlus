@@ -36,6 +36,7 @@ bool IrregularRoutines(QueueScheduler &queue_scheduler, Worker *workers, std::un
     std::vector<int> newCMptcls; // by EW 2025.1.6 // unordered_set? by EW 2025.1.11
 #endif
 
+// Performance tracing variables (kept for backward compatibility)
 #ifdef PERFORMANCETRACE
 	std::chrono::high_resolution_clock::time_point start_point_routine;
 	std::chrono::high_resolution_clock::time_point end_point_routine;
@@ -49,9 +50,10 @@ bool IrregularRoutines(QueueScheduler &queue_scheduler, Worker *workers, std::un
 #endif
 #endif // performance
         
+    PROFILE_START(TimerID::SkipListCreate);
 #ifdef PERFORMANCETRACE
     start_point_routine = std::chrono::high_resolution_clock::now();
-#endif		
+#endif
 #ifdef NSIGHT
     nvtxRangePushA("createSkipList");
 #endif
@@ -66,6 +68,7 @@ bool IrregularRoutines(QueueScheduler &queue_scheduler, Worker *workers, std::un
     performance.SkipListCreate +=
         std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
 #endif
+    PROFILE_STOP(TimerID::SkipListCreate);
 
     // Irregular
     while ( skiplist->getFirstNode() != nullptr) {
@@ -87,10 +90,11 @@ bool IrregularRoutines(QueueScheduler &queue_scheduler, Worker *workers, std::un
         next_time     = particles[ThisLevelNode->ParticleList[0]].CurrentTimeIrr\
                                     + particles[ThisLevelNode->ParticleList[0]].TimeStepIrr;
 
+        PROFILE_START(TimerID::IrregularForce);
 #ifdef PERFORMANCETRACE
         start_point_routine = std::chrono::high_resolution_clock::now();
 #endif
-    
+
 #ifdef DEBUG
         // print out particlelist
         fprintf(stdout, "(IRR_FORCE) next_time: %e Myr\n", next_time*EnzoTimeStep*1e4);
@@ -234,10 +238,12 @@ bool IrregularRoutines(QueueScheduler &queue_scheduler, Worker *workers, std::un
         performance.IrregularForce +=
             std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
 #endif
+        PROFILE_STOP(TimerID::IrregularForce);
 
         //ParticleSynchronization();
 
 
+        PROFILE_START(TimerID::IrregularUpdate);
 #ifdef PERFORMANCETRACE
         start_point_routine = std::chrono::high_resolution_clock::now();
 #endif
@@ -282,9 +288,11 @@ bool IrregularRoutines(QueueScheduler &queue_scheduler, Worker *workers, std::un
         performance.IrregularUpdate +=
             std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
 #endif
+        PROFILE_STOP(TimerID::IrregularUpdate);
         int OriginalParticleListSize;
 #ifdef FEWBODY
 
+        PROFILE_START(TimerID::FewBodyTermination);
 #ifdef PERFORMANCETRACE
         start_point_routine = std::chrono::high_resolution_clock::now();
 #endif
@@ -479,7 +487,7 @@ bool IrregularRoutines(QueueScheduler &queue_scheduler, Worker *workers, std::un
                 }
                 */
                 /*
-                if (ptcl->TimeStepIrr * EnzoTimeStep * 1e4 < TSEARCH)
+                if (ptcl->TimeStepIrr < TSearch)
                     ptcl->checkNewGroup4();
                 */
             }
@@ -504,6 +512,7 @@ bool IrregularRoutines(QueueScheduler &queue_scheduler, Worker *workers, std::un
         performance.FewBodyTermination +=
             std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
 #endif
+        PROFILE_STOP(TimerID::FewBodyTermination);
 #ifdef unused
 #ifdef PERFORMANCETRACE
         start_point_routine = std::chrono::high_resolution_clock::now();
@@ -567,6 +576,7 @@ bool IrregularRoutines(QueueScheduler &queue_scheduler, Worker *workers, std::un
             std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
 #endif
 #endif // unused
+        PROFILE_START(TimerID::FewBodyInitialization);
 #ifdef PERFORMANCETRACE
         start_point_routine = std::chrono::high_resolution_clock::now();
 #endif
@@ -709,9 +719,11 @@ bool IrregularRoutines(QueueScheduler &queue_scheduler, Worker *workers, std::un
         performance.FewBodyInitialization +=
             std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
 #endif
+        PROFILE_STOP(TimerID::FewBodyInitialization);
 
 #endif
 
+        PROFILE_START(TimerID::SkipListUpdate);
 #ifdef PERFORMANCETRACE
         start_point_routine = std::chrono::high_resolution_clock::now();
 #endif
@@ -729,6 +741,7 @@ bool IrregularRoutines(QueueScheduler &queue_scheduler, Worker *workers, std::un
         performance.SkipListUpdate +=
             std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
 #endif
+        PROFILE_STOP(TimerID::SkipListUpdate);
 
         current_time_irr = particles[ThisLevelNode->ParticleList[0]].CurrentBlockIrr*time_step;
 #ifdef DEBUG

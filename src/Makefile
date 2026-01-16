@@ -1,6 +1,7 @@
 # Compiler
 #CXX = icc
-CXX = mpiicpc
+#CXX = mpiicpc
+CXX = mpicxx
 #CXX = g++
 
 # Compiler flags
@@ -9,11 +10,26 @@ CXXFLAGS  = -O2 -march=native -ftree-vectorize -std=c++11 -Wall -Wextra -Wuninit
 #CXXFLAGS  = -O0 -std=c++11 -Wall -Wextra -Wuninitialized -I./Particle -I./ -g -fopenmp  -fsanitize=thread
 #CXXFLAGS  = -O2 -std=c++11 -Wall -Wextra -Wuninitialized -I./Particle -I./ -g -fopenmp  #-fsanitize=thread
 
+# TOML parsing uses the in-tree src/toml.hpp (no external include needed).
+
+# HDF5 paths (adjust as needed for your system)
+# Set HDF5_DIR environment variable or load HDF5 module before compiling
+# Example: module load hdf5/1.14.1-2-openmpi-gcc-12.3.0
+ifdef HDF5_ROOT
+	HDF5_PATH = $(HDF5_ROOT)
+else ifdef HDF5_DIR
+	HDF5_PATH = $(HDF5_DIR)
+else
+	HDF5_PATH = /usr
+endif
+CXXFLAGS += -I$(HDF5_PATH)/include
+LDFLAGS_HDF5 = -L$(HDF5_PATH)/lib -L$(HDF5_PATH)/lib64 -lhdf5_cpp -lhdf5
+
 #NVCC_FLAGS_PROFILE = -g -lineinfo
 
 # Libraries
 #LDFLAGS = -L/usr/local/cuda-11.8/lib64/ -lcudart -lcublas -lnvToolsExt -lm -lcuda -lmpi #node14
-LDFLAGS = -lm -lmpi
+LDFLAGS = -lm -lmpi $(LDFLAGS_HDF5)
 # LDFLAGS = -L/usr/local/cuda/lib64/ -lm -lmpi #node15
 #add -lnvToolsExt for <nvToolsExt.h>
 #LDFLAGS = -L/mnt/sw/nix/store/zi2wc26znf75csf5hhz77p0d2bbz53ih-cuda-11.8.0/lib64/ -lcudart
@@ -31,11 +47,13 @@ CXXFLAGS += -I./../SDAR/src -DAR_TTL -DAR_SLOWDOWN_TREE -DAR_SLOWDOWN_TIMESCALE 
 CXX_SRCS += FewBody/FBCheck.cpp FewBody/FBInitialization.cpp FewBody/FBIntegration.cpp FewBody/FBTermination.cpp FewBody/GroupAccelerationRoutine.cpp
 
 ifdef USE_CUDA
-	CXXFLAGS += -I./cuda -DCUDA -DNSIGHT
-	NVCC = nvcc
-	NVCCFLAGS = -O2 --std=c++11 -G -Xcompiler -rdynamic -g -lineinfo -Xptxas=-v -lcuda -lcudart -lcompute-sanitizer -I./../SDAR/src
+	# CUDA paths - use CUDA_HOME if set, otherwise try common locations
+	CUDA_PATH ?= $(if $(CUDA_HOME),$(CUDA_HOME),$(if $(CUDA_ROOT),$(CUDA_ROOT),/usr/local/cuda))
+	CXXFLAGS += -I./cuda -I$(CUDA_PATH)/include -DCUDA -DNSIGHT
+	NVCC = $(CUDA_PATH)/bin/nvcc
+	NVCCFLAGS = -O2 -std=c++11 -Xcompiler -std=c++11 -Xcompiler -rdynamic -g -lineinfo -Xptxas=-v -I./../SDAR/src -I$(CUDA_PATH)/include
 	NVCC_FLAGS_DEBUG = -g -G --device-debug -lineinfo
-	LDFLAGS += -L/usr/local/cuda/lib64/ -lcudart -lcublas -lnvToolsExt -lcuda
+	LDFLAGS += -L$(CUDA_PATH)/lib64 -lcudart -lcublas -lnvToolsExt -lcuda
 	CXX_SRCS += cuda/CalculateRegularAcceleration.cpp
 	CU_SRCS = cuda/cuda_my_acceleration.cu cuda/cuda_kernels.cu
 endif

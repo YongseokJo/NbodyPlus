@@ -13,12 +13,14 @@ void RegularRoutines(QueueScheduler &queue_scheduler, Worker *workers, std::unor
 
     double next_time = NextRegTimeBlock*time_step;
 
+// Performance tracing variables (kept for backward compatibility)
 #ifdef PERFORMANCETRACE
 	std::chrono::high_resolution_clock::time_point start_point_routine;
 	std::chrono::high_resolution_clock::time_point end_point_routine;
 #endif // performance
 
 #ifdef MULTIMAP
+    PROFILE_START(TimerID::RegularMap);
 #ifdef PERFORMANCETRACE
     start_point_routine = std::chrono::high_resolution_clock::now();
 #endif
@@ -29,6 +31,7 @@ void RegularRoutines(QueueScheduler &queue_scheduler, Worker *workers, std::unor
     performance.RegularMap +=
         std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
 #endif
+    PROFILE_STOP(TimerID::RegularMap);
 #endif // multimap
 
 #ifdef CUDA
@@ -54,6 +57,7 @@ void RegularRoutines(QueueScheduler &queue_scheduler, Worker *workers, std::unor
 
 #else // cuda regular routine ends // no cuda regular routine starts
 
+    PROFILE_START(TimerID::RegularForce);
 #ifdef PERFORMANCETRACE
     start_point_routine = std::chrono::high_resolution_clock::now();
 #endif
@@ -87,9 +91,11 @@ void RegularRoutines(QueueScheduler &queue_scheduler, Worker *workers, std::unor
     performance.RegularForce +=
         std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
 #endif
+    PROFILE_STOP(TimerID::RegularForce);
 
 #endif // no cuda regular routine ends
 
+    PROFILE_START(TimerID::RegularUpdate);
 #ifdef PERFORMANCETRACE
     start_point_routine = std::chrono::high_resolution_clock::now();
 #endif
@@ -123,8 +129,10 @@ void RegularRoutines(QueueScheduler &queue_scheduler, Worker *workers, std::unor
     performance.RegularUpdate +=
         std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
 #endif
+    PROFILE_STOP(TimerID::RegularUpdate);
 
 #ifdef MULTIMAP
+    PROFILE_START(TimerID::RegularMap);
 #ifdef PERFORMANCETRACE
     start_point_routine = std::chrono::high_resolution_clock::now();
 #endif
@@ -135,6 +143,7 @@ void RegularRoutines(QueueScheduler &queue_scheduler, Worker *workers, std::unor
     performance.RegularMap +=
         std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
 #endif
+    PROFILE_STOP(TimerID::RegularMap);
 #endif // multimap
 
 }

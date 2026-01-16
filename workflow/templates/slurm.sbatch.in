@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+#SBATCH --account={{ACCOUNT}}
+#SBATCH --partition={{PARTITION}}
+#SBATCH --job-name={{JOB_NAME}}
+#SBATCH --nodes={{NODES}}
+#SBATCH --ntasks={{NTASKS}}
+#SBATCH --cpus-per-task={{CPUS_PER_TASK}}
+#SBATCH --gres=gpu:{{GPUS}}
+#SBATCH --time={{WALLTIME}}
+#SBATCH --output={{RUN_DIR}}/slurm_stdout.log
+#SBATCH --error={{RUN_DIR}}/slurm_stderr.log
+
+set -euo pipefail
+
+REPO_ROOT="{{REPO_ROOT}}"
+RUN_DIR="{{RUN_DIR}}"
+
+cd "$REPO_ROOT"
+
+# Optionally run steps depending on RUN_COMPILE/RUN_RUN/RUN_ANALYZE (1=yes,0=no)
+RUN_COMPILE=${RUN_COMPILE:-1}
+RUN_RUN=${RUN_RUN:-1}
+RUN_ANALYZE=${RUN_ANALYZE:-1}
+
+if [[ "$RUN_COMPILE" -eq 1 ]]; then
+	./workflow/bin/compile.sh "$RUN_DIR"
+else
+	echo "Skipping compile (RUN_COMPILE=0)"
+fi
+
+if [[ "$RUN_RUN" -eq 1 ]]; then
+	./workflow/bin/run.sh "$RUN_DIR"
+else
+	echo "Skipping run (RUN_RUN=0)"
+fi
+
+if [[ "$RUN_ANALYZE" -eq 1 ]]; then
+	./workflow/bin/analyze.sh "$RUN_DIR"
+else
+	echo "Skipping analyze (RUN_ANALYZE=0)"
+fi
