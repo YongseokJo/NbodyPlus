@@ -2,18 +2,65 @@
 set -euo pipefail
 
 # Submit or run workflow.
-# Usage examples:
-#   workflow/bin/submit.sh --scheduler slurm --tag test1
-#   workflow/bin/submit.sh --scheduler local --tag test1
-# Optional overrides:
-#   --config test/test1/config.toml
-#   --test-dir test/test1
+# Run `workflow/bin/submit.sh --help` for full usage.
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 # shellcheck disable=SC1091
 source "$SCRIPT_DIR/common.sh"
 
 workflow_load_config
+
+print_help() {
+  cat <<'EOF'
+ABYSS workflow submit helper
+
+Creates a timestamped run directory under workflow/runs/, then:
+  - local: runs compile/run/analyze directly
+  - slurm/pbs: writes a job script into the run dir and submits it
+
+Usage:
+  workflow/bin/submit.sh [options]
+
+Common examples:
+  # Slurm submission (cluster)
+  workflow/bin/submit.sh --scheduler slurm --tag run
+
+  # Local run (single rank by default)
+  workflow/bin/submit.sh --scheduler local --tag smoke
+
+  # Override test directory + config file
+  workflow/bin/submit.sh --test-dir tests/test_10 --config config_smoke.txt --tag smoke
+
+  # Skip steps
+  workflow/bin/submit.sh --skip-compile
+  workflow/bin/submit.sh --skip-run
+  workflow/bin/submit.sh --skip-analyze
+
+Options:
+  --tag <name>               Prefix for run directory name (default: run)
+  --scheduler <slurm|pbs|local>
+                             Override scheduler from workflow/config.sh
+  --test-dir <path>          Test directory relative to repo root (default from config)
+  --config <path>            Config file relative to --test-dir (default from config)
+  --ntasks <N>               MPI ranks (default from config; local defaults to 1)
+  --python <path>            Python interpreter used by analyze/tools
+  --summary-file <name>      Summary file name written into the run dir (default: summary.txt)
+  --summary-stack-file <path>
+                             Stacked summary file path (default: summary_runs.tsv)
+
+Stacking / summary_runs.tsv:
+  By default the workflow appends ONLY the current run to the stack file.
+  To force a full rebuild across all existing runs:
+    --stack-rebuild-all
+
+Hardware strings (cpu_arch/gpu_arch):
+  These are detected at analyze-time when possible (preferably on compute nodes).
+  If no GPU is available/detectable, the stacked GPU column will be 'none'.
+
+Exit codes:
+  0 on success; non-zero on argument errors or local run failures.
+EOF
+}
 
 TAG="run"
 SCHED_OVERRIDE=""
@@ -55,7 +102,7 @@ while [[ $# -gt 0 ]]; do
     --stack-rebuild-all)
       STACK_REBUILD_ALL=1; shift 1 ;;
     -h|--help)
-      sed -n '1,120p' "$0"
+      print_help
       exit 0
       ;;
     *)
