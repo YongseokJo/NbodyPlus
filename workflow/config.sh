@@ -29,6 +29,13 @@ RUN_CONFIG="config.toml"
 # Override this in workflow/config.local.sh, e.g.:
 PYTHON=/gpfs/home/vjl4366/pyenv/venv/bin/python
 
+# Summary file name (relative to RUN_DIR unless absolute)
+SUMMARY_FILE="summary.txt"
+
+# Stacked summary file (relative to repo root unless absolute)
+# This file aggregates one TSV row per run.
+SUMMARY_STACK_FILE="summary_runs.tsv"
+
 # Which tool scripts to run (relative to repo root). Empty means "summary only".
 # Examples:
 #   ANALYZE_TOOLS=(tools/analyze_profiling.py tools/analyze_energy.py)
@@ -36,6 +43,9 @@ ANALYZE_TOOLS=(
   tools/analyze_profiling.py
   tools/analyze_energy.py
 )
+
+# Summary tool (relative to repo root). Set empty to disable extra summary.
+SUMMARY_TOOL="tools/summarize_run.py"
 
 # Executable path produced by build (relative to repo root)
 EXECUTABLE="src/abyss.exe"

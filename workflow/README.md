@@ -129,6 +129,8 @@ CUDA_CANDIDATES=(/usr/local/cuda)
   - `--test-dir` — relative path to the test case to stage
   - `--config` — the run config filename inside `TEST_DIR` (default `config.toml`)
   - `--ntasks` — override `NTASKS` for this run
+  - `--summary-file` — set the summary file name (relative to run dir unless absolute)
+  - `--summary-stack-file` — set the stacked TSV file (relative to repo root unless absolute)
 
 The script exports namespaced `WF_*` overrides so the step scripts inherit the resolved settings even when run
 in new processes.
@@ -145,7 +147,9 @@ Each run directory looks like:
 - `build.log` — output from `compile.sh` (stdout+stderr)
 - `run.log` — output from `run.sh` (stdout+stderr)
 - `work/` — staged test inputs and produced outputs
-- `summary.txt` — produced by `analyze.sh`
+- `summary.txt` — produced by `analyze.sh` (name configurable)
+- `tools_analysis.log` — tool execution log for Python analysis
+- `summary_runs.tsv` — project-level stacked summary (one TSV row per run)
 
 Use `build.log` first if a run fails to compile, then `run.log` for runtime issues.
 
@@ -203,6 +207,46 @@ PYTHON=/gpfs/home/vjl4366/pyenv/venv/bin/python
 
 Note: some tools need extra Python deps (e.g. `h5py`, `matplotlib`, `pandas`). If a tool fails, check
 the corresponding `*.err` next to `tools_analysis.log`.
+
+Concise performance + energy summary
+------------------------------------
+
+`analyze.sh` appends a concise summary (performance timer totals + energy conservation stats) to the
+summary file using `tools/summarize_run.py`. You can configure:
+
+- `SUMMARY_FILE` in `workflow/config.sh` (or `workflow/config.local.sh`)
+- `--summary-file` flag on `submit.sh`
+
+The summary includes architecture metadata (CPU/GPU mode, nodes, tasks, GPUs) pulled from `meta.txt`.
+
+Stacked summary (project-level TSV)
+----------------------------------
+
+By default, `analyze.sh` also appends a row to a project-level TSV file so multiple runs can be compared
+or plotted easily. The default file is:
+
+- `summary_runs.tsv` in the repo root
+
+You can override it via:
+
+- `SUMMARY_STACK_FILE` in `workflow/config.sh` (or `workflow/config.local.sh`)
+- `--summary-stack-file` on `submit.sh`
+
+The TSV includes (in this order):
+
+- `tag`
+- `simulation_duration_myr`
+- `total_wall_s`
+- `dE_over_E0_mean`
+- `dE_over_E0_std`
+- `scheduler`
+- `cpu_arch`
+- `gpu_arch`
+- `nodes`
+- `ntasks`
+- `gpus`
+- `timestamp`
+- `run_dir`
 
 Advanced: adding a scheduler template
 ------------------------------------

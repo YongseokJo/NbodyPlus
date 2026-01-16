@@ -21,6 +21,8 @@ TEST_DIR_OVERRIDE=""
 RUN_CONFIG_OVERRIDE=""
 NTASKS_OVERRIDE=""
 PYTHON_OVERRIDE=""
+SUMMARY_FILE_OVERRIDE=""
+SUMMARY_STACK_FILE_OVERRIDE=""
 SKIP_COMPILE=0
 SKIP_RUN=0
 SKIP_ANALYZE=0
@@ -39,6 +41,10 @@ while [[ $# -gt 0 ]]; do
       NTASKS_OVERRIDE="$2"; shift 2 ;;
     --python)
       PYTHON_OVERRIDE="$2"; shift 2 ;;
+    --summary-file)
+      SUMMARY_FILE_OVERRIDE="$2"; shift 2 ;;
+    --summary-stack-file)
+      SUMMARY_STACK_FILE_OVERRIDE="$2"; shift 2 ;;
     --skip-compile)
       SKIP_COMPILE=1; shift 1 ;;
     --skip-run)
@@ -70,6 +76,12 @@ if [[ -n "$NTASKS_OVERRIDE" ]]; then
 fi
 if [[ -n "$PYTHON_OVERRIDE" ]]; then
   PYTHON="$PYTHON_OVERRIDE"
+fi
+if [[ -n "$SUMMARY_FILE_OVERRIDE" ]]; then
+  SUMMARY_FILE="$SUMMARY_FILE_OVERRIDE"
+fi
+if [[ -n "$SUMMARY_STACK_FILE_OVERRIDE" ]]; then
+  SUMMARY_STACK_FILE="$SUMMARY_STACK_FILE_OVERRIDE"
 fi
 if [[ "$SKIP_COMPILE" -eq 1 ]]; then
   RUN_COMPILE=0
@@ -121,6 +133,8 @@ export WF_PYTHON_OVERRIDE="${PYTHON:-}"
 export WF_RUN_COMPILE_OVERRIDE="$RUN_COMPILE"
 export WF_RUN_RUN_OVERRIDE="$RUN_RUN"
 export WF_RUN_ANALYZE_OVERRIDE="$RUN_ANALYZE"
+export WF_SUMMARY_FILE_OVERRIDE="${SUMMARY_FILE:-}"
+export WF_SUMMARY_STACK_FILE_OVERRIDE="${SUMMARY_STACK_FILE:-}"
 
 REPO_ROOT="$(workflow_repo_root)"
 RUN_DIR="$(workflow_run_dir "$TAG")"
@@ -135,9 +149,12 @@ mkdir -p "$RUN_DIR"
   echo "run_config=$RUN_CONFIG"
   echo "use_cuda=$USE_CUDA"
   echo "use_sevn=$USE_SEVN"
+  echo "nodes=$NODES"
   echo "ntasks=$NTASKS"
   echo "gpus=$GPUS"
   echo "python=${PYTHON:-}"
+  echo "summary_file=${SUMMARY_FILE:-}"
+  echo "summary_stack_file=${SUMMARY_STACK_FILE:-}"
   echo "run_compile=$RUN_COMPILE"
   echo "run_run=$RUN_RUN"
   echo "run_analyze=$RUN_ANALYZE"
@@ -150,15 +167,28 @@ fi
 
 case "$SCHEDULER" in
   local)
-    "$REPO_ROOT/workflow/bin/compile.sh" "$RUN_DIR"
+    if [[ "$RUN_COMPILE" -eq 1 ]]; then
+      "$REPO_ROOT/workflow/bin/compile.sh" "$RUN_DIR"
+    else
+      echo "Skipping compile (RUN_COMPILE=0)"
+    fi
 
-    set +e
-    "$REPO_ROOT/workflow/bin/run.sh" "$RUN_DIR"
-    run_rc=$?
-    set -e
+    run_rc=0
+    if [[ "$RUN_RUN" -eq 1 ]]; then
+      set +e
+      "$REPO_ROOT/workflow/bin/run.sh" "$RUN_DIR"
+      run_rc=$?
+      set -e
+    else
+      echo "Skipping run (RUN_RUN=0)"
+    fi
 
-    # Always analyze (even if run failed) to capture artifacts/log summaries.
-    "$REPO_ROOT/workflow/bin/analyze.sh" "$RUN_DIR" || true
+    if [[ "$RUN_ANALYZE" -eq 1 ]]; then
+      # Always analyze (even if run failed) to capture artifacts/log summaries.
+      "$REPO_ROOT/workflow/bin/analyze.sh" "$RUN_DIR" || true
+    else
+      echo "Skipping analyze (RUN_ANALYZE=0)"
+    fi
 
     if [[ $run_rc -ne 0 ]]; then
       workflow_die "Run failed (analyzed artifacts; see $RUN_DIR)"

@@ -56,6 +56,12 @@ workflow_load_config() {
   if [[ -n "${WF_PYTHON_OVERRIDE:-}" ]]; then
     PYTHON="$WF_PYTHON_OVERRIDE"
   fi
+  if [[ -n "${WF_SUMMARY_FILE_OVERRIDE:-}" ]]; then
+    SUMMARY_FILE="$WF_SUMMARY_FILE_OVERRIDE"
+  fi
+  if [[ -n "${WF_SUMMARY_STACK_FILE_OVERRIDE:-}" ]]; then
+    SUMMARY_STACK_FILE="$WF_SUMMARY_STACK_FILE_OVERRIDE"
+  fi
 }
 
 workflow_setup_env() {

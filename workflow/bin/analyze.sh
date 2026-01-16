@@ -10,14 +10,53 @@ source "$SCRIPT_DIR/common.sh"
 workflow_load_config
 workflow_setup_env
 
-SUMMARY="$RUN_DIR/summary.txt"
 RUN_LOG="$RUN_DIR/run.log"
 BUILD_LOG="$RUN_DIR/build.log"
+
+# Prefer run-specific settings recorded in meta.txt when present.
+if [[ -f "$RUN_DIR/meta.txt" ]]; then
+  meta_python="$(grep -E '^python=' "$RUN_DIR/meta.txt" | tail -n 1 | sed 's/^python=//' || true)"
+  if [[ -n "${meta_python:-}" ]]; then
+    PYTHON="$meta_python"
+  fi
+  meta_summary="$(grep -E '^summary_file=' "$RUN_DIR/meta.txt" | tail -n 1 | sed 's/^summary_file=//' || true)"
+  if [[ -n "${meta_summary:-}" ]]; then
+    SUMMARY_FILE="$meta_summary"
+  fi
+  meta_stack="$(grep -E '^summary_stack_file=' "$RUN_DIR/meta.txt" | tail -n 1 | sed 's/^summary_stack_file=//' || true)"
+  if [[ -n "${meta_stack:-}" ]]; then
+    SUMMARY_STACK_FILE="$meta_stack"
+  fi
+fi
+
+SUMMARY_NAME="${SUMMARY_FILE:-summary.txt}"
+if [[ "$SUMMARY_NAME" = /* ]]; then
+  SUMMARY="$SUMMARY_NAME"
+else
+  SUMMARY="$RUN_DIR/$SUMMARY_NAME"
+fi
 
 {
   echo "== ABYSS workflow summary =="
   echo "date=$(date)"
   echo "run_dir=$RUN_DIR"
+  if [[ -f "$RUN_DIR/meta.txt" ]]; then
+    echo "-- run metadata --"
+    cat "$RUN_DIR/meta.txt"
+    echo ""
+  fi
+  if [[ -n "${USE_CUDA:-}" ]]; then
+    arch_mode="CPU"
+    if [[ "${USE_CUDA:-0}" == "1" ]]; then
+      arch_mode="GPU"
+    fi
+    echo "-- architecture --"
+    echo "mode=$arch_mode"
+    echo "nodes=${NODES:-}"
+    echo "ntasks=${NTASKS:-}"
+    echo "gpus=${GPUS:-}"
+    echo ""
+  fi
   echo ""
 
   if [[ -f "$BUILD_LOG" ]]; then
@@ -54,14 +93,6 @@ echo "Wrote: $SUMMARY"
 # Optional: run analysis tools under tools/ with the configured Python.
 # Writes per-tool logs next to the run summary.
 REPO_ROOT="$(workflow_repo_root)"
-
-# If the run directory recorded a python interpreter, prefer it.
-if [[ -f "$RUN_DIR/meta.txt" ]]; then
-  meta_python="$(grep -E '^python=' "$RUN_DIR/meta.txt" | tail -n 1 | sed 's/^python=//')"
-  if [[ -n "${meta_python:-}" ]]; then
-    PYTHON="$meta_python"
-  fi
-fi
 
 PYTHON_BIN="${PYTHON:-python3}"
 
@@ -140,3 +171,57 @@ else
 fi
 
 echo "Wrote: $TOOLS_LOG"
+
+# Optional: append concise summary from SUMMARY_TOOL
+if [[ -n "${SUMMARY_TOOL:-}" ]]; then
+  summary_tool_path="$REPO_ROOT/$SUMMARY_TOOL"
+  if [[ -f "$summary_tool_path" ]]; then
+    if command -v "$PYTHON_BIN" &>/dev/null; then
+      echo "" >> "$SUMMARY"
+      echo "-- concise performance/energy summary --" >> "$SUMMARY"
+      set +e
+      "$PYTHON_BIN" "$summary_tool_path" "$RUN_DIR" >> "$SUMMARY" 2>> "$TOOLS_LOG"
+      rc=$?
+      set -e
+      if [[ $rc -ne 0 ]]; then
+        echo "WARN: SUMMARY_TOOL failed (rc=$rc): $SUMMARY_TOOL" >> "$TOOLS_LOG"
+      fi
+    else
+      echo "WARN: python not found for SUMMARY_TOOL: $PYTHON_BIN" >> "$TOOLS_LOG"
+    fi
+  else
+    echo "WARN: missing SUMMARY_TOOL: $SUMMARY_TOOL" >> "$TOOLS_LOG"
+  fi
+fi
+
+# Append a TSV row for stacked summaries (project-level by default).
+if [[ -n "${SUMMARY_STACK_FILE:-}" && -n "${SUMMARY_TOOL:-}" ]]; then
+  stack_path="$SUMMARY_STACK_FILE"
+  if [[ "$stack_path" != /* ]]; then
+    stack_path="$REPO_ROOT/$stack_path"
+  fi
+
+  if [[ -f "$summary_tool_path" && -x "$(command -v "$PYTHON_BIN")" ]]; then
+    header="$($PYTHON_BIN "$summary_tool_path" --tsv-header-pretty 2>>"$TOOLS_LOG")"
+    if [[ -z "$header" ]]; then
+      echo "WARN: empty TSV header from SUMMARY_TOOL" >> "$TOOLS_LOG"
+    else
+      if [[ -f "$stack_path" ]]; then
+        first_line="$(head -n 1 "$stack_path" | tr -d '\r')"
+        if [[ "$first_line" != "$header" ]]; then
+          ts="$(date +%Y%m%d_%H%M%S)"
+          bak="${stack_path}.bak_${ts}"
+          mv "$stack_path" "$bak"
+          echo "Rotated stack file to: $bak" >> "$TOOLS_LOG"
+        fi
+      fi
+
+      if [[ ! -f "$stack_path" ]]; then
+        echo "$header" > "$stack_path"
+      fi
+
+      "$PYTHON_BIN" "$summary_tool_path" --tsv-row-pretty "$RUN_DIR" >> "$stack_path" 2>> "$TOOLS_LOG" || true
+      echo "Wrote: $stack_path" >> "$TOOLS_LOG"
+    fi
+  fi
+fi
