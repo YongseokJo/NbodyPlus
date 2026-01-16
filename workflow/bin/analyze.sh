@@ -57,6 +57,92 @@ fi
     echo "gpus=${GPUS:-}"
     echo ""
   fi
+
+  # CPU/GPU architecture and git info (best effort)
+  # Prefer runtime detection (compute node) and only fall back to meta.txt.
+  cpu_arch=""
+  if [[ -f /proc/cpuinfo ]]; then
+    cpu_arch="$(grep -m1 -E '^model name' /proc/cpuinfo | cut -d: -f2- | sed 's/^ //' || true)"
+  fi
+  if [[ -z "${cpu_arch:-}" && -f "$RUN_DIR/meta.txt" ]]; then
+    cpu_arch="$(grep -E '^cpu_arch=' "$RUN_DIR/meta.txt" | tail -n 1 | sed 's/^cpu_arch=//' || true)"
+  fi
+
+  gpu_arch=""
+  gpu_detected=0
+  if command -v nvidia-smi >/dev/null 2>&1; then
+    if gpu_out="$(nvidia-smi --query-gpu=name --format=csv,noheader 2>/dev/null)"; then
+      gpu_arch="$(printf '%s\n' "$gpu_out" | head -n 1 | sed 's/[[:space:]]*$//')"
+      if [[ -n "${gpu_arch:-}" ]]; then
+        gpu_detected=1
+      fi
+    fi
+    if [[ -z "${gpu_arch:-}" ]]; then
+      if gpu_out="$(nvidia-smi -L 2>/dev/null)"; then
+        gpu_arch="$(printf '%s\n' "$gpu_out" | head -n 1 | sed 's/^GPU [0-9]*: //' | sed 's/ (UUID:.*//')"
+        if [[ -n "${gpu_arch:-}" ]]; then
+          gpu_detected=1
+        fi
+      fi
+    fi
+  fi
+  if [[ -z "${gpu_arch:-}" ]] && command -v lspci >/dev/null 2>&1; then
+    gpu_arch="$(lspci 2>/dev/null | grep -i 'nvidia' | head -n 1 | sed 's/^.*: //' || true)"
+    if [[ -n "${gpu_arch:-}" ]]; then
+      gpu_detected=1
+    fi
+  fi
+  if [[ -z "${gpu_arch:-}" && -f "$RUN_DIR/meta.txt" ]]; then
+    gpu_arch_meta="$(grep -E '^gpu_arch=' "$RUN_DIR/meta.txt" | tail -n 1 | sed 's/^gpu_arch=//' || true)"
+    case "${gpu_arch_meta:-}" in
+      ""|*"NVIDIA-SMI has failed"*|*"VGA compatible controller:"*|*"ASPEED"*)
+        ;; # ignore known-bad fallbacks
+      *)
+        gpu_arch="$gpu_arch_meta"
+        ;;
+    esac
+  fi
+
+  # Persist runtime detection into meta.txt so stacked summaries prefer compute-node values.
+  # (meta.txt may already contain submit-time/login-node hardware strings.)
+  if [[ -f "$RUN_DIR/meta.txt" ]]; then
+    if [[ -n "${cpu_arch:-}" ]]; then
+      echo "cpu_arch=${cpu_arch}" >> "$RUN_DIR/meta.txt"
+    fi
+    if [[ $gpu_detected -eq 1 && -n "${gpu_arch:-}" ]]; then
+      echo "gpu_arch=${gpu_arch}" >> "$RUN_DIR/meta.txt"
+    fi
+  fi
+
+  REPO_ROOT="$(workflow_repo_root || true)"
+  git_commit=""
+  git_commit_long=""
+  git_branch=""
+  git_tag=""
+  if [[ -n "$REPO_ROOT" && -d "$REPO_ROOT/.git" ]]; then
+    git_commit="$(git -C "$REPO_ROOT" rev-parse --short HEAD 2>/dev/null || true)"
+    git_commit_long="$(git -C "$REPO_ROOT" rev-parse HEAD 2>/dev/null || true)"
+    git_branch="$(git -C "$REPO_ROOT" rev-parse --abbrev-ref HEAD 2>/dev/null || true)"
+    if [[ "$git_branch" == "HEAD" ]]; then
+      git_branch=""
+    fi
+    git_tag="$(git -C "$REPO_ROOT" describe --tags --exact-match 2>/dev/null || true)"
+    if [[ -z "$git_tag" && -n "$git_commit" ]]; then
+      git_tag="$git_commit"
+    fi
+  fi
+
+  echo "-- system --"
+  echo "cpu_arch=${cpu_arch:-}"
+  echo "gpu_arch=${gpu_arch:-}"
+  echo ""
+
+  echo "-- git --"
+  echo "git_commit=${git_commit:-}"
+  echo "git_commit_long=${git_commit_long:-}"
+  echo "git_branch=${git_branch:-}"
+  echo "git_tag=${git_tag:-}"
+  echo ""
   echo ""
 
   if [[ -f "$BUILD_LOG" ]]; then
@@ -216,12 +302,23 @@ if [[ -n "${SUMMARY_STACK_FILE:-}" && -n "${SUMMARY_TOOL:-}" ]]; then
         fi
       fi
 
-      if [[ ! -f "$stack_path" ]]; then
-        echo "$header" > "$stack_path"
+      # Default behavior: append ONLY the current run (fast, no full rescan).
+      # To force a full rebuild across all runs, set WF_STACK_REBUILD_ALL=1.
+      if [[ "${WF_STACK_REBUILD_ALL:-0}" == "1" ]]; then
+        runs_root="$REPO_ROOT/workflow/runs"
+        if [[ -d "$runs_root" ]]; then
+          "$PYTHON_BIN" "$summary_tool_path" --stack-pretty "$runs_root" --stack-output "$stack_path" 2>> "$TOOLS_LOG" || true
+          echo "Rebuilt pretty stack: $stack_path" >> "$TOOLS_LOG"
+        else
+          echo "WARN: runs root missing for rebuild: $runs_root" >> "$TOOLS_LOG"
+        fi
+      else
+        if [[ ! -f "$stack_path" ]]; then
+          echo "$header" > "$stack_path"
+        fi
+        "$PYTHON_BIN" "$summary_tool_path" --tsv-row-pretty "$RUN_DIR" >> "$stack_path" 2>> "$TOOLS_LOG" || true
+        echo "Appended: $stack_path" >> "$TOOLS_LOG"
       fi
-
-      "$PYTHON_BIN" "$summary_tool_path" --tsv-row-pretty "$RUN_DIR" >> "$stack_path" 2>> "$TOOLS_LOG" || true
-      echo "Wrote: $stack_path" >> "$TOOLS_LOG"
     fi
   fi
 fi

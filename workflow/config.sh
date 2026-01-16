@@ -21,7 +21,7 @@ USE_CUDA="1"
 USE_SEVN="0"
 
 # What to run
-TEST_DIR="test/test1"
+TEST_DIR="tests/test1"
 RUN_CONFIG="config.toml"
 
 # Analysis
@@ -67,3 +67,14 @@ HDF5_CANDIDATES=(
   "/usr/local"
   "/usr"
 )
+
+# Ensure module command is available, then load git (safe for non-interactive shells)
+if command -v module >/dev/null 2>&1; then
+	module add git || module load git || true
+else
+	# try to initialize environment-modules (common paths; adjust if needed)
+	if [ -f /etc/profile.d/modules.sh ]; then
+		. /etc/profile.d/modules.sh
+		module add git || module load git || true
+	fi
+fi

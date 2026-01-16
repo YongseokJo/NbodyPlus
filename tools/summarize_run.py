@@ -106,6 +106,22 @@ def gpu_model():
     return ""
 
 
+def gpu_arch_from_meta(meta: dict):
+    """Return a trustworthy gpu_arch from meta.txt, or empty if it looks bogus."""
+    gpu = (meta.get("gpu_arch", "") or "").strip()
+    if not gpu:
+        return ""
+    bad_substrings = [
+        "NVIDIA-SMI has failed",
+        "VGA compatible controller:",
+        "ASPEED",
+    ]
+    for bad in bad_substrings:
+        if bad in gpu:
+            return ""
+    return gpu
+
+
 def summarize_profiling_csv(csv_path: Path):
     with csv_path.open(newline="") as f:
         reader = csv.DictReader(f)
@@ -255,28 +271,13 @@ def summarize_energy(h5_path: Path):
 
 
 def tsv_header():
-    return "\t".join(
-        [
-            "tag",
-            "simulation_duration_myr",
-            "total_wall_s",
-            "dE_over_E0_mean",
-            "dE_over_E0_std",
-            "scheduler",
-            "cpu_arch",
-            "gpu_arch",
-            "nodes",
-            "ntasks",
-            "gpus",
-            "timestamp",
-            "run_dir",
-        ]
-    )
+    return "\t".join(tsv_fields())
 
 
 def tsv_fields():
     return [
         "tag",
+        "test_name",
         "simulation_duration_myr",
         "total_wall_s",
         "dE_over_E0_mean",
@@ -289,7 +290,86 @@ def tsv_fields():
         "gpus",
         "timestamp",
         "run_dir",
+        "git_commit",
+        "git_commit_long",
+        "git_branch",
+        "git_tag",
     ]
+
+
+def find_repo_root(start: Path) -> Path | None:
+    path = start.resolve()
+    if path.is_file():
+        path = path.parent
+    for candidate in [path, *path.parents]:
+        if (candidate / ".git").exists():
+            return candidate
+    return None
+
+
+def git_info(run_dir: Path, meta: dict | None = None):
+    meta = meta or {}
+    repo_root = find_repo_root(run_dir)
+    if repo_root is None:
+        return (
+            meta.get("git_commit", ""),
+            meta.get("git_commit_long", ""),
+            meta.get("git_branch", ""),
+            meta.get("git_tag", ""),
+        )
+
+    base_cmd = ["git", "-C", str(repo_root)]
+    try:
+        commit_short = subprocess.check_output(
+            base_cmd + ["rev-parse", "--short", "HEAD"],
+            text=True,
+            stderr=subprocess.DEVNULL,
+        ).strip()
+    except Exception:
+        commit_short = ""
+
+    try:
+        commit_long = subprocess.check_output(
+            base_cmd + ["rev-parse", "HEAD"],
+            text=True,
+            stderr=subprocess.DEVNULL,
+        ).strip()
+    except Exception:
+        commit_long = ""
+
+    try:
+        branch = subprocess.check_output(
+            base_cmd + ["rev-parse", "--abbrev-ref", "HEAD"],
+            text=True,
+            stderr=subprocess.DEVNULL,
+        ).strip()
+        if branch == "HEAD":
+            branch = ""
+    except Exception:
+        branch = ""
+
+    try:
+        tag = subprocess.check_output(
+            base_cmd + ["describe", "--tags", "--exact-match"],
+            text=True,
+            stderr=subprocess.DEVNULL,
+        ).strip()
+    except Exception:
+        tag = ""
+
+    if not tag and commit_short:
+        tag = commit_short
+
+    if not commit_short:
+        commit_short = meta.get("git_commit", "")
+    if not commit_long:
+        commit_long = meta.get("git_commit_long", "")
+    if not branch:
+        branch = meta.get("git_branch", "")
+    if not tag:
+        tag = meta.get("git_tag", "") or commit_short
+
+    return commit_short, commit_long, branch, tag
 
 
 def tsv_header_pretty(min_width: int = 12, sep: str = "  "):
@@ -297,6 +377,87 @@ def tsv_header_pretty(min_width: int = 12, sep: str = "  "):
     widths = [max(len(f), min_width) for f in fields]
     cols = [f.ljust(w) for f, w in zip(fields, widths)]
     return sep.join(cols)
+
+
+def build_row(run_dir: Path):
+    meta = read_meta(run_dir)
+    profiling_csv, output_h5 = find_run_artifacts(run_dir)
+    perf = summarize_profiling_csv(profiling_csv) if profiling_csv else None
+    energy = summarize_energy(output_h5) if output_h5 else None
+
+    tag = extract_tag(run_dir)
+    sim_time = None
+    if energy and energy.get("time_max") is not None:
+        sim_time = energy["time_max"]
+    elif perf and perf.get("sim_time_max") is not None:
+        sim_time = perf["sim_time_max"]
+
+    cpu = meta.get("cpu_arch", "") or cpu_model()
+    gpu = gpu_arch_from_meta(meta) or gpu_model()
+    test_name = meta.get("test_dir", "")
+    commit_short, commit_long, branch, tag_git = git_info(run_dir, meta)
+
+    def sanitize(v):
+        if v is None:
+            return ""
+        s = str(v)
+        # collapse newlines and repeated whitespace to single spaces
+        s = s.replace("\n", " ").replace("\r", " ")
+        s = " ".join(s.split())
+        return s
+
+    row = [
+        tag,
+        test_name,
+        format_num(sim_time),
+        format_num(perf["total_s"] if perf else None),
+        format_num(energy["dE_mean"] if energy and "error" not in energy else None),
+        format_num(energy["dE_std"] if energy and "error" not in energy else None),
+        meta.get("scheduler", ""),
+        cpu,
+        gpu,
+        meta.get("nodes", ""),
+        meta.get("ntasks", ""),
+        meta.get("gpus", ""),
+        meta.get("timestamp", ""),
+        str(run_dir),
+        commit_short,
+        commit_long,
+        branch,
+        tag_git,
+    ]
+    return [sanitize(x) for x in row]
+
+
+def pretty_table(rows: list[list[str]], min_width: int = 0, sep: str = "  "):
+    fields = tsv_fields()
+    widths = [max(len(f), min_width) for f in fields]
+    for row in rows:
+        for i, value in enumerate(row):
+            widths[i] = max(widths[i], len(str(value)))
+
+    numeric_fields = {
+        "simulation_duration_myr",
+        "total_wall_s",
+        "dE_over_E0_mean",
+        "dE_over_E0_std",
+        "nodes",
+        "ntasks",
+        "gpus",
+    }
+
+    header = sep.join([f.ljust(w) for f, w in zip(fields, widths)])
+    lines = [header]
+    for row in rows:
+        cols = []
+        for field, value, width in zip(fields, row, widths):
+            text = str(value)
+            if field in numeric_fields and text:
+                cols.append(text.rjust(width))
+            else:
+                cols.append(text.ljust(width))
+        lines.append(sep.join(cols))
+    return "\n".join(lines)
 
 
 def tsv_row_pretty(run_dir: Path, min_width: int = 12, sep: str = "  "):
@@ -307,13 +468,17 @@ def tsv_row_pretty(run_dir: Path, min_width: int = 12, sep: str = "  "):
     energy = summarize_energy(output_h5) if output_h5 else None
 
     sim_duration = None
-    if perf and perf.get("sim_time_min") is not None and perf.get("sim_time_max") is not None:
-        sim_duration = perf["sim_time_max"] - perf["sim_time_min"]
+    if energy and energy.get("time_max") is not None:
+        sim_duration = energy["time_max"]
+    elif perf and perf.get("sim_time_max") is not None:
+        sim_duration = perf["sim_time_max"]
     meta = read_meta(run_dir)
     cpu = meta.get("cpu_arch", "") or cpu_model()
-    gpu = meta.get("gpu_arch", "") or gpu_model()
+    gpu = gpu_arch_from_meta(meta) or gpu_model()
+    test_name = meta.get("test_dir", "")
     row = [
         tag,
+        test_name,
         format_num(sim_duration),
         format_num(perf["total_s"] if perf else None),
         format_num(energy["dE_mean"] if energy and "error" not in energy else None),
@@ -326,11 +491,37 @@ def tsv_row_pretty(run_dir: Path, min_width: int = 12, sep: str = "  "):
         meta.get("gpus", ""),
         meta.get("timestamp", ""),
         str(run_dir),
+        "",
+        "",
+        "",
+        "",
     ]
 
     fields = tsv_fields()
     widths = [max(len(f), min_width) for f in fields]
-    cols = [str(v).ljust(w) for v, w in zip(row, widths)]
+
+    commit_short, commit_long, branch, tag = git_info(run_dir, meta)
+    row[-4] = commit_short
+    row[-3] = commit_long
+    row[-2] = branch
+    row[-1] = tag
+
+    numeric_fields = {
+        "simulation_duration_myr",
+        "total_wall_s",
+        "dE_over_E0_mean",
+        "dE_over_E0_std",
+        "nodes",
+        "ntasks",
+        "gpus",
+    }
+    cols = []
+    for field, value, width in zip(fields, row, widths):
+        text = str(value)
+        if field in numeric_fields and text:
+            cols.append(text.rjust(width))
+        else:
+            cols.append(text.ljust(width))
     return sep.join(cols)
 
 
@@ -349,6 +540,8 @@ def main():
     parser.add_argument("--tsv-row", action="store_true")
     parser.add_argument("--tsv-header-pretty", action="store_true")
     parser.add_argument("--tsv-row-pretty", action="store_true")
+    parser.add_argument("--stack-pretty", metavar="RUNS_ROOT")
+    parser.add_argument("--stack-output", metavar="OUTPUT")
     args = parser.parse_args()
 
     if args.tsv_header:
@@ -357,6 +550,21 @@ def main():
 
     if args.tsv_header_pretty:
         print(tsv_header_pretty())
+        return
+
+    if args.stack_pretty:
+        runs_root = Path(args.stack_pretty).resolve()
+        if not runs_root.exists():
+            print(f"ERROR: runs root not found: {runs_root}")
+            sys.exit(2)
+
+        run_dirs = sorted([p for p in runs_root.iterdir() if p.is_dir()])
+        rows = [build_row(p) for p in run_dirs]
+        output = pretty_table(rows)
+        if args.stack_output:
+            Path(args.stack_output).write_text(output + "\n")
+        else:
+            print(output)
         return
 
     if not args.run_dir:
@@ -376,12 +584,16 @@ def main():
     if args.tsv_row:
         tag = extract_tag(run_dir)
         sim_duration = None
-        if perf and perf.get("sim_time_min") is not None and perf.get("sim_time_max") is not None:
-            sim_duration = perf["sim_time_max"] - perf["sim_time_min"]
+        if energy and energy.get("time_max") is not None:
+            sim_duration = energy["time_max"]
+        elif perf and perf.get("sim_time_max") is not None:
+            sim_duration = perf["sim_time_max"]
         cpu = meta.get("cpu_arch", "") or cpu_model()
-        gpu = meta.get("gpu_arch", "") or gpu_model()
+        gpu = gpu_arch_from_meta(meta) or gpu_model()
+        test_name = meta.get("test_dir", "")
         row = [
             tag,
+            test_name,
             format_num(sim_duration),
             format_num(perf["total_s"] if perf else None),
             format_num(energy["dE_mean"] if energy and "error" not in energy else None),
@@ -395,6 +607,17 @@ def main():
             meta.get("timestamp", ""),
             str(run_dir),
         ]
+        commit_short, commit_long, branch, tag = git_info(run_dir, meta)
+        # sanitize and append git info
+        def _sanitize(v):
+            if v is None:
+                return ""
+            s = str(v)
+            s = s.replace("\n", " ").replace("\r", " ")
+            s = " ".join(s.split())
+            return s
+
+        row.extend([_sanitize(commit_short), _sanitize(commit_long), _sanitize(branch), _sanitize(tag)])
         print("\t".join(row))
         return
 

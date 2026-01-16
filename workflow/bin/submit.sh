@@ -26,6 +26,7 @@ SUMMARY_STACK_FILE_OVERRIDE=""
 SKIP_COMPILE=0
 SKIP_RUN=0
 SKIP_ANALYZE=0
+STACK_REBUILD_ALL=0
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -51,6 +52,8 @@ while [[ $# -gt 0 ]]; do
       SKIP_RUN=1; shift 1 ;;
     --skip-analyze)
       SKIP_ANALYZE=1; shift 1 ;;
+    --stack-rebuild-all)
+      STACK_REBUILD_ALL=1; shift 1 ;;
     -h|--help)
       sed -n '1,120p' "$0"
       exit 0
@@ -136,9 +139,31 @@ export WF_RUN_ANALYZE_OVERRIDE="$RUN_ANALYZE"
 export WF_SUMMARY_FILE_OVERRIDE="${SUMMARY_FILE:-}"
 export WF_SUMMARY_STACK_FILE_OVERRIDE="${SUMMARY_STACK_FILE:-}"
 
+# By default, keep stacking fast and incremental (only the current run).
+# Users can opt in to a full rebuild across all runs.
+export WF_STACK_REBUILD_ALL="$STACK_REBUILD_ALL"
+
 REPO_ROOT="$(workflow_repo_root)"
 RUN_DIR="$(workflow_run_dir "$TAG")"
 mkdir -p "$RUN_DIR"
+
+# Capture VCS information at submit time.
+# (CPU/GPU architecture is detected at runtime during analyze; submit-time values
+# can reflect the login node for batch schedulers.)
+
+git_commit=""
+git_commit_long=""
+git_branch=""
+git_tag=""
+if command -v git >/dev/null 2>&1; then
+  git_commit="$(git -C "$REPO_ROOT" rev-parse --short HEAD 2>/dev/null || true)"
+  git_commit_long="$(git -C "$REPO_ROOT" rev-parse HEAD 2>/dev/null || true)"
+  git_branch="$(git -C "$REPO_ROOT" rev-parse --abbrev-ref HEAD 2>/dev/null || true)"
+  git_tag="$(git -C "$REPO_ROOT" describe --tags --exact-match 2>/dev/null || true)"
+fi
+if [[ -z "$git_tag" && -n "$git_commit" ]]; then
+  git_tag="$git_commit"
+fi
 
 # Capture resolved settings for reproducibility
 {
@@ -158,6 +183,10 @@ mkdir -p "$RUN_DIR"
   echo "run_compile=$RUN_COMPILE"
   echo "run_run=$RUN_RUN"
   echo "run_analyze=$RUN_ANALYZE"
+  echo "git_commit=$git_commit"
+  echo "git_commit_long=$git_commit_long"
+  echo "git_branch=$git_branch"
+  echo "git_tag=$git_tag"
 } > "$RUN_DIR/meta.txt"
 
 cp "$REPO_ROOT/workflow/config.sh" "$RUN_DIR/config.sh"
