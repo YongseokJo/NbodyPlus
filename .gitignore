@@ -68,3 +68,5 @@ venv/
 .venv/
 env/
 ENV/
+
+*.tsv.bak*
