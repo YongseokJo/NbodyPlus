@@ -14,6 +14,25 @@ RUN_DIR="{{RUN_DIR}}"
 
 cd "$REPO_ROOT"
 
-./workflow/bin/compile.sh "$RUN_DIR"
-./workflow/bin/run.sh "$RUN_DIR"
-./workflow/bin/analyze.sh "$RUN_DIR"
+# Optionally run steps depending on RUN_COMPILE/RUN_RUN/RUN_ANALYZE (1=yes,0=no)
+RUN_COMPILE={{RUN_COMPILE}}
+RUN_RUN={{RUN_RUN}}
+RUN_ANALYZE={{RUN_ANALYZE}}
+
+if [[ "$RUN_COMPILE" -eq 1 ]]; then
+	./workflow/bin/compile.sh "$RUN_DIR"
+else
+	echo "Skipping compile (RUN_COMPILE=0)"
+fi
+
+if [[ "$RUN_RUN" -eq 1 ]]; then
+	./workflow/bin/run.sh "$RUN_DIR"
+else
+	echo "Skipping run (RUN_RUN=0)"
+fi
+
+if [[ "$RUN_ANALYZE" -eq 1 ]]; then
+	./workflow/bin/analyze.sh "$RUN_DIR"
+else
+	echo "Skipping analyze (RUN_ANALYZE=0)"
+fi

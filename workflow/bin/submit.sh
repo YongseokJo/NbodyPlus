@@ -311,6 +311,9 @@ case "$SCHEDULER" in
       NODES "$NODES" \
       CPUS_PER_TASK "$CPUS_PER_TASK" \
       GPUS "$GPUS" \
+      RUN_COMPILE "$RUN_COMPILE" \
+      RUN_RUN "$RUN_RUN" \
+      RUN_ANALYZE "$RUN_ANALYZE" \
       JOB_NAME "$JOB_NAME" \
       REPO_ROOT "$REPO_ROOT" \
       RUN_DIR "$RUN_DIR"

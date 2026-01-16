@@ -18,9 +18,9 @@ RUN_DIR="{{RUN_DIR}}"
 cd "$REPO_ROOT"
 
 # Optionally run steps depending on RUN_COMPILE/RUN_RUN/RUN_ANALYZE (1=yes,0=no)
-RUN_COMPILE=${RUN_COMPILE:-1}
-RUN_RUN=${RUN_RUN:-1}
-RUN_ANALYZE=${RUN_ANALYZE:-1}
+RUN_COMPILE={{RUN_COMPILE}}
+RUN_RUN={{RUN_RUN}}
+RUN_ANALYZE={{RUN_ANALYZE}}
 
 if [[ "$RUN_COMPILE" -eq 1 ]]; then
 	./workflow/bin/compile.sh "$RUN_DIR"
