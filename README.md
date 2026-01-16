@@ -52,3 +52,11 @@ For these projects, if interested, please feel free to contact Yongseok Jo (me@y
 Yongseok Jo @ [me@yongseokjo.com](mailto:me@yongseokjo.com)
 
 Enzo-Abyss repository : [https://github.com/YongseokJo/enzo-nbody](https://github.com/YongseokJo/enzo-nbody)
+
+
+
+I am rewriting the I/O of this repo. I am going to use TOML for input and hdf5 for output (time series).
+
+refer to test/test1/config and output.
+
+revise the codes to do this.
