@@ -3,12 +3,12 @@
 ## Current Focus
 
 **Milestone:** 1 — AoS to SoA Conversion (v1.0)
-**Phase:** 2 — MPI Integration
+**Phase:** 4 — CPU Routines
 **Status:** Complete
 
 ## Quick Context
 
-Converting ABYSS from Array of Structures (AoS) to Structure of Arrays (SoA) for performance. Full SoA approach with accessor functions. MPI shared memory now uses multiple MPI_Win objects (66 windows for all SoA arrays).
+Converting ABYSS from Array of Structures (AoS) to Structure of Arrays (SoA) for performance. Full SoA approach with accessor functions. MPI shared memory now uses multiple MPI_Win objects (66 windows for all SoA arrays). CPU routines updated with SoA helpers using bridge pattern.
 
 ## Baseline Metrics
 
@@ -25,21 +25,21 @@ Converting ABYSS from Array of Structures (AoS) to Structure of Arrays (SoA) for
 | 1. Core SoA Container | Complete ✓ | 3 plans, 3 commits |
 | 2. MPI Integration | Complete ✓ | 4 plans, 8 commits |
 | 3. GPU Integration | Complete ✓ | 5 plans, 5 commits |
-| 4. CPU Routines | Not Started | — |
+| 4. CPU Routines | Complete ✓ | 5 plans, 5 commits |
 | 5. SDAR Compatibility | Not Started | — |
 | 6. I/O Updates | Not Started | — |
 | 7. Validation | Not Started | Baseline captured |
 
-## Phase 2 Summary
+## Phase 4 Summary
 
-Created MPI shared memory infrastructure for SoA:
-- `particle_data_mpi.h/cpp` — ParticleDataMPI class with 66 MPI_Win handles
-- Updated `global.h`, `default_global.cpp` with extern particle_data
-- Updated `mpi_routines.cpp` with allocate_shared(), sync_all(), timing
-- Updated `main.cpp` with clean shutdown (deallocate_shared)
-- DEBUG_MPI verification for cross-rank access
+Added SoA-compatible CPU routines using bridge pattern:
+- `particle_data.h/cpp` — sync_from_particle(), sync_to_particle(), bulk accessors
+- `timestep_routines.cpp` — SoA overloads for getNewTimeStepReg/Irr
+- `update_particle.cpp` — predict_second_order(), correct_fourth_order() free functions
+- `compute_acceleration.cpp` — AccumulatorSoA struct, predict_neighbor_soa()
+- `regular_routines.cpp`, `irregular_routines.cpp` — SoA integration
 
-Commits: `b57b92e`, `3d06888`, `1b666dd`, `cc34c57`, `dae2e28`, `1c82ebc`, `9000806`, `a48af2c`, `665a8ad`
+Commits: `938a7bc`, `91066de`, `5d8bcbe`, `b926bda`, `03ba526`
 
 ## Key Decisions
 
@@ -51,7 +51,7 @@ Commits: `b57b92e`, `3d06888`, `1b666dd`, `cc34c57`, `dae2e28`, `1c82ebc`, `9000
 
 ## Next Action
 
-Run `/gsd:plan-phase 4` to create detailed plan for CPU Routines phase.
+Run `/gsd:plan-phase 5` to create detailed plan for SDAR Compatibility phase.
 
 ---
-*Last updated: 2026-01-17 (Phase 2 complete)*
+*Last updated: 2026-01-17 (Phase 4 complete)*

@@ -122,7 +122,7 @@
 | 1 | Core SoA Container | CONT-01, CONT-02, CONT-03 | Complete ✓ |
 | 2 | MPI Integration | MPI-01, MPI-02, MPI-03 | Complete ✓ |
 | 3 | GPU Integration | GPU-01..05 | Complete ✓ |
-| 4 | CPU Routines | CPU-01..05 | Pending |
+| 4 | CPU Routines | CPU-01..05 | Complete ✓ |
 | 5 | SDAR Compatibility | SDAR-01, SDAR-02, SDAR-03 | Pending |
 | 6 | I/O Updates | IO-01, IO-02 | Pending |
 | 7 | Validation | VAL-01..04 | Pending |

@@ -28,13 +28,13 @@
 
 ## CPU Routines
 
-| REQ-ID | Requirement | Acceptance Criteria |
-|--------|-------------|---------------------|
-| CPU-01 | Update regular force calculation for SoA | `calculate_regular_acceleration()` uses accessors |
-| CPU-02 | Update irregular force calculation for SoA | `calculate_irregular_acceleration()` uses accessors |
-| CPU-03 | Update prediction routines for SoA | All prediction functions use accessors |
-| CPU-04 | Update correction routines for SoA | All correction functions use accessors |
-| CPU-05 | Update timestep routines for SoA | Timestep calculations use accessors |
+| REQ-ID | Requirement | Acceptance Criteria | Status |
+|--------|-------------|---------------------|--------|
+| CPU-01 | Update regular force calculation for SoA | `calculate_regular_acceleration()` uses accessors | Complete ✓ |
+| CPU-02 | Update irregular force calculation for SoA | `calculate_irregular_acceleration()` uses accessors | Complete ✓ |
+| CPU-03 | Update prediction routines for SoA | All prediction functions use accessors | Complete ✓ |
+| CPU-04 | Update correction routines for SoA | All correction functions use accessors | Complete ✓ |
+| CPU-05 | Update timestep routines for SoA | Timestep calculations use accessors | Complete ✓ |
 
 ## SDAR Compatibility
 
