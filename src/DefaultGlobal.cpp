@@ -6,151 +6,165 @@
 #endif
 #include <unordered_map>
 
-// Paremeters related to the World communicator
-int MyRank;
-int NumberOfProcessor;
-int NumberOfWorker;
-
-// Shared memory communicator
+// ============================================================================
+// MPI communicator variables
+// ============================================================================
+int my_rank;
+int num_processors;
+int num_workers;
 MPI_Comm shared_comm;
 
+// ============================================================================
+// MPI windows for shared memory
+// ============================================================================
 MPI_Win win;
 Particle *particles;
 
 MPI_Win win2;
-GlobalVariable *global_variable;
+GlobalVariable *g_state;
 
 MPI_Win win3;
-int* Neighbors;
+int* neighbors;
 
 MPI_Win win4;
-int* NewNeighbors;
+int* new_neighbors;
 
-// Custom MPI data types
-MPI_Datatype QueueType;
-MPI_Datatype IparticleType;
-MPI_Datatype JparticleType;
+// ============================================================================
+// MPI custom datatypes
+// ============================================================================
+MPI_Datatype queue_type_mpi;
+MPI_Datatype iparticle_type_mpi;
+MPI_Datatype jparticle_type_mpi;
 
-// Particle array
-int LastParticleIndex; // The last index of particle array
-int NumberOfParticle; // The number of active particles (single + cm)
-int NewCMPID; // The next PID to be assigned to a new CM particle
+// ============================================================================
+// Particle array management
+// ============================================================================
+int last_particle_index;    // Index of last particle in array
+int num_particles;          // Number of active particles (single + cm)
+int new_cm_pid;             // Next PID for new CM particle
 
-// Parameters determined in config file
+// ============================================================================
+// Simulation parameters (from config file)
+// ============================================================================
 double eta;
-int FixNumNeighbor;
-double InitialNeighborRadius;
-double RSearch;              // Few-body search radius (code units)
-double TSearch;              // Few-body search time (code units)
+int fixed_num_neighbors;
+double initial_neighbor_radius;
+double r_search;            // Few-body search radius (code units)
+double t_search;            // Few-body search time (code units)
 
+// ============================================================================
 // Output settings
-bool UseCompression = true;  // Enable HDF5 compression by default
-int CompressionLevel = 6;    // GZIP compression level (1-9)
+// ============================================================================
+bool use_compression = true;    // Enable HDF5 compression by default
+int compression_level = 6;      // GZIP compression level (1-9)
 
+// ============================================================================
 // Restart settings
-bool RestartEnabled = false;
-std::string CheckpointFile;
+// ============================================================================
+bool restart_enabled = false;
+std::string checkpoint_file;
 
-// Few-body
-std::unordered_map<int, int> CMPtclWorker; // by EW 2025.1.4 // unordered_map by EW 2025.1.11
-std::unordered_map<int, int> PrevCMPtclWorker; // by EW 2025.1.4 // unordered_map by EW 2025.1.11
+// ============================================================================
+// Few-body tracking
+// ============================================================================
+std::unordered_map<int, int> cm_particle_worker_map;
+std::unordered_map<int, int> prev_cm_particle_worker_map;
 
-// Time
+// ============================================================================
+// Time variables
+// ============================================================================
 double global_time;
 double global_time_irr;
-ULL NextRegTimeBlock;
+ull_t next_reg_time_block;
 int time_block;
 double time_step;
-ULL block_max;
-double endTime;
-double EnzoTimeStep;
+ull_t block_max;
+double end_time;
+double enzo_time_step;
 
-// i/o
+// ============================================================================
+// I/O variables
+// ============================================================================
 char* fname;
 bool restart;
 char* foutput;
-double outputTime;
-int outNum;
-double outputTimeStep;
-char *config_file;
+double output_time;
+int output_num;
+double output_time_step;
+char* config_file;
 
+// ============================================================================
 // Energy tracking
-double E_binary;	// Total binary energy in a processor
-double E_binary_SD; // Total slowdown binary energy in a processor
-double E_merger; 	// Total merger energy in a processor
-double E_PN;		// Total post-Newtonian energy in a processor // Experimental one.. It seems not working well by EW 2025.8.19
+// ============================================================================
+double energy_binary;       // Total binary energy in processor
+double energy_binary_sd;    // Total slowdown binary energy
+double energy_merger;       // Total merger energy
+double energy_pn;           // Total post-Newtonian energy
 
-FILE* binout;
-FILE* mergerout;
+// ============================================================================
+// Output file handles
+// ============================================================================
+FILE* bin_output_file;
+FILE* merger_output_file;
+FILE* worker_output_file;
+
 #ifdef SEVN
-FILE* SEVNout;
+FILE* sevn_output_file;
 IO* sevnio = nullptr;
-std::multimap<double, int> SEVNList;
+std::multimap<double, int> sevn_list;
 #endif
-FILE* workerout;
 
 #ifdef PERFORMANCETRACE
 Performance performance;
 #endif
 
+// ============================================================================
+// Initialize default global values
+// ============================================================================
 void DefaultGlobal() {
+    // Timesteps
+    end_time = 1;
+    enzo_time_step = end_time / 1e10;  // end_time should be Myr
+    output_time_step = output_time_step / end_time;
 
-	/* Timesteps */
-	endTime = 1;
-	EnzoTimeStep   = endTime/1e10; // endTime should be Myr
-	outputTimeStep = outputTimeStep/endTime; // endTime should be Myr
+    time_block = -30;
+    block_max = static_cast<ull_t>(pow(2, -time_block));
+    time_step = std::pow(2, time_block);
 
-	time_block = -30;
-	block_max = static_cast<ULL>(pow(2, -time_block));
-	time_step = std::pow(2,time_block);
+    end_time = 0.0;
+    output_time_step = 0.0;
 
-	endTime = 0.0;
-	outputTimeStep = 0.;
+    global_time = 0.0;
+    output_time = 0.0;
 
-	global_time = 0.;
-	outputTime = 0.;
+    eta = 0.01;
+    fixed_num_neighbors = 100;
+    initial_neighbor_radius = 0.011;
 
-	eta = 0.01;
-	FixNumNeighbor = 100;
-	InitialNeighborRadius = 0.011;
+    // Few-body search parameters (converted to code units)
+    // Default: r_search = 2.5e-4 pc, t_search = 1e-6 Myr
+    r_search = 2.5e-4 / POSITION_UNIT;
+    t_search = 1e-6 / (enzo_time_step * 1e4);
 
-	// Few-body search parameters (converted to code units)
-	// Default: RSearch = 2.5e-4 pc, TSearch = 1e-6 Myr
-	RSearch = 2.5e-4 / position_unit;  // pc -> code units
-	TSearch = 1e-6 / (EnzoTimeStep * 1e4);  // Myr -> code units
-
-	E_binary = 0.0;
-	E_binary_SD = 0.0;
-	E_merger = 0.0;
-	E_PN = 0.0;
+    energy_binary = 0.0;
+    energy_binary_sd = 0.0;
+    energy_merger = 0.0;
+    energy_pn = 0.0;
 
 #ifdef SEVN
-	std::vector<std::string> args = {"empty", // Not used
-		// "-myself", "/data/vinicius/NbodyPlus/SEVN",
-		"-tables", "/home/vinicius/install/sevn_custom/tables/SEVNtracks_parsec_ov04_AGB", 
-		//  "-tables", "/data/vinicius/NbodyPlus/SEVN/tables/SEVNtracks_MIST_AGB",
-		// "-tables_HE", "/data/vinicius/NbodyPlus/SEVN/tables/SEVNtracks_parsec_pureHe36",
-		// "-turn_WR_to_pureHe", "false",
-		// "-snmode", "delayed",
-		// "-Z", "0.0002",
-		// "-spin", "0.0",
-		// "-tini", "zams", 
-		// "-tf", "end",
-		// "-dtout", "events",
-		"-xspinmode", "geneva",
-		"-hardmode", "disabled", // binary hardening due to external perturbers
-		// "-collmode", "disabled", // collision at periastron // If this is disabled, no common envelope or stellar merger in SEVN
-		// "-circmode", "disabled", // orbital circularisation; default: circualise conseving the binary angular momentum
-		"-tmode", "disabled" // equilibrium tides // Currently, we're not considering stellar rotation, so let's disable this
-		// "-gwmode", "disabled"}; // Peters formula; this is considered in SDAR but let's turn this on
-	};
-	std::vector<char*> c_args;
-	for (auto& arg : args) {
-		c_args.push_back(&arg[0]);
-	}
+    std::vector<std::string> args = {
+        "empty",  // Not used
+        "-tables", "/home/vinicius/install/sevn_custom/tables/SEVNtracks_parsec_ov04_AGB",
+        "-xspinmode", "geneva",
+        "-hardmode", "disabled",
+        "-tmode", "disabled"
+    };
+    std::vector<char*> c_args;
+    for (auto& arg : args) {
+        c_args.push_back(&arg[0]);
+    }
 
-	sevnio = new IO;
-	sevnio->load(c_args.size(), c_args.data());
+    sevnio = new IO;
+    sevnio->load(c_args.size(), c_args.data());
 #endif
-
 }

@@ -24,32 +24,32 @@ void CalculateAllAccelerationOnGPU(std::vector<Particle*> &particle){
 	int mpi_rank = 0;
 
 	// variables for saving variables to send to GPU
-	CUDA_REAL* MassSend;
-	CUDA_REAL* MdotSend;
-	CUDA_REAL(*PositionSend)[Dim];
-	CUDA_REAL(*VelocitySend)[Dim];
+	cuda_real_t* MassSend;
+	cuda_real_t* MdotSend;
+	cuda_real_t(*PositionSend)[DIM];
+	cuda_real_t(*VelocitySend)[DIM];
 
-	CUDA_REAL* r2OfACSend;
-	CUDA_REAL  TimeStepRegTmp, ri2;
-	CUDA_REAL* TimeStepRegSend;
+	cuda_real_t* r2OfACSend;
+	cuda_real_t  TimeStepRegTmp, ri2;
+	cuda_real_t* TimeStepRegSend;
 
-	CUDA_REAL(*AccSend)[Dim];
-	CUDA_REAL(*AccDotSend)[Dim];
-	//CUDA_REAL *PotSend;
+	cuda_real_t(*AccSend)[DIM];
+	cuda_real_t(*AccDotSend)[DIM];
+	//cuda_real_t *PotSend;
 
 	int **ACListReceive;
 	int *NumNeighborReceive;
 
 	// temporary variables for calculating the irregular force
-	CUDA_REAL dx[Dim];
-	CUDA_REAL dv[Dim];
-	CUDA_REAL rij2,dr2i,dr3i,drdv;
+	cuda_real_t dx[DIM];
+	cuda_real_t dv[DIM];
+	cuda_real_t rij2,dr2i,dr3i,drdv;
 
 	// extra variables
 	bool neighborOK;
 	int ACnumi2;
 	int ACjid;
-	CUDA_REAL dt = particle[0]->TimeStepReg*EnzoTimeStep;
+	cuda_real_t dt = particle[0]->time_step_reg*enzo_time_step;
 
 
 
@@ -59,35 +59,35 @@ void CalculateAllAccelerationOnGPU(std::vector<Particle*> &particle){
 
 	// need to make array to send to GPU
 	// allocate memory to the temporary variables
-	MassSend        = new CUDA_REAL[NNB];
-	MdotSend        = new CUDA_REAL[NNB];
-	PositionSend    = new CUDA_REAL[NNB][Dim];
-	VelocitySend    = new CUDA_REAL[NNB][Dim];
+	MassSend        = new cuda_real_t[NNB];
+	MdotSend        = new cuda_real_t[NNB];
+	PositionSend    = new cuda_real_t[NNB][DIM];
+	VelocitySend    = new cuda_real_t[NNB][DIM];
 
-	r2OfACSend      = new CUDA_REAL[NNB];
-	TimeStepRegSend = new CUDA_REAL[NNB];
+	r2OfACSend      = new cuda_real_t[NNB];
+	TimeStepRegSend = new cuda_real_t[NNB];
 
-	AccSend         = new CUDA_REAL[NNB][Dim];
-	AccDotSend      = new CUDA_REAL[NNB][Dim];
+	AccSend         = new cuda_real_t[NNB][DIM];
+	AccDotSend      = new cuda_real_t[NNB][DIM];
 
 	NumNeighborReceive = new int[NNB];
 	ACListReceive      = new int*[NNB];
 	for (int i=0; i<NNB; i++) {
-		ACListReceive[i] = new int[MaxNumNeighbor];
+		ACListReceive[i] = new int[MAX_NUM_NEIGHBOR];
 	}
 
 
 	// copy the data of particles to the arrays to be sent
 	for (int i=0; i<NNB; i++) {
 		ri2           = 0;
-		MassSend[i]   = particle[i]->Mass;
+		MassSend[i]   = particle[i]->mass;
 		r2OfACSend[i] = (particle[i]->RadiusOfAC)*(particle[i]->RadiusOfAC);
-		MdotSend[i]   = particle[i]->Mass;
+		MdotSend[i]   = particle[i]->mass;
 
-		for (int dim=0; dim<Dim; dim++) {
-			PositionSend[i][dim] = particle[i]->Position[dim];
-			VelocitySend[i][dim] = particle[i]->Velocity[dim];
-			ri2                 += particle[i]->Position[dim]*particle[i]->Position[dim];
+		for (int dim=0; dim<DIM; dim++) {
+			PositionSend[i][dim] = particle[i]->position[dim];
+			VelocitySend[i][dim] = particle[i]->velocity[dim];
+			ri2                 += particle[i]->position[dim]*particle[i]->position[dim];
 		}
 
 		TimeStepRegTmp     = 1.0/8.0*sqrt(1.0 + ri2);
@@ -95,7 +95,7 @@ void CalculateAllAccelerationOnGPU(std::vector<Particle*> &particle){
 	}
 
 	// send the arrays to GPU
-	//SendToDevice(&NNB, MassSend, PositionSend, VelocitySend, MdotSend, &MaxNumNeighbor);
+	//SendToDevice(&NNB, MassSend, PositionSend, VelocitySend, MdotSend, &MAX_NUM_NEIGHBOR);
 
 
 	// calculate the force by sending the particles to GPU in multiples of 1024
@@ -108,9 +108,9 @@ void CalculateAllAccelerationOnGPU(std::vector<Particle*> &particle){
 		// copy the values of regular forces and neighbors obtained in GPU to particles
 		// and also calculate the irregular forces in the process
 		for (int i2=i; i2<(i+1024); i2++){
-			for (int dim=0; dim<Dim; dim++) {
-				particle[i2]->a_reg[dim][0] += AccSend[i2][dim];
-				particle[i2]->a_reg[dim][1] += AccDotSend[i2][dim];
+			for (int dim=0; dim<DIM; dim++) {
+				particle[i2]->acc_regular[dim][0] += AccSend[i2][dim];
+				particle[i2]->acc_regular[dim][1] += AccDotSend[i2][dim];
 			}
 			//ACnumi2 = AClistGpu[i][0];
 
@@ -125,19 +125,19 @@ void CalculateAllAccelerationOnGPU(std::vector<Particle*> &particle){
 					rij2 = 0.0;
 					drdv = 0.0;
 
-					for (int dim=0; dim<Dim; dim++) {
-						dx[dim] = particle[ACjid]->Position - particle[i2]->Position;
-						dv[dim] = particle[ACjid]->Velocity - particle[i2]->Velocity;
+					for (int dim=0; dim<DIM; dim++) {
+						dx[dim] = particle[ACjid]->position - particle[i2]->position;
+						dv[dim] = particle[ACjid]->velocity - particle[i2]->velocity;
 						rij2   += dx[dim]*dx[dim];
 						drdv   += dx[dim]*dv[dim];
 					}
 
 					dr2i = 1.0/rij2;
-					dr3i = particle[ACjid]->Mass*dr2i*sqrt(dr2i);
+					dr3i = particle[ACjid]->mass*dr2i*sqrt(dr2i);
 
-					for (int dim=0; dim<Dim; dim++) {
-						particle[i2]->a_irr[dim][0] += dx[dim]*dr3i;
-						particle[i2]->a_irr[dim][1] += (dv[dim]-dx[dim]*drdv)*dr3i;
+					for (int dim=0; dim<DIM; dim++) {
+						particle[i2]->acc_irregular[dim][0] += dx[dim]*dr3i;
+						particle[i2]->acc_irregular[dim][1] += (dv[dim]-dx[dim]*drdv)*dr3i;
 					}
 				} // endfor neighbors 
 			} else {  // in case of no neighbors, just set the neighbor number to 0 just in case. 
@@ -147,8 +147,8 @@ void CalculateAllAccelerationOnGPU(std::vector<Particle*> &particle){
 
 			// copy the values to other values as well
 			for (int dim=0; dim<3; dim++){
-				particle[i2]->a_tot[dim][0] = particle[i2]->a_reg[dim][0] + particle[i2]->a_irr[dim][0];
-				particle[i2]->a_tot[dim][1] = particle[i2]->a_reg[dim][1] + particle[i2]->a_irr[dim][1];
+				particle[i2]->acc_total[dim][0] = particle[i2]->acc_regular[dim][0] + particle[i2]->acc_irregular[dim][0];
+				particle[i2]->acc_total[dim][1] = particle[i2]->acc_regular[dim][1] + particle[i2]->acc_irregular[dim][1];
 			}
 		} // saving the 1024 results from GPU to local class ends
 	} // endfor total calculation 
@@ -200,24 +200,24 @@ void CalculateListAccelerationOnGPU(std::vector<int> &IndexList, std::vector<Par
 	int numGpuCal;
 
 	// variables for GPU
-	CUDA_REAL *MassSend;
-	CUDA_REAL *MdotSend;
-	CUDA_REAL(*PositionSend)[Dim];
-	CUDA_REAL(*VelocitySend)[Dim];
+	cuda_real_t *MassSend;
+	cuda_real_t *MdotSend;
+	cuda_real_t(*PositionSend)[DIM];
+	cuda_real_t(*VelocitySend)[DIM];
 
-	CUDA_REAL *r2OfACSend;
-	CUDA_REAL *TimeStepRegSend;
+	cuda_real_t *r2OfACSend;
+	cuda_real_t *TimeStepRegSend;
 
-	CUDA_REAL(*AccSend)[Dim];
-	CUDA_REAL(*AccDotSend)[Dim];
-	CUDA_REAL *PotSend;
+	cuda_real_t(*AccSend)[DIM];
+	cuda_real_t(*AccDotSend)[DIM];
+	cuda_real_t *PotSend;
 	int **AClistGpu;
 	int massFlag;
 
 	// temporary variables for calculating the irregular force
 
-	CUDA_REAL dx[Dim], dv[Dim];
-	CUDA_REAL rij2, dr2i, dr3i, drdv;
+	cuda_real_t dx[DIM], dv[DIM];
+	cuda_real_t rij2, dr2i, dr3i, drdv;
 
 	// extra variables
 	int ACnumi2, ACjid, i2reg;
@@ -225,21 +225,21 @@ void CalculateListAccelerationOnGPU(std::vector<int> &IndexList, std::vector<Par
 
 	// need to make array to send to GPU
 	// allocate memory to the temporary variables
-	MassSend     = new CUDA_REAL[ListSize];
-	MdotSend     = new CUDA_REAL[ListSize];
-	PositionSend = new CUDA_REAL[ListSize][Dim];
-	VelocitySend = new CUDA_REAL[ListSize][Dim];
+	MassSend     = new cuda_real_t[ListSize];
+	MdotSend     = new cuda_real_t[ListSize];
+	PositionSend = new cuda_real_t[ListSize][DIM];
+	VelocitySend = new cuda_real_t[ListSize][DIM];
 
-	r2OfACSend   = new CUDA_REAL[ListSize];
-	TimeStepRegSend  = new CUDA_REAL[ListSize];
+	r2OfACSend   = new cuda_real_t[ListSize];
+	TimeStepRegSend  = new cuda_real_t[ListSize];
 
-	AccSend       = new CUDA_REAL[ListSize][Dim];
-	AccDotSend    = new CUDA_REAL[ListSize][Dim];
-	PotSend       = new CUDA_REAL[ListSize];
+	AccSend       = new cuda_real_t[ListSize][DIM];
+	AccDotSend    = new cuda_real_t[ListSize][DIM];
+	PotSend       = new cuda_real_t[ListSize];
 
 	AClistGpu = new int*[ListSize];
 	for (int i=0; i<(NNB); i++) {
-		AClistGpu[i] = new int[MaxNumNeighbor];
+		AClistGpu[i] = new int[MAX_NUM_NEIGHBOR];
 	}
 
 
@@ -248,15 +248,15 @@ void CalculateListAccelerationOnGPU(std::vector<int> &IndexList, std::vector<Par
 
 	for (int i=0; i<ListSize; i++) {
 		rij2          = 0;
-		MassSend[i]   = particle[(IndexList[i])]->Mass;
-		MdotSend[i]   = particle[(IndexList[i])]->Mass;
+		MassSend[i]   = particle[(IndexList[i])]->mass;
+		MdotSend[i]   = particle[(IndexList[i])]->mass;
 		r2OfACSend[i] = particle[(IndexList[i])]->RadiusOfAC * particle[(IndexList[i])]->RadiusOfAC;
 
-		for (int dim=0; dim<Dim; dim++) {
+		for (int dim=0; dim<DIM; dim++) {
 			PositionSend[i][dim] = particle[(IndexList[i])]->PredPosition[dim];
 			VelocitySend[i][dim] = particle[(IndexList[i])]->PredVelocity[dim];
 		}
-		TimeStepRegSend[i] = particle[(IndexList[i])]->TimeStepReg;
+		TimeStepRegSend[i] = particle[(IndexList[i])]->time_step_reg;
 	}
 
 	// send the arrays to GPU
@@ -278,9 +278,9 @@ void CalculateListAccelerationOnGPU(std::vector<int> &IndexList, std::vector<Par
 			particle[i2reg]->NumberOfAC = 0;
 			particle[i2reg]->ACList.clear();
 
-			for (int dim=0; dim<Dim; dim++) {
-				particle[i2reg]->a_reg[dim][0] += AccSend[i2][dim];
-				particle[i2reg]->a_reg[dim][1] += AccDotSend[i2][dim];
+			for (int dim=0; dim<DIM; dim++) {
+				particle[i2reg]->acc_regular[dim][0] += AccSend[i2][dim];
+				particle[i2reg]->acc_regular[dim][1] += AccDotSend[i2][dim];
 			}
 
 			ACnumi2 = AClistGpu[i][0];
@@ -295,18 +295,18 @@ void CalculateListAccelerationOnGPU(std::vector<int> &IndexList, std::vector<Par
 					rij2 = 0.0;
 					drdv = 0.0;
 
-					for (int dim=0; dim<Dim; dim++) {
+					for (int dim=0; dim<DIM; dim++) {
 						dx[dim] = particle[ACjid]->PredPosition - particle[i2reg]->PredPosition;
 						dv[dim] = particle[ACjid]->PredVelocity - particle[i2reg]->PredVelocity;
 						rij2   += dx[dim]*dx[dim];
 						drdv   += dx[dim]*dv[dim];
 					}
 					dr2i = 1.0/rij2;
-					dr3i = particle[ACjid]->Mass*dr2i*sqrt(dr2i);
+					dr3i = particle[ACjid]->mass*dr2i*sqrt(dr2i);
 
-					for (int dim=0; dim<Dim; dim++) {
-						particle[i2reg]->a_irr[dim][0] += dx[dim]*dr3i;
-						particle[i2reg]->a_irr[dim][1] += (dv[dim]-dx[dim]*drdv)*dr3i;
+					for (int dim=0; dim<DIM; dim++) {
+						particle[i2reg]->acc_irregular[dim][0] += dx[dim]*dr3i;
+						particle[i2reg]->acc_irregular[dim][1] += (dv[dim]-dx[dim]*drdv)*dr3i;
 					}
 				} // loop on neighbors end
 			} else { // in case of no neighbors, just set the neighbor number to 0 just in case. 
@@ -314,8 +314,8 @@ void CalculateListAccelerationOnGPU(std::vector<int> &IndexList, std::vector<Par
 			} // if statement on neighbor number ends
 
 			for (int dim=0; dim<3; dim++){ // copy the values to other values as well
-				particle[i2reg]->a_tot[dim][0] = particle[i2reg]->a_reg[dim][0] + particle[i2reg]->a_irr[dim][0];
-				particle[i2reg]->a_tot[dim][1] = particle[i2reg]->a_reg[dim][1] + particle[i2reg]->a_irr[dim][1];
+				particle[i2reg]->acc_total[dim][0] = particle[i2reg]->acc_regular[dim][0] + particle[i2reg]->acc_irregular[dim][0];
+				particle[i2reg]->acc_total[dim][1] = particle[i2reg]->acc_regular[dim][1] + particle[i2reg]->acc_irregular[dim][1];
 			}
 		} // saving the 1024 results from GPU to local class ends
 	} // loop of total calculation ends
@@ -356,30 +356,30 @@ void CalculateListAccelerationOnGPU(std::vector<int> &IndexList, std::vector<Par
 void SendAllParticlesToGPU(std::vector <Particle*> &particle) {
 
 	// variables for saving variables to send to GPU
-	CUDA_REAL * Mass;
-	CUDA_REAL * Mdot;
-	CUDA_REAL(*Position)[Dim];
-	CUDA_REAL(*Velocity)[Dim];
+	cuda_real_t * Mass;
+	cuda_real_t * Mdot;
+	cuda_real_t(*Position)[DIM];
+	cuda_real_t(*Velocity)[DIM];
 
 	// allocate memory to the temporary variables
-	Mass     = new CUDA_REAL[NNB];
-	Mdot     = new CUDA_REAL[NNB];
-	Position = new CUDA_REAL[NNB][Dim];
-	Velocity = new CUDA_REAL[NNB][Dim];
+	Mass     = new cuda_real_t[NNB];
+	Mdot     = new cuda_real_t[NNB];
+	Position = new cuda_real_t[NNB][DIM];
+	Velocity = new cuda_real_t[NNB][DIM];
 
 	// copy the data of particles to the arrays to be sent
 	for (int i=0; i<NNB; i++) {
-		Mass[i] = (CUDA_REAL) particle[i]->Mass;
-		Mdot[i] = 0; //particle[i]->Mass;
+		Mass[i] = (cuda_real_t) particle[i]->mass;
+		Mdot[i] = 0; //particle[i]->mass;
 
-		for (int dim=0; dim<Dim; dim++) {
-			Position[i][dim] = (CUDA_REAL) particle[i]->PredPosition[dim];
-			Velocity[i][dim] = (CUDA_REAL) particle[i]->PredVelocity[dim];
+		for (int dim=0; dim<DIM; dim++) {
+			Position[i][dim] = (cuda_real_t) particle[i]->PredPosition[dim];
+			Velocity[i][dim] = (cuda_real_t) particle[i]->PredVelocity[dim];
 		}
 	}
 
 	// send the arrays to GPU
-	//SendToDevice(&NNB, Mass, Position, Velocity, Mdot, &MaxNumNeighbor);
+	//SendToDevice(&NNB, Mass, Position, Velocity, Mdot, &MAX_NUM_NEIGHBOR);
 
 	// free the temporary variables
 	delete[] Mass;

@@ -30,7 +30,7 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int>& RegularList, QueueSc
 #endif
 
 	int ListSize = RegularList.size();
-	double new_time = NextRegTimeBlock*time_step;  // next regular time
+	double new_time = next_reg_time_block*time_step;  // next regular time
 
 	Particle *ptcl;
 
@@ -104,10 +104,10 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int>& RegularList, QueueSc
 #endif
 
 #ifdef NSIGHT
-	nvtxRangePushA("RegCuda");
+	nvtxRangePushA("TASK_REG_CUDA");
 #endif
 
-	queue_scheduler.initialize(RegCuda);
+	queue_scheduler.initialize(TASK_REG_CUDA);
 	queue_scheduler.takeQueueRegularList(RegularList);
 	do
 	{
@@ -118,9 +118,9 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int>& RegularList, QueueSc
 
 	/* // Legacy code.. this part is replaced by queue_scheduler above
 	int i=0;
-	TaskName task=RegCuda;
+	task_name_t task=TASK_REG_CUDA;
 	Queue queue = {task, -1, -1.0};
-	queue_scheduler.initialize(RegCuda);
+	queue_scheduler.initialize(TASK_REG_CUDA);
 	queue_scheduler.takeQueueRegularList(RegularList);
 	do
 	{
@@ -128,19 +128,19 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int>& RegularList, QueueSc
 
         for (auto worker = queue_scheduler.WorkersToGo.begin(); worker != queue_scheduler.WorkersToGo.end();)
         {
-            if ((*worker)->NumberOfQueues > 0) // original
+            if ((*worker)->num_queues > 0) // original
             {
-				//std::cout << "(REG_CUDA) My Rank =" << (*worker)->MyRank << std::endl;
+				//std::cout << "(REG_CUDA) My Rank =" << (*worker)->my_rank << std::endl;
 				// queue_scheduler.sendQueueforRegCuda(*worker);
-				// MPI_Send(&task, 1, MPI_INT, (*worker)->MyRank, TASK_TAG, MPI_COMM_WORLD);
-				// MPI_Send(&ActiveIndexToOriginalIndex[IndexList[i]], 1, MPI_INT, (*worker)->MyRank, PTCL_TAG, MPI_COMM_WORLD);
+				// MPI_Send(&task, 1, MPI_INT, (*worker)->my_rank, TASK_TAG, MPI_COMM_WORLD);
+				// MPI_Send(&ActiveIndexToOriginalIndex[IndexList[i]], 1, MPI_INT, (*worker)->my_rank, PTCL_TAG, MPI_COMM_WORLD);
 				queue.pid = ActiveIndexToOriginalIndex[IndexList[i]];
-				MPI_Send(&queue, 1, QueueType, (*worker)->MyRank, QUEUE_TAG, MPI_COMM_WORLD);
-				MPI_Send(&NumNeighborReceive[i], 1, MPI_INT, (*worker)->MyRank, 10, MPI_COMM_WORLD);
-				MPI_Send(&ACListReceive[i * MaxNumNeighbor], NumNeighborReceive[i], MPI_INT, (*worker)->MyRank, 11, MPI_COMM_WORLD);
-				MPI_Send(&AccRegReceive[i][0], 3, MPI_DOUBLE, (*worker)->MyRank, 12, MPI_COMM_WORLD);
-				MPI_Send(&AccRegDotReceive[i][0], 3, MPI_DOUBLE, (*worker)->MyRank, 13, MPI_COMM_WORLD);
-				((*worker))->onDuty = true;
+				MPI_Send(&queue, 1, queue_type_mpi, (*worker)->my_rank, QUEUE_TAG, MPI_COMM_WORLD);
+				MPI_Send(&NumNeighborReceive[i], 1, MPI_INT, (*worker)->my_rank, 10, MPI_COMM_WORLD);
+				MPI_Send(&ACListReceive[i * MAX_NUM_NEIGHBOR], NumNeighborReceive[i], MPI_INT, (*worker)->my_rank, 11, MPI_COMM_WORLD);
+				MPI_Send(&AccRegReceive[i][0], 3, MPI_DOUBLE, (*worker)->my_rank, 12, MPI_COMM_WORLD);
+				MPI_Send(&AccRegDotReceive[i][0], 3, MPI_DOUBLE, (*worker)->my_rank, 13, MPI_COMM_WORLD);
+				((*worker))->on_duty = true;
                 worker = queue_scheduler.WorkersToGo.erase(worker);
 				i++;
             }
@@ -179,40 +179,40 @@ void sendAllParticlesToGPU(double new_time, const int& RegularListSize, std::vec
 #endif
 */
 
-	Queue queue = {PrepareGPUCalc, -1, new_time};
-	MPI_Request requests[NumberOfWorker];
-	for (int i = 0; i < NumberOfWorker; i++)
-		MPI_Isend(&queue, 1, QueueType, i+1, QUEUE_TAG, MPI_COMM_WORLD, &requests[i]);
+	Queue queue = {TASK_PREPARE_GPU_CALC, -1, new_time};
+	MPI_Request requests[num_workers];
+	for (int i = 0; i < num_workers; i++)
+		MPI_Isend(&queue, 1, queue_type_mpi, i+1, QUEUE_TAG, MPI_COMM_WORLD, &requests[i]);
 
-	std::vector<Jparticle> Jparticles;
-	Jparticles.resize(NumberOfParticle);
+	std::vector<j_particle_t> j_particle_ts;
+	j_particle_ts.resize(num_particles);
 
-	std::vector<Iparticle> Iparticles;
-	Iparticles.resize(RegularListSize);
+	std::vector<i_particle_t> i_particle_ts;
+	i_particle_ts.resize(RegularListSize);
 
 	RegularListIndices.resize(RegularListSize);
 
 	std::vector<int> counts;
-	counts.resize(NumberOfProcessor * 2);
+	counts.resize(num_processors * 2);
 	int send_buf[2] = {0, 0};
 
 	std::vector<int> Jcounts;
-	Jcounts.resize(NumberOfProcessor);
+	Jcounts.resize(num_processors);
 	Jcounts[0] = 0;
 
 	std::vector<int> Icounts;
-	Icounts.resize(NumberOfProcessor);
+	Icounts.resize(num_processors);
 	Icounts[0] = 0;
 
 	std::vector<int> Jdispls;
-	Jdispls.resize(NumberOfProcessor);
+	Jdispls.resize(num_processors);
 	Jdispls[0] = 0;
 
 	std::vector<int> Idispls;
-	Idispls.resize(NumberOfProcessor);
+	Idispls.resize(num_processors);
 	Idispls[0] = 0;
 
-	MPI_Waitall(NumberOfWorker, requests, MPI_STATUSES_IGNORE);
+	MPI_Waitall(num_workers, requests, MPI_STATUSES_IGNORE);
 
 /*
 #ifdef PERFORMANCETRACE
@@ -229,7 +229,7 @@ void sendAllParticlesToGPU(double new_time, const int& RegularListSize, std::vec
 
 	MPI_Gather(send_buf, 2, MPI_INT, counts.data(), 2, MPI_INT, ROOT, MPI_COMM_WORLD);
 
-	for (int rank = 1; rank < NumberOfProcessor; rank++) {
+	for (int rank = 1; rank < num_processors; rank++) {
 	
 		Jcounts[rank] = counts[rank * 2 + 0];
 		Icounts[rank] = counts[rank * 2 + 1];
@@ -237,13 +237,13 @@ void sendAllParticlesToGPU(double new_time, const int& RegularListSize, std::vec
 		Jdispls[rank] = Jdispls[rank - 1] + Jcounts[rank - 1];
 		Idispls[rank] = Idispls[rank - 1] + Icounts[rank - 1];
 	}
-	assert(Jdispls[NumberOfProcessor - 1] + Jcounts[NumberOfProcessor - 1] == NumberOfParticle);
-	assert(Idispls[NumberOfProcessor - 1] + Icounts[NumberOfProcessor - 1] == RegularListSize);
+	assert(Jdispls[num_processors - 1] + Jcounts[num_processors - 1] == num_particles);
+	assert(Idispls[num_processors - 1] + Icounts[num_processors - 1] == RegularListSize);
 
-	MPI_Gatherv(nullptr, 0, JparticleType, 
-				Jparticles.data(), Jcounts.data(), Jdispls.data(), JparticleType, ROOT, MPI_COMM_WORLD);
-	MPI_Gatherv(nullptr, 0, IparticleType, 
-				Iparticles.data(), Icounts.data(), Idispls.data(), IparticleType, ROOT, MPI_COMM_WORLD);
+	MPI_Gatherv(nullptr, 0, jparticle_type_mpi, 
+				j_particle_ts.data(), Jcounts.data(), Jdispls.data(), jparticle_type_mpi, ROOT, MPI_COMM_WORLD);
+	MPI_Gatherv(nullptr, 0, iparticle_type_mpi, 
+				i_particle_ts.data(), Icounts.data(), Idispls.data(), iparticle_type_mpi, ROOT, MPI_COMM_WORLD);
 	MPI_Gatherv(nullptr, 0, MPI_INT,
 				RegularListIndices.data(), Icounts.data(), Idispls.data(), MPI_INT, ROOT, MPI_COMM_WORLD);
 
@@ -260,7 +260,7 @@ void sendAllParticlesToGPU(double new_time, const int& RegularListSize, std::vec
 	start_point_routine = std::chrono::high_resolution_clock::now();
 #endif
 */
-	SendToDevice(Jparticles, Iparticles);
+	SendToDevice(j_particle_ts, i_particle_ts);
 /*
 #ifdef PERFORMANCETRACE
 	end_point_routine = std::chrono::high_resolution_clock::now();
@@ -274,34 +274,34 @@ void sendAllParticlesToGPU(double new_time, const int& RegularListSize, std::vec
 void sendAllParticlesToGPU_Worker(double new_time) {
 
 	Particle* ptcl;
-	std::vector<Jparticle> Jparticles;
-	std::vector<Iparticle> Iparticles;
+	std::vector<j_particle_t> j_particle_ts;
+	std::vector<i_particle_t> i_particle_ts;
 	std::vector<int> LocalRegularList;
 
-	int J_start = (MyRank - 1) * (global_variable->LastParticleIndex + 1) / NumberOfWorker;
-	int J_end   = MyRank * (global_variable->LastParticleIndex + 1) / NumberOfWorker;
+	int J_start = (my_rank - 1) * (g_state->last_particle_index + 1) / num_workers;
+	int J_end   = my_rank * (g_state->last_particle_index + 1) / num_workers;
 
 	for (int j = J_start; j < J_end; j++) {
 
 		ptcl = &particles[j];
 
-		if (!ptcl->isActive)
+		if (!ptcl->is_active)
 			continue;
 
-		if (ptcl->NumberOfNeighbor == 0)
-			ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeReg, Jparticles, Iparticles, LocalRegularList);
+		if (ptcl->num_neighbors == 0)
+			ptcl->predict_particle_second_order(new_time-ptcl->current_time_reg, j_particle_ts, i_particle_ts, LocalRegularList);
 		else
-			ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeIrr, Jparticles, Iparticles, LocalRegularList);
+			ptcl->predict_particle_second_order(new_time-ptcl->current_time_irr, j_particle_ts, i_particle_ts, LocalRegularList);
 
 	}
 
-	int sizes[2] = {Jparticles.size(), Iparticles.size()};
+	int sizes[2] = {j_particle_ts.size(), i_particle_ts.size()};
 	MPI_Gather(sizes, 2, MPI_INT, nullptr, 0, MPI_INT, ROOT, MPI_COMM_WORLD);
 
-	MPI_Gatherv(Jparticles.data(), sizes[0], JparticleType,	
-				nullptr, nullptr, nullptr, JparticleType, ROOT, MPI_COMM_WORLD);
-	MPI_Gatherv(Iparticles.data(), sizes[1], IparticleType,	
-				nullptr, nullptr, nullptr, IparticleType, ROOT, MPI_COMM_WORLD);
+	MPI_Gatherv(j_particle_ts.data(), sizes[0], jparticle_type_mpi,	
+				nullptr, nullptr, nullptr, jparticle_type_mpi, ROOT, MPI_COMM_WORLD);
+	MPI_Gatherv(i_particle_ts.data(), sizes[1], iparticle_type_mpi,	
+				nullptr, nullptr, nullptr, iparticle_type_mpi, ROOT, MPI_COMM_WORLD);
 	MPI_Gatherv(LocalRegularList.data(), sizes[1], MPI_INT,
 				nullptr, nullptr, nullptr, MPI_INT, ROOT, MPI_COMM_WORLD);
 

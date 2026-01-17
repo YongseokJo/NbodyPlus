@@ -99,9 +99,9 @@ double getNewTimeStep(double f[3][4], double df[3][4]) {
 	return TimeStep;
 }
 
-void getBlockTimeStep(double dt, int &TimeLevel, ULL &TimeBlock, double &TimeStep) {
-	TimeLevel = static_cast<int>(floor(log(dt/EnzoTimeStep)/log(2.0)));
-	//TimeLevel = static_cast<int>(ceil(log(dt/EnzoTimeStep)/log(2.0)));
+void getBlockTimeStep(double dt, int &TimeLevel, ull_t &TimeBlock, double &TimeStep) {
+	TimeLevel = static_cast<int>(floor(log(dt/enzo_time_step)/log(2.0)));
+	//TimeLevel = static_cast<int>(ceil(log(dt/enzo_time_step)/log(2.0)));
 	//std::cout << "NBODY+: TimeLevel = " << TimeLevel << std::endl;
 	//std::cout << "NBODY+: TimeStep = " << TimeStep << std::endl;
 	
@@ -111,7 +111,7 @@ void getBlockTimeStep(double dt, int &TimeLevel, ULL &TimeBlock, double &TimeSte
 	}
 
 	TimeStep = static_cast<double>(pow(2, TimeLevel));
-	TimeBlock = static_cast<ULL>(pow(2, TimeLevel-time_block));
+	TimeBlock = static_cast<ull_t>(pow(2, TimeLevel-time_block));
 }
 
 

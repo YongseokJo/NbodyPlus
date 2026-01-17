@@ -131,8 +131,8 @@ void readParameterFile() {
 		fname_storage = config.getString("Filename");
 		fname = const_cast<char*>(fname_storage.c_str());
 
-		endTime = config.getDouble("StopTime");  // in years
-		validatePositive(endTime, "StopTime");
+		end_time = config.getDouble("StopTime");  // in years
+		validatePositive(end_time, "StopTime");
 
 		foutput_storage = config.getStringOr("OutputDirectory", "output");
 		foutput = const_cast<char*>(foutput_storage.c_str());
@@ -144,99 +144,99 @@ void readParameterFile() {
 		}
 		validatePositive(eta, "eta");
 
-		FixNumNeighbor = config.getIntOr("FixNumNeighbor", 100);
+		fixed_num_neighbors = config.getIntOr("fixed_num_neighbors", 100);
 		if (config.hasTable("numerics")) {
-			FixNumNeighbor = config.getNestedOr<int>("numerics", "FixNumNeighbor", FixNumNeighbor);
+			fixed_num_neighbors = config.getNestedOr<int>("numerics", "fixed_num_neighbors", fixed_num_neighbors);
 		}
-		validateRange(FixNumNeighbor, 10, MaxNumNeighbor, "FixNumNeighbor");
+		validateRange(fixed_num_neighbors, 10, MAX_NUM_NEIGHBOR, "fixed_num_neighbors");
 
 		double initialRadius_pc = config.getDoubleOr("InitialRadius", 0.2);
 		if (config.hasTable("numerics")) {
 			initialRadius_pc = config.getNestedOr<double>("numerics", "InitialRadius", initialRadius_pc);
 		}
 		validatePositive(initialRadius_pc, "InitialRadius");
-		InitialNeighborRadius = initialRadius_pc / position_unit;  // convert pc -> code units
+		initial_neighbor_radius = initialRadius_pc / position_unit;  // convert pc -> code units
 
 		// Few-body search parameters
-		double rsearch_pc = config.getDoubleOr("RSearch", 2.5e-4);
+		double rsearch_pc = config.getDoubleOr("r_search", 2.5e-4);
 		if (config.hasTable("numerics")) {
-			rsearch_pc = config.getNestedOr<double>("numerics", "RSearch", rsearch_pc);
+			rsearch_pc = config.getNestedOr<double>("numerics", "r_search", rsearch_pc);
 		}
-		validatePositive(rsearch_pc, "RSearch");
-		RSearch = rsearch_pc / position_unit;  // convert pc -> code units
+		validatePositive(rsearch_pc, "r_search");
+		r_search = rsearch_pc / position_unit;  // convert pc -> code units
 
-		double tsearch_myr = config.getDoubleOr("TSearch", 1e-6);
+		double tsearch_myr = config.getDoubleOr("t_search", 1e-6);
 		if (config.hasTable("numerics")) {
-			tsearch_myr = config.getNestedOr<double>("numerics", "TSearch", tsearch_myr);
+			tsearch_myr = config.getNestedOr<double>("numerics", "t_search", tsearch_myr);
 		}
-		validatePositive(tsearch_myr, "TSearch");
-		// TSearch will be set properly after EnzoTimeStep is computed
+		validatePositive(tsearch_myr, "t_search");
+		// t_search will be set properly after enzo_time_step is computed
 
 		// === Output parameters ===
-		outputTimeStep = config.getDoubleOr("dtOutput", endTime / 10.0);
+		output_time_step = config.getDoubleOr("dtOutput", end_time / 10.0);
 		if (config.hasTable("output")) {
-			outputTimeStep = config.getNestedOr<double>("output", "dtOutput", outputTimeStep);
+			output_time_step = config.getNestedOr<double>("output", "dtOutput", output_time_step);
 		}
-		validatePositive(outputTimeStep, "dtOutput");
+		validatePositive(output_time_step, "dtOutput");
 
-		UseCompression = config.getBoolOr("Compression", true);
+		use_compression = config.getBoolOr("Compression", true);
 		if (config.hasTable("output")) {
-			UseCompression = config.getNestedOr<bool>("output", "Compression", UseCompression);
+			use_compression = config.getNestedOr<bool>("output", "Compression", use_compression);
 		}
 
-		CompressionLevel = config.getIntOr("CompressionLevel", 6);
+		compression_level = config.getIntOr("compression_level", 6);
 		if (config.hasTable("output")) {
-			CompressionLevel = config.getNestedOr<int>("output", "CompressionLevel", CompressionLevel);
+			compression_level = config.getNestedOr<int>("output", "compression_level", compression_level);
 		}
-		validateRange(CompressionLevel, 1, 9, "CompressionLevel");
+		validateRange(compression_level, 1, 9, "compression_level");
 
 		// === Restart parameters ===
-		RestartEnabled = config.getBoolOr("RestartEnabled", false);
+		restart_enabled = config.getBoolOr("restart_enabled", false);
 		if (config.hasTable("restart")) {
-			RestartEnabled = config.getNestedOr<bool>("restart", "Enabled", RestartEnabled);
+			restart_enabled = config.getNestedOr<bool>("restart", "Enabled", restart_enabled);
 		}
 
-		CheckpointFile = config.getStringOr("CheckpointFile", "");
+		checkpoint_file = config.getStringOr("checkpoint_file", "");
 		if (config.hasTable("restart")) {
-			CheckpointFile = config.getNestedOr<std::string>("restart", "CheckpointFile", CheckpointFile);
+			checkpoint_file = config.getNestedOr<std::string>("restart", "checkpoint_file", checkpoint_file);
 		}
 
 		// === Compute derived quantities ===
-		EnzoTimeStep = endTime / 1e10;  // endTime should be yr
-		outputTimeStep = outputTimeStep / endTime;  // normalize to simulation time
+		enzo_time_step = end_time / 1e10;  // end_time should be yr
+		output_time_step = output_time_step / end_time;  // normalize to simulation time
 
-		// Now set TSearch properly with EnzoTimeStep
-		TSearch = tsearch_myr / (EnzoTimeStep * 1e4);  // Myr -> code units
+		// Now set t_search properly with enzo_time_step
+		t_search = tsearch_myr / (enzo_time_step * 1e4);  // Myr -> code units
 
 		// === Print configuration summary ===
-		if (MyRank == ROOT) {
+		if (my_rank == ROOT) {
 			std::cout << "\n========== ABYSS Configuration ==========\n";
 			std::cout << "Input file:        " << fname << std::endl;
 			std::cout << "Output directory:  " << foutput << std::endl;
 			std::cout << "\n--- Time ---\n";
-			std::cout << "End time:          " << endTime / 1e6 << " Myr\n";
-			std::cout << "Output interval:   " << outputTimeStep * EnzoTimeStep * 1e4 << " Myr\n";
+			std::cout << "End time:          " << end_time / 1e6 << " Myr\n";
+			std::cout << "Output interval:   " << output_time_step * enzo_time_step * 1e4 << " Myr\n";
 			std::cout << "\n--- Numerics ---\n";
 			std::cout << "eta:               " << eta << std::endl;
-			std::cout << "FixNumNeighbor:    " << FixNumNeighbor << std::endl;
+			std::cout << "fixed_num_neighbors:    " << fixed_num_neighbors << std::endl;
 			std::cout << "InitialRadius:     " << initialRadius_pc << " pc\n";
-			std::cout << "RSearch:           " << rsearch_pc << " pc\n";
-			std::cout << "TSearch:           " << tsearch_myr << " Myr\n";
+			std::cout << "r_search:           " << rsearch_pc << " pc\n";
+			std::cout << "t_search:           " << tsearch_myr << " Myr\n";
 			std::cout << "\n--- Output ---\n";
-			std::cout << "Compression:       " << (UseCompression ? "enabled" : "disabled") << std::endl;
-			if (UseCompression) {
-				std::cout << "Compression level: " << CompressionLevel << std::endl;
+			std::cout << "Compression:       " << (use_compression ? "enabled" : "disabled") << std::endl;
+			if (use_compression) {
+				std::cout << "Compression level: " << compression_level << std::endl;
 			}
 			std::cout << "\n--- Restart ---\n";
-			std::cout << "Restart enabled:   " << (RestartEnabled ? "yes" : "no") << std::endl;
-			if (RestartEnabled && !CheckpointFile.empty()) {
-				std::cout << "Checkpoint file:   " << CheckpointFile << std::endl;
+			std::cout << "Restart enabled:   " << (restart_enabled ? "yes" : "no") << std::endl;
+			if (restart_enabled && !checkpoint_file.empty()) {
+				std::cout << "Checkpoint file:   " << checkpoint_file << std::endl;
 			}
 			std::cout << "==========================================\n\n";
 		}
 
 	} catch (const std::exception& e) {
-		std::cerr << "Configuration Error: " << e.what() << std::endl;
+		std::cerr << "Configuration TASK_ERROR: " << e.what() << std::endl;
 		std::exit(EXIT_FAILURE);
 	}
 }

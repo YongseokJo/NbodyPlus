@@ -5,7 +5,7 @@
 #include "Queue.h"
 
 void broadcastFromRoot(double &data);
-void broadcastFromRoot(ULL &data);
+void broadcastFromRoot(ull_t &data);
 void broadcastFromRoot(int &data);
 void CalculateAcceleration01(Particle* ptcl1);
 void CalculateAcceleration23(Particle* ptcl1);
@@ -19,9 +19,9 @@ void sendAllParticlesToGPU_Worker(double new_time);
 
 void WorkerRoutines() {
 
-	//std::cout << "Processor " << MyRank << " is ready." << std::endl;
+	//std::cout << "Processor " << my_rank << " is ready." << std::endl;
 
-	TaskName task = Error;
+	task_name_t task = TASK_ERROR;
 	MPI_Status status;
 	MPI_Request request;
 	int ptcl_id;
@@ -31,241 +31,241 @@ void WorkerRoutines() {
 
 	while (true) {
 
-		MPI_Recv(&queue, 1, QueueType, ROOT, QUEUE_TAG, MPI_COMM_WORLD, &status);
+		MPI_Recv(&queue, 1, queue_type_mpi, ROOT, QUEUE_TAG, MPI_COMM_WORLD, &status);
 		task = queue.task;
 		ptcl_id = queue.pid;
 		next_time = queue.next_time;
 
 		switch (task) {
-			case IrrForce: // Irregular Acceleration
+			case TASK_IRR_FORCE: // Irregular Acceleration
 
 				ptcl = &particles[ptcl_id];
-				ptcl->computeAccelerationIrr();
+				ptcl->compute_acceleration_irr();
 
-				ptcl->NewCurrentBlockIrr = ptcl->CurrentBlockIrr + ptcl->TimeBlockIrr; // of this particle
-				ptcl->calculateTimeStepIrr();
-				ptcl->NextBlockIrr = ptcl->NewCurrentBlockIrr + ptcl->TimeBlockIrr; // of this particle
-				ptcl->isUpdateToDate = true;
+				ptcl->new_current_block_irr = ptcl->current_block_irr + ptcl->time_block_irr; // of this particle
+				ptcl->calculate_time_step_irr();
+				ptcl->next_block_irr = ptcl->new_current_block_irr + ptcl->time_block_irr; // of this particle
+				ptcl->is_up_to_date = true;
 				break;
 
-			case RegForce: // Regular Acceleration
+			case TASK_REG_FORCE: // Regular Acceleration
 
 				ptcl = &particles[ptcl_id];
-				ptcl->computeAccelerationReg();
+				ptcl->compute_acceleration_reg();
 				break;
 
-			case IrrUpdate: // Irregular Update Particle
+			case TASK_IRR_UPDATE: // Irregular Update Particle
 
 				ptcl = &particles[ptcl_id];
-				if (ptcl->NumberOfNeighbor != 0) // IAR modified
-					ptcl->updateParticle();
-				ptcl->CurrentBlockIrr = ptcl->NewCurrentBlockIrr;
-				ptcl->CurrentTimeIrr  = ptcl->CurrentBlockIrr*time_step;
+				if (ptcl->num_neighbors != 0) // IAR modified
+					ptcl->update_particle();
+				ptcl->current_block_irr = ptcl->new_current_block_irr;
+				ptcl->current_time_irr  = ptcl->current_block_irr*time_step;
 				break;
 
-			case RegUpdate: // Regular Update Particle
+			case TASK_REG_UPDATE: // Regular Update Particle
 
 				ptcl = &particles[ptcl_id];
 
-				ptcl->CurrentBlockReg += ptcl->TimeBlockReg;
-				ptcl->CurrentTimeReg = ptcl->CurrentBlockReg * time_step;
+				ptcl->current_block_reg += ptcl->time_block_reg;
+				ptcl->current_time_reg = ptcl->current_block_reg * time_step;
 
-				ptcl->updateParticle();
-				std::memcpy(Neighbors + ptcl->NeighborsOffset, NewNeighbors + ptcl->NeighborsOffset, sizeof(int) * ptcl->NewNumberOfNeighbor);
-				ptcl->NumberOfNeighbor = ptcl->NewNumberOfNeighbor;
+				ptcl->update_particle();
+				std::memcpy(neighbors + ptcl->neighbors_offset, new_neighbors + ptcl->neighbors_offset, sizeof(int) * ptcl->new_num_neighbors);
+				ptcl->num_neighbors = ptcl->new_num_neighbors;
 
-				ptcl->calculateTimeStepReg();
-				ptcl->calculateTimeStepIrr();
+				ptcl->calculate_time_step_reg();
+				ptcl->calculate_time_step_irr();
 				// /*
-				if (ptcl->CurrentBlockIrr != ptcl->CurrentBlockReg || ptcl->CurrentTimeIrr != ptcl->CurrentTimeReg) {
+				if (ptcl->current_block_irr != ptcl->current_block_reg || ptcl->current_time_irr != ptcl->current_time_reg) {
 					fprintf(stderr, "WARNING!!! In RegCudaUpdate...\n");
-					fprintf(stderr, "PID: %d\n", ptcl->PID);
-					fprintf(stderr, "CurrentBlockIrr: %llu, CurrentBlockReg: %llu\n", ptcl->CurrentBlockIrr, ptcl->CurrentBlockReg);
-					fprintf(stderr, "TimeBlockIrr: %llu, TimeBlockReg: %llu\n", ptcl->TimeBlockIrr, ptcl->TimeBlockReg);
-					fprintf(stderr, "CurrentBlockIrr * time_step: %.17g, CurrentBlockReg * time_step: %.17g\n", ptcl->CurrentBlockIrr*time_step, ptcl->CurrentBlockReg*time_step);
-					fprintf(stderr, "CurrentTimeIrr: %.17g, CurrentTimeReg: %.17g\n", ptcl->CurrentTimeIrr, ptcl->CurrentTimeReg);
-					fprintf(stderr, "NextRegTimeBlock: %llu\n", global_variable->NextRegTimeBlock);
+					fprintf(stderr, "PID: %d\n", ptcl->pid);
+					fprintf(stderr, "CurrentBlockIrr: %llu, CurrentBlockReg: %llu\n", ptcl->current_block_irr, ptcl->current_block_reg);
+					fprintf(stderr, "TimeBlockIrr: %llu, TimeBlockReg: %llu\n", ptcl->time_block_irr, ptcl->time_block_reg);
+					fprintf(stderr, "CurrentBlockIrr * time_step: %.17g, CurrentBlockReg * time_step: %.17g\n", ptcl->current_block_irr*time_step, ptcl->current_block_reg*time_step);
+					fprintf(stderr, "CurrentTimeIrr: %.17g, CurrentTimeReg: %.17g\n", ptcl->current_time_irr, ptcl->current_time_reg);
+					fprintf(stderr, "next_reg_time_block: %llu\n", g_state->next_reg_time_block);
 					fflush(stderr);
-					assert(ptcl->CurrentBlockIrr + ptcl->TimeBlockIrr > ptcl->CurrentBlockReg);
-					// assert(ptcl->CurrentTimeIrr == ptcl->CurrentTimeReg);
-					// assert(ptcl->CurrentBlockIrr == ptcl->CurrentBlockReg);
+					assert(ptcl->current_block_irr + ptcl->time_block_irr > ptcl->current_block_reg);
+					// assert(ptcl->current_time_irr == ptcl->current_time_reg);
+					// assert(ptcl->current_block_irr == ptcl->current_block_reg);
 				}
 				// */
-				ptcl->updateRadius();
-				ptcl->NextBlockIrr = ptcl->CurrentBlockIrr + ptcl->TimeBlockIrr; // of ptcl particle
+				ptcl->update_radius();
+				ptcl->next_block_irr = ptcl->current_block_irr + ptcl->time_block_irr; // of ptcl particle
 				break;
 
-			case RegCuda: // Regular Correct Particle After CUDA
+			case TASK_REG_CUDA: // Regular Correct Particle After CUDA
 
 				ptcl = &particles[ptcl_id];
-				ptcl->updateRegularParticleCuda();
+				ptcl->update_regular_particle_cuda();
 				break;
 
-			case InitAcc1: // Initialize Acceleration(01)
+			case TASK_INIT_ACC_1: // Initialize Acceleration(01)
 
 				ptcl = &particles[ptcl_id];
 				CalculateAcceleration01(ptcl);
 				break;
 
-			case InitAcc2: // Initialize Acceleration(23)
+			case TASK_INIT_ACC_2: // Initialize Acceleration(23)
 
 				ptcl = &particles[ptcl_id];
 				CalculateAcceleration23(ptcl);
 				break;
 
-			case InitTime: // Initialize Time Step
+			case TASK_INIT_TIME: // Initialize Time Step
 
 				ptcl = &particles[ptcl_id];
-				if (ptcl->isActive)
-					ptcl->initializeTimeStep();
+				if (ptcl->is_active)
+					ptcl->initialize_time_step();
 				break;
 
-			case TimeSync: // Initialize Timestep variables
+			case TASK_TIME_SYNC: // Initialize Timestep variables
 				broadcastFromRoot(time_block);
 				broadcastFromRoot(block_max);
 				broadcastFromRoot(time_step);
-				//MPI_Win_sync(win);  // Synchronize memory
+				//MPI_Win_sync(win);  // TASK_SYNCHRONIZE memory
 				//MPI_Barrier(shared_comm);
 				//MPI_Win_fence(0, win);
-				fprintf(workerout, "MyRank = %d time_block = %d, EnzoTimeStep = %e\n\n", MyRank, time_block, EnzoTimeStep);
+				fprintf(worker_output_file, "my_rank = %d time_block = %d, enzo_time_step = %e\n\n", my_rank, time_block, enzo_time_step);
 				break;
 
 #ifdef FEWBODY
-			case SearchPrimordialGroup: // Primordial binary search
+			case TASK_SEARCH_PRIMORDIAL_GROUP: // Primordial binary search
 
 				ptcl = &particles[ptcl_id];
 
-				ptcl->NewNumberOfMember = 0;
-				ptcl->checkNewGroup2();
+				ptcl->new_num_members = 0;
+				ptcl->check_new_group_v2();
 				break;
 
-			case SearchGroup: // Few-body group search
+			case TASK_SEARCH_GROUP: // Few-body group search
 
 				ptcl = &particles[ptcl_id];
 
-				if (ptcl->getBinaryInterruptState()==BinaryInterruptState::threebody) {
-					ptcl->setBinaryInterruptState(BinaryInterruptState::none);
+				if (ptcl->get_binary_interrupt_state()==BinaryInterruptState::threebody) {
+					ptcl->set_binary_interrupt_state(BinaryInterruptState::none);
 				}
-				else if (ptcl->getBinaryInterruptState()==BinaryInterruptState::manybody) {
-					ptcl->NewNumberOfMember = 0;
-					ptcl->checkNewGroup2();
-					ptcl->setBinaryInterruptState(BinaryInterruptState::none);
+				else if (ptcl->get_binary_interrupt_state()==BinaryInterruptState::manybody) {
+					ptcl->new_num_members = 0;
+					ptcl->check_new_group_v2();
+					ptcl->set_binary_interrupt_state(BinaryInterruptState::none);
 				}
 				else {
-					ptcl->NewNumberOfMember = 0;
-					if (ptcl->TimeStepIrr < TSearch)
-						ptcl->checkNewGroup();
+					ptcl->new_num_members = 0;
+					if (ptcl->time_step_irr < t_search)
+						ptcl->check_new_group();
 				}
 				/*
-				if (ptcl->getBinaryInterruptState()==BinaryInterruptState::manybody) {
-					ptcl->setBinaryInterruptState(BinaryInterruptState::none);
-					std::cout << "ptcl PID: " << ptcl->PID << ", ptcl NewNumberOfMember: " << ptcl->NewNumberOfMember << std::endl;
+				if (ptcl->get_binary_interrupt_state()==BinaryInterruptState::manybody) {
+					ptcl->set_binary_interrupt_state(BinaryInterruptState::none);
+					std::cout << "ptcl PID: " << ptcl->pid << ", ptcl NewNumberOfMember: " << ptcl->new_num_members << std::endl;
 				}
 				else {
-					ptcl->NewNumberOfMember = 0;
-					if (ptcl->TimeStepIrr < TSearch)
-						ptcl->checkNewGroup();
+					ptcl->new_num_members = 0;
+					if (ptcl->time_step_irr < t_search)
+						ptcl->check_new_group();
 				}
 				*/
 				break;
 
-			case MakePrimordialGroup: // Make a primordial group
+			case TASK_MAKE_PRIMORDIAL_GROUP: // Make a primordial group
 
 				ptcl = &particles[ptcl_id];
 				makePrimordialGroup(ptcl);
 				break;
 
-			case MakeGroup: // Make a group
+			case TASK_MAKE_GROUP: // Make a group
 
 				ptcl = &particles[ptcl_id];
 
 				NewFBInitialization(ptcl);
 #ifdef DEBUG
-				std::cout << "FewBody object of particle " << ptcl->PID
-						  << " is successfully initialized on rank " << MyRank << "." <<std::endl;
+				std::cout << "FewBody object of particle " << ptcl->pid
+						  << " is successfully initialized on rank " << my_rank << "." <<std::endl;
 #endif
 				break;
 
-			case DeleteGroup: // Delete a Group struct
+			case TASK_DELETE_GROUP: // Delete a Group struct
 
 				ptcl = &particles[ptcl_id];
 				deleteGroup(ptcl);
 				break;
 
-			case ARIntegration: // SDAR for few body encounters
+			case TASK_AR_INTEGRATION: // SDAR for few body encounters
 				
 				ptcl = &particles[ptcl_id];
 
-				if (!ptcl->isCMptcl || ptcl->GroupInfo == nullptr) {
-					fprintf(stderr, "Something is wrong. ptcl->isCMptcl=%d ptcl->GroupInfo=%p\n", ptcl->isCMptcl, ptcl->GroupInfo);
+				if (!ptcl->is_cm_particle || ptcl->group_info == nullptr) {
+					fprintf(stderr, "Something is wrong. ptcl->is_cm_particle=%d ptcl->group_info=%p\n", ptcl->is_cm_particle, ptcl->group_info);
 					exit(EXIT_FAILURE);
 				}
 				
-				ptcl->GroupInfo->ARIntegration(next_time);
-				if (!ptcl->GroupInfo->isMerger && !ptcl->GroupInfo->isTerminate)
-					ptcl->GroupInfo->isTerminate = ptcl->GroupInfo->CheckBreak2();
+				ptcl->group_info->ARIntegration(next_time);
+				if (!ptcl->group_info->isMerger && !ptcl->group_info->isTerminate)
+					ptcl->group_info->isTerminate = ptcl->group_info->CheckBreak2();
 
-				if (ptcl->GroupInfo->isTerminate) {
-					if (ptcl->getBinaryInterruptState() == BinaryInterruptState::none)
-						ptcl->setBinaryInterruptState(BinaryInterruptState::terminated);
+				if (ptcl->group_info->isTerminate) {
+					if (ptcl->get_binary_interrupt_state() == BinaryInterruptState::none)
+						ptcl->set_binary_interrupt_state(BinaryInterruptState::terminated);
 
-					E_binary -= ptcl->GroupInfo->sym_int.getEtot();
-					E_binary_SD -= ptcl->GroupInfo->sym_int.getEtotSlowDown();
+					energy_binary -= ptcl->group_info->sym_int.getEtot();
+					energy_binary_sd -= ptcl->group_info->sym_int.getEtotSlowDown();
 
-					delete ptcl->GroupInfo;
+					delete ptcl->group_info;
 #ifdef DEBUG
-					std::cout << "(SDAR) Processor " << MyRank<< ": PID= "<<ptcl->PID << " deleted!" <<std::endl;
+					std::cout << "(SDAR) Processor " << my_rank<< ": PID= "<<ptcl->pid << " deleted!" <<std::endl;
 #endif
 				}
 #ifdef DEBUG
 				else
-					std::cout << "(SDAR) Processor " << MyRank<< ": PID= "<<ptcl->PID << " done!" <<std::endl;
+					std::cout << "(SDAR) Processor " << my_rank<< ": PID= "<<ptcl->pid << " done!" <<std::endl;
 #endif
 				break;
 			
-			case MergeManyBody: // Merger insided many-body (>2) group
+			case TASK_MERGE_MANYBODY: // Merger insided many-body (>2) group
 				
 				ptcl = &particles[ptcl_id];
-				std::cout << "(SDAR) Processor " << MyRank<< ": PID= "<<ptcl->PID << std::endl;
+				std::cout << "(SDAR) Processor " << my_rank<< ": PID= "<<ptcl->pid << std::endl;
 
-				if (!ptcl->isCMptcl || ptcl->GroupInfo == nullptr) {
-					fprintf(stderr, "Something is wrong. ptcl->isCMptcl=%d ptcl->GroupInfo=%p\n", ptcl->isCMptcl, ptcl->GroupInfo);
+				if (!ptcl->is_cm_particle || ptcl->group_info == nullptr) {
+					fprintf(stderr, "Something is wrong. ptcl->is_cm_particle=%d ptcl->group_info=%p\n", ptcl->is_cm_particle, ptcl->group_info);
 					exit(EXIT_FAILURE);
 				}
 
-				NewFBInitialization3(ptcl->GroupInfo);
+				NewFBInitialization3(ptcl->group_info);
 
-				ptcl->GroupInfo->isMerger = false;
-				ptcl->setBinaryInterruptState(BinaryInterruptState::none);
+				ptcl->group_info->isMerger = false;
+				ptcl->set_binary_interrupt_state(BinaryInterruptState::none);
 
-				std::cout << "(SDAR) Processor " << MyRank<< ": PID= "<<ptcl->PID << " NewFBInitialization3 done!" <<std::endl;
+				std::cout << "(SDAR) Processor " << my_rank<< ": PID= "<<ptcl->pid << " NewFBInitialization3 done!" <<std::endl;
 				break;
 #endif 
 
-			case GetTotalEnergy:
+			case TASK_GET_TOTAL_ENERGY:
 
-				MPI_Reduce(&E_binary,		nullptr, 1, MPI_DOUBLE, MPI_SUM, ROOT, MPI_COMM_WORLD);
-				MPI_Reduce(&E_binary_SD,	nullptr, 1, MPI_DOUBLE, MPI_SUM, ROOT, MPI_COMM_WORLD);
-				MPI_Reduce(&E_merger,		nullptr, 1, MPI_DOUBLE, MPI_SUM, ROOT, MPI_COMM_WORLD);
-				MPI_Reduce(&E_PN,			nullptr, 1, MPI_DOUBLE, MPI_SUM, ROOT, MPI_COMM_WORLD);
+				MPI_Reduce(&energy_binary,		nullptr, 1, MPI_DOUBLE, MPI_SUM, ROOT, MPI_COMM_WORLD);
+				MPI_Reduce(&energy_binary_sd,	nullptr, 1, MPI_DOUBLE, MPI_SUM, ROOT, MPI_COMM_WORLD);
+				MPI_Reduce(&energy_merger,		nullptr, 1, MPI_DOUBLE, MPI_SUM, ROOT, MPI_COMM_WORLD);
+				MPI_Reduce(&energy_pn,			nullptr, 1, MPI_DOUBLE, MPI_SUM, ROOT, MPI_COMM_WORLD);
 				continue;
 #ifdef CUDA
-			case PrepareGPUCalc:
+			case TASK_PREPARE_GPU_CALC:
 
 				sendAllParticlesToGPU_Worker(next_time);
 				continue;
 #endif
-			case Synchronize: // Synchronize
-				MPI_Win_sync(win);  // Synchronize memory
+			case TASK_SYNCHRONIZE: // TASK_SYNCHRONIZE
+				MPI_Win_sync(win);  // TASK_SYNCHRONIZE memory
 				MPI_Barrier(shared_comm);
 				break;
 
-			case Ends: // Simualtion ends
-				fprintf(workerout, "Processor %d returns.\n", MyRank);
+			case TASK_END: // Simualtion ends
+				fprintf(worker_output_file, "Processor %d returns.\n", my_rank);
 				return;
 
-			case Error:
-				perror("Error task assignments");
+			case TASK_ERROR:
+				perror("TASK_ERROR task assignments");
 				exit(EXIT_FAILURE);
 				break;
 
@@ -276,11 +276,11 @@ void WorkerRoutines() {
 		// return that it's over
 		//task = -1;
 		int send_value = ptcl_id;
-		if (!(task == IrrForce || task == RegForce || task == IrrUpdate || task == RegUpdate))
+		if (!(task == TASK_IRR_FORCE || task == TASK_REG_FORCE || task == TASK_IRR_UPDATE || task == TASK_REG_UPDATE))
 			send_value = static_cast<int>(task);
 		MPI_Isend(&send_value, 1, MPI_INT, ROOT, TERMINATE_TAG, MPI_COMM_WORLD, &request);
 
 		MPI_Wait(&request, &status);
-		//std::cerr << "Processor " << MyRank << " done." << std::endl;
+		//std::cerr << "Processor " << my_rank << " done." << std::endl;
 	}
 }

@@ -2,16 +2,16 @@
 
 
 /*
-__global__ void compute_forces_subset(CUDA_REAL* result, const CUDA_REAL* ptcl, const CUDA_REAL *diff, const CUDA_REAL* magnitudes, int n, int m, const int* subset) {
+__global__ void compute_forces_subset(cuda_real_t* result, const cuda_real_t* ptcl, const cuda_real_t *diff, const cuda_real_t* magnitudes, int n, int m, const int* subset) {
 	int idx = blockIdx.x * blockDim.x + threadIdx.x;
 
 	//if (idx < m * n) {
 	int i = subset[idx / n];
 	int j = idx % n;
-	int six_idx = idx*_six;
-	CUDA_REAL scale;
-	idx *= _two;
-	__shared__ CUDA_REAL res[_six];
+	int six_idx = idx*NUM_FORCE_COMPONENTS;
+	cuda_real_t scale;
+	idx *= NUM_POS_COMPONENTS;
+	__shared__ cuda_real_t res[NUM_FORCE_COMPONENTS];
 
 	if (threadIdx.x == 0) { 
 		res[0]=0;
@@ -32,8 +32,8 @@ __global__ void compute_forces_subset(CUDA_REAL* result, const CUDA_REAL* ptcl, 
 		atomicAdd(&res[5], 0.);
 	}
 	else  {
-		scale = ptcl[_seven*j+6] / (magnitudes[idx] *sqrtf(magnitudes[idx]));
-		i *= _six;
+		scale = ptcl[NUM_RESULT_COMPONENTS*j+6] / (magnitudes[idx] *sqrtf(magnitudes[idx]));
+		i *= NUM_FORCE_COMPONENTS;
 		atomicAdd(&res[0], scale * diff[six_idx]);
 		atomicAdd(&res[1], scale * diff[six_idx + 1]);
 		atomicAdd(&res[2], scale * diff[six_idx + 2]);

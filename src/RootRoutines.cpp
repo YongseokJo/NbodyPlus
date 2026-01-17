@@ -22,7 +22,7 @@ void RegularRoutines(QueueScheduler &queue_scheduler, Worker *workers, std::unor
 int writeParticle(double current_time, int outputNum);
 
 #ifdef MULTIMAP
-void createRegularMap(std::multimap<ULL,int>& RegularMap);
+void createRegularMap(std::multimap<ull_t,int>& RegularMap);
 #else // no multimap
 void updateNextRegTime(std::unordered_set<int>& RegularList);
 #endif // multimap
@@ -38,7 +38,7 @@ void RootRoutines() {
 	std::cout << "Root processor is ready." << std::endl;
 
 	Particle* ptcl;
-	TaskName task;
+	task_name_t task;
 	int total_tasks;
 	int completed_tasks=0;
 
@@ -47,21 +47,21 @@ void RootRoutines() {
 	// unordered_set? by EW 2025.1.11
 	// merged particles & PISN will be contained here
 	// new single Particle formed in Enzo can be formed in ParticleIndex of these ptcls
-	// if empty, LastParticleIndex++
+	// if empty, last_particle_index++
 
 	bool bin_termination = false;
 	bool new_binaries = false;
 #ifdef MULTIMAP
-	std::multimap<ULL,int> RegularMap;
+	std::multimap<ull_t,int> RegularMap;
 #endif
 
 	std::unordered_set<int> RegularList;
 
 	QueueScheduler queue_scheduler;
 	Queue queue;
-	workers = new Worker[NumberOfWorker+1];
+	workers = new Worker[num_workers+1];
 
-	for (int i=0; i<=NumberOfWorker; i++) {
+	for (int i=0; i<=num_workers; i++) {
 		workers[i].initialize(i);
 	}
 
@@ -87,17 +87,17 @@ void RootRoutines() {
 		while (1) {
 
 			// create output at appropriate time intervals
-			if (global_time >= outputTime) {
-				writeParticle(global_time, outNum++);
-				outputTime += outputTimeStep;
+			if (global_time >= output_time) {
+				writeParticle(global_time, output_num++);
+				output_time += output_time_step;
 			}
 
 			// end if the global time exceeds the end time
 			if (global_time >= 1) {
-				task=Ends;
+				task=TASK_END;
 				queue = {task, -1, -1.0};
-				InitialAssignmentOfTasks(queue, NumberOfWorker, QUEUE_TAG);
-				fprintf(stdout, "Simulation Done! Current Time: %e Myr\n", global_time*EnzoTimeStep*1e4);
+				InitialAssignmentOfTasks(queue, num_workers, QUEUE_TAG);
+				fprintf(stdout, "Simulation Done! Current Time: %e Myr\n", global_time*enzo_time_step*1e4);
 				return;
 			}
 
@@ -133,7 +133,7 @@ void RootRoutines() {
 
 			RegularRoutines(queue_scheduler, workers, RegularList);
 
-			global_time = NextRegTimeBlock*time_step;
+			global_time = next_reg_time_block*time_step;
 
 #ifdef SEVN
 
@@ -142,12 +142,12 @@ void RootRoutines() {
 			start_point_routine = std::chrono::high_resolution_clock::now();
 #endif
 
-			if (!SEVNList.empty() && SEVNList.begin()->first <= global_time*EnzoTimeStep*1e4)
+			if (!SEVNList.empty() && SEVNList.begin()->first <= global_time*enzo_time_step*1e4)
 				StellarEvolution(); // Currently, evolving all the particles upto global_time
 
 #ifdef PERFORMANCETRACE
 			end_point_routine = std::chrono::high_resolution_clock::now();
-			performance.StellarEvolution +=
+			performance.stellar_evolution +=
 				std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
 #endif
 			PROFILE_STOP(TimerID::StellarEvolution);
@@ -166,51 +166,51 @@ void RootRoutines() {
 }
 
 #ifdef MULTIMAP
-void createRegularMap(std::multimap<ULL,int>& RegularMap) {
+void createRegularMap(std::multimap<ull_t,int>& RegularMap) {
 
 	assert(RegularMap.empty());
 
 	Particle* ptcl;
-	for (int i=0; i<=LastParticleIndex; i++)
+	for (int i=0; i<=last_particle_index; i++)
 	{
 		ptcl = &particles[i];
-		if (!ptcl->isActive)
+		if (!ptcl->is_active)
 			continue;
 
-		RegularMap.insert({ptcl->CurrentBlockReg + ptcl->TimeBlockReg, ptcl->ParticleIndex});
+		RegularMap.insert({ptcl->current_block_reg + ptcl->time_block_reg, ptcl->particle_index});
 	}
-	NextRegTimeBlock = RegularMap.begin()->first;
-	global_variable->NextRegTimeBlock = NextRegTimeBlock;
+	next_reg_time_block = RegularMap.begin()->first;
+	g_state->next_reg_time_block = next_reg_time_block;
 }
 #else // no multimap
 void updateNextRegTime(std::unordered_set<int>& RegularList) {
 
-	ULL time_tmp=0, time=block_max;
+	ull_t time_tmp=0, time=block_max;
 	Particle *ptcl;
 
 	RegularList.clear();
 
-	for (int i=0; i<=LastParticleIndex; i++)
+	for (int i=0; i<=last_particle_index; i++)
 	{
 		//std::cout << i << std::endl;
 		ptcl = &particles[i];
-		if (!ptcl->isActive)
+		if (!ptcl->is_active)
 			continue;
 		// Next regular time step
-		time_tmp = ptcl->CurrentBlockReg + ptcl->TimeBlockReg;
+		time_tmp = ptcl->current_block_reg + ptcl->time_block_reg;
 
 		// Find the minum regular time step
 		if (time_tmp <= time) {
-			//fprintf(stderr, "PID=%d, time_tme=%llu\n", ptcl->PID, time_tmp);
+			//fprintf(stderr, "PID=%d, time_tme=%llu\n", ptcl->pid, time_tmp);
 			if (time_tmp < time) {
 				RegularList.clear();
 				time = time_tmp;
 			}
-			//RegularList.push_back(ptcl->ParticleIndex);
-			RegularList.insert(ptcl->ParticleIndex);
+			//RegularList.push_back(ptcl->particle_index);
+			RegularList.insert(ptcl->particle_index);
 		}
 	}
-	NextRegTimeBlock = time;
-	global_variable->NextRegTimeBlock = NextRegTimeBlock;
+	next_reg_time_block = time;
+	g_state->next_reg_time_block = next_reg_time_block;
 }
 #endif // multimap

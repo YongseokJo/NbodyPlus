@@ -1,7 +1,7 @@
 # Compiler
 #CXX = icc
 #CXX = mpiicpc
-CXX = mpicxx
+CXX = /hpc/software/spack_v20d1/spack/opt/spack/linux-rhel7-x86_64/gcc-12.3.0/openmpi-4.1.6rc2-4jmm4uy2wrgvpfqpoc6geocztczhw6yx/bin/mpicxx
 #CXX = g++
 
 # Compiler flags
@@ -20,7 +20,7 @@ ifdef HDF5_ROOT
 else ifdef HDF5_DIR
 	HDF5_PATH = $(HDF5_DIR)
 else
-	HDF5_PATH = /usr
+	HDF5_PATH = /hpc/software/2025/spack/opt/spack/linux-rhel8-x86_64/gcc-12.4.0/hdf5-1.14.5-yke7pax3ot3kyspoqxw6lc4qolvpk43t
 endif
 CXXFLAGS += -I$(HDF5_PATH)/include
 LDFLAGS_HDF5 = -L$(HDF5_PATH)/lib -L$(HDF5_PATH)/lib64 -lhdf5_cpp -lhdf5

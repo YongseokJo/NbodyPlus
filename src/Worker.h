@@ -1,5 +1,6 @@
 #ifndef WORKER_H
 #define WORKER_H
+
 #include <iostream>
 #include <vector>
 #include <unordered_map>
@@ -8,125 +9,151 @@
 #include "global.h"
 #include "Queue.h"
 
-
+// ============================================================================
+// Worker structure for MPI task distribution
+// ============================================================================
 
 #define MAX_QUEUE 1000
 
 struct Worker {
-    int MyRank; 
-    bool onDuty;
-    std::unordered_set<int> CMPtclIDs;
-    bool isCMWorker;
-    Queue queues[MAX_QUEUE];
-    short NumberOfQueues;
-    short CurrentQueue;
+    // ========================================================================
+    // Member variables
+    // ========================================================================
+    int rank;                           // MPI rank of this worker
+    bool on_duty;                       // Whether worker is currently processing
+    std::unordered_set<int> cm_particle_ids;  // CM particles assigned to this worker
+    bool is_cm_worker;                  // Whether this worker handles CM particles
+    Queue queues[MAX_QUEUE];            // Queue of tasks
+    short num_queues;                   // Number of pending queues
+    short current_queue;                // Index of current queue
 
+    // Legacy aliases
+    #define MyRank rank
+    #define onDuty on_duty
+    #define CMPtclIDs cm_particle_ids
+    #define isCMWorker is_cm_worker
+    #define NumberOfQueues num_queues
+    #define CurrentQueue current_queue
 
+    // ========================================================================
+    // Constructor
+    // ========================================================================
     Worker() {
         _initialize();
     }
 
+    // ========================================================================
+    // Initialization methods
+    // ========================================================================
     void initialize() {
-        onDuty = false;
-        if (CMPtclIDs.size() > 0) {
-           isCMWorker = true; 
+        on_duty = false;
+        if (cm_particle_ids.size() > 0) {
+            is_cm_worker = true;
         }
-        NumberOfQueues = 0;
-        CurrentQueue = 0;
+        num_queues = 0;
+        current_queue = 0;
     }
 
-    void initialize(int _MyRank) {
-        MyRank = _MyRank;
-        onDuty = false;
-        if (CMPtclIDs.size() > 0) {
-           isCMWorker = true; 
+    void initialize(int worker_rank) {
+        rank = worker_rank;
+        on_duty = false;
+        if (cm_particle_ids.size() > 0) {
+            is_cm_worker = true;
         }
-        NumberOfQueues = 0;
+        num_queues = 0;
     }
 
-    void addQueue(Queue queue) {
-        int index = CurrentQueue+NumberOfQueues++;
-        if (NumberOfQueues == MAX_QUEUE) {
-           fprintf(stderr, "NumberOfQueues exceeds MAX_QUEUE!"); 
-           exit(EXIT_FAILURE);
+    // ========================================================================
+    // Queue management
+    // ========================================================================
+    void add_queue(Queue queue) {
+        int index = current_queue + num_queues++;
+        if (num_queues == MAX_QUEUE) {
+            fprintf(stderr, "num_queues exceeds MAX_QUEUE!\n");
+            exit(EXIT_FAILURE);
         }
         index %= MAX_QUEUE;
         queues[index] = queue;
     }
 
-    void runQueue() {
-        if (onDuty) {
-            std::cout << "Worker " << MyRank << " is already on duty" << std::endl;
-            std::cerr << "Worker " << MyRank << " is already on duty" << std::endl;
+    // Legacy alias
+    void addQueue(Queue queue) { add_queue(queue); }
+
+    void run_queue() {
+        if (on_duty) {
+            std::cout << "Worker " << rank << " is already on duty" << std::endl;
+            std::cerr << "Worker " << rank << " is already on duty" << std::endl;
             exit(1);
         }
-        if (NumberOfQueues == 0) {
+        if (num_queues == 0) {
             fprintf(stderr, "There is no queue in this worker!\n");
             exit(EXIT_FAILURE);
         }
-        //Queue *q = &queues[CurrentQueue];
-        //q->print();
-        //sendTask(*q);
-        sendTask(queues[CurrentQueue]);
-        //std::cout << "Worker " << MyRank << " is on duty" << std::endl;
+        send_task(queues[current_queue]);
     }
 
-    void removeQueue() {
+    // Legacy alias
+    void runQueue() { run_queue(); }
+
+    void remove_queue() {
+        // Currently empty - placeholder for future implementation
     }
 
+    // Legacy alias
+    void removeQueue() { remove_queue(); }
+
+    // ========================================================================
+    // Callback handling
+    // ========================================================================
     void callback() {
         int return_value;
         PROFILE_START(TimerID::MPIRecv);
-        MPI_Recv(&return_value, 1, MPI_INT, this->MyRank, TERMINATE_TAG, MPI_COMM_WORLD, &_status);
+        MPI_Recv(&return_value, 1, MPI_INT, this->rank, TERMINATE_TAG, MPI_COMM_WORLD, &_status);
         PROFILE_STOP(TimerID::MPIRecv);
-        if (!onDuty) {
-            fprintf(stderr, "Something's worng! the worker %d was not on duty.\n", this->MyRank);
-            fprintf(stdout, "Something's worng! the worker %d was not on duty.\n", this->MyRank);
+        if (!on_duty) {
+            fprintf(stderr, "Error: worker %d was not on duty.\n", this->rank);
+            fprintf(stdout, "Error: worker %d was not on duty.\n", this->rank);
             exit(1);
         }
-        onDuty = false;
-        CurrentQueue++;
-        CurrentQueue %= MAX_QUEUE;
-        NumberOfQueues--;
-        //std::cout << "Worker " << MyRank << " is off duty" << std::endl;
+        on_duty = false;
+        current_queue++;
+        current_queue %= MAX_QUEUE;
+        num_queues--;
     }
 
-/*
-    void callback(int &return_value) {
-        MPI_Recv(&return_value, 1, MPI_INT, this->MyRank, TERMINATE_TAG, MPI_COMM_WORLD, &_status);
-        if (!onDuty) {
-            fprintf(stderr, "Something's worng! the worker was not on duty.");
-            exit(1);
-        }
-        onDuty = false;
-    }
-    */
-
-
-    void sendTask(Queue &_queue) {
+    // ========================================================================
+    // Task sending
+    // ========================================================================
+    void send_task(Queue& queue) {
         PROFILE_START(TimerID::MPISend);
-        MPI_Send(&_queue,   1,  QueueType,  this->MyRank,   QUEUE_TAG,  MPI_COMM_WORLD);
+        MPI_Send(&queue, 1, queue_type_mpi, this->rank, QUEUE_TAG, MPI_COMM_WORLD);
         PROFILE_STOP(TimerID::MPISend);
-        onDuty = true;
+        on_duty = true;
     }
 
-    Queue* getCurrentQueue() {return &queues[CurrentQueue];}
+    // Legacy alias
+    void sendTask(Queue& queue) { send_task(queue); }
+
+    // ========================================================================
+    // Accessors
+    // ========================================================================
+    Queue* get_current_queue() { return &queues[current_queue]; }
+    Queue* getCurrentQueue() { return get_current_queue(); }
 
 private:
-    //Queue current_queue;
-    MPI_Request _request;  // Pointer to the request handle
-    MPI_Status _status;    // Pointer to the status object
+    MPI_Request _request;
+    MPI_Status _status;
 
     void _initialize() {
-        MyRank = -1;
-        onDuty = false;
-        CMPtclIDs.clear();
-        isCMWorker = false;
-        NumberOfQueues = 0;
-        CurrentQueue   = 0;
-        //queues.reserve(MAX_QUEUE);
+        rank = -1;
+        on_duty = false;
+        cm_particle_ids.clear();
+        is_cm_worker = false;
+        num_queues = 0;
+        current_queue = 0;
     }
 };
 
 extern Worker* workers;
+
 #endif

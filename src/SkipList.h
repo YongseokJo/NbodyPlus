@@ -10,18 +10,18 @@
 
 //class Node {
 struct Node {
-	ULL value;
+	ull_t value;
 	Node** forward;
 	std::vector<int> ParticleList;
 
-	Node(ULL value, int level, int ptcl_id) {
+	Node(ull_t value, int level, int ptcl_id) {
 		this->value = value;
 		ParticleList.push_back(ptcl_id);
 		forward = new Node*[level + 1];
 		memset(forward, 0, sizeof(Node*) * (level + 1));
 	}
 
-	Node(ULL value, int level) {
+	Node(ull_t value, int level) {
 		this->value = value;
 		forward = new Node*[level + 1];
 		memset(forward, 0, sizeof(Node*) * (level + 1));
@@ -72,7 +72,7 @@ class SkipList {
 			delete header;
 		}
 
-		void insert(ULL value, int ptcl_id) {
+		void insert(ull_t value, int ptcl_id) {
 			//std::cout << "Inserting value: " << value << "\n";
 			Node* current = header;
 			Node* update[maxLevel + 1];
@@ -107,7 +107,7 @@ class SkipList {
 		}
 
 
-		void insert(ULL value) {
+		void insert(ull_t value) {
 			Node* current = header;
 			Node* update[maxLevel + 1];
 
@@ -145,7 +145,7 @@ class SkipList {
 
 
 		// Search for a value in the skip list
-		bool search(ULL value, int ptcl_id) {
+		bool search(ull_t value, int ptcl_id) {
 			//std::cout << "Parallel search started" <<  "\n";
 			Node* current = header;
 			bool found;
@@ -229,7 +229,7 @@ class SkipList {
 					std::cout << node->value << " ";
 					std::cout << "("<< node->ParticleList.size() << "):";
 					for (int i=0; i<node->ParticleList.size(); i++) {
-						std::cout << particles[node->ParticleList[i]].PID << ", ";
+						std::cout << particles[node->ParticleList[i]].pid << ", ";
 					}
 					std::cout << "\n";
 					node = node->forward[i];

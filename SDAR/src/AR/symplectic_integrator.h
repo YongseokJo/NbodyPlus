@@ -1632,7 +1632,7 @@ namespace AR {
             if (!(info.getBinaryTreeRoot().Position[0]*info.getBinaryTreeRoot().Position[0]<1e-10) ||
                 !(info.getBinaryTreeRoot().Velocity[0]*info.getBinaryTreeRoot().Velocity[0]<1e-10)) { 
                 fprintf(stderr, "CM PID: %d\n", particles.cm.PID);
-                fprintf(stderr, "NumberOfMember: %d, NumberOfNeighbor: %d\n", particles.cm.NumberOfMember, particles.cm.NumberOfNeighbor);
+                fprintf(stderr, "NumberOfMember: %d, NumberOfNeighbor: %d\n", particles.cm.NumberOfMember(), particles.cm.NumberOfNeighbor());
 
                 fprintf(stderr, "Root mass: %e\n", info.getBinaryTreeRoot().Mass * mass_unit);
                 fprintf(stderr, "Root pos: (%e, %e, %e)\n", info.getBinaryTreeRoot().Position[0], info.getBinaryTreeRoot().Position[1], info.getBinaryTreeRoot().Position[2]);

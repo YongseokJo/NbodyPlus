@@ -7,6 +7,14 @@
 #include "../def.h"
 #include <cassert>
 
+// ---------------------------------------------------------------------------
+// SDAR legacy particle field aliases (scoped to SDAR headers)
+// ---------------------------------------------------------------------------
+#define Mass mass
+#define Position position
+#define Velocity velocity
+#define PID pid
+
 #include "Common/binary_tree.h"
 #include "Common/Float.h"
 #include "Common/io.h"
@@ -14,6 +22,11 @@
 #include "AR/information.h"
 #include "ar_interaction.hpp"
 #include "ar_perturber.hpp"
+
+#undef Mass
+#undef Position
+#undef Velocity
+#undef PID
 
 struct Particle;
 struct Group

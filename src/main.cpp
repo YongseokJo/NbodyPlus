@@ -32,23 +32,23 @@ int main(int argc, char *argv[]) {
 	/* Initialize global variables */
 	DefaultGlobal();
 
-	binout = fopen("binary_output.txt", "w");
-	fprintf(binout, "Starting ABYSS - Binary OUTPUT\n");
-	fflush(binout);
-	mergerout = fopen("merger_output.txt", "w");
-	fprintf(mergerout, "Starting ABYSS - Merger OUTPUT\n");
-	fflush(mergerout);
+	bin_output_file = fopen("binary_output.txt", "w");
+	fprintf(bin_output_file, "Starting ABYSS - Binary OUTPUT\n");
+	fflush(bin_output_file);
+	merger_output_file = fopen("merger_output.txt", "w");
+	fprintf(merger_output_file, "Starting ABYSS - Merger OUTPUT\n");
+	fflush(merger_output_file);
 #ifdef SEVN
-	SEVNout = fopen("SEVN_output.txt", "w");
-	fprintf(SEVNout, "Starting ABYSS - SEVN OUTPUT\n");
-	fflush(SEVNout);
+	sevn_output_file = fopen("SEVN_output.txt", "w");
+	fprintf(sevn_output_file, "Starting ABYSS - SEVN OUTPUT\n");
+	fflush(sevn_output_file);
 #endif
 
 	/* MPI Initialization */
 	initializeMPI(argc, argv);
 
 #ifdef CUDA
-	if (MyRank == ROOT) {
+	if (my_rank == ROOT) {
 		OpenDevice();
 		cudaDeviceSynchronize();
 	}
@@ -59,17 +59,17 @@ int main(int argc, char *argv[]) {
 	readParameterFile();
 
 	// Write Particles
-	if (MyRank == ROOT && !readData())
+	if (my_rank == ROOT && !readData())
 		fprintf(stderr, "Read Data Failed!\n");
 	
 
-	if (MyRank == ROOT) {
+	if (my_rank == ROOT) {
 		RootRoutines();
 	} else {
-		std::string filename = "worker_output_" + std::to_string(MyRank) + ".txt";
-		workerout = fopen(filename.c_str(), "w");
-		fprintf(workerout, "Starting ABYSS - WORKER OUTPUT\n");
-		fflush(workerout);
+		std::string filename = "worker_output_" + std::to_string(my_rank) + ".txt";
+		worker_output_file = fopen(filename.c_str(), "w");
+		fprintf(worker_output_file, "Starting ABYSS - WORKER OUTPUT\n");
+		fflush(worker_output_file);
 		
 		WorkerRoutines();
 	}
@@ -82,9 +82,9 @@ int main(int argc, char *argv[]) {
 
 	MPI_Comm_free(&shared_comm);
 
-	MPI_Type_free(&QueueType);
-    MPI_Type_free(&IparticleType);
-    MPI_Type_free(&JparticleType);
+	MPI_Type_free(&queue_type_mpi);
+    MPI_Type_free(&iparticle_type_mpi);
+    MPI_Type_free(&jparticle_type_mpi);
 
 	MPI_Finalize();
 

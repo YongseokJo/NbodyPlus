@@ -19,16 +19,16 @@
 
 
 
-extern int MyRank;
+extern int my_rank;
 const int ROOT = 0;
 extern Particle *particles;
-extern int* NewNeighbors;
+extern int* new_neighbors;
 
 static int NNB;
-static CUDA_REAL time_send, time_grav, time_out, time_nb;
+static cuda_real_t time_send, time_grav, time_out, time_nb;
 static long long numInter;
 static int icall,ini,isend;
-// static int nbodymax;
+// static int NBODY_MAX;
 static int deviceCount = 0;
 
 static int devid;
@@ -42,19 +42,19 @@ struct GPU {
     cudaStream_t stream = 0;
 
     // device
-    // CUDA_REAL* d_diff = nullptr;
+    // cuda_real_t* d_diff = nullptr;
     int*       d_neighbor_block = nullptr;
     int*       d_neighbor  = nullptr;
     int*       d_neighbor_count = nullptr;
     int*       d_neighbor_count_block = nullptr;
-    CUDA_REAL* d_result = nullptr;
-    CUDA_REAL* d_result_block = nullptr;
-	Jparticle* dJ = nullptr;
-	Iparticle* dI = nullptr;
+    cuda_real_t* d_result = nullptr;
+    cuda_real_t* d_result_block = nullptr;
+	j_particle_t* dJ = nullptr;
+	i_particle_t* dI = nullptr;
 	//CUDA_INT* dIdx = nullptr;
 
     // host (should be pinned, but currently not)
-    CUDA_REAL* h_result = nullptr;
+    cuda_real_t* h_result = nullptr;
     int*       h_neighbor_count = nullptr;
     int*       h_neighbor  = nullptr;
 	int        J_start = 0;
@@ -65,8 +65,8 @@ static std::vector<GPU> gpu;
 
 //#define debuggig_verification
 #ifdef debuggig_verification
-extern CUDA_REAL *h_r2;
-CUDA_REAL *h_r2=nullptr; //only for verification
+extern cuda_real_t *h_r2;
+cuda_real_t *h_r2=nullptr; //only for verification
 #endif
 
 
@@ -120,16 +120,16 @@ void GetAcceleration(
 			// fprintf(stderr, "GPU %d: J_start = %d, J_count = %d\n", i, gpu[i].J_start, gpu[i].J_count);
 
 			dim3 gridDim2(NumTarget, 1);
-            dim3 blockDim2(GridDimY, 1);
+            dim3 blockDim2(GRID_DIM_Y, 1);
 
             if (gpu[i].J_count <= 0) break;  // No more work
 
 			
             // Prepare kernel dimensions
-            dim3 blockDim(BatchSize, 1, 1);
+            dim3 blockDim(BATCH_SIZE, 1, 1);
             dim3 gridDim(
-            	(NumTarget + BatchSize + blockDim.x - 1) / blockDim.x, 
-            	GridDimY
+            	(NumTarget + BATCH_SIZE + blockDim.x - 1) / blockDim.x, 
+            	GRID_DIM_Y
             );
             compute_forces<<<gridDim, blockDim, 0, gpu[i].stream>>>(
                 gpu[i].dI,
@@ -146,7 +146,7 @@ void GetAcceleration(
 			dim3 blockDim3(16, 6);       // 16 threads along X, 6 along Y
 			dim3 gridDim3((NumTarget+15)/16, 1);
 			reduce_forces_kernel<<<gridDim3, blockDim3, 0, gpu[i].stream>>>(
-				gpu[i].d_result_block, gpu[i].d_result, GridDimY, NumTarget);
+				gpu[i].d_result_block, gpu[i].d_result, GRID_DIM_Y, NumTarget);
 
             gather_neighbor<<<gridDim2, blockDim2, 0, gpu[i].stream>>>(
                 gpu[i].d_neighbor_block, 
@@ -166,13 +166,13 @@ void GetAcceleration(
             // Copy back partial results
             toHost(gpu[i].h_result,
                    gpu[i].d_result,
-                   _six * NumTarget,
+                   NUM_FORCE_COMPONENTS * NumTarget,
                    gpu[i].stream);
 
 
             toHost(gpu[i].h_neighbor,
                    gpu[i].d_neighbor,
-                   NumTarget * MaxNumNeighbor,
+                   NumTarget * MAX_NUM_NEIGHBOR,
                    gpu[i].stream);
 			
             toHost(gpu[i].h_neighbor_count,
@@ -193,18 +193,18 @@ void GetAcceleration(
 			int target_idx = TargetStart + j;  // Precompute base index
 			ptcl = &particles[RegularList[j]];
 
-			ptcl->NewNumberOfNeighbor = 0;
-			for (int dim=0; dim < Dim; dim++) {
-				ptcl->a_irr[dim][0] = 0.0;
-				ptcl->a_irr[dim][1] = 0.0;
+			ptcl->new_num_neighbors = 0;
+			for (int dim=0; dim < DIM; dim++) {
+				ptcl->acc_irregular[dim][0] = 0.0;
+				ptcl->acc_irregular[dim][1] = 0.0;
 			}
 
 			for (int i = 0; i < deviceCount; i++) {
-				memcpy(NewNeighbors + ptcl->NeighborsOffset + ptcl->NewNumberOfNeighbor, &gpu[i].h_neighbor[j * MaxNumNeighbor], gpu[i].h_neighbor_count[j] * sizeof(int));
-				ptcl->NewNumberOfNeighbor += gpu[i].h_neighbor_count[j];
+				memcpy(new_neighbors + ptcl->neighbors_offset + ptcl->new_num_neighbors, &gpu[i].h_neighbor[j * MAX_NUM_NEIGHBOR], gpu[i].h_neighbor_count[j] * sizeof(int));
+				ptcl->new_num_neighbors += gpu[i].h_neighbor_count[j];
 				for (int k = 0; k < 3; k++) {
-					ptcl->a_irr[k][0] += static_cast<double>(gpu[i].h_result[j * _six + k]);
-					ptcl->a_irr[k][1] += static_cast<double>(gpu[i].h_result[j * _six + k + 3]);
+					ptcl->acc_irregular[k][0] += static_cast<double>(gpu[i].h_result[j * NUM_FORCE_COMPONENTS + k]);
+					ptcl->acc_irregular[k][1] += static_cast<double>(gpu[i].h_result[j * NUM_FORCE_COMPONENTS + k + 3]);
 				}
 			}
 		}
@@ -225,7 +225,7 @@ void GetAcceleration(
 				adot[i][0], adot[i][1], adot[i][2],
 				NumNeighbor[i]);
 			for (int j = 0; j < NumNeighbor[i]; j++) {
-				printf("  Neighbor %d: %d\n", j, NeighborList[i * MaxNumNeighbor + j]);
+				printf("  Neighbor %d: %d\n", j, NeighborList[i * MAX_NUM_NEIGHBOR + j]);
 			}
 		}
 		*/
@@ -253,8 +253,8 @@ void GetAcceleration(
 
 
 void _ReceiveFromHost(
-		std::vector<Jparticle>& hJ,
-		std::vector<Iparticle>& hI
+		std::vector<j_particle_t>& hJ,
+		std::vector<i_particle_t>& hI
 		){
 
 	//variable_size stands for the (maximum) number of j (background particles)
@@ -263,17 +263,17 @@ void _ReceiveFromHost(
 
     const size_t nI = hI.size();
     const size_t nJ = hJ.size();
-	//nbodymax       = 100000000;
+	//NBODY_MAX       = 100000000;
 	NNB            = nJ;
 	isend++;
-	assert(NNB <= nbodymax);
+	assert(NNB <= NBODY_MAX);
 	cudaError_t cudaStatus;
 	
 
 	if ((first) || (new_size(NNB) > J_capacity )) {
 		//varaiable_size should be the number of j, and target size be the number of i
 		J_capacity = new_size(NNB);
-		// target_size = ((NNB > nbodymax/NNB) ? int(pow(2,ceil(log(nbodymax/NNB)/log(2.0)))) : NNB);
+		// target_size = ((NNB > NBODY_MAX/NNB) ? int(pow(2,ceil(log(NBODY_MAX/NNB)/log(2.0)))) : NNB);
 		I_capacity = J_capacity;
 
 		fprintf(stderr, "variable_size=%d, target_size=%d\n", J_capacity, I_capacity);
@@ -296,18 +296,18 @@ void _ReceiveFromHost(
 		}
 		for (int i = 0; i < deviceCount; i++) {
 			cudaSetDevice(i);
-			my_allocate(&gpu[i].h_result, &gpu[i].d_result, _six*I_capacity); // x,v,m
+			my_allocate(&gpu[i].h_result, &gpu[i].d_result, NUM_FORCE_COMPONENTS*I_capacity); // x,v,m
 			my_allocate(&gpu[i].h_neighbor_count, &gpu[i].d_neighbor_count, I_capacity);
-			my_allocate(&gpu[i].h_neighbor, &gpu[i].d_neighbor, I_capacity * MaxNumNeighbor);
-			my_allocate_d(&gpu[i].d_neighbor_block, GridDimY * NNB_per_block * I_capacity);
-			my_allocate_d(&gpu[i].d_neighbor_count_block, GridDimY * I_capacity);
+			my_allocate(&gpu[i].h_neighbor, &gpu[i].d_neighbor, I_capacity * MAX_NUM_NEIGHBOR);
+			my_allocate_d(&gpu[i].d_neighbor_block, GRID_DIM_Y * NNB_PER_BLOCK * I_capacity);
+			my_allocate_d(&gpu[i].d_neighbor_count_block, GRID_DIM_Y * I_capacity);
 			my_allocate_d(&gpu[i].dJ, J_capacity);
 			my_allocate_d(&gpu[i].dI, I_capacity);
-			my_allocate_d(&gpu[i].d_result_block, _six * GridDimY * I_capacity);
+			my_allocate_d(&gpu[i].d_result_block, NUM_FORCE_COMPONENTS * GRID_DIM_Y * I_capacity);
 		}
 		
 #ifdef debuggig_verification
-		cudaMallocHost((void**)&h_r2        ,        variable_size * sizeof(CUDA_REAL)); // only for verification
+		cudaMallocHost((void**)&h_r2        ,        variable_size * sizeof(cuda_real_t)); // only for verification
 #endif
 	} //end of if (first) || (new_size(NNB) > variable_size)
 #ifdef DEBUG
@@ -343,12 +343,12 @@ void _ReceiveFromHost(
 
 void _InitializeDevice(){
 
-	if (MyRank == ROOT) {
+	if (my_rank == ROOT) {
 		std::cout << "Initializing CUDA ..." << std::endl;
 	}
 	// Select CUDA device (optional)
 	cudaGetDeviceCount(&deviceCount);
-	if (MyRank == ROOT) {
+	if (my_rank == ROOT) {
         std::cout << "There are " << deviceCount << " GPUs." << std::endl;
     }
 	gpu.resize(deviceCount);
@@ -362,7 +362,7 @@ void _InitializeDevice(){
 
 		cudaDeviceProp prop;
 		cudaGetDeviceProperties(&prop, deviceNum);
-		fprintf(stdout, "# GPU initialization - MyRank: %d; HOST: %s; NGPU: %d; device: %d %s\n", MyRank, hostname, deviceCount, deviceNum, prop.name);
+		fprintf(stdout, "# GPU initialization - my_rank: %d; HOST: %s; NGPU: %d; device: %d %s\n", my_rank, hostname, deviceCount, deviceNum, prop.name);
 
 		gpu[deviceNum].id = deviceNum;
 		cudaStreamCreate(&gpu[deviceNum].stream);
@@ -378,7 +378,7 @@ void _InitializeDevice(){
     if ((resCtx == CUDA_SUCCESS) && (context != nullptr)) {
         if (cuCtxGetDevice(&cuDev) == CUDA_SUCCESS) {
             devid = (int)cuDev;
-            std::cout << "[Rank " << MyRank << "] Current device from driver context = " << devid << std::endl;
+            std::cout << "[Rank " << my_rank << "] Current device from driver context = " << devid << std::endl;
             // Check if devId is valid
             if (devid < 0 || devid >= deviceCount) {
                 std::cerr << "Invalid device ID from context: " << devid << std::endl;
@@ -408,9 +408,9 @@ void _OpenDevice(){
 
 
 #ifdef PROFILE
-	//	fprintf(stderr, "RANK: %d ******************\n",MyRank);
+	//	fprintf(stderr, "RANK: %d ******************\n",my_rank);
 	//	fprintf(stderr, "Opened NBODY6/GPU library\n");
-	fprintf(stderr, "# Open GPU regular force - rank: %d\n", MyRank);
+	fprintf(stderr, "# Open GPU regular force - rank: %d\n", my_rank);
 	//fprintf(stderr, "***********************\n");
 #endif
 }
@@ -459,7 +459,7 @@ void _CloseDevice() {
 void _ProfileDevice() {
 #ifdef PROFILE
 	if(icall) {
-		fprintf(stderr,"[R.%d-D.%d GPU Reg.F ] Nsend %d  Ngrav %d  <Ni> %d   send(s) %f grav(s) %f  nb(s) %f  out(s) %f  Perf.(Gflops) %f\n",MyRank,devid,isend,icall,ini/isend,time_send,time_grav,time_nb,time_out,60.e-9*numInter/time_grav);
+		fprintf(stderr,"[R.%d-D.%d GPU Reg.F ] Nsend %d  Ngrav %d  <Ni> %d   send(s) %f grav(s) %f  nb(s) %f  out(s) %f  Perf.(Gflops) %f\n",my_rank,devid,isend,icall,ini/isend,time_send,time_grav,time_nb,time_out,60.e-9*numInter/time_grav);
 	}
 	time_send = time_grav = time_nb = time_out = 0.0;
 	numInter = 0;
@@ -502,7 +502,7 @@ extern "C" {
 	void CloseDevice(){
 		_CloseDevice();
 	}
-	void SendToDevice(std::vector<Jparticle>& hJ, std::vector<Iparticle>& hI){
+	void SendToDevice(std::vector<j_particle_t>& hJ, std::vector<i_particle_t>& hI){
 		_ReceiveFromHost(hJ, hI);
 	}
 	void ProfileDevice(){

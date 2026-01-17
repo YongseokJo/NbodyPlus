@@ -6,7 +6,7 @@ bool makeSEVNBinary(Particle* ptclCM);
 #endif
 void InitialAssignmentOfTasks(Queue queue, int NumTask, int TAG);
 void broadcastFromRoot(double &data);
-void broadcastFromRoot(ULL &data);
+void broadcastFromRoot(ull_t &data);
 void broadcastFromRoot(int &data);
 
 void InitializationRoutines(QueueScheduler &queue_scheduler, Worker *workers) {
@@ -15,7 +15,7 @@ void InitializationRoutines(QueueScheduler &queue_scheduler, Worker *workers) {
 
     Particle* ptcl;
     Queue queue;
-    TaskName task;
+    task_name_t task;
     int total_tasks;
 	int completed_tasks;
     MPI_Request request;  // Pointer to the request handle
@@ -27,12 +27,12 @@ void InitializationRoutines(QueueScheduler &queue_scheduler, Worker *workers) {
 #endif
 
     std::vector<int> PIDs;
-    PIDs.reserve(NumberOfParticle);
-    PIDs.resize(NumberOfParticle);
-    for (int i = 0; i <= LastParticleIndex; i++)
+    PIDs.reserve(num_particles);
+    PIDs.resize(num_particles);
+    for (int i = 0; i <= last_particle_index; i++)
         PIDs[i] = i;
 
-    queue_scheduler.initialize(InitAcc1);
+    queue_scheduler.initialize(TASK_INIT_ACC_1);
     queue_scheduler.takeQueue(PIDs);
     do {
         //queue_scheduler.printFreeWorker();
@@ -45,7 +45,7 @@ void InitializationRoutines(QueueScheduler &queue_scheduler, Worker *workers) {
     } while(queue_scheduler.isComplete());
     std::cout << "Init 01 done" << std::endl;
 
-    queue_scheduler.initialize(InitAcc2);
+    queue_scheduler.initialize(TASK_INIT_ACC_2);
     queue_scheduler.takeQueue(PIDs);
     do {
         queue_scheduler.assignQueueAuto();
@@ -56,7 +56,7 @@ void InitializationRoutines(QueueScheduler &queue_scheduler, Worker *workers) {
 
 #ifdef FEWBODY
     // Primordial binary search
-    queue_scheduler.initialize(SearchPrimordialGroup);
+    queue_scheduler.initialize(TASK_SEARCH_PRIMORDIAL_GROUP);
     queue_scheduler.takeQueue(PIDs);
     do {
         queue_scheduler.assignQueueAuto();
@@ -66,35 +66,35 @@ void InitializationRoutines(QueueScheduler &queue_scheduler, Worker *workers) {
     std::cout << "Primordial binary search done" << std::endl;
 
     int rank;
-    int OriginalLastParticleIndex = LastParticleIndex;
+    int OriginalLastParticleIndex = last_particle_index;
     formPrimordialBinaries(OriginalLastParticleIndex);
-    assert(OriginalLastParticleIndex <= LastParticleIndex); // for debugging by EW 2025.1.4
-    assert(CMPtclWorker.empty()); // for debugging by EW 2025.1.4
+    assert(OriginalLastParticleIndex <= last_particle_index); // for debugging by EW 2025.1.4
+    assert(cm_particle_worker_map.empty()); // for debugging by EW 2025.1.4
     // Let's modify this primordial binary part later!!! by EW 2025.5.24
-    if (OriginalLastParticleIndex != LastParticleIndex) {
-        std::cout << "In total, " << LastParticleIndex - OriginalLastParticleIndex
+    if (OriginalLastParticleIndex != last_particle_index) {
+        std::cout << "In total, " << last_particle_index - OriginalLastParticleIndex
                   << " primordial binaries are created." << std::endl;
-        queue_scheduler.initialize(MakePrimordialGroup);
-        for (int i=OriginalLastParticleIndex+1; i<=LastParticleIndex; i++) {
+        queue_scheduler.initialize(TASK_MAKE_PRIMORDIAL_GROUP);
+        for (int i=OriginalLastParticleIndex+1; i<=last_particle_index; i++) {
             ptcl = &particles[i];
-            CMPtclWorker.insert({ptcl->ParticleIndex, CMPtclWorker.size() % NumberOfWorker + 1});
-            PIDs.push_back(ptcl->ParticleIndex);
-            rank = CMPtclWorker[ptcl->ParticleIndex];
+            cm_particle_worker_map.insert({ptcl->particle_index, cm_particle_worker_map.size() % num_workers + 1});
+            PIDs.push_back(ptcl->particle_index);
+            rank = cm_particle_worker_map[ptcl->particle_index];
             std::cout << "New Primordial Binary of PID="
-                      << ptcl->PID << " is created with being assigned to a worker of rank "
+                      << ptcl->pid << " is created with being assigned to a worker of rank "
                       << rank << "." << std::endl;
 #ifdef SEVN_BINARY
 #ifdef PERFORMANCETRACE
             start_point_BSE = std::chrono::high_resolution_clock::now();
 #endif
             if (!makeSEVNBinary(ptcl)) {
-                if (ptcl->ParticleIndex == LastParticleIndex) {
-                    LastParticleIndex--;
-                    global_variable->LastParticleIndex = LastParticleIndex;
+                if (ptcl->particle_index == last_particle_index) {
+                    last_particle_index--;
+                    g_state->last_particle_index = last_particle_index;
                 }
                 else
-                    PrevCMPtclWorker.insert({ptcl->ParticleIndex, CMPtclWorker[ptcl->ParticleIndex]});
-                CMPtclWorker.erase(ptcl->ParticleIndex);
+                    prev_cm_particle_worker_map.insert({ptcl->particle_index, cm_particle_worker_map[ptcl->particle_index]});
+                cm_particle_worker_map.erase(ptcl->particle_index);
                 continue;
             }
 #ifdef PERFORMANCETRACE
@@ -103,12 +103,12 @@ void InitializationRoutines(QueueScheduler &queue_scheduler, Worker *workers) {
                 std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_BSE - start_point_BSE).count();
 #endif
 #endif
-            queue.task = MakePrimordialGroup;
-            queue.pid = ptcl->ParticleIndex;
-            workers[rank].addQueue(queue);
+            queue.task = TASK_MAKE_PRIMORDIAL_GROUP;
+            queue.pid = ptcl->particle_index;
+            workers[rank].add_queue(queue);
             queue_scheduler.assignWorker(&workers[rank]);
         }
-        queue_scheduler.setTotalQueue(CMPtclWorker.size());
+        queue_scheduler.setTotalQueue(cm_particle_worker_map.size());
         do {
             queue_scheduler.runQueueAuto();
             queue_scheduler.waitQueue(0);
@@ -119,12 +119,12 @@ void InitializationRoutines(QueueScheduler &queue_scheduler, Worker *workers) {
     }
     fprintf(stdout, "PrimordialBinariesRoutine has ended...\n"
                     "The total number of particles is  %d\n",
-            NumberOfParticle);
+            num_particles);
     fflush(stdout);
 #endif
 
     // Initialize Time Step
-    queue_scheduler.initialize(InitTime);
+    queue_scheduler.initialize(TASK_INIT_TIME);
     queue_scheduler.takeQueue(PIDs);
     do {
         queue_scheduler.assignQueueAuto();
@@ -138,59 +138,59 @@ void InitializationRoutines(QueueScheduler &queue_scheduler, Worker *workers) {
     /* Timestep correction */
     int min_time_level=0;
     std::cout << "Time Step correction." << std::endl;
-    for (int i=0; i<=LastParticleIndex; i++) {
+    for (int i=0; i<=last_particle_index; i++) {
         ptcl = &particles[i];
 
-        if (!ptcl->isActive)
+        if (!ptcl->is_active)
             continue;
 
-        if (ptcl->NumberOfNeighbor != 0) {
-            while (ptcl->TimeLevelIrr >= ptcl->TimeLevelReg) {
-                ptcl->TimeStepIrr *= 0.5;
-                ptcl->TimeBlockIrr *= 0.5;
-                ptcl->TimeLevelIrr--;
+        if (ptcl->num_neighbors != 0) {
+            while (ptcl->time_level_irr >= ptcl->time_level_reg) {
+                ptcl->time_step_irr *= 0.5;
+                ptcl->time_block_irr *= 0.5;
+                ptcl->time_level_irr--;
             }
         }
-        if (ptcl->TimeLevelIrr < min_time_level) {
-            min_time_level = ptcl->TimeLevelIrr;
+        if (ptcl->time_level_irr < min_time_level) {
+            min_time_level = ptcl->time_level_irr;
         }
     }
 
     // resetting time_block based on the system
     time_block = std::max(-60, min_time_level-MIN_LEVEL_BUFFER);
-    block_max = static_cast<ULL>(pow(2, -time_block));
+    block_max = static_cast<ull_t>(pow(2, -time_block));
     time_step = pow(2,time_block);
 
-    for (int i=0; i<=LastParticleIndex; i++) {
+    for (int i=0; i<=last_particle_index; i++) {
         ptcl = &particles[i];
 
-        if (!ptcl->isActive)
+        if (!ptcl->is_active)
             continue;
 
-        ptcl->TimeBlockIrr = static_cast<ULL>(pow(2, ptcl->TimeLevelIrr-time_block));
-        ptcl->TimeBlockReg = static_cast<ULL>(pow(2, ptcl->TimeLevelReg-time_block));
+        ptcl->time_block_irr = static_cast<ull_t>(pow(2, ptcl->time_level_irr-time_block));
+        ptcl->time_block_reg = static_cast<ull_t>(pow(2, ptcl->time_level_reg-time_block));
 #ifdef IRR_TEST
-        ptcl->TimeStepReg = 1;
-        ptcl->TimeLevelReg = 0;
-        ptcl->TimeBlockReg = block_max;
+        ptcl->time_step_reg = 1;
+        ptcl->time_level_reg = 0;
+        ptcl->time_block_reg = block_max;
 #endif
-        ptcl->NextBlockIrr = ptcl->CurrentBlockIrr + ptcl->TimeBlockIrr; // of this particle
+        ptcl->next_block_irr = ptcl->current_block_irr + ptcl->time_block_irr; // of this particle
     }
     std::cout << "Time Step done." << std::endl;
     // Timestep correction ends
 
     /* Timestep variable synchronization */
     std::cout << "Time Step synchronization." << std::endl;
-    task=TimeSync;
-    completed_tasks = 0; total_tasks = NumberOfWorker;
+    task=TASK_TIME_SYNC;
+    completed_tasks = 0; total_tasks = num_workers;
     queue = {task, -1, -1.0};
-    InitialAssignmentOfTasks(queue, NumberOfWorker, QUEUE_TAG);
+    InitialAssignmentOfTasks(queue, num_workers, QUEUE_TAG);
     broadcastFromRoot(time_block);
     broadcastFromRoot(block_max);
     broadcastFromRoot(time_step);
-    fprintf(stdout, "TimeSync broadcast done.\n");
+    fprintf(stdout, "TASK_TIME_SYNC broadcast done.\n");
     fflush(stdout);
-    //MPI_Win_sync(win);  // Synchronize memory
+    //MPI_Win_sync(win);  // TASK_SYNCHRONIZE memory
     //MPI_Barrier(shared_comm);
     int task_signal = 0; // Use int buffer for MPI_INT payloads.
     while (completed_tasks < total_tasks) {
@@ -198,43 +198,43 @@ void InitializationRoutines(QueueScheduler &queue_scheduler, Worker *workers) {
         MPI_Wait(&request, &status);
         completed_tasks++;
     }
-    fprintf(stdout, "MyRank = %d time_block = %d, EnzoTimeStep = %e\n", MyRank, time_block, EnzoTimeStep);
+    fprintf(stdout, "my_rank = %d time_block = %d, enzo_time_step = %e\n", my_rank, time_block, enzo_time_step);
     fflush(stdout);
 
     /* Particle Initialization Check */
     // /*
-    for (int i=0; i<=LastParticleIndex; i++) {
+    for (int i=0; i<=last_particle_index; i++) {
         ptcl = &particles[i];
-        if (ptcl->isActive)
+        if (ptcl->is_active)
             fprintf(stdout, "PID=%d, CurrentTime (Irr, Reg) = (%.3e(%llu), %.3e(%llu)) Myr\n"
                             "dtIrr = %.4e Myr, dtReg = %.4e Myr, blockIrr=%llu (%d), blockReg=%llu (%d)\n"
                             "NumNeighbor= %d\n",
-                    ptcl->PID,
-                    ptcl->CurrentTimeIrr * EnzoTimeStep * 1e10 / 1e6,
-                    ptcl->CurrentBlockIrr,
-                    ptcl->CurrentTimeReg * EnzoTimeStep * 1e10 / 1e6,
-                    ptcl->CurrentBlockReg,
-                    ptcl->TimeStepIrr * EnzoTimeStep * 1e10 / 1e6,
-                    ptcl->TimeStepReg * EnzoTimeStep * 1e10 / 1e6,
-                    ptcl->TimeBlockIrr,
-                    ptcl->TimeLevelIrr,
-                    ptcl->TimeBlockReg,
-                    ptcl->TimeLevelReg,
-                    ptcl->NumberOfNeighbor);
+                    ptcl->pid,
+                    ptcl->current_time_irr * enzo_time_step * 1e10 / 1e6,
+                    ptcl->current_block_irr,
+                    ptcl->current_time_reg * enzo_time_step * 1e10 / 1e6,
+                    ptcl->current_block_reg,
+                    ptcl->time_step_irr * enzo_time_step * 1e10 / 1e6,
+                    ptcl->time_step_reg * enzo_time_step * 1e10 / 1e6,
+                    ptcl->time_block_irr,
+                    ptcl->time_level_irr,
+                    ptcl->time_block_reg,
+                    ptcl->time_level_reg,
+                    ptcl->num_neighbors);
             /*
             fprintf(stdout, " a_tot = (%.4e,%.4e,%.4e), a_reg = (%.4e,%.4e,%.4e), a_irr = (%.4e,%.4e,%.4e), n_n=%d, R=%.3e\n\
                 a1_reg = (%.4e,%.4e,%.4e), a2_reg = (%.4e,%.4e,%.4e), a3_reg = (%.4e,%.4e,%.4e)\n\
                 a1_irr = (%.4e,%.4e,%.4e), a2_irr = (%.4e,%.4e,%.4e), a3_irr = (%.4e,%.4e,%.4e)\n", 
-                ptcl->a_tot[0][0],	ptcl->a_tot[1][0],	ptcl->a_tot[2][0],
-                ptcl->a_reg[0][0],	ptcl->a_reg[1][0],	ptcl->a_reg[2][0],
-                ptcl->a_irr[0][0],	ptcl->a_irr[1][0],	ptcl->a_irr[2][0],
-                ptcl->NumberOfNeighbor,	ptcl->RadiusOfNeighbor,
-                ptcl->a_reg[0][1],	ptcl->a_reg[1][1],	ptcl->a_reg[2][1],	
-                ptcl->a_reg[0][2],	ptcl->a_reg[1][2],	ptcl->a_reg[2][2],	
-                ptcl->a_reg[0][3],	ptcl->a_reg[1][3],	ptcl->a_reg[2][3],	
-                ptcl->a_irr[0][1],	ptcl->a_irr[1][1],	ptcl->a_irr[2][1],
-                ptcl->a_irr[0][2],	ptcl->a_irr[1][2],	ptcl->a_irr[2][2],
-                ptcl->a_irr[0][3],	ptcl->a_irr[1][3],	ptcl->a_irr[2][3]);
+                ptcl->acc_total[0][0],	ptcl->acc_total[1][0],	ptcl->acc_total[2][0],
+                ptcl->acc_regular[0][0],	ptcl->acc_regular[1][0],	ptcl->acc_regular[2][0],
+                ptcl->acc_irregular[0][0],	ptcl->acc_irregular[1][0],	ptcl->acc_irregular[2][0],
+                ptcl->num_neighbors,	ptcl->neighbor_radius_sq,
+                ptcl->acc_regular[0][1],	ptcl->acc_regular[1][1],	ptcl->acc_regular[2][1],	
+                ptcl->acc_regular[0][2],	ptcl->acc_regular[1][2],	ptcl->acc_regular[2][2],	
+                ptcl->acc_regular[0][3],	ptcl->acc_regular[1][3],	ptcl->acc_regular[2][3],	
+                ptcl->acc_irregular[0][1],	ptcl->acc_irregular[1][1],	ptcl->acc_irregular[2][1],
+                ptcl->acc_irregular[0][2],	ptcl->acc_irregular[1][2],	ptcl->acc_irregular[2][2],
+                ptcl->acc_irregular[0][3],	ptcl->acc_irregular[1][3],	ptcl->acc_irregular[2][3]);
             */
     }
 }

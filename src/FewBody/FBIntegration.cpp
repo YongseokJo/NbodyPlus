@@ -19,15 +19,15 @@ void recoilKick(Particle* p1, Particle* p2);
 // Reference: SDAR/sample/AR/ar.cxx & PeTar/src/hard.hpp
 void Group::ARIntegration(double next_time) {
 
-    for (int dim=0; dim<Dim; dim++) {
-        sym_int.particles.cm.Position[dim] = groupCM->Position[dim];
-        sym_int.particles.cm.Velocity[dim] = groupCM->Velocity[dim];
+    for (int dim=0; dim<DIM; dim++) {
+        sym_int.particles.cm.position[dim] = groupCM->position[dim];
+        sym_int.particles.cm.velocity[dim] = groupCM->velocity[dim];
         for (int j=0; j<HERMITE_ORDER; j++)
-            sym_int.particles.cm.a_tot[dim][j] = groupCM->a_tot[dim][j];
+            sym_int.particles.cm.acc_total[dim][j] = groupCM->acc_total[dim][j];
     }
 // /*
-    if (groupCM->CurrentTimeReg >= groupCM->CurrentTimeIrr) { // Neighbors were updated in regular routine
-        sym_int.particles.cm.NumberOfNeighbor = groupCM->NumberOfNeighbor;
+    if (groupCM->current_time_reg >= groupCM->current_time_irr) { // neighbors were updated in regular routine
+        sym_int.particles.cm.num_neighbors = groupCM->num_neighbors;
     }
 // */
 
@@ -35,10 +35,10 @@ void Group::ARIntegration(double next_time) {
 #ifdef SEVN
 #ifdef SEVN_BINARY // this code is not tested yet!!!!!
     // Check if RLOF is triggered
-    if (groupCM->a_spin[2] < 0.0) {
-        assert(groupCM->NumberOfMember == 2);
-        assert(groupCM->a_spin[1] == 0.0);
-        assert(groupCM->a_spin[0] > 0.0);
+    if (groupCM->spin_param[2] < 0.0) {
+        assert(groupCM->num_members == 2);
+        assert(groupCM->spin_param[1] == 0.0);
+        assert(groupCM->spin_param[0] > 0.0);
         
         auto& bin_root = sym_int.info.getBinaryTreeRoot();
 
@@ -46,31 +46,31 @@ void Group::ARIntegration(double next_time) {
         double a_old = bin_root.semi;
 
         // New semi-major axis with calcularization conserving the binary angular momentum
-        if (a_old > groupCM->a_spin[0])
-            bin_root.semi = groupCM->a_spin[0];
+        if (a_old > groupCM->spin_param[0])
+            bin_root.semi = groupCM->spin_param[0];
         else
             bin_root.semi = a_old * (1 - ecc_old * ecc_old);
         
         bin_root.ecc = 0.0; // Eccentricity should be zero if RLOF is triggered
         bin_root.calcParticles(double(1.0));
-        for (int dim = 0; dim < Dim; dim++) {
-            bin_root.getLeftMember()->Position[dim] += bin_root.Position[dim];
-            bin_root.getLeftMember()->Velocity[dim] += bin_root.Velocity[dim];
-            bin_root.getRightMember()->Position[dim] += bin_root.Position[dim];
-            bin_root.getRightMember()->Velocity[dim] += bin_root.Velocity[dim];
+        for (int dim = 0; dim < DIM; dim++) {
+            bin_root.getLeftMember()->position[dim] += bin_root.position[dim];
+            bin_root.getLeftMember()->velocity[dim] += bin_root.velocity[dim];
+            bin_root.getRightMember()->position[dim] += bin_root.position[dim];
+            bin_root.getRightMember()->velocity[dim] += bin_root.velocity[dim];
         }
-        sym_int.initialIntegration(CurrentTime*EnzoTimeStep); // commented out by EW 2025.9.9 // not tested yet!!!!!
-        groupCM->a_spin[2] = 1.0; // This means that RLOF is applied to SDAR
+        sym_int.initialIntegration(CurrentTime*enzo_time_step); // commented out by EW 2025.9.9 // not tested yet!!!!!
+        groupCM->spin_param[2] = 1.0; // This means that RLOF is applied to SDAR
     }
 #endif
     bool evolved = false;
     bool kicked = false;
     for (int i=0; i < sym_int.particles.getSize(); i++) {
         Particle* members = &sym_int.particles[i];
-        if (members->Mass != particles[members->ParticleIndex].Mass) {
-            members->Mass = particles[members->ParticleIndex].Mass;
+        if (members->mass != particles[members->particle_index].mass) {
+            members->mass = particles[members->particle_index].mass;
             evolved = true;
-            if (particles[members->ParticleIndex].getBinaryInterruptState() == BinaryInterruptState::kicked) {
+            if (particles[members->particle_index].get_binary_interrupt_state() == BinaryInterruptState::kicked) {
                 kicked = true;
                 // break; // Let's update all particles even if one of them is kicked by stellar evolution by EW 2025.7.5
             }
@@ -79,12 +79,12 @@ void Group::ARIntegration(double next_time) {
     if (!kicked && evolved) { // Eunwoo: orbital parameters should be re-calculated due to mass changes during stellar evolution!
         sym_int.particles.shiftToOriginFrame();
         sym_int.info.generateBinaryTree(sym_int.particles,manager.interaction.gravitational_constant);
-        sym_int.initialIntegration(CurrentTime*EnzoTimeStep); // commented out by EW 2025.9.9 // not tested yet!!!!!
+        sym_int.initialIntegration(CurrentTime*enzo_time_step); // commented out by EW 2025.9.9 // not tested yet!!!!!
     }
     if (kicked) {
         for (int i = 0; i < sym_int.particles.getSize(); i++) {
             Particle* members = &sym_int.particles[i];
-            particles[members->ParticleIndex].CurrentTimeIrr = CurrentTime;
+            particles[members->particle_index].current_time_irr = CurrentTime;
         }
         isTerminate = true;
         return;
@@ -92,40 +92,40 @@ void Group::ARIntegration(double next_time) {
 #endif    
     
     assert(next_time > CurrentTime);
-    // auto bin_interrupt = sym_int.integrateToTime(next_time*EnzoTimeStep); // original AR integrator
+    // auto bin_interrupt = sym_int.integrateToTime(next_time*enzo_time_step); // original AR integrator
 
-    E_binary -= sym_int.getEtot();
-    E_binary_SD -= sym_int.getEtotSlowDown();
+    energy_binary -= sym_int.getEtot();
+    energy_binary_sd -= sym_int.getEtotSlowDown();
 
 // /* // Let's use Kepler solver for unperturbed binary. AR integrator might be very slow if there is a hard binary.
     AR::InterruptBinary<Particle> bin_interrupt;
-    if (groupCM->NumberOfNeighbor == 0 && groupCM->NumberOfMember == 2) { // for unperturbed binary
+    if (groupCM->num_neighbors == 0 && groupCM->num_members == 2) { // for unperturbed binary
 
         bin_interrupt.status = AR::InterruptStatus::none;
 
         auto& bin_root = sym_int.info.getBinaryTreeRoot();
         bin_root.calcOrbit(double(1.0));
 
-        bin_root.evolve((next_time - CurrentTime)*EnzoTimeStep);
+        bin_root.evolve((next_time - CurrentTime)*enzo_time_step);
         bin_root.calcParticles(double(1.0));
-        bin_interrupt.time_now = next_time*EnzoTimeStep;
+        bin_interrupt.time_now = next_time*enzo_time_step;
 
         if (manager.interrupt_detection_option > 0) {
             Interaction interaction;
-            interaction.modifyAndInterruptKepler(bin_interrupt, bin_root, (next_time - CurrentTime)*EnzoTimeStep);
+            interaction.modifyAndInterruptKepler(bin_interrupt, bin_root, (next_time - CurrentTime)*enzo_time_step);
         }
         // /* // commented out by EW 2025.9.9
         if (bin_interrupt.status == AR::InterruptStatus::none)
-            sym_int.initialIntegration(next_time*EnzoTimeStep);
+            sym_int.initialIntegration(next_time*enzo_time_step);
         // */
     }
     else {
-        bin_interrupt = sym_int.integrateToTime(next_time*EnzoTimeStep);
+        bin_interrupt = sym_int.integrateToTime(next_time*enzo_time_step);
     }
 // */
 
-    E_binary += sym_int.getEtot();
-    E_binary_SD += sym_int.getEtotSlowDown();
+    energy_binary += sym_int.getEtot();
+    energy_binary_sd += sym_int.getEtotSlowDown();
 
 // /* PN corrections
     if (bin_interrupt.status == AR::InterruptStatus::none) { // Every bound orbit
@@ -139,55 +139,55 @@ void Group::ARIntegration(double next_time) {
 
         // /* // commented out by EW 2025.9.9
         if (bin_interrupt.status == AR::InterruptStatus::none)
-            sym_int.initialIntegration(next_time*EnzoTimeStep); // Eunwoo: this should be fixed later // Eunwoo: I don't think so!
+            sym_int.initialIntegration(next_time*enzo_time_step); // Eunwoo: this should be fixed later // Eunwoo: I don't think so!
         // */
         
-        groupCM->a_spin[1] = bin_root.ecc;
+        groupCM->spin_param[1] = bin_root.ecc;
 
         delta_Ebin += sym_int.getEtot();
         delta_Ebin_SD += sym_int.getEtotSlowDown();
 
-        E_binary += delta_Ebin;
-        E_binary_SD += delta_Ebin_SD;
-        E_PN -= delta_Ebin;
+        energy_binary += delta_Ebin;
+        energy_binary_sd += delta_Ebin_SD;
+        energy_pn -= delta_Ebin;
     }    
 // */
 
     if (bin_interrupt.status != AR::InterruptStatus::none) {
 
         isMerger = true;
-        groupCM->setBinaryInterruptState(BinaryInterruptState::merger);
+        groupCM->set_binary_interrupt_state(BinaryInterruptState::merger);
 
-        E_merger += sym_int.getEtot();
+        energy_merger += sym_int.getEtot();
 
         if (sym_int.particles.getSize() == 2) {
 
             /* // Let's re-calculate member & CM pos/vel in FBTermination!
-            double pos[Dim], vel[Dim];
+            double pos[DIM], vel[DIM];
 
-            groupCM->predictParticleSecondOrder(bin_interrupt.time_now/EnzoTimeStep - CurrentTime, pos, vel);
+            groupCM->predict_particle_second_order(bin_interrupt.time_now/enzo_time_step - CurrentTime, pos, vel);
             // This might be changed later because changing Pos & Vel during Irregular Acceleration calculation is not good
             // But if SDAR integration is done after Irregular Acceleration calculation, this is fine
             // (Query) by EW 2025.1.6
-            for (int dim=0; dim<Dim; dim++) {
-                groupCM->Position[dim] = pos[dim];
-                groupCM->Velocity[dim] = vel[dim];
+            for (int dim=0; dim<DIM; dim++) {
+                groupCM->position[dim] = pos[dim];
+                groupCM->velocity[dim] = vel[dim];
             }
             */
-            CurrentTime = bin_interrupt.time_now/EnzoTimeStep;
-            groupCM->CurrentTimeIrr = CurrentTime;
+            CurrentTime = bin_interrupt.time_now/enzo_time_step;
+            groupCM->current_time_irr = CurrentTime;
 
             assert(!sym_int.particles.isOriginFrame()); // for debugging by EW 2025.1.6
             for (int i = 0; i < sym_int.particles.getSize(); i++) {
                 Particle* members = &sym_int.particles[i];
 
-                for (int dim=0; dim<Dim; dim++) {
-                    particles[members->ParticleIndex].Position[dim] = groupCM->Position[dim] + members->Position[dim];
-                    particles[members->ParticleIndex].Velocity[dim] = groupCM->Velocity[dim] + members->Velocity[dim];
+                for (int dim=0; dim<DIM; dim++) {
+                    particles[members->particle_index].position[dim] = groupCM->position[dim] + members->position[dim];
+                    particles[members->particle_index].velocity[dim] = groupCM->velocity[dim] + members->velocity[dim];
                 }
-                particles[members->ParticleIndex].Mass = members->Mass;
-                particles[members->ParticleIndex].binary_state = members->binary_state;
-                particles[members->ParticleIndex].CurrentTimeIrr = CurrentTime;
+                particles[members->particle_index].mass = members->mass;
+                particles[members->particle_index].binary_state = members->binary_state;
+                particles[members->particle_index].current_time_irr = CurrentTime;
             }
 
             isTerminate = true;
@@ -196,18 +196,18 @@ void Group::ARIntegration(double next_time) {
         }
         else {
 
-            CurrentTime = bin_interrupt.time_now/EnzoTimeStep;
+            CurrentTime = bin_interrupt.time_now/enzo_time_step;
 
             assert(!sym_int.particles.isOriginFrame()); // for debugging by EW 2025.1.6
             for (int i = 0; i < sym_int.particles.getSize(); i++) {
                 Particle* members = &sym_int.particles[i];
 
-                for (int dim=0; dim<Dim; dim++) {
-                    particles[members->ParticleIndex].Position[dim] = groupCM->Position[dim] + members->Position[dim];
-                    particles[members->ParticleIndex].Velocity[dim] = groupCM->Velocity[dim] + members->Velocity[dim];
+                for (int dim=0; dim<DIM; dim++) {
+                    particles[members->particle_index].position[dim] = groupCM->position[dim] + members->position[dim];
+                    particles[members->particle_index].velocity[dim] = groupCM->velocity[dim] + members->velocity[dim];
                 }
-                particles[members->ParticleIndex].Mass = members->Mass;
-                particles[members->ParticleIndex].binary_state = members->binary_state;
+                particles[members->particle_index].mass = members->mass;
+                particles[members->particle_index].binary_state = members->binary_state;
             }
 
             // NewFBInitialization3(this);
@@ -220,12 +220,12 @@ void Group::ARIntegration(double next_time) {
     for (int i = 0; i < sym_int.particles.getSize(); i++) {
         Particle* members = &sym_int.particles[i];
 
-        for (int dim=0; dim<Dim; dim++) {
-            particles[members->ParticleIndex].Position[dim] = groupCM->Position[dim] + members->Position[dim];
-            particles[members->ParticleIndex].Velocity[dim] = groupCM->Velocity[dim] + members->Velocity[dim];
+        for (int dim=0; dim<DIM; dim++) {
+            particles[members->particle_index].position[dim] = groupCM->position[dim] + members->position[dim];
+            particles[members->particle_index].velocity[dim] = groupCM->velocity[dim] + members->velocity[dim];
         }
-        particles[members->ParticleIndex].Mass = members->Mass;
-        particles[members->ParticleIndex].CurrentTimeIrr = next_time;
+        particles[members->particle_index].mass = members->mass;
+        particles[members->particle_index].current_time_irr = next_time;
     }
     
     CurrentTime = next_time;
@@ -249,7 +249,7 @@ void GR_energy_loss(AR::InterruptBinary<Particle>& _bin_interrupt, AR::BinaryTre
     const double mtot = m1 + m2;
     const double cost = pow(c, -5) * m1 * m2 * mtot;
 
-    double dt = (next_time - current_time) * EnzoTimeStep;
+    double dt = (next_time - current_time) * enzo_time_step;
 
     double e = _bin.ecc;
     double semi = _bin.semi;
@@ -300,32 +300,32 @@ void GR_energy_loss(AR::InterruptBinary<Particle>& _bin_interrupt, AR::BinaryTre
 
     // Check for invalid state
     if (!(_bin.ecc > 0) || !(_bin.semi > 0)) {
-        fprintf(workerout, "GW driven Merger happened! (a < da)\n");
-        fprintf(workerout, "PID: %d and %d\n", _bin.getLeftMember()->PID, _bin.getRightMember()->PID);
-        fprintf(workerout, "ecc: %e, semi: %e pc, dsemi: %e pc, timestep: %e Myr\n", _bin.ecc, _bin.semi*position_unit, (k1_dsemi + 2 * k2_dsemi + 2 * k3_dsemi + k4_dsemi) / 6.0*position_unit, dt*1e4);
-        fflush(workerout);
+        fprintf(worker_output_file, "GW driven Merger happened! (a < da)\n");
+        fprintf(worker_output_file, "PID: %d and %d\n", _bin.getLeftMember()->pid, _bin.getRightMember()->pid);
+        fprintf(worker_output_file, "ecc: %e, semi: %e pc, dsemi: %e pc, timestep: %e Myr\n", _bin.ecc, _bin.semi*position_unit, (k1_dsemi + 2 * k2_dsemi + 2 * k3_dsemi + k4_dsemi) / 6.0*position_unit, dt*1e4);
+        fflush(worker_output_file);
 
-        // _bin_interrupt.time_now = current_time * EnzoTimeStep + dt * num;
-        _bin_interrupt.time_now = next_time * EnzoTimeStep;
+        // _bin_interrupt.time_now = current_time * enzo_time_step + dt * num;
+        _bin_interrupt.time_now = next_time * enzo_time_step;
 
         auto* p1 = _bin.getLeftMember();
         auto* p2 = _bin.getRightMember();
 
-        p1->setBinaryInterruptState(BinaryInterruptState::collision);
-        p2->setBinaryInterruptState(BinaryInterruptState::collision);
-        p1->setBinaryPairID(p2->ParticleIndex);
-        p2->setBinaryPairID(p1->ParticleIndex);
+        p1->set_binary_interrupt_state(BinaryInterruptState::collision);
+        p2->set_binary_interrupt_state(BinaryInterruptState::collision);
+        p1->set_binary_pair_id(p2->particle_index);
+        p2->set_binary_pair_id(p1->particle_index);
         _bin_interrupt.status = AR::InterruptStatus::merge;
         _bin_interrupt.adr = &_bin;
         return;
     }
 
     _bin.calcParticles(double(1.0));
-    for (int dim = 0; dim < Dim; dim++) {
-        _bin.getLeftMember()->Position[dim] += _bin.Position[dim];
-        _bin.getLeftMember()->Velocity[dim] += _bin.Velocity[dim];
-        _bin.getRightMember()->Position[dim] += _bin.Position[dim];
-        _bin.getRightMember()->Velocity[dim] += _bin.Velocity[dim];
+    for (int dim = 0; dim < DIM; dim++) {
+        _bin.getLeftMember()->position[dim] += _bin.position[dim];
+        _bin.getLeftMember()->velocity[dim] += _bin.velocity[dim];
+        _bin.getRightMember()->position[dim] += _bin.position[dim];
+        _bin.getRightMember()->velocity[dim] += _bin.velocity[dim];
     }
 }
 
@@ -349,306 +349,306 @@ void GR_energy_loss_iter(AR::InterruptBinary<Particle>& _bin_interrupt, AR::Bina
 
 void Merge(Particle* p1, Particle* p2) { // Stellar merger
 
-    if (p1->Mass < p2->Mass)
-        std::swap(p1, p2); // p1 should have the larger mass than p2 (p1->Mass > p2->Mass)
+    if (p1->mass < p2->mass)
+        std::swap(p1, p2); // p1 should have the larger mass than p2 (p1->mass > p2->mass)
 
-    p1->setBinaryInterruptState(BinaryInterruptState::none);
-    p2->setBinaryInterruptState(BinaryInterruptState::none);
+    p1->set_binary_interrupt_state(BinaryInterruptState::none);
+    p2->set_binary_interrupt_state(BinaryInterruptState::none);
 
     double radius;
 
-    if (p1->ParticleType > REMNANT && p2->ParticleType > REMNANT) {
+    if (p1->particle_type > REMNANT && p2->particle_type > REMNANT) {
 
         // radius = (p1->radius > p2->radius) ? 3*p1->radius : 3*p2->radius; 
         // r_ISCO == 3 * Schwartzschild radius
-        radius = (p1->Mass >= p2->Mass) ? 6*p1->Mass/pow(299752.458/(velocity_unit/yr*pc/1e5), 2) : 6*p2->Mass/pow(299752.458/(velocity_unit/yr*pc/1e5), 2);
-        // fprintf(mergerout, "Separation: %e pc\n", dist(p1->Position, p2->Position)*position_unit);
-        // fprintf(mergerout, "peri: %e pc\n", _bin.semi*(1 - _bin.ecc)*position_unit);
-        fprintf(mergerout, "r_ISCO: %e pc\n", radius*position_unit);
+        radius = (p1->mass >= p2->mass) ? 6*p1->mass/pow(299752.458/(velocity_unit/yr*pc/1e5), 2) : 6*p2->mass/pow(299752.458/(velocity_unit/yr*pc/1e5), 2);
+        // fprintf(merger_output_file, "Separation: %e pc\n", dist(p1->position, p2->position)*position_unit);
+        // fprintf(merger_output_file, "peri: %e pc\n", _bin.semi*(1 - _bin.ecc)*position_unit);
+        fprintf(merger_output_file, "r_ISCO: %e pc\n", radius*position_unit);
 
-        fprintf(mergerout, "GW driven merger happens!!! (PID: %d, PID: %d)\n", p1->PID, p2->PID);
-        fprintf(mergerout, "Time: %e Myr\n", p1->CurrentTimeIrr*EnzoTimeStep*1e4);
-        // fprintf(mergerout, "In center-of-mass frame...\n");
-        fprintf(mergerout, "PID: %d. Position (pc) - x:%e, y:%e, z:%e, \n", p1->PID, p1->Position[0]*position_unit, p1->Position[1]*position_unit, p1->Position[2]*position_unit);
-        fprintf(mergerout, "PID: %d. Velocity (km/s) - vx:%e, vy:%e, vz:%e, \n", p1->PID, p1->Velocity[0]*velocity_unit/yr*pc/1e5, p1->Velocity[1]*velocity_unit/yr*pc/1e5, p1->Velocity[2]*velocity_unit/yr*pc/1e5);
-        fprintf(mergerout, "PID: %d. Mass (Msol) - %e, \n", p1->PID, p1->Mass*mass_unit);
-        fprintf(mergerout, "PID: %d. ParticleType - %d\n", p1->PID, p1->ParticleType);
-        fprintf(mergerout, "PID: %d. Dimensionless spin - %e, %e, %e\n", p1->PID, p1->a_spin[0], p1->a_spin[1], p1->a_spin[2]);
-        fprintf(mergerout, "PID: %d. Position (pc) - x:%e, y:%e, z:%e, \n", p2->PID, p2->Position[0]*position_unit, p2->Position[1]*position_unit, p2->Position[2]*position_unit);
-        fprintf(mergerout, "PID: %d. Velocity (km/s) - vx:%e, vy:%e, vz:%e, \n", p2->PID, p2->Velocity[0]*velocity_unit/yr*pc/1e5, p2->Velocity[1]*velocity_unit/yr*pc/1e5, p2->Velocity[2]*velocity_unit/yr*pc/1e5);
-        fprintf(mergerout, "PID: %d. Mass (Msol) - %e, \n", p2->PID, p2->Mass*mass_unit);
-        fprintf(mergerout, "PID: %d. ParticleType - %d\n", p2->PID, p2->ParticleType);
-        fprintf(mergerout, "PID: %d. Dimensionless spin - %e, %e, %e\n", p2->PID, p2->a_spin[0], p2->a_spin[1], p2->a_spin[2]);
+        fprintf(merger_output_file, "GW driven merger happens!!! (PID: %d, PID: %d)\n", p1->pid, p2->pid);
+        fprintf(merger_output_file, "Time: %e Myr\n", p1->current_time_irr*enzo_time_step*1e4);
+        // fprintf(merger_output_file, "In center-of-mass frame...\n");
+        fprintf(merger_output_file, "PID: %d. Position (pc) - x:%e, y:%e, z:%e, \n", p1->pid, p1->position[0]*position_unit, p1->position[1]*position_unit, p1->position[2]*position_unit);
+        fprintf(merger_output_file, "PID: %d. Velocity (km/s) - vx:%e, vy:%e, vz:%e, \n", p1->pid, p1->velocity[0]*velocity_unit/yr*pc/1e5, p1->velocity[1]*velocity_unit/yr*pc/1e5, p1->velocity[2]*velocity_unit/yr*pc/1e5);
+        fprintf(merger_output_file, "PID: %d. Mass (Msol) - %e, \n", p1->pid, p1->mass*mass_unit);
+        fprintf(merger_output_file, "PID: %d. ParticleType - %d\n", p1->pid, p1->particle_type);
+        fprintf(merger_output_file, "PID: %d. DIMensionless spin - %e, %e, %e\n", p1->pid, p1->spin_param[0], p1->spin_param[1], p1->spin_param[2]);
+        fprintf(merger_output_file, "PID: %d. Position (pc) - x:%e, y:%e, z:%e, \n", p2->pid, p2->position[0]*position_unit, p2->position[1]*position_unit, p2->position[2]*position_unit);
+        fprintf(merger_output_file, "PID: %d. Velocity (km/s) - vx:%e, vy:%e, vz:%e, \n", p2->pid, p2->velocity[0]*velocity_unit/yr*pc/1e5, p2->velocity[1]*velocity_unit/yr*pc/1e5, p2->velocity[2]*velocity_unit/yr*pc/1e5);
+        fprintf(merger_output_file, "PID: %d. Mass (Msol) - %e, \n", p2->pid, p2->mass*mass_unit);
+        fprintf(merger_output_file, "PID: %d. ParticleType - %d\n", p2->pid, p2->particle_type);
+        fprintf(merger_output_file, "PID: %d. DIMensionless spin - %e, %e, %e\n", p2->pid, p2->spin_param[0], p2->spin_param[1], p2->spin_param[2]);
 
 
-        double mcm = p1->Mass + p2->Mass;
+        double mcm = p1->mass + p2->mass;
         for (int k=0; k<3; k++) {
-            p1->Position[k] = (p1->Mass*p1->Position[k] + p2->Mass*p2->Position[k])/mcm;
-            p1->Velocity[k] = (p1->Mass*p1->Velocity[k] + p2->Mass*p2->Velocity[k])/mcm;
-            p2->Position[k] = 0.0;
-            p2->Velocity[k] = 0.0;
+            p1->position[k] = (p1->mass*p1->position[k] + p2->mass*p2->position[k])/mcm;
+            p1->velocity[k] = (p1->mass*p1->velocity[k] + p2->mass*p2->velocity[k])/mcm;
+            p2->position[k] = 0.0;
+            p2->velocity[k] = 0.0;
         }
         recoilKick(p1, p2);
         remnantSpinMass(p1, p2);
 #ifdef SEVN
         SetRadius(p1); // Set radius of the remnant
 #else
-        p1->radius = 2*p1->Mass/pow(299752.458/(velocity_unit/yr*pc/1e5), 2); // Schwartzschild radius
+        p1->radius = 2*p1->mass/pow(299752.458/(velocity_unit/yr*pc/1e5), 2); // Schwartzschild radius
 #endif
 
-        if (p1->ParticleType < p2->ParticleType) {
-            fprintf(mergerout, "Warning: p1->ParticleType < p2->ParticleType in merger! (p1: %d, p2: %d)\n", p1->ParticleType, p2->ParticleType);
-            fprintf(mergerout, "We can't trust SEVN data for PID %d!!!\n", p1->PID);
-            p1->ParticleType = p2->ParticleType;
+        if (p1->particle_type < p2->particle_type) {
+            fprintf(merger_output_file, "Warning: p1->particle_type < p2->particle_type in merger! (p1: %d, p2: %d)\n", p1->particle_type, p2->particle_type);
+            fprintf(merger_output_file, "We can't trust SEVN data for PID %d!!!\n", p1->pid);
+            p1->particle_type = p2->particle_type;
         }
 
-        p2->Mass = -1.0;
-        fprintf(mergerout, "---------------Merger remnant properties---------------\n");
-        fprintf(mergerout, "Position (pc) - x:%e, y:%e, z:%e, \n", p1->Position[0]*position_unit, p1->Position[1]*position_unit, p1->Position[2]*position_unit);
-        fprintf(mergerout, "Velocity (km/s) - vx:%e, vy:%e, vz:%e, \n", p1->Velocity[0]*velocity_unit/yr*pc/1e5, p1->Velocity[1]*velocity_unit/yr*pc/1e5, p1->Velocity[2]*velocity_unit/yr*pc/1e5);
-        fprintf(mergerout, "Mass (Msol) - %e, \n", p1->Mass*mass_unit);
-        fprintf(mergerout, "ParticleType - %d\n", p1->ParticleType);
-        fprintf(mergerout, "---------------------END-OF-MERGER---------------------\n\n");
+        p2->mass = -1.0;
+        fprintf(merger_output_file, "---------------Merger remnant properties---------------\n");
+        fprintf(merger_output_file, "Position (pc) - x:%e, y:%e, z:%e, \n", p1->position[0]*position_unit, p1->position[1]*position_unit, p1->position[2]*position_unit);
+        fprintf(merger_output_file, "Velocity (km/s) - vx:%e, vy:%e, vz:%e, \n", p1->velocity[0]*velocity_unit/yr*pc/1e5, p1->velocity[1]*velocity_unit/yr*pc/1e5, p1->velocity[2]*velocity_unit/yr*pc/1e5);
+        fprintf(merger_output_file, "Mass (Msol) - %e, \n", p1->mass*mass_unit);
+        fprintf(merger_output_file, "ParticleType - %d\n", p1->particle_type);
+        fprintf(merger_output_file, "---------------------END-OF-MERGER---------------------\n\n");
     }
-    else if ((p1->ParticleType > REMNANT && p2->ParticleType < REMNANT) ||
-            (p1->ParticleType < REMNANT && p2->ParticleType > REMNANT)) {
+    else if ((p1->particle_type > REMNANT && p2->particle_type < REMNANT) ||
+            (p1->particle_type < REMNANT && p2->particle_type > REMNANT)) {
 
-        if (p2->ParticleType > REMNANT)
+        if (p2->particle_type > REMNANT)
             std::swap(p1, p2); // p1 should be compact object
 
-        radius = 1.3*pow((p1->Mass + p2->Mass)/p2->Mass, 1./3)*p2->radius; // TDE radius
+        radius = 1.3*pow((p1->mass + p2->mass)/p2->mass, 1./3)*p2->radius; // TDE radius
 
-        // fprintf(mergerout, "Separation: %e pc\n", dist(p1->Position, p2->Position)*position_unit);
-        // fprintf(mergerout, "peri: %e pc\n", _bin.semi*(1 - _bin.ecc)*position_unit);
-        fprintf(mergerout, "r_TDE: %e pc\n", radius*position_unit);
+        // fprintf(merger_output_file, "Separation: %e pc\n", dist(p1->position, p2->position)*position_unit);
+        // fprintf(merger_output_file, "peri: %e pc\n", _bin.semi*(1 - _bin.ecc)*position_unit);
+        fprintf(merger_output_file, "r_TDE: %e pc\n", radius*position_unit);
 
-        fprintf(mergerout, "TDE happens!!! (PID: %d, PID: %d)\n", p1->PID, p2->PID);
-        fprintf(mergerout, "Time: %e Myr\n", p1->CurrentTimeIrr*EnzoTimeStep*1e4);
-        // fprintf(mergerout, "In center-of-mass frame...\n");
-        fprintf(mergerout, "PID: %d. Position (pc) - x:%e, y:%e, z:%e, \n", p1->PID, p1->Position[0]*position_unit, p1->Position[1]*position_unit, p1->Position[2]*position_unit);
-        fprintf(mergerout, "PID: %d. Velocity (km/s) - vx:%e, vy:%e, vz:%e, \n", p1->PID, p1->Velocity[0]*velocity_unit/yr*pc/1e5, p1->Velocity[1]*velocity_unit/yr*pc/1e5, p1->Velocity[2]*velocity_unit/yr*pc/1e5);
-        fprintf(mergerout, "PID: %d. Mass (Msol) - %e, \n", p1->PID, p1->Mass*mass_unit);
-        fprintf(mergerout, "PID: %d. ParticleType - %d\n", p1->PID, p1->ParticleType);
-        fprintf(mergerout, "PID: %d. Position (pc) - x:%e, y:%e, z:%e, \n", p2->PID, p2->Position[0]*position_unit, p2->Position[1]*position_unit, p2->Position[2]*position_unit);
-        fprintf(mergerout, "PID: %d. Velocity (km/s) - vx:%e, vy:%e, vz:%e, \n", p2->PID, p2->Velocity[0]*velocity_unit/yr*pc/1e5, p2->Velocity[1]*velocity_unit/yr*pc/1e5, p2->Velocity[2]*velocity_unit/yr*pc/1e5);
-        fprintf(mergerout, "PID: %d. Mass (Msol) - %e, \n", p2->PID, p2->Mass*mass_unit);
-        fprintf(mergerout, "PID: %d. ParticleType - %d\n", p2->PID, p2->ParticleType);
+        fprintf(merger_output_file, "TDE happens!!! (PID: %d, PID: %d)\n", p1->pid, p2->pid);
+        fprintf(merger_output_file, "Time: %e Myr\n", p1->current_time_irr*enzo_time_step*1e4);
+        // fprintf(merger_output_file, "In center-of-mass frame...\n");
+        fprintf(merger_output_file, "PID: %d. Position (pc) - x:%e, y:%e, z:%e, \n", p1->pid, p1->position[0]*position_unit, p1->position[1]*position_unit, p1->position[2]*position_unit);
+        fprintf(merger_output_file, "PID: %d. Velocity (km/s) - vx:%e, vy:%e, vz:%e, \n", p1->pid, p1->velocity[0]*velocity_unit/yr*pc/1e5, p1->velocity[1]*velocity_unit/yr*pc/1e5, p1->velocity[2]*velocity_unit/yr*pc/1e5);
+        fprintf(merger_output_file, "PID: %d. Mass (Msol) - %e, \n", p1->pid, p1->mass*mass_unit);
+        fprintf(merger_output_file, "PID: %d. ParticleType - %d\n", p1->pid, p1->particle_type);
+        fprintf(merger_output_file, "PID: %d. Position (pc) - x:%e, y:%e, z:%e, \n", p2->pid, p2->position[0]*position_unit, p2->position[1]*position_unit, p2->position[2]*position_unit);
+        fprintf(merger_output_file, "PID: %d. Velocity (km/s) - vx:%e, vy:%e, vz:%e, \n", p2->pid, p2->velocity[0]*velocity_unit/yr*pc/1e5, p2->velocity[1]*velocity_unit/yr*pc/1e5, p2->velocity[2]*velocity_unit/yr*pc/1e5);
+        fprintf(merger_output_file, "PID: %d. Mass (Msol) - %e, \n", p2->pid, p2->mass*mass_unit);
+        fprintf(merger_output_file, "PID: %d. ParticleType - %d\n", p2->pid, p2->particle_type);
 
-        double mcm = p1->Mass + p2->Mass * 0.5; // If TDE happens, the half of the mass of star is accreted to a BH.
+        double mcm = p1->mass + p2->mass * 0.5; // If TDE happens, the half of the mass of star is accreted to a BH.
         for (int k=0; k<3; k++) {
-            p1->Position[k] = (p1->Mass*p1->Position[k] + p2->Mass*p2->Position[k])/mcm;
-            p1->Velocity[k] = (p1->Mass*p1->Velocity[k] + p2->Mass*p2->Velocity[k])/mcm;
+            p1->position[k] = (p1->mass*p1->position[k] + p2->mass*p2->position[k])/mcm;
+            p1->velocity[k] = (p1->mass*p1->velocity[k] + p2->mass*p2->velocity[k])/mcm;
         }
 
-        p1->radius = 2*p1->Mass/pow(299752.458/(velocity_unit/yr*pc/1e5), 2); // Schwartzschild radius in code unit
+        p1->radius = 2*p1->mass/pow(299752.458/(velocity_unit/yr*pc/1e5), 2); // Schwartzschild radius in code unit
 
-        p1->dm += 0.5 * p2->Mass;
-        p1->Mass = mcm;
-        p2->Mass = -1.0;
-        fprintf(mergerout, "---------------Merger remnant properties---------------\n");
-        fprintf(mergerout, "Position (pc) - x:%e, y:%e, z:%e, \n", p1->Position[0]*position_unit, p1->Position[1]*position_unit, p1->Position[2]*position_unit);
-        fprintf(mergerout, "Velocity (km/s) - vx:%e, vy:%e, vz:%e, \n", p1->Velocity[0]*velocity_unit/yr*pc/1e5, p1->Velocity[1]*velocity_unit/yr*pc/1e5, p1->Velocity[2]*velocity_unit/yr*pc/1e5);
-        fprintf(mergerout, "Mass (Msol) - %e, \n", p1->Mass*mass_unit);
-        fprintf(mergerout, "ParticleType - %d\n", p1->ParticleType);
-        fprintf(mergerout, "---------------------END-OF-MERGER---------------------\n\n");
+        p1->delta_mass += 0.5 * p2->mass;
+        p1->mass = mcm;
+        p2->mass = -1.0;
+        fprintf(merger_output_file, "---------------Merger remnant properties---------------\n");
+        fprintf(merger_output_file, "Position (pc) - x:%e, y:%e, z:%e, \n", p1->position[0]*position_unit, p1->position[1]*position_unit, p1->position[2]*position_unit);
+        fprintf(merger_output_file, "Velocity (km/s) - vx:%e, vy:%e, vz:%e, \n", p1->velocity[0]*velocity_unit/yr*pc/1e5, p1->velocity[1]*velocity_unit/yr*pc/1e5, p1->velocity[2]*velocity_unit/yr*pc/1e5);
+        fprintf(merger_output_file, "Mass (Msol) - %e, \n", p1->mass*mass_unit);
+        fprintf(merger_output_file, "ParticleType - %d\n", p1->particle_type);
+        fprintf(merger_output_file, "---------------------END-OF-MERGER---------------------\n\n");
     }
-    else if (p1->ParticleType < REMNANT && p2->ParticleType < REMNANT) { // Stellar merger
+    else if (p1->particle_type < REMNANT && p2->particle_type < REMNANT) { // Stellar merger
 
         radius = p1->radius + p2->radius; // Sum of two stellar radius
-        // fprintf(mergerout, "Separation: %e pc\n", dist(p1->Position, p2->Position)*position_unit);
-        // fprintf(mergerout, "peri: %e pc\n", _bin.semi*(1 - _bin.ecc)*position_unit);
-        fprintf(mergerout, "r1 + r2: %e pc\n", radius*position_unit);
+        // fprintf(merger_output_file, "Separation: %e pc\n", dist(p1->position, p2->position)*position_unit);
+        // fprintf(merger_output_file, "peri: %e pc\n", _bin.semi*(1 - _bin.ecc)*position_unit);
+        fprintf(merger_output_file, "r1 + r2: %e pc\n", radius*position_unit);
 
-        fprintf(mergerout, "Stellar merger happens!!! (PID: %d, PID: %d)\n", p1->PID, p2->PID);
-        fprintf(mergerout, "Time: %e Myr\n", p1->CurrentTimeIrr*EnzoTimeStep*1e4);
-        // fprintf(mergerout, "In center-of-mass frame...\n");
-        fprintf(mergerout, "PID: %d. Position (pc) - x:%e, y:%e, z:%e, \n", p1->PID, p1->Position[0]*position_unit, p1->Position[1]*position_unit, p1->Position[2]*position_unit);
-        fprintf(mergerout, "PID: %d. Velocity (km/s) - vx:%e, vy:%e, vz:%e, \n", p1->PID, p1->Velocity[0]*velocity_unit/yr*pc/1e5, p1->Velocity[1]*velocity_unit/yr*pc/1e5, p1->Velocity[2]*velocity_unit/yr*pc/1e5);
-        fprintf(mergerout, "PID: %d. Mass (Msol) - %e, \n", p1->PID, p1->Mass*mass_unit);
-        fprintf(mergerout, "PID: %d. ParticleType - %d\n", p1->PID, p1->ParticleType);
-        fprintf(mergerout, "PID: %d. Position (pc) - x:%e, y:%e, z:%e, \n", p2->PID, p2->Position[0]*position_unit, p2->Position[1]*position_unit, p2->Position[2]*position_unit);
-        fprintf(mergerout, "PID: %d. Velocity (km/s) - vx:%e, vy:%e, vz:%e, \n", p2->PID, p2->Velocity[0]*velocity_unit/yr*pc/1e5, p2->Velocity[1]*velocity_unit/yr*pc/1e5, p2->Velocity[2]*velocity_unit/yr*pc/1e5);
-        fprintf(mergerout, "PID: %d. Mass (Msol) - %e, \n", p2->PID, p2->Mass*mass_unit);
-        fprintf(mergerout, "PID: %d. ParticleType - %d\n", p2->PID, p2->ParticleType);
+        fprintf(merger_output_file, "Stellar merger happens!!! (PID: %d, PID: %d)\n", p1->pid, p2->pid);
+        fprintf(merger_output_file, "Time: %e Myr\n", p1->current_time_irr*enzo_time_step*1e4);
+        // fprintf(merger_output_file, "In center-of-mass frame...\n");
+        fprintf(merger_output_file, "PID: %d. Position (pc) - x:%e, y:%e, z:%e, \n", p1->pid, p1->position[0]*position_unit, p1->position[1]*position_unit, p1->position[2]*position_unit);
+        fprintf(merger_output_file, "PID: %d. Velocity (km/s) - vx:%e, vy:%e, vz:%e, \n", p1->pid, p1->velocity[0]*velocity_unit/yr*pc/1e5, p1->velocity[1]*velocity_unit/yr*pc/1e5, p1->velocity[2]*velocity_unit/yr*pc/1e5);
+        fprintf(merger_output_file, "PID: %d. Mass (Msol) - %e, \n", p1->pid, p1->mass*mass_unit);
+        fprintf(merger_output_file, "PID: %d. ParticleType - %d\n", p1->pid, p1->particle_type);
+        fprintf(merger_output_file, "PID: %d. Position (pc) - x:%e, y:%e, z:%e, \n", p2->pid, p2->position[0]*position_unit, p2->position[1]*position_unit, p2->position[2]*position_unit);
+        fprintf(merger_output_file, "PID: %d. Velocity (km/s) - vx:%e, vy:%e, vz:%e, \n", p2->pid, p2->velocity[0]*velocity_unit/yr*pc/1e5, p2->velocity[1]*velocity_unit/yr*pc/1e5, p2->velocity[2]*velocity_unit/yr*pc/1e5);
+        fprintf(merger_output_file, "PID: %d. Mass (Msol) - %e, \n", p2->pid, p2->mass*mass_unit);
+        fprintf(merger_output_file, "PID: %d. ParticleType - %d\n", p2->pid, p2->particle_type);
 
-        double mcm = p1->Mass + p2->Mass;
+        double mcm = p1->mass + p2->mass;
         for (int k=0; k<3; k++) {
-            p1->Position[k] = (p1->Mass*p1->Position[k] + p2->Mass*p2->Position[k])/mcm;
-            p1->Velocity[k] = (p1->Mass*p1->Velocity[k] + p2->Mass*p2->Velocity[k])/mcm;
-            p2->Position[k] = p1->Position[k];
-            p2->Velocity[k] = p1->Velocity[k];
+            p1->position[k] = (p1->mass*p1->position[k] + p2->mass*p2->position[k])/mcm;
+            p1->velocity[k] = (p1->mass*p1->velocity[k] + p2->mass*p2->velocity[k])/mcm;
+            p2->position[k] = p1->position[k];
+            p2->velocity[k] = p1->velocity[k];
         }
 
 #ifdef SEVN
-        if (p1->ParticleType == NO_FEEDBACK_STAR && p2->ParticleType == NO_FEEDBACK_STAR) {
+        if (p1->particle_type == NO_FEEDBACK_STAR && p2->particle_type == NO_FEEDBACK_STAR) {
 
-            // p1->dm = mcm - p1->Mass;
-            // p2->dm = -p2->Mass;
-            p1->Mass = mcm;
-            p2->Mass = -1.0;
+            // p1->delta_mass = mcm - p1->mass;
+            // p2->delta_mass = -p2->mass;
+            p1->mass = mcm;
+            p2->mass = -1.0;
 
-            p1->radius = 2.25461e-8/position_unit*pow(p1->Mass*mass_unit, 1./3); // stellar radius in code unit
+            p1->radius = 2.25461e-8/position_unit*pow(p1->mass*mass_unit, 1./3); // stellar radius in code unit
 
             if (mcm*mass_unit > 2.2 && mcm*mass_unit < 600) {
 
                 std::stringstream mass;
-                mass << std::setprecision(17) << p1->Mass*mass_unit; // convert to Msun
+                mass << std::setprecision(17) << p1->mass*mass_unit; // convert to Msun
                 
                 std::vector<std::string> init_params{mass.str(), "0.0002", "0.0", "delayed", "zams", "end", "events"};
-                size_t id = p1->PID;
+                size_t id = p1->pid;
 
-                p1->StellarEvolution = new StarSEVN(sevnio, init_params, id, false);
-                p1->ParticleType = (int)p1->StellarEvolution->getp(Phase::ID);
-                p1->FormationTime = p1->CurrentTimeIrr*EnzoTimeStep*1e4;
-                p1->WorldTime = p1->CurrentTimeIrr*EnzoTimeStep*1e4;
+                p1->stellar_evolution = new StarSEVN(sevnio, init_params, id, false);
+                p1->particle_type = (int)p1->stellar_evolution->getp(Phase::ID);
+                p1->formation_time = p1->current_time_irr*enzo_time_step*1e4;
+                p1->world_time = p1->current_time_irr*enzo_time_step*1e4;
 
-                SEVNList.insert({p1->WorldTime + p1->StellarEvolution->getp(Timestep::ID), p1->ParticleIndex});
+                SEVNList.insert({p1->world_time + p1->stellar_evolution->getp(Timestep::ID), p1->particle_index});
 
                 SetRadius(p1);
                 fprintf(stdout, "New Star class made!\n");
-                fprintf(stdout, "PID: %d. Mass: %e Msol, Radius: %e pc\n", p1->PID, p1->Mass*mass_unit, p1->radius*position_unit);
+                fprintf(stdout, "PID: %d. Mass: %e Msol, Radius: %e pc\n", p1->pid, p1->mass*mass_unit, p1->radius*position_unit);
             }
-            fprintf(mergerout, "---------------Merger remnant properties---------------\n");
-            fprintf(mergerout, "Position (pc) - x:%e, y:%e, z:%e, \n", p1->Position[0]*position_unit, p1->Position[1]*position_unit, p1->Position[2]*position_unit);
-            fprintf(mergerout, "Velocity (km/s) - vx:%e, vy:%e, vz:%e, \n", p1->Velocity[0]*velocity_unit/yr*pc/1e5, p1->Velocity[1]*velocity_unit/yr*pc/1e5, p1->Velocity[2]*velocity_unit/yr*pc/1e5);
-            fprintf(mergerout, "Mass (Msol) - %e, \n", p1->Mass*mass_unit);
-            fprintf(mergerout, "ParticleType - %d\n", p1->ParticleType);
-            fprintf(mergerout, "---------------------END-OF-MERGER---------------------\n\n");
+            fprintf(merger_output_file, "---------------Merger remnant properties---------------\n");
+            fprintf(merger_output_file, "Position (pc) - x:%e, y:%e, z:%e, \n", p1->position[0]*position_unit, p1->position[1]*position_unit, p1->position[2]*position_unit);
+            fprintf(merger_output_file, "Velocity (km/s) - vx:%e, vy:%e, vz:%e, \n", p1->velocity[0]*velocity_unit/yr*pc/1e5, p1->velocity[1]*velocity_unit/yr*pc/1e5, p1->velocity[2]*velocity_unit/yr*pc/1e5);
+            fprintf(merger_output_file, "Mass (Msol) - %e, \n", p1->mass*mass_unit);
+            fprintf(merger_output_file, "ParticleType - %d\n", p1->particle_type);
+            fprintf(merger_output_file, "---------------------END-OF-MERGER---------------------\n\n");
         }
-        else if (p1->ParticleType != NO_FEEDBACK_STAR && p2->ParticleType != NO_FEEDBACK_STAR) {
+        else if (p1->particle_type != NO_FEEDBACK_STAR && p2->particle_type != NO_FEEDBACK_STAR) {
 
-            fprintf(stdout, "Before Mix... p1 (PID: %d). ParticleType: %d, p2 (PID: %d). ParticleType: %d\n", p1->PID, p1->ParticleType, p2->PID, p2->ParticleType);
+            fprintf(stdout, "Before Mix... p1 (PID: %d). ParticleType: %d, p2 (PID: %d). ParticleType: %d\n", p1->pid, p1->particle_type, p2->pid, p2->particle_type);
 
-            Mix(p1->StellarEvolution, p2->StellarEvolution);
+            Mix(p1->stellar_evolution, p2->stellar_evolution);
             fprintf(stdout, "Mix done!\n");
 
-            if (p1->StellarEvolution->amiremnant())
-                p1->ParticleType = REMNANT + (int)p1->StellarEvolution->getp(RemnantType::ID);
+            if (p1->stellar_evolution->amiremnant())
+                p1->particle_type = REMNANT + (int)p1->stellar_evolution->getp(RemnantType::ID);
             else
-                p1->ParticleType = (int)p1->StellarEvolution->getp(Phase::ID);
+                p1->particle_type = (int)p1->stellar_evolution->getp(Phase::ID);
 
-            if (p2->StellarEvolution->amiremnant())
-                p2->ParticleType = REMNANT + (int)p2->StellarEvolution->getp(RemnantType::ID);
+            if (p2->stellar_evolution->amiremnant())
+                p2->particle_type = REMNANT + (int)p2->stellar_evolution->getp(RemnantType::ID);
             else
-                p2->ParticleType = (int)p2->StellarEvolution->getp(Phase::ID);
+                p2->particle_type = (int)p2->stellar_evolution->getp(Phase::ID);
 
-            if (p1->StellarEvolution->amiempty() && !p2->StellarEvolution->amiempty()) {
-                p1->Mass = -1.0;
+            if (p1->stellar_evolution->amiempty() && !p2->stellar_evolution->amiempty()) {
+                p1->mass = -1.0;
 
-                p2->Mass = p2->StellarEvolution->getp(Mass::ID)/mass_unit;
+                p2->mass = p2->stellar_evolution->getp(Mass::ID)/mass_unit;
 
-                fprintf(stdout, "After Mix... p1 (PID: %d). Mass: %e Msun,  StellarEvolution->get_zams: %e Msun\n", p1->PID, p1->Mass*mass_unit, p1->StellarEvolution->get_zams());
-                fprintf(stdout, "After Mix... p2 (PID: %d). Mass: %e Msun, StellarEvolution->get_zams: %e Msun\n", p2->PID, p2->Mass*mass_unit, p2->StellarEvolution->get_zams());
-                fprintf(stdout, "p1: amiempty(): %d\n", p1->StellarEvolution->amiempty());
-                fprintf(stdout, "p2: amiempty(): %d\n", p2->StellarEvolution->amiempty());
-                // p2->dm += p1->dm // not yet by EW 2025.1.20
-                // p1->dm = 0.0; // not yet by EW 2025.1.20
+                fprintf(stdout, "After Mix... p1 (PID: %d). Mass: %e Msun,  StellarEvolution->get_zams: %e Msun\n", p1->pid, p1->mass*mass_unit, p1->stellar_evolution->get_zams());
+                fprintf(stdout, "After Mix... p2 (PID: %d). Mass: %e Msun, StellarEvolution->get_zams: %e Msun\n", p2->pid, p2->mass*mass_unit, p2->stellar_evolution->get_zams());
+                fprintf(stdout, "p1: amiempty(): %d\n", p1->stellar_evolution->amiempty());
+                fprintf(stdout, "p2: amiempty(): %d\n", p2->stellar_evolution->amiempty());
+                // p2->delta_mass += p1->delta_mass // not yet by EW 2025.1.20
+                // p1->delta_mass = 0.0; // not yet by EW 2025.1.20
                 SetRadius(p2);
 
-                fprintf(mergerout, "---------------Merger remnant properties---------------\n");
-                fprintf(mergerout, "Position (pc) - x:%e, y:%e, z:%e, \n", p2->Position[0]*position_unit, p2->Position[1]*position_unit, p2->Position[2]*position_unit);
-                fprintf(mergerout, "Velocity (km/s) - vx:%e, vy:%e, vz:%e, \n", p2->Velocity[0]*velocity_unit/yr*pc/1e5, p2->Velocity[1]*velocity_unit/yr*pc/1e5, p2->Velocity[2]*velocity_unit/yr*pc/1e5);
-                fprintf(mergerout, "Mass (Msol) - %e, \n", p2->Mass*mass_unit);
-                fprintf(mergerout, "ParticleType - %d\n", p2->ParticleType);
-                fprintf(mergerout, "---------------------END-OF-MERGER---------------------\n\n");
+                fprintf(merger_output_file, "---------------Merger remnant properties---------------\n");
+                fprintf(merger_output_file, "Position (pc) - x:%e, y:%e, z:%e, \n", p2->position[0]*position_unit, p2->position[1]*position_unit, p2->position[2]*position_unit);
+                fprintf(merger_output_file, "Velocity (km/s) - vx:%e, vy:%e, vz:%e, \n", p2->velocity[0]*velocity_unit/yr*pc/1e5, p2->velocity[1]*velocity_unit/yr*pc/1e5, p2->velocity[2]*velocity_unit/yr*pc/1e5);
+                fprintf(merger_output_file, "Mass (Msol) - %e, \n", p2->mass*mass_unit);
+                fprintf(merger_output_file, "ParticleType - %d\n", p2->particle_type);
+                fprintf(merger_output_file, "---------------------END-OF-MERGER---------------------\n\n");
             }
-            else if (!p1->StellarEvolution->amiempty() && p2->StellarEvolution->amiempty()) {
-                p2->Mass = -1.0;
+            else if (!p1->stellar_evolution->amiempty() && p2->stellar_evolution->amiempty()) {
+                p2->mass = -1.0;
 
-                p1->Mass = p1->StellarEvolution->getp(Mass::ID)/mass_unit;
+                p1->mass = p1->stellar_evolution->getp(Mass::ID)/mass_unit;
 
-                fprintf(stdout, "After Mix... p1 (PID: %d). Mass: %e Msun,  StellarEvolution->get_zams: %e Msun\n", p1->PID, p1->Mass*mass_unit, p1->StellarEvolution->get_zams());
-                fprintf(stdout, "After Mix... p2 (PID: %d). Mass: %e Msun, StellarEvolution->get_zams: %e Msun\n", p2->PID, p2->Mass*mass_unit, p2->StellarEvolution->get_zams());
-                fprintf(stdout, "p1: amiempty(): %d\n", p1->StellarEvolution->amiempty());
-                fprintf(stdout, "p2: amiempty(): %d\n", p2->StellarEvolution->amiempty());
-                // p1->dm += p2->dm // not yet by EW 2025.1.20
-                // p2->dm = 0.0; // not yet by EW 2025.1.20
+                fprintf(stdout, "After Mix... p1 (PID: %d). Mass: %e Msun,  StellarEvolution->get_zams: %e Msun\n", p1->pid, p1->mass*mass_unit, p1->stellar_evolution->get_zams());
+                fprintf(stdout, "After Mix... p2 (PID: %d). Mass: %e Msun, StellarEvolution->get_zams: %e Msun\n", p2->pid, p2->mass*mass_unit, p2->stellar_evolution->get_zams());
+                fprintf(stdout, "p1: amiempty(): %d\n", p1->stellar_evolution->amiempty());
+                fprintf(stdout, "p2: amiempty(): %d\n", p2->stellar_evolution->amiempty());
+                // p1->delta_mass += p2->delta_mass // not yet by EW 2025.1.20
+                // p2->delta_mass = 0.0; // not yet by EW 2025.1.20
                 SetRadius(p1);
 
-                fprintf(mergerout, "---------------Merger remnant properties---------------\n");
-                fprintf(mergerout, "Position (pc) - x:%e, y:%e, z:%e, \n", p1->Position[0]*position_unit, p1->Position[1]*position_unit, p1->Position[2]*position_unit);
-                fprintf(mergerout, "Velocity (km/s) - vx:%e, vy:%e, vz:%e, \n", p1->Velocity[0]*velocity_unit/yr*pc/1e5, p1->Velocity[1]*velocity_unit/yr*pc/1e5, p1->Velocity[2]*velocity_unit/yr*pc/1e5);
-                fprintf(mergerout, "Mass (Msol) - %e, \n", p1->Mass*mass_unit);
-                fprintf(mergerout, "ParticleType - %d\n", p1->ParticleType);
-                fprintf(mergerout, "---------------------END-OF-MERGER---------------------\n\n");
+                fprintf(merger_output_file, "---------------Merger remnant properties---------------\n");
+                fprintf(merger_output_file, "Position (pc) - x:%e, y:%e, z:%e, \n", p1->position[0]*position_unit, p1->position[1]*position_unit, p1->position[2]*position_unit);
+                fprintf(merger_output_file, "Velocity (km/s) - vx:%e, vy:%e, vz:%e, \n", p1->velocity[0]*velocity_unit/yr*pc/1e5, p1->velocity[1]*velocity_unit/yr*pc/1e5, p1->velocity[2]*velocity_unit/yr*pc/1e5);
+                fprintf(merger_output_file, "Mass (Msol) - %e, \n", p1->mass*mass_unit);
+                fprintf(merger_output_file, "ParticleType - %d\n", p1->particle_type);
+                fprintf(merger_output_file, "---------------------END-OF-MERGER---------------------\n\n");
             }
-            else if (p1->StellarEvolution->amiempty() && p2->StellarEvolution->amiempty()) { // Type Ia supernova
-                p1->dm += p1->Mass;
-                p1->Mass = -1.0;
-                p2->dm += p2->Mass;
-                p2->Mass = -1.0;
-                fprintf(mergerout, "---------------Merger remnant properties---------------\n");
-                fprintf(mergerout, "Type Ia Supernova event! Both of the stars becomes empty!\n");
-                fprintf(mergerout, "---------------------END-OF-MERGER---------------------\n\n");
+            else if (p1->stellar_evolution->amiempty() && p2->stellar_evolution->amiempty()) { // Type Ia supernova
+                p1->delta_mass += p1->mass;
+                p1->mass = -1.0;
+                p2->delta_mass += p2->mass;
+                p2->mass = -1.0;
+                fprintf(merger_output_file, "---------------Merger remnant properties---------------\n");
+                fprintf(merger_output_file, "Type Ia Supernova event! Both of the stars becomes empty!\n");
+                fprintf(merger_output_file, "---------------------END-OF-MERGER---------------------\n\n");
             }
             else
                 throw std::runtime_error("None of stars are empty: Something wrong in stellar merger!");
         }
-        else if (p1->ParticleType == NO_FEEDBACK_STAR && p2->ParticleType != NO_FEEDBACK_STAR) {
+        else if (p1->particle_type == NO_FEEDBACK_STAR && p2->particle_type != NO_FEEDBACK_STAR) {
 
-            if (!p2->StellarEvolution->amiremnant()) {
-                p2->StellarEvolution->update_from_binary(Mass::ID, p1->Mass*mass_unit);
-                p2->StellarEvolution->update_from_binary(dMcumul_binary::ID, p1->Mass*mass_unit);
-                if (p2->StellarEvolution->aminakedhelium())
-                    p2->StellarEvolution->jump_to_normal_tracks();
+            if (!p2->stellar_evolution->amiremnant()) {
+                p2->stellar_evolution->update_from_binary(Mass::ID, p1->mass*mass_unit);
+                p2->stellar_evolution->update_from_binary(dMcumul_binary::ID, p1->mass*mass_unit);
+                if (p2->stellar_evolution->aminakedhelium())
+                    p2->stellar_evolution->jump_to_normal_tracks();
                 else
-                    p2->StellarEvolution->find_new_track_after_merger();
+                    p2->stellar_evolution->find_new_track_after_merger();
 
-                p2->Mass = p2->StellarEvolution->getp(Mass::ID)/mass_unit;
+                p2->mass = p2->stellar_evolution->getp(Mass::ID)/mass_unit;
                 SetRadius(p2);
-                p2->ParticleType = (int)p2->StellarEvolution->getp(Phase::ID);
-                p1->Mass = -1.0;
+                p2->particle_type = (int)p2->stellar_evolution->getp(Phase::ID);
+                p1->mass = -1.0;
             }            
 
             fprintf(stdout, "Mix with no done!\n");
-            fprintf(mergerout, "---------------Merger remnant properties---------------\n");
-            fprintf(mergerout, "Position (pc) - x:%e, y:%e, z:%e, \n", p2->Position[0]*position_unit, p2->Position[1]*position_unit, p2->Position[2]*position_unit);
-            fprintf(mergerout, "Velocity (km/s) - vx:%e, vy:%e, vz:%e, \n", p2->Velocity[0]*velocity_unit/yr*pc/1e5, p2->Velocity[1]*velocity_unit/yr*pc/1e5, p2->Velocity[2]*velocity_unit/yr*pc/1e5);
-            fprintf(mergerout, "Mass (Msol) - %e, \n", p2->Mass*mass_unit);
-            fprintf(mergerout, "ParticleType - %d\n", p2->ParticleType);
-            fprintf(mergerout, "---------------------END-OF-MERGER---------------------\n\n");
+            fprintf(merger_output_file, "---------------Merger remnant properties---------------\n");
+            fprintf(merger_output_file, "Position (pc) - x:%e, y:%e, z:%e, \n", p2->position[0]*position_unit, p2->position[1]*position_unit, p2->position[2]*position_unit);
+            fprintf(merger_output_file, "Velocity (km/s) - vx:%e, vy:%e, vz:%e, \n", p2->velocity[0]*velocity_unit/yr*pc/1e5, p2->velocity[1]*velocity_unit/yr*pc/1e5, p2->velocity[2]*velocity_unit/yr*pc/1e5);
+            fprintf(merger_output_file, "Mass (Msol) - %e, \n", p2->mass*mass_unit);
+            fprintf(merger_output_file, "ParticleType - %d\n", p2->particle_type);
+            fprintf(merger_output_file, "---------------------END-OF-MERGER---------------------\n\n");
         }
-        else if (p1->ParticleType != NO_FEEDBACK_STAR && p2->ParticleType == NO_FEEDBACK_STAR) {
+        else if (p1->particle_type != NO_FEEDBACK_STAR && p2->particle_type == NO_FEEDBACK_STAR) {
 
-            if (!p1->StellarEvolution->amiremnant()) {
-                p1->StellarEvolution->update_from_binary(Mass::ID, p2->Mass*mass_unit);
-                p1->StellarEvolution->update_from_binary(dMcumul_binary::ID, p2->Mass*mass_unit);
-                if (p1->StellarEvolution->aminakedhelium())
-                    p1->StellarEvolution->jump_to_normal_tracks();
+            if (!p1->stellar_evolution->amiremnant()) {
+                p1->stellar_evolution->update_from_binary(Mass::ID, p2->mass*mass_unit);
+                p1->stellar_evolution->update_from_binary(dMcumul_binary::ID, p2->mass*mass_unit);
+                if (p1->stellar_evolution->aminakedhelium())
+                    p1->stellar_evolution->jump_to_normal_tracks();
                 else
-                    p1->StellarEvolution->find_new_track_after_merger();
+                    p1->stellar_evolution->find_new_track_after_merger();
 
-                p1->Mass = p1->StellarEvolution->getp(Mass::ID)/mass_unit;
+                p1->mass = p1->stellar_evolution->getp(Mass::ID)/mass_unit;
                 SetRadius(p1);
-                p1->ParticleType = (int)p1->StellarEvolution->getp(Phase::ID);
-                p2->Mass = -1.0;
+                p1->particle_type = (int)p1->stellar_evolution->getp(Phase::ID);
+                p2->mass = -1.0;
             }
 
             fprintf(stdout, "Mix with no done!\n");
-            fprintf(mergerout, "---------------Merger remnant properties---------------\n");
-            fprintf(mergerout, "Position (pc) - x:%e, y:%e, z:%e, \n", p1->Position[0]*position_unit, p1->Position[1]*position_unit, p1->Position[2]*position_unit);
-            fprintf(mergerout, "Velocity (km/s) - vx:%e, vy:%e, vz:%e, \n", p1->Velocity[0]*velocity_unit/yr*pc/1e5, p1->Velocity[1]*velocity_unit/yr*pc/1e5, p1->Velocity[2]*velocity_unit/yr*pc/1e5);
-            fprintf(mergerout, "Mass (Msol) - %e, \n", p1->Mass*mass_unit);
-            fprintf(mergerout, "ParticleType - %d\n", p1->ParticleType);
-            fprintf(mergerout, "---------------------END-OF-MERGER---------------------\n\n");
+            fprintf(merger_output_file, "---------------Merger remnant properties---------------\n");
+            fprintf(merger_output_file, "Position (pc) - x:%e, y:%e, z:%e, \n", p1->position[0]*position_unit, p1->position[1]*position_unit, p1->position[2]*position_unit);
+            fprintf(merger_output_file, "Velocity (km/s) - vx:%e, vy:%e, vz:%e, \n", p1->velocity[0]*velocity_unit/yr*pc/1e5, p1->velocity[1]*velocity_unit/yr*pc/1e5, p1->velocity[2]*velocity_unit/yr*pc/1e5);
+            fprintf(merger_output_file, "Mass (Msol) - %e, \n", p1->mass*mass_unit);
+            fprintf(merger_output_file, "ParticleType - %d\n", p1->particle_type);
+            fprintf(merger_output_file, "---------------------END-OF-MERGER---------------------\n\n");
         }
     }
-    fflush(mergerout);
+    fflush(merger_output_file);
     fflush(stdout);
 #else
-        p1->dm = mcm - p1->Mass;
-        p2->dm = -p2->Mass;
-        p1->Mass = mcm;
-        p2->Mass = -1.0;
-        p1->radius = 2.25461e-8/position_unit*pow(p1->Mass*mass_unit, 1./3); // stellar radius in code unit
+        p1->delta_mass = mcm - p1->mass;
+        p2->delta_mass = -p2->mass;
+        p1->mass = mcm;
+        p2->mass = -1.0;
+        p1->radius = 2.25461e-8/position_unit*pow(p1->mass*mass_unit, 1./3); // stellar radius in code unit
 
-        fprintf(mergerout, "---------------Merger remnant properties---------------\n");
-        fprintf(mergerout, "Position (pc) - x:%e, y:%e, z:%e, \n", p1->Position[0]*position_unit, p1->Position[1]*position_unit, p1->Position[2]*position_unit);
-        fprintf(mergerout, "Velocity (km/s) - vx:%e, vy:%e, vz:%e, \n", p1->Velocity[0]*velocity_unit/yr*pc/1e5, p1->Velocity[1]*velocity_unit/yr*pc/1e5, p1->Velocity[2]*velocity_unit/yr*pc/1e5);
-        fprintf(mergerout, "Mass (Msol) - %e, \n", p1->Mass*mass_unit);
-        fprintf(mergerout, "---------------------END-OF-MERGER---------------------\n\n");
+        fprintf(merger_output_file, "---------------Merger remnant properties---------------\n");
+        fprintf(merger_output_file, "Position (pc) - x:%e, y:%e, z:%e, \n", p1->position[0]*position_unit, p1->position[1]*position_unit, p1->position[2]*position_unit);
+        fprintf(merger_output_file, "Velocity (km/s) - vx:%e, vy:%e, vz:%e, \n", p1->velocity[0]*velocity_unit/yr*pc/1e5, p1->velocity[1]*velocity_unit/yr*pc/1e5, p1->velocity[2]*velocity_unit/yr*pc/1e5);
+        fprintf(merger_output_file, "Mass (Msol) - %e, \n", p1->mass*mass_unit);
+        fprintf(merger_output_file, "---------------------END-OF-MERGER---------------------\n\n");
     }
-    fflush(mergerout);   
+    fflush(merger_output_file);   
 #endif
 }
 
@@ -665,10 +665,10 @@ void remnantSpinMass(Particle* p1, Particle* p2) {
                     {223.911, -648.502, -697.177, 753.738, 1166.89}};
     double ksi = 0.474046;
 
-    double a1 = sqrt(p1->a_spin[0]*p1->a_spin[0] + p1->a_spin[1]*p1->a_spin[1] + p1->a_spin[2]*p1->a_spin[2]);
-    double a2 = sqrt(p2->a_spin[0]*p2->a_spin[0] + p2->a_spin[1]*p2->a_spin[1] + p2->a_spin[2]*p2->a_spin[2]);
-    double Mtot = p1->Mass + p2->Mass;
-    double q = p2->Mass/p1->Mass;
+    double a1 = sqrt(p1->spin_param[0]*p1->spin_param[0] + p1->spin_param[1]*p1->spin_param[1] + p1->spin_param[2]*p1->spin_param[2]);
+    double a2 = sqrt(p2->spin_param[0]*p2->spin_param[0] + p2->spin_param[1]*p2->spin_param[1] + p2->spin_param[2]*p2->spin_param[2]);
+    double Mtot = p1->mass + p2->mass;
+    double q = p2->mass/p1->mass;
     assert(q <= 1);
     double nu = q/(1+q)/(1+q);
     const double c = 299752.458 / (velocity_unit / yr * pc / 1e5);
@@ -677,24 +677,24 @@ void remnantSpinMass(Particle* p1, Particle* p2) {
     double vel_rel[3];
     double L_ang[3]; // specific angular momentum (r_rel x v_rel)
 
-    for (int dim=0; dim<Dim; dim++) {
-        pos_rel[dim] = p1->Position[dim] - p2->Position[dim];
-        vel_rel[dim] = p1->Velocity[dim] - p2->Velocity[dim];
+    for (int dim=0; dim<DIM; dim++) {
+        pos_rel[dim] = p1->position[dim] - p2->position[dim];
+        vel_rel[dim] = p1->velocity[dim] - p2->velocity[dim];
     }
     L_ang[0] = pos_rel[1] * vel_rel[2] - pos_rel[2] * vel_rel[1];
     L_ang[1] = pos_rel[2] * vel_rel[0] - pos_rel[0] * vel_rel[2];
     L_ang[2] = pos_rel[0] * vel_rel[1] - pos_rel[1] * vel_rel[0];
 
-    fprintf(mergerout, "L_orbit: (%e, %e, %e)\n", (p1->Mass*p2->Mass/Mtot) * L_ang[0],
-                                                    (p1->Mass*p2->Mass/Mtot) * L_ang[1],
-                                                    (p1->Mass*p2->Mass/Mtot) * L_ang[2]);
-    fprintf(mergerout, "S_1: (%e, %e, %e)\n", (p1->Mass*p1->Mass/c) * p1->a_spin[0], 
-                                                (p1->Mass*p1->Mass/c) * p1->a_spin[1], 
-                                                (p1->Mass*p1->Mass/c) * p1->a_spin[2]);
-    fprintf(mergerout, "S_2: (%e, %e, %e)\n", (p2->Mass*p2->Mass/c) * p2->a_spin[0], 
-                                                (p2->Mass*p2->Mass/c) * p2->a_spin[1], 
-                                                (p2->Mass*p2->Mass/c) * p2->a_spin[2]);
-    fprintf(mergerout, "In code unit!\n");
+    fprintf(merger_output_file, "L_orbit: (%e, %e, %e)\n", (p1->mass*p2->mass/Mtot) * L_ang[0],
+                                                    (p1->mass*p2->mass/Mtot) * L_ang[1],
+                                                    (p1->mass*p2->mass/Mtot) * L_ang[2]);
+    fprintf(merger_output_file, "S_1: (%e, %e, %e)\n", (p1->mass*p1->mass/c) * p1->spin_param[0], 
+                                                (p1->mass*p1->mass/c) * p1->spin_param[1], 
+                                                (p1->mass*p1->mass/c) * p1->spin_param[2]);
+    fprintf(merger_output_file, "S_2: (%e, %e, %e)\n", (p2->mass*p2->mass/c) * p2->spin_param[0], 
+                                                (p2->mass*p2->mass/c) * p2->spin_param[1], 
+                                                (p2->mass*p2->mass/c) * p2->spin_param[2]);
+    fprintf(merger_output_file, "In code unit!\n");
 
     auto cosine = [&](double a[3], double b[3]) {
         double a_mag = sqrt(a[0]*a[0] + a[1]*a[1] + a[2]*a[2]);
@@ -705,9 +705,9 @@ void remnantSpinMass(Particle* p1, Particle* p2) {
             return (a[0] * b[0] + a[1] * b[1] + a[2] * b[2])/a_mag/b_mag;
     };
 
-    double cosa = cosine(p1->a_spin, p2->a_spin); // cos(alpha): This angle should be changed to the initial value. I will change this later.
-    double cosb = cosine(L_ang, p1->a_spin);      // cos(beta)
-    double cosg = cosine(L_ang, p2->a_spin);      // cos(gamma)
+    double cosa = cosine(p1->spin_param, p2->spin_param); // cos(alpha): This angle should be changed to the initial value. I will change this later.
+    double cosb = cosine(L_ang, p1->spin_param);      // cos(beta)
+    double cosg = cosine(L_ang, p2->spin_param);      // cos(gamma)
 
     double atot = (a1*cosb + a2*cosg*q*q)/(1 + q)/(1 + q); // atilde in Barausse et al. (2012)
     double aeff = atot + ksi*nu*(a1*cosb + a2*cosg);
@@ -748,7 +748,7 @@ void remnantSpinMass(Particle* p1, Particle* p2) {
 
     double J_tot[3];
     for (int i=0; i<3; i++)
-        J_tot[i] = (p1->Mass*p2->Mass/Mtot) * L_ang[i] + (p1->Mass*p1->Mass/c) * p1->a_spin[i] + (p2->Mass*p2->Mass/c) * p2->a_spin[i];
+        J_tot[i] = (p1->mass*p2->mass/Mtot) * L_ang[i] + (p1->mass*p1->mass/c) * p1->spin_param[i] + (p2->mass*p2->mass/c) * p2->spin_param[i];
 
     double J_tot_norm[3];
     double J_tot_mag = sqrt(J_tot[0]*J_tot[0] + J_tot[1]*J_tot[1] + J_tot[2]*J_tot[2]);
@@ -756,9 +756,9 @@ void remnantSpinMass(Particle* p1, Particle* p2) {
         J_tot_norm[i] = J_tot[i]/J_tot_mag;
 
     for (int i=0; i<3; i++)
-        p1->a_spin[i] = afin*J_tot_norm[i];
+        p1->spin_param[i] = afin*J_tot_norm[i];
 
-    fprintf(mergerout, "Dimensionless spin of remnant BH: (%e, %e, %e)\n", p1->a_spin[0], p1->a_spin[1], p1->a_spin[2]);
+    fprintf(merger_output_file, "DIMensionless spin of remnant BH: (%e, %e, %e)\n", p1->spin_param[0], p1->spin_param[1], p1->spin_param[2]);
 
     double Z1_atot = Z1(atot);
     double Z2_atot = Z2(atot, Z1_atot);
@@ -767,10 +767,10 @@ void remnantSpinMass(Particle* p1, Particle* p2) {
 
     double Erad = (1 - E_ISCO_atot)*nu + 4*nu*nu*(4*0.04827 + 16*0.01707*atot*(atot+1) + E_ISCO_atot - 1);
 
-    p1->Mass = (1 - Erad) * Mtot;
+    p1->mass = (1 - Erad) * Mtot;
 
-    fprintf(mergerout, "Mass of remnant BH: %e Msol\n", p1->Mass*mass_unit);
-    fflush(mergerout);
+    fprintf(merger_output_file, "Mass of remnant BH: %e Msol\n", p1->mass*mass_unit);
+    fflush(merger_output_file);
 }
 
 // Reference: Arca Sedda et al. (2020) (https://iopscience.iop.org/article/10.3847/1538-4357/ab88b2/pdf)
@@ -794,68 +794,68 @@ void recoilKick(Particle* p1, Particle* p2) {
             return (a[0] * b[0] + a[1] * b[1] + a[2] * b[2])/a_mag/b_mag;
     };
 
-    double a1 = sqrt(p1->a_spin[0]*p1->a_spin[0] + p1->a_spin[1]*p1->a_spin[1] + p1->a_spin[2]*p1->a_spin[2]);
-    double a2 = sqrt(p2->a_spin[0]*p2->a_spin[0] + p2->a_spin[1]*p2->a_spin[1] + p2->a_spin[2]*p2->a_spin[2]);
-    double q = p2->Mass/p1->Mass;
-    // fprintf(mergerout, "q: %e\n", q);
+    double a1 = sqrt(p1->spin_param[0]*p1->spin_param[0] + p1->spin_param[1]*p1->spin_param[1] + p1->spin_param[2]*p1->spin_param[2]);
+    double a2 = sqrt(p2->spin_param[0]*p2->spin_param[0] + p2->spin_param[1]*p2->spin_param[1] + p2->spin_param[2]*p2->spin_param[2]);
+    double q = p2->mass/p1->mass;
+    // fprintf(merger_output_file, "q: %e\n", q);
     assert(q <= 1);
     double nu = q/(1+q)/(1+q);
-    // fprintf(mergerout, "nu: %e\n", nu);
+    // fprintf(merger_output_file, "nu: %e\n", nu);
 
     double pos_rel[3];
     double vel_rel[3];
     double L_ang[3]; // specific angular momentum (r_rel x v_rel)
 
-    for (int dim=0; dim<Dim; dim++) {
-        pos_rel[dim] = p1->Position[dim] - p2->Position[dim];
-        vel_rel[dim] = p1->Velocity[dim] - p2->Velocity[dim];
+    for (int dim=0; dim<DIM; dim++) {
+        pos_rel[dim] = p1->position[dim] - p2->position[dim];
+        vel_rel[dim] = p1->velocity[dim] - p2->velocity[dim];
     }
     L_ang[0] = pos_rel[1] * vel_rel[2] - pos_rel[2] * vel_rel[1];
     L_ang[1] = pos_rel[2] * vel_rel[0] - pos_rel[0] * vel_rel[2];
     L_ang[2] = pos_rel[0] * vel_rel[1] - pos_rel[1] * vel_rel[0];
 
 
-    double cosa = cosine(p1->a_spin, p2->a_spin); // cos(alpha): This angle should be changed to the initial value. I will change this later.
+    double cosa = cosine(p1->spin_param, p2->spin_param); // cos(alpha): This angle should be changed to the initial value. I will change this later.
     double sina = sin(acos(cosa));
-    double cosb = cosine(L_ang, p1->a_spin);      // cos(beta)
+    double cosb = cosine(L_ang, p1->spin_param);      // cos(beta)
     double sinb = sin(acos(cosb));
-    double cosg = cosine(L_ang, p2->a_spin);      // cos(gamma)
+    double cosg = cosine(L_ang, p2->spin_param);      // cos(gamma)
     double sing = sin(acos(cosg));
-    // fprintf(mergerout, "cosa: %e, sina: %e, cosb: %e, sinb: %e, cosg: %e, sing: %e\n", cosa, sina, cosb, sinb, cosg, sing);
+    // fprintf(merger_output_file, "cosa: %e, sina: %e, cosb: %e, sinb: %e, cosg: %e, sing: %e\n", cosa, sina, cosb, sinb, cosg, sing);
 
     double a2par  = a2 * cosg;
-    // fprintf(mergerout, "a2par: %e\n", a2par);
+    // fprintf(merger_output_file, "a2par: %e\n", a2par);
     double a2per1 = a2 * sing;
-    // fprintf(mergerout, "a2per1, %e\n", a2per1);
+    // fprintf(merger_output_file, "a2per1, %e\n", a2per1);
     double a2per2 = 0.0;
-    // fprintf(mergerout, "a2per2, %e\n", a2per2);
+    // fprintf(merger_output_file, "a2per2, %e\n", a2per2);
     
     double a1par  = a1 * cosb;
-    // fprintf(mergerout, "a1par: %e\n", a1par);
+    // fprintf(merger_output_file, "a1par: %e\n", a1par);
     double a1per1 = a1 * sinb*cosa;
-    // fprintf(mergerout, "a1per1: %e\n", a1per1);
+    // fprintf(merger_output_file, "a1per1: %e\n", a1per1);
     double a1per2 = a1 * sinb*sina;
-    // fprintf(mergerout, "a1per2: %e\n", a1per2);
+    // fprintf(merger_output_file, "a1per2: %e\n", a1per2);
 
     double KSIpar = 2 * (a2par + q*q*a1par) / (1 + q) / (1 + q);
-    // fprintf(mergerout, "KSIpar: %e\n", KSIpar);
+    // fprintf(merger_output_file, "KSIpar: %e\n", KSIpar);
     std::random_device rd; // Obtain a random number from hardware
     std::mt19937 mt(rd()); // Seed the generator
     std::uniform_real_distribution<> distr(0.0, 1.0); // Define the range (0 to 1)
     double phi = 2 * M_PI * distr(mt); // phi_Delta - phi_1
-    // fprintf(mergerout, "phi: %e\n", phi);
+    // fprintf(merger_output_file, "phi: %e\n", phi);
 
     double vm = A*nu*nu*sqrt(1 - 4*nu) * (1 + B*nu);
-    // fprintf(mergerout, "vm: %e\n", vm);
+    // fprintf(merger_output_file, "vm: %e\n", vm);
     double vper = H*nu*nu / (1 + q) * (a2par - q * a1par);
-    // fprintf(mergerout, "vper: %e\n", vper);
+    // fprintf(merger_output_file, "vper: %e\n", vper);
     double vpar = 16*nu*nu / (1 + q) * (V11 + VA*KSIpar + VB*KSIpar*KSIpar + VC*KSIpar*KSIpar*KSIpar);
     vpar *= sqrt((a2per1 - q * a1per1) * (a2per1 - q * a1per1) + (a2per2 - q * a1per2) * (a2per2 - q * a1per2)) * cos(phi);
-    // fprintf(mergerout, "vpar: %e\n", vpar);
+    // fprintf(merger_output_file, "vpar: %e\n", vpar);
 
     double L_ang_mag = sqrt(L_ang[0]*L_ang[0] + L_ang[1]*L_ang[1] + L_ang[2]*L_ang[2]);
     double e_par[3]   = {L_ang[0]/L_ang_mag, L_ang[1]/L_ang_mag, L_ang[2]/L_ang_mag};
-    double e_per1[3]  = {p2->a_spin[0] - p2->a_spin[0]*cosg, p2->a_spin[1] - p2->a_spin[1]*cosg, p2->a_spin[2] - p2->a_spin[2]*cosg};
+    double e_per1[3]  = {p2->spin_param[0] - p2->spin_param[0]*cosg, p2->spin_param[1] - p2->spin_param[1]*cosg, p2->spin_param[2] - p2->spin_param[2]*cosg};
     double norm1      = sqrt(e_per1[0]*e_per1[0] + e_per1[1]*e_per1[1] + e_per1[2]*e_per1[2]);
     if (norm1 != 0) {
         for (int i=0; i<3; i++)
@@ -865,22 +865,22 @@ void recoilKick(Particle* p1, Particle* p2) {
     double e_per2[3]  =   {e_par[1] * e_per1[2] - e_par[2] * e_per1[1], 
                         e_par[2] * e_per1[0] - e_par[0] * e_per1[2], 
                         e_par[0] * e_per1[1] - e_par[1] * e_per1[0]}; // cross product: e2 = e3 x e1
-    // fprintf(mergerout, "e1: %e, %e, %e\n", e_per1[0], e_per1[1], e_per1[2]);
-    // fprintf(mergerout, "e2: %e, %e, %e\n", e_per2[0], e_per2[1], e_per2[2]);
-    // fprintf(mergerout, "e3: %e, %e, %e\n", e_par[0], e_par[1], e_par[2]);
+    // fprintf(merger_output_file, "e1: %e, %e, %e\n", e_per1[0], e_per1[1], e_per1[2]);
+    // fprintf(merger_output_file, "e2: %e, %e, %e\n", e_per2[0], e_per2[1], e_per2[2]);
+    // fprintf(merger_output_file, "e3: %e, %e, %e\n", e_par[0], e_par[1], e_par[2]);
 
     double vkick[3];
     for (int i=0; i<3; i++)
         vkick[i] = (vm + vper*cos(ksi)) * e_per1[i] + vper*sin(ksi) * e_per2[i] + vpar * e_par[i];
 
-    fprintf(mergerout, "GW recoil kick: (%e, %e, %e) km/s\n", vkick[0], vkick[1], vkick[2]);
-    fprintf(mergerout, "\t magnitude: %e km/s\n", sqrt(vkick[0]*vkick[0] + vkick[1]*vkick[1] + vkick[2]*vkick[2]));
+    fprintf(merger_output_file, "GW recoil kick: (%e, %e, %e) km/s\n", vkick[0], vkick[1], vkick[2]);
+    fprintf(merger_output_file, "\t magnitude: %e km/s\n", sqrt(vkick[0]*vkick[0] + vkick[1]*vkick[1] + vkick[2]*vkick[2]));
 
     for (int i=0; i<3; i++)
-        p1->Velocity[i] += vkick[i]/(velocity_unit/yr*pc/1e5); // km/s to code unit
+        p1->velocity[i] += vkick[i]/(velocity_unit/yr*pc/1e5); // km/s to code unit
 
-    // fprintf(mergerout, "Remnant velocity: (%e, %e, %e) km/s\n", p1->Velocity[0]*velocity_unit/yr*pc/1e5, p1->Velocity[1]*velocity_unit/yr*pc/1e5, p1->Velocity[2]*velocity_unit/yr*pc/1e5);
-    fflush(mergerout);
+    // fprintf(merger_output_file, "Remnant velocity: (%e, %e, %e) km/s\n", p1->velocity[0]*velocity_unit/yr*pc/1e5, p1->velocity[1]*velocity_unit/yr*pc/1e5, p1->velocity[2]*velocity_unit/yr*pc/1e5);
+    fflush(merger_output_file);
 }
 
 #endif

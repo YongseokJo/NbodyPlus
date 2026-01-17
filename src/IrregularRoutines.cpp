@@ -77,7 +77,7 @@ bool IrregularRoutines(QueueScheduler &queue_scheduler, Worker *workers, std::un
         ThisLevelNode->ParticleList.erase(
             std::remove_if(ThisLevelNode->ParticleList.begin(), ThisLevelNode->ParticleList.end(),
                 [](int i) {
-                return !particles[i].isActive;
+                return !particles[i].is_active;
                 }
             ),
             ThisLevelNode->ParticleList.end()
@@ -87,8 +87,8 @@ bool IrregularRoutines(QueueScheduler &queue_scheduler, Worker *workers, std::un
             continue;
         }
 
-        next_time     = particles[ThisLevelNode->ParticleList[0]].CurrentTimeIrr\
-                                    + particles[ThisLevelNode->ParticleList[0]].TimeStepIrr;
+        next_time     = particles[ThisLevelNode->ParticleList[0]].current_time_irr\
+                                    + particles[ThisLevelNode->ParticleList[0]].time_step_irr;
 
         PROFILE_START(TimerID::IrregularForce);
 #ifdef PERFORMANCETRACE
@@ -97,21 +97,21 @@ bool IrregularRoutines(QueueScheduler &queue_scheduler, Worker *workers, std::un
 
 #ifdef DEBUG
         // print out particlelist
-        fprintf(stdout, "(IRR_FORCE) next_time: %e Myr\n", next_time*EnzoTimeStep*1e4);
+        fprintf(stdout, "(IRR_FORCE) next_time: %e Myr\n", next_time*enzo_time_step*1e4);
         // /*
         fprintf(stdout, "PID: %d. CurrentTimeIrr: %e Myr, TimeStepIrr: %e Myr\n", 
-                    particles[ThisLevelNode->ParticleList[0]].PID, 
-                    particles[ThisLevelNode->ParticleList[0]].CurrentTimeIrr*EnzoTimeStep*1e4, 
-                    particles[ThisLevelNode->ParticleList[0]].TimeStepIrr*EnzoTimeStep*1e4);
+                    particles[ThisLevelNode->ParticleList[0]].pid, 
+                    particles[ThisLevelNode->ParticleList[0]].current_time_irr*enzo_time_step*1e4, 
+                    particles[ThisLevelNode->ParticleList[0]].time_step_irr*enzo_time_step*1e4);
 
         // fprintf(stdout, "PID (%d) = ", ThisLevelNode->ParticleList.size());
         for (int i=0; i<ThisLevelNode->ParticleList.size(); i++) {
             ptcl = &particles[ThisLevelNode->ParticleList[i]];
-            // fprintf(stdout, "%d, ", ptcl->PID);
+            // fprintf(stdout, "%d, ", ptcl->pid);
             fprintf(stdout, "PID: %d. %e Myr, %e Myr\n", 
-                    ptcl->PID,
-                    ptcl->CurrentTimeIrr*EnzoTimeStep*1e4,
-                    ptcl->TimeStepIrr*EnzoTimeStep*1e4);
+                    ptcl->pid,
+                    ptcl->current_time_irr*enzo_time_step*1e4,
+                    ptcl->time_step_irr*enzo_time_step*1e4);
         }
         fprintf(stdout, "\n");
         // fflush(stdout);
@@ -128,7 +128,7 @@ bool IrregularRoutines(QueueScheduler &queue_scheduler, Worker *workers, std::un
 #endif
 // /*
         int cm_pid;
-        queue_scheduler.initializeIrr(IrrForce, next_time, ThisLevelNode->ParticleList);
+        queue_scheduler.initializeIrr(TASK_IRR_FORCE, next_time, ThisLevelNode->ParticleList);
         auto iter = queue_scheduler.CMPtcls.begin();
 #ifdef SEVN_BINARY
         std::vector<int> CMPtclsForSEVN;
@@ -147,24 +147,24 @@ bool IrregularRoutines(QueueScheduler &queue_scheduler, Worker *workers, std::un
                     cm_pid = *(iter);
                     ptcl = &particles[cm_pid];
                     /*
-                    for (int j = 0; j < ptcl->NumberOfNeighbor; j++)
+                    for (int j = 0; j < ptcl->num_neighbors; j++)
                     {
-                        // if (particles[ptcl->Neighbors[j]].isUpdateToDate == false) // original code
-                        if (particles[ptcl->Neighbors[j]].isActive && !particles[ptcl->Neighbors[j]].isUpdateToDate) // modified by EW 2025.2.26
+                        // if (particles[ptcl->neighbors[j]].is_up_to_date == false) // original code
+                        if (particles[ptcl->neighbors[j]].is_active && !particles[ptcl->neighbors[j]].is_up_to_date) // modified by EW 2025.2.26
                         {
                             iter++;
                             goto skip_to_next;
                         }
                     }
                     */
-                    queue.task = ARIntegration;
+                    queue.task = TASK_AR_INTEGRATION;
                     queue.pid = cm_pid;
                     queue.next_time = next_time;
-                    workers[CMPtclWorker[cm_pid]].addQueue(queue);
-                    queue_scheduler.assignWorker(&workers[CMPtclWorker[cm_pid]]);
+                    workers[cm_particle_worker_map[cm_pid]].add_queue(queue);
+                    queue_scheduler.assignWorker(&workers[cm_particle_worker_map[cm_pid]]);
                     iter = queue_scheduler.CMPtcls.erase(iter);
 #ifdef SEVN_BINARY
-                    if (ptcl->BinaryEvolution != nullptr)
+                    if (ptcl->binary_evolution != nullptr)
                         CMPtclsForSEVN.push_back(cm_pid);
 #endif
                 // skip_to_next:;
@@ -193,7 +193,7 @@ bool IrregularRoutines(QueueScheduler &queue_scheduler, Worker *workers, std::un
 #endif
 // */
 /*
-        queue_scheduler.initialize(IrrForce, next_time);
+        queue_scheduler.initialize(TASK_IRR_FORCE, next_time);
         queue_scheduler.takeQueue(ThisLevelNode->ParticleList);
         do {
             queue_scheduler.assignQueueAuto();
@@ -205,13 +205,13 @@ bool IrregularRoutines(QueueScheduler &queue_scheduler, Worker *workers, std::un
         {
             ptcl = &particles[ptcl_id];
 
-            if (ptcl->isCMptcl) {
-                int rank = CMPtclWorker[ptcl->ParticleIndex];
-                queue.task = ARIntegration;
-                queue.pid = ptcl->ParticleIndex;
+            if (ptcl->is_cm_particle) {
+                int rank = cm_particle_worker_map[ptcl->particle_index];
+                queue.task = TASK_AR_INTEGRATION;
+                queue.pid = ptcl->particle_index;
                 queue.next_time = next_time;
-                workers[rank].addQueue(queue);
-                workers[rank].runQueue();
+                workers[rank].add_queue(queue);
+                workers[rank].run_queue();
                 workers[rank].callback();
             }
         }
@@ -223,7 +223,7 @@ bool IrregularRoutines(QueueScheduler &queue_scheduler, Worker *workers, std::un
         nvtxRangePop();
 #endif
 #else
-        queue_scheduler.initialize(IrrForce, next_time);
+        queue_scheduler.initialize(TASK_IRR_FORCE, next_time);
         queue_scheduler.takeQueue(ThisLevelNode->ParticleList);
         do
         {
@@ -252,7 +252,7 @@ bool IrregularRoutines(QueueScheduler &queue_scheduler, Worker *workers, std::un
         nvtxRangePushA("IrregularUpdate");
 #endif
         /* // For this kind of simple work, using queue_scheduler is slower
-        queue_scheduler.initialize(IrrUpdate);
+        queue_scheduler.initialize(TASK_IRR_UPDATE);
         queue_scheduler.takeQueue(ThisLevelNode->ParticleList);
         do
         {
@@ -264,17 +264,17 @@ bool IrregularRoutines(QueueScheduler &queue_scheduler, Worker *workers, std::un
         for (int ptcl_id : ThisLevelNode->ParticleList) {
             ptcl = &particles[ptcl_id];
 
-            if (ptcl->NumberOfNeighbor != 0) // IAR modified
-                ptcl->updateParticle();
-            ptcl->CurrentBlockIrr = ptcl->NewCurrentBlockIrr;
-            ptcl->CurrentTimeIrr  = ptcl->CurrentBlockIrr*time_step;
+            if (ptcl->num_neighbors != 0) // IAR modified
+                ptcl->update_particle();
+            ptcl->current_block_irr = ptcl->new_current_block_irr;
+            ptcl->current_time_irr  = ptcl->current_block_irr*time_step;
         }
 #ifdef DEBUG
         for (int i: ThisLevelNode->ParticleList) {
             ptcl = &particles[i];
-            if (ptcl->CurrentTimeIrr != next_time) {
-                fprintf(stdout, "Error! PID: %d, CurrentTimeIrr: %e Myr, next_time: %e Myr\n", ptcl->PID, ptcl->CurrentTimeIrr*EnzoTimeStep*1e4, next_time*EnzoTimeStep*1e4);
-                assert(ptcl->CurrentTimeIrr == next_time);
+            if (ptcl->current_time_irr != next_time) {
+                fprintf(stdout, "TASK_ERROR! PID: %d, CurrentTimeIrr: %e Myr, next_time: %e Myr\n", ptcl->pid, ptcl->current_time_irr*enzo_time_step*1e4, next_time*enzo_time_step*1e4);
+                assert(ptcl->current_time_irr == next_time);
             }
         }
             std::cout << "Irregular update done" << std::endl;
@@ -303,81 +303,81 @@ bool IrregularRoutines(QueueScheduler &queue_scheduler, Worker *workers, std::un
         OriginalParticleListSize = ThisLevelNode->ParticleList.size();
         for (int i=0; i<OriginalParticleListSize; i++) {
             ptcl = &particles[ThisLevelNode->ParticleList[i]];
-            if (ptcl->getBinaryInterruptState() == BinaryInterruptState::merger ||
-                ptcl->getBinaryInterruptState() == BinaryInterruptState::terminated) {
+            if (ptcl->get_binary_interrupt_state() == BinaryInterruptState::merger ||
+                ptcl->get_binary_interrupt_state() == BinaryInterruptState::terminated) {
 
-                assert(ptcl->isCMptcl); // for debugging by EW 2025.1.20
+                assert(ptcl->is_cm_particle); // for debugging by EW 2025.1.20
             
-                if (ptcl->getBinaryInterruptState() == BinaryInterruptState::merger) {
-                    if (ptcl->NumberOfMember == 2) { // binary merger
+                if (ptcl->get_binary_interrupt_state() == BinaryInterruptState::merger) {
+                    if (ptcl->num_members == 2) { // binary merger
 
-                        Particle* donor = &particles[ptcl->Members[0]];
-                        Particle* accretor = &particles[ptcl->Members[1]];
+                        Particle* donor = &particles[ptcl->members[0]];
+                        Particle* accretor = &particles[ptcl->members[1]];
 
                         Merge(donor, accretor);
 #ifdef SEVN
-                        if (donor->StellarEvolution != nullptr && accretor->StellarEvolution != nullptr) {
-                            fprintf(stdout, "After Merge... Donor (PID: %d). Mass: %e Msun,  StellarEvolution->get_zams: %e Msun\n", donor->PID, donor->Mass*mass_unit, donor->StellarEvolution->get_zams());
-                            fprintf(stdout, "After Merge... Accretor (PID: %d). Mass: %e Msun, StellarEvolution->get_zams: %e Msun\n", accretor->PID, accretor->Mass*mass_unit, accretor->StellarEvolution->get_zams());
-                            fprintf(stdout, "Donor: amiempty(): %d\n", donor->StellarEvolution->amiempty());
-                            fprintf(stdout, "Accretor: amiempty(): %d\n", accretor->StellarEvolution->amiempty());
+                        if (donor->stellar_evolution != nullptr && accretor->stellar_evolution != nullptr) {
+                            fprintf(stdout, "After Merge... Donor (PID: %d). Mass: %e Msun,  StellarEvolution->get_zams: %e Msun\n", donor->pid, donor->mass*mass_unit, donor->stellar_evolution->get_zams());
+                            fprintf(stdout, "After Merge... Accretor (PID: %d). Mass: %e Msun, StellarEvolution->get_zams: %e Msun\n", accretor->pid, accretor->mass*mass_unit, accretor->stellar_evolution->get_zams());
+                            fprintf(stdout, "Donor: amiempty(): %d\n", donor->stellar_evolution->amiempty());
+                            fprintf(stdout, "Accretor: amiempty(): %d\n", accretor->stellar_evolution->amiempty());
                             fflush(stdout);
                         }
 #endif
                     }
                     else { // from NewFBInitialization3
 
-                        assert(ptcl->NumberOfMember > 2); // for debugging by EW 2025.1.20
+                        assert(ptcl->num_members > 2); // for debugging by EW 2025.1.20
 
                         Particle* donor;
                         Particle* accretor;
 
-                        for (int j=0; j<ptcl->NumberOfMember; j++) {
-                            if (particles[ptcl->Members[j]].getBinaryInterruptState() == BinaryInterruptState::collision) {
-                                donor = &particles[ptcl->Members[j]];
-                                accretor = &particles[donor->getBinaryPairID()];
+                        for (int j=0; j<ptcl->num_members; j++) {
+                            if (particles[ptcl->members[j]].get_binary_interrupt_state() == BinaryInterruptState::collision) {
+                                donor = &particles[ptcl->members[j]];
+                                accretor = &particles[donor->get_binary_pair_id()];
 
-                                assert(accretor->getBinaryInterruptState() == BinaryInterruptState::collision);
-                                assert(accretor->getBinaryPairID() == donor->ParticleIndex);
+                                assert(accretor->get_binary_interrupt_state() == BinaryInterruptState::collision);
+                                assert(accretor->get_binary_pair_id() == donor->particle_index);
                                 break;
                             }
                         }
 
                         Merge(donor, accretor);
 #ifdef SEVN
-                        if (donor->StellarEvolution != nullptr && accretor->StellarEvolution != nullptr) {
-                            fprintf(stdout, "After Merge... Donor (PID: %d). Mass: %e Msun,  StellarEvolution->get_zams: %e Msun\n", donor->PID, donor->Mass*mass_unit, donor->StellarEvolution->get_zams());
-                            fprintf(stdout, "After Merge... Accretor (PID: %d). Mass: %e Msun, StellarEvolution->get_zams: %e Msun\n", accretor->PID, accretor->Mass*mass_unit, accretor->StellarEvolution->get_zams());
-                            fprintf(stdout, "Donor: amiempty(): %d\n", donor->StellarEvolution->amiempty());
-                            fprintf(stdout, "Accretor: amiempty(): %d\n", accretor->StellarEvolution->amiempty());
+                        if (donor->stellar_evolution != nullptr && accretor->stellar_evolution != nullptr) {
+                            fprintf(stdout, "After Merge... Donor (PID: %d). Mass: %e Msun,  StellarEvolution->get_zams: %e Msun\n", donor->pid, donor->mass*mass_unit, donor->stellar_evolution->get_zams());
+                            fprintf(stdout, "After Merge... Accretor (PID: %d). Mass: %e Msun, StellarEvolution->get_zams: %e Msun\n", accretor->pid, accretor->mass*mass_unit, accretor->stellar_evolution->get_zams());
+                            fprintf(stdout, "Donor: amiempty(): %d\n", donor->stellar_evolution->amiempty());
+                            fprintf(stdout, "Accretor: amiempty(): %d\n", accretor->stellar_evolution->amiempty());
                             fflush(stdout);
                         }
 #endif
-                        int rank = CMPtclWorker[ptcl->ParticleIndex];
-                        queue.task = MergeManyBody;
-                        queue.pid = ptcl->ParticleIndex;
-                        workers[rank].addQueue(queue);
-                        workers[rank].runQueue();
+                        int rank = cm_particle_worker_map[ptcl->particle_index];
+                        queue.task = TASK_MERGE_MANYBODY;
+                        queue.pid = ptcl->particle_index;
+                        workers[rank].add_queue(queue);
+                        workers[rank].run_queue();
                         workers[rank].callback();
 #ifdef SEVN // This code is updated first in Enzo-Abyss by EW 2025.5.23
-                        Particle* ptcl_erased = donor->Mass < 0.0 ? donor : accretor;
-                        fprintf(stdout, "ptcl_erased... PID: %d\n", ptcl_erased->PID);
-                        if (ptcl_erased->StellarEvolution != nullptr) {
+                        Particle* ptcl_erased = donor->mass < 0.0 ? donor : accretor;
+                        fprintf(stdout, "ptcl_erased... PID: %d\n", ptcl_erased->pid);
+                        if (ptcl_erased->stellar_evolution != nullptr) {
 
                             auto it = SEVNList.begin();
                             while (it != SEVNList.end()) {
-                                if (it->second == ptcl_erased->ParticleIndex) {
+                                if (it->second == ptcl_erased->particle_index) {
                                     it = SEVNList.erase(it);
-                                    fprintf(stdout, "Merger induced zero mass particle (PID: %d) is deleted from SEVNList\n", ptcl_erased->PID);
+                                    fprintf(stdout, "Merger induced zero mass particle (PID: %d) is deleted from SEVNList\n", ptcl_erased->pid);
                                     break;
                                 }
                                 else
                                     it++;
                             }
 
-                            delete ptcl_erased->StellarEvolution;
-                            ptcl_erased->StellarEvolution = nullptr;
-                            fprintf(stdout, "Merger induced zero mass particle (PID: %d) SEVN memory is free now\n", ptcl_erased->PID);
+                            delete ptcl_erased->stellar_evolution;
+                            ptcl_erased->stellar_evolution = nullptr;
+                            fprintf(stdout, "Merger induced zero mass particle (PID: %d) SEVN memory is free now\n", ptcl_erased->pid);
                         }
                         fflush(stdout);
 #endif
@@ -387,49 +387,49 @@ bool IrregularRoutines(QueueScheduler &queue_scheduler, Worker *workers, std::un
 
                 bin_termination = true;
 
-                if (ptcl->ParticleIndex == LastParticleIndex) {
-                    LastParticleIndex--;
-                    global_variable->LastParticleIndex = LastParticleIndex;
+                if (ptcl->particle_index == last_particle_index) {
+                    last_particle_index--;
+                    g_state->last_particle_index = last_particle_index;
                 }
                 else
-                    PrevCMPtclWorker.insert({ptcl->ParticleIndex, CMPtclWorker[ptcl->ParticleIndex]});
-                CMPtclWorker.erase(ptcl->ParticleIndex);
+                    prev_cm_particle_worker_map.insert({ptcl->particle_index, cm_particle_worker_map[ptcl->particle_index]});
+                cm_particle_worker_map.erase(ptcl->particle_index);
 
-                for (int j=0; j < ptcl->NumberOfMember; j++) {
-                    if (particles[ptcl->Members[j]].Mass < 0.0) {
+                for (int j=0; j < ptcl->num_members; j++) {
+                    if (particles[ptcl->members[j]].mass < 0.0) {
 #ifdef SEVN
-                        Particle* ptcl_erased = &particles[ptcl->Members[j]];
-                        fprintf(stdout, "ptcl_erased... PID: %d\n", ptcl_erased->PID);
-                        if (ptcl_erased->StellarEvolution != nullptr) {
+                        Particle* ptcl_erased = &particles[ptcl->members[j]];
+                        fprintf(stdout, "ptcl_erased... PID: %d\n", ptcl_erased->pid);
+                        if (ptcl_erased->stellar_evolution != nullptr) {
 
                             auto it = SEVNList.begin();
                             while (it != SEVNList.end()) {
-                                if (it->second == ptcl_erased->ParticleIndex) {
+                                if (it->second == ptcl_erased->particle_index) {
                                     it = SEVNList.erase(it);
-                                    fprintf(stdout, "Merger induced zero mass particle (PID: %d) is deleted from SEVNList\n", ptcl_erased->PID);
+                                    fprintf(stdout, "Merger induced zero mass particle (PID: %d) is deleted from SEVNList\n", ptcl_erased->pid);
                                     break;
                                 }
                                 else
                                     it++;
                             }
 
-                            delete ptcl_erased->StellarEvolution;
-                            ptcl_erased->StellarEvolution = nullptr;
-                            fprintf(stdout, "Merger induced zero mass particle (PID: %d) SEVN memory is free now\n", ptcl_erased->PID);
+                            delete ptcl_erased->stellar_evolution;
+                            ptcl_erased->stellar_evolution = nullptr;
+                            fprintf(stdout, "Merger induced zero mass particle (PID: %d) SEVN memory is free now\n", ptcl_erased->pid);
                         }
                         fflush(stdout);
 #endif
                         continue;
                     }
-                    ThisLevelNode->ParticleList.push_back(ptcl->Members[j]);
+                    ThisLevelNode->ParticleList.push_back(ptcl->members[j]);
                 }
 #ifdef MULTIMAP
 #ifdef PERFORMANCETRACE
                 start_point_map = std::chrono::high_resolution_clock::now();
 #endif
-                auto range = RegularMap.equal_range(ptcl->CurrentBlockReg + ptcl->TimeBlockReg);
+                auto range = RegularMap.equal_range(ptcl->current_block_reg + ptcl->time_block_reg);
                 for (auto it = range.first; it != range.second; ++it) {
-                    if (ptcl->PID == particles[it->second].PID) {
+                    if (ptcl->pid == particles[it->second].pid) {
                         RegularMap.erase(it);
                         break;
                     }
@@ -442,7 +442,7 @@ bool IrregularRoutines(QueueScheduler &queue_scheduler, Worker *workers, std::un
 #endif // multimap
 
 #ifdef SEVN_BINARY
-                if (ptcl->BinaryEvolution != nullptr) {
+                if (ptcl->binary_evolution != nullptr) {
 #ifdef PERFORMANCETRACE
                     start_point_BSE = std::chrono::high_resolution_clock::now();
 #endif
@@ -455,7 +455,7 @@ bool IrregularRoutines(QueueScheduler &queue_scheduler, Worker *workers, std::un
                 }
 #endif
                 // Temporary test... If this works, RegularMap version should be updated too by EW 2025.08.18 // It works well!!
-                RegularList.erase(ptcl->ParticleIndex);
+                RegularList.erase(ptcl->particle_index);
                 FBTermination(ptcl);
             }
         }
@@ -468,7 +468,7 @@ bool IrregularRoutines(QueueScheduler &queue_scheduler, Worker *workers, std::un
                 start_point_map = std::chrono::high_resolution_clock::now();
 #endif
 
-                RegularMap.insert({ptcl->CurrentBlockReg + ptcl->TimeBlockReg, ptcl->ParticleIndex});
+                RegularMap.insert({ptcl->current_block_reg + ptcl->time_block_reg, ptcl->particle_index});
 
 #ifdef PERFORMANCETRACE
                 end_point_map = std::chrono::high_resolution_clock::now();
@@ -476,19 +476,19 @@ bool IrregularRoutines(QueueScheduler &queue_scheduler, Worker *workers, std::un
                     std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_map - start_point_map).count();
 #endif
 #else // no multimap
-                if (ptcl->CurrentBlockReg + ptcl->TimeBlockReg == NextRegTimeBlock)
-                    RegularList.insert(ptcl->ParticleIndex);
+                if (ptcl->current_block_reg + ptcl->time_block_reg == next_reg_time_block)
+                    RegularList.insert(ptcl->particle_index);
 #endif // multimap
                 /*
-                ptcl->NewNumberOfMember = 0;
+                ptcl->new_num_members = 0;
                 for (int j=OriginalParticleListSize; j<ThisLevelNode->ParticleList.size(); j++) {
                     if (i == j) continue;
-                    ptcl->NewMembers[ptcl->NewNumberOfMember++] = ThisLevelNode->ParticleList[j];
+                    ptcl->new_members[ptcl->new_num_members++] = ThisLevelNode->ParticleList[j];
                 }
                 */
                 /*
-                if (ptcl->TimeStepIrr < TSearch)
-                    ptcl->checkNewGroup4();
+                if (ptcl->time_step_irr < t_search)
+                    ptcl->check_new_group_v4();
                 */
             }
 
@@ -496,7 +496,7 @@ bool IrregularRoutines(QueueScheduler &queue_scheduler, Worker *workers, std::un
             ThisLevelNode->ParticleList.erase(
                 std::remove_if(ThisLevelNode->ParticleList.begin(), ThisLevelNode->ParticleList.end(),
                     [](int i) {
-                    return !particles[i].isActive;
+                    return !particles[i].is_active;
                     }
                 ),
                 ThisLevelNode->ParticleList.end()
@@ -525,10 +525,10 @@ bool IrregularRoutines(QueueScheduler &queue_scheduler, Worker *workers, std::un
 #ifdef DEBUG
         std::cout << "FB search starts" << std::endl;
 #endif
-        /* // FB search is united with IrrForce, so we don't need to do this again.
+        /* // FB search is united with TASK_IRR_FORCE, so we don't need to do this again.
         // std::cerr << "FB search starts" << std::endl;
         // Few-body group search
-        queue_scheduler.initialize(SearchGroup);
+        queue_scheduler.initialize(TASK_SEARCH_GROUP);
         queue_scheduler.takeQueue(ThisLevelNode->ParticleList);
         do
         {
@@ -544,21 +544,21 @@ bool IrregularRoutines(QueueScheduler &queue_scheduler, Worker *workers, std::un
         {
             ptcl = &particles[ptcl_id];
             
-            if (ptcl->NewNumberOfMember != 0)
-                ptcl->checkNewGroup3();
+            if (ptcl->new_num_members != 0)
+                ptcl->check_new_group_v3();
             /*
-            if (ptcl->getBinaryInterruptState() == BinaryInterruptState::threebody) {
-                ptcl->setBinaryInterruptState(BinaryInterruptState::none);
+            if (ptcl->get_binary_interrupt_state() == BinaryInterruptState::threebody) {
+                ptcl->set_binary_interrupt_state(BinaryInterruptState::none);
             }
-            else if (ptcl->getBinaryInterruptState()==BinaryInterruptState::manybody)
+            else if (ptcl->get_binary_interrupt_state()==BinaryInterruptState::manybody)
             {
-                ptcl->NewNumberOfMember = 0;
-                ptcl->checkNewGroup2();
-                ptcl->setBinaryInterruptState(BinaryInterruptState::none);
+                ptcl->new_num_members = 0;
+                ptcl->check_new_group_v2();
+                ptcl->set_binary_interrupt_state(BinaryInterruptState::none);
             }
-            else if (ptcl->NewNumberOfMember != 0)
+            else if (ptcl->new_num_members != 0)
             {	
-                ptcl->checkNewGroup3();
+                ptcl->check_new_group_v3();
             }
             */
         }
@@ -589,7 +589,7 @@ bool IrregularRoutines(QueueScheduler &queue_scheduler, Worker *workers, std::un
 #ifdef DEBUG
         std::cout << "formBinaries starts" << std::endl;
 #endif
-        formBinaries(ThisLevelNode->ParticleList, newCMptcls, CMPtclWorker, PrevCMPtclWorker);
+        formBinaries(ThisLevelNode->ParticleList, newCMptcls, cm_particle_worker_map, prev_cm_particle_worker_map);
 #ifdef DEBUG
         std::cout << "formBinaries ended" << std::endl;
 #endif
@@ -605,16 +605,16 @@ bool IrregularRoutines(QueueScheduler &queue_scheduler, Worker *workers, std::un
             for (int i=0; i<newCMptcls.size(); i++) {
                 ptclCM = &particles[newCMptcls[i]]; // 2025.01.10 edited to newCMptcls[i] by YS
 
-                for (int j=0; j<ptclCM->NewNumberOfMember; j++) {
-                    mem_ptclCM = &particles[ptclCM->NewMembers[j]];
+                for (int j=0; j<ptclCM->new_num_members; j++) {
+                    mem_ptclCM = &particles[ptclCM->new_members[j]];
 #ifdef MULTIMAP
 #ifdef PERFORMANCETRACE
                     start_point_map = std::chrono::high_resolution_clock::now();
 #endif
 
-                    auto range = RegularMap.equal_range(mem_ptclCM->CurrentBlockReg + mem_ptclCM->TimeBlockReg);
+                    auto range = RegularMap.equal_range(mem_ptclCM->current_block_reg + mem_ptclCM->time_block_reg);
                     for (auto it = range.first; it != range.second; ++it) {
-                        if (mem_ptclCM->PID == particles[it->second].PID) {
+                        if (mem_ptclCM->pid == particles[it->second].pid) {
                             RegularMap.erase(it);
                             break;
                         }
@@ -625,29 +625,29 @@ bool IrregularRoutines(QueueScheduler &queue_scheduler, Worker *workers, std::un
                         std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_map - start_point_map).count();
 #endif
 #endif // multimap
-                    if (mem_ptclCM->isCMptcl) {
-                        fprintf(stdout, "manybody group detected; PID %d should be deleted first\n", mem_ptclCM->PID);
-                        rank_delete = CMPtclWorker[mem_ptclCM->ParticleIndex];
-                        fprintf(stdout, "Rank of CM ptcl %d: %d\n", mem_ptclCM->PID, rank_delete);
-                        queue.task = DeleteGroup;
-                        queue.pid = mem_ptclCM->ParticleIndex;
-                        workers[rank_delete].addQueue(queue);
-                        workers[rank_delete].runQueue();
+                    if (mem_ptclCM->is_cm_particle) {
+                        fprintf(stdout, "manybody group detected; PID %d should be deleted first\n", mem_ptclCM->pid);
+                        rank_delete = cm_particle_worker_map[mem_ptclCM->particle_index];
+                        fprintf(stdout, "Rank of CM ptcl %d: %d\n", mem_ptclCM->pid, rank_delete);
+                        queue.task = TASK_DELETE_GROUP;
+                        queue.pid = mem_ptclCM->particle_index;
+                        workers[rank_delete].add_queue(queue);
+                        workers[rank_delete].run_queue();
                         workers[rank_delete].callback();
 
-                        if (mem_ptclCM->ParticleIndex == LastParticleIndex) {
-                            LastParticleIndex--;
-                            global_variable->LastParticleIndex = LastParticleIndex;
+                        if (mem_ptclCM->particle_index == last_particle_index) {
+                            last_particle_index--;
+                            g_state->last_particle_index = last_particle_index;
                         }
                         else
-                            PrevCMPtclWorker.insert({mem_ptclCM->ParticleIndex, CMPtclWorker[mem_ptclCM->ParticleIndex]});
-                        CMPtclWorker.erase(mem_ptclCM->ParticleIndex);
+                            prev_cm_particle_worker_map.insert({mem_ptclCM->particle_index, cm_particle_worker_map[mem_ptclCM->particle_index]});
+                        cm_particle_worker_map.erase(mem_ptclCM->particle_index);
                     }
                 }
 
-                rank_new = CMPtclWorker[ptclCM->ParticleIndex];
+                rank_new = cm_particle_worker_map[ptclCM->particle_index];
 #ifdef DEBUG
-                fprintf(stdout, "Rank of CM ptcl %d: %d\n", ptclCM->PID, rank_new);
+                fprintf(stdout, "Rank of CM ptcl %d: %d\n", ptclCM->pid, rank_new);
 #endif
 
 #ifdef SEVN_BINARY
@@ -655,13 +655,13 @@ bool IrregularRoutines(QueueScheduler &queue_scheduler, Worker *workers, std::un
                 start_point_BSE = std::chrono::high_resolution_clock::now();
 #endif
                 if (!makeSEVNBinary(ptclCM)) {
-                    if (ptclCM->ParticleIndex == LastParticleIndex) {
-                        LastParticleIndex--;
-                        global_variable->LastParticleIndex = LastParticleIndex;
+                    if (ptclCM->particle_index == last_particle_index) {
+                        last_particle_index--;
+                        g_state->last_particle_index = last_particle_index;
                     }
                     else
-                        PrevCMPtclWorker.insert({ptclCM->ParticleIndex, CMPtclWorker[ptclCM->ParticleIndex]});
-                    CMPtclWorker.erase(ptclCM->ParticleIndex);
+                        prev_cm_particle_worker_map.insert({ptclCM->particle_index, cm_particle_worker_map[ptclCM->particle_index]});
+                    cm_particle_worker_map.erase(ptclCM->particle_index);
                     continue;
                 }
 #ifdef PERFORMANCETRACE
@@ -670,16 +670,16 @@ bool IrregularRoutines(QueueScheduler &queue_scheduler, Worker *workers, std::un
                     std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_BSE - start_point_BSE).count();
 #endif
 #endif
-                queue.task = MakeGroup;
-                queue.pid = ptclCM->ParticleIndex;
-                workers[rank_new].addQueue(queue);
-                workers[rank_new].runQueue();
+                queue.task = TASK_MAKE_GROUP;
+                queue.pid = ptclCM->particle_index;
+                workers[rank_new].add_queue(queue);
+                workers[rank_new].run_queue();
                 workers[rank_new].callback();
 #ifdef MULTIMAP
 #ifdef PERFORMANCETRACE
                 start_point_map = std::chrono::high_resolution_clock::now();
 #endif
-                RegularMap.insert({ptclCM->CurrentBlockReg + ptclCM->TimeBlockReg, ptclCM->ParticleIndex});
+                RegularMap.insert({ptclCM->current_block_reg + ptclCM->time_block_reg, ptclCM->particle_index});
 #ifdef PERFORMANCETRACE
                 end_point_map = std::chrono::high_resolution_clock::now();
                 performance.RegularMap +=
@@ -687,12 +687,12 @@ bool IrregularRoutines(QueueScheduler &queue_scheduler, Worker *workers, std::un
 #endif
 #else // no multimap
                 // Temporary test... If this works, RegularMap version should be updated too by EW 2025.08.18 // It works well!!
-                for (int i = 0; i < ptclCM->NewNumberOfMember; i++) {
-                    RegularList.erase(ptclCM->NewMembers[i]);
-                    particles[ptclCM->NewMembers[i]].NewNumberOfMember = 0;
+                for (int i = 0; i < ptclCM->new_num_members; i++) {
+                    RegularList.erase(ptclCM->new_members[i]);
+                    particles[ptclCM->new_members[i]].new_num_members = 0;
                 }
-                if (ptclCM->CurrentBlockReg + ptclCM->TimeBlockReg == NextRegTimeBlock)
-                    RegularList.insert(ptclCM->ParticleIndex); // VERY IMPORTANT BUG FIXED by EW 2025.7.18
+                if (ptclCM->current_block_reg + ptclCM->time_block_reg == next_reg_time_block)
+                    RegularList.insert(ptclCM->particle_index); // VERY IMPORTANT BUG FIXED by EW 2025.7.18
 #endif
             }
 #ifdef DEBUG
@@ -703,7 +703,7 @@ bool IrregularRoutines(QueueScheduler &queue_scheduler, Worker *workers, std::un
                 std::remove_if(
                         ThisLevelNode->ParticleList.begin(), 
                         ThisLevelNode->ParticleList.end(),
-                        [](int i) { return !particles[i].isActive; }
+                        [](int i) { return !particles[i].is_active; }
                 ),
                 ThisLevelNode->ParticleList.end()
             );
@@ -743,7 +743,7 @@ bool IrregularRoutines(QueueScheduler &queue_scheduler, Worker *workers, std::un
 #endif
         PROFILE_STOP(TimerID::SkipListUpdate);
 
-        current_time_irr = particles[ThisLevelNode->ParticleList[0]].CurrentBlockIrr*time_step;
+        current_time_irr = particles[ThisLevelNode->ParticleList[0]].current_block_irr*time_step;
 #ifdef DEBUG
         std::cout << "skiplist->deleteFirstNode() starts" << std::endl;
 #endif
@@ -755,17 +755,17 @@ bool IrregularRoutines(QueueScheduler &queue_scheduler, Worker *workers, std::un
 #ifdef IRR_TEST
         std::cout << "current_time_irr=" << current_time_irr<< std::endl;
         // create output at appropriate time intervals
-        if (current_time_irr >= outputTime) {
-            writeParticle(current_time_irr, outNum++);
-            outputTime += outputTimeStep;
+        if (current_time_irr >= output_time) {
+            writeParticle(current_time_irr, output_num++);
+            output_time += output_time_step;
         }
 
         // end if the global time exceeds the end time
         if (current_time_irr >= 1) {
-            task=Ends;
+            task=TASK_END;
             queue = {task, -1, -1.0};
-            InitialAssignmentOfTasks(Queue, NumberOfWorker, QUEUE_TAG);
-            fprintf(stdout, "Simulation Done! Current Time: %e Myr\n", global_time*EnzoTimeStep*1e4);
+            InitialAssignmentOfTasks(Queue, num_workers, QUEUE_TAG);
+            fprintf(stdout, "Simulation Done! Current Time: %e Myr\n", global_time*enzo_time_step*1e4);
             return;
         }
 #endif
@@ -781,18 +781,18 @@ bool IrregularRoutines(QueueScheduler &queue_scheduler, Worker *workers, std::un
 #ifdef FEWBODY
     if (bin_termination || new_binaries) {
 #ifdef MULTIMAP
-        if (NextRegTimeBlock != RegularMap.begin()->first) {
-            NextRegTimeBlock = RegularMap.begin()->first;
-            global_variable->NextRegTimeBlock = NextRegTimeBlock;
+        if (next_reg_time_block != RegularMap.begin()->first) {
+            next_reg_time_block = RegularMap.begin()->first;
+            g_state->next_reg_time_block = next_reg_time_block;
             continue;
         }
 #else // no multimap
         /* // I didn't erase this yet because MultiMap should be fixed too by EW 2025.8.18
         for (auto it = RegularList.begin(); it != RegularList.end(); ) {
-            if (!particles[*it].isActive) {
+            if (!particles[*it].is_active) {
                 it = RegularList.erase(it);
-                fprintf(stderr, "bin_term or new_binaries... Why PID: %d is inactive? (NRTB: %llu)\n", particles[*it].PID, NextRegTimeBlock);
-                assert(particles[*it].isActive);
+                fprintf(stderr, "bin_term or new_binaries... Why PID: %d is inactive? (NRTB: %llu)\n", particles[*it].pid, next_reg_time_block);
+                assert(particles[*it].is_active);
             }
             else
                 ++it;
@@ -819,14 +819,14 @@ bool createSkipList(SkipList *skiplist) {
 
 	Particle* ptcl;
 
-	for (int i=0; i<=LastParticleIndex; i++) {
+	for (int i=0; i<=last_particle_index; i++) {
 		ptcl =  &particles[i];
 
-		// if ((ptcl->NumberOfNeighbor != 0) && (ptcl->NextBlockIrr <= NextRegTimeBlock)) { // IAR original
-		if (ptcl->isActive && ptcl->NextBlockIrr <= NextRegTimeBlock) {	// IAR modified
-			//fprintf(stdout, "PID=%d, NBI=%llu\n", ptcl->PID, ptcl->NextBlockIrr);
-			if (!skiplist->search(ptcl->NextBlockIrr, ptcl->ParticleIndex))
-				skiplist->insert(ptcl->NextBlockIrr, ptcl->ParticleIndex);
+		// if ((ptcl->num_neighbors != 0) && (ptcl->next_block_irr <= next_reg_time_block)) { // IAR original
+		if (ptcl->is_active && ptcl->next_block_irr <= next_reg_time_block) {	// IAR modified
+			//fprintf(stdout, "PID=%d, NBI=%llu\n", ptcl->pid, ptcl->next_block_irr);
+			if (!skiplist->search(ptcl->next_block_irr, ptcl->particle_index))
+				skiplist->insert(ptcl->next_block_irr, ptcl->particle_index);
 		}
 	}
 
@@ -859,20 +859,20 @@ bool updateSkipList(SkipList *skiplist, int ptcl_id) {
 
 	/*
 	if (this->debug) {
-	fprintf(stdout, "PID=%d, NBI=%llu, size=%lu\n", ptcl->PID, ptcl->NextBlockIrr, ThisLevelNode->particle_list.size());
-	fprintf(stdout, "NextBlockIrr=%llu\n",ptcl->NextBlockIrr);
+	fprintf(stdout, "PID=%d, NBI=%llu, size=%lu\n", ptcl->pid, ptcl->next_block_irr, ThisLevelNode->particle_list.size());
+	fprintf(stdout, "NextBlockIrr=%llu\n",ptcl->next_block_irr);
 	fflush(stdout);
 	}
 	*/
 
 	Particle * ptcl = &particles[ptcl_id];
 
-	//std::cout << "NextBlockIrr of "<< ptcl_id<<" = " << ptcl->NextBlockIrr << std::endl;
-	if (ptcl->NextBlockIrr > NextRegTimeBlock)
+	//std::cout << "NextBlockIrr of "<< ptcl_id<<" = " << ptcl->next_block_irr << std::endl;
+	if (ptcl->next_block_irr > next_reg_time_block)
 		return true;
 
-	if (!skiplist->search(ptcl->NextBlockIrr, ptcl->ParticleIndex))
-		skiplist->insert(ptcl->NextBlockIrr, ptcl->ParticleIndex);
+	if (!skiplist->search(ptcl->next_block_irr, ptcl->particle_index))
+		skiplist->insert(ptcl->next_block_irr, ptcl->particle_index);
 
 	if (debug) {
 	}

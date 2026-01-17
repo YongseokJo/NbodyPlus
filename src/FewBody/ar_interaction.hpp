@@ -3,10 +3,10 @@
 #ifdef FEWBODY
 //#pragma once
 
-extern double EnzoTimeStep;
-extern FILE* workerout;
+extern double enzo_time_step;
+extern FILE* worker_output_file;
 extern Particle *particles;
-extern int* Neighbors;
+extern int* neighbors;
 
 #include "ar_perturber.hpp"
 #include <cassert>
@@ -48,11 +48,11 @@ public:
     */
     inline Float calcInnerAccPotAndGTKickInvTwo(AR::Force& _f1, AR::Force& _f2, Float& _epot, const Particle& _p1, const Particle& _p2) {
         // acceleration
-        const Float mass1 = _p1.Mass;
-        const Float* pos1 = _p1.Position;
+        const Float mass1 = _p1.mass;
+        const Float* pos1 = _p1.position;
 
-        const Float mass2 = _p2.Mass;
-        const Float* pos2 = _p2.Position;
+        const Float mass2 = _p2.mass;
+        const Float* pos2 = _p2.position;
 
         Float gm1 = gravitational_constant*mass1;
         Float gm2 = gravitational_constant*mass2;
@@ -127,8 +127,8 @@ public:
         Float gt_kick_inv = Float(0.0);
 
         for (int i=0; i<_n_particle; i++) {
-            const Float massi = _particles[i].Mass;
-            const Float* posi = _particles[i].Position;
+            const Float massi = _particles[i].mass;
+            const Float* posi = _particles[i].position;
             Float* acci = _force[i].acc_in;
             acci[0] = acci[1] = acci[2] = Float(0.0);
 
@@ -142,8 +142,8 @@ public:
 
             for (int j=0; j<_n_particle; j++) {
                 if (i==j) continue;
-                const Float massj = _particles[j].Mass;
-                const Float* posj = _particles[j].Position; 
+                const Float massj = _particles[j].mass;
+                const Float* posj = _particles[j].position; 
                 Float dr[3] = {posj[0] -posi[0],
                                posj[1] -posi[1],
                                posj[2] -posi[2]};
@@ -192,7 +192,7 @@ public:
 
         // perturber force
         // const int n_pert = _perturber.neighbor_address.getSize();
-        const int n_pert = _particle_cm.NumberOfNeighbor;
+        const int n_pert = _particle_cm.num_neighbors;
         int n_pert_active = 0;
         // const int n_pert_single = _perturber.n_neighbor_single;
         // const int n_pert_group = _perturber.n_neighbor_group;
@@ -202,7 +202,7 @@ public:
             Float time = _time;
 
             // auto* pert_adr = _perturber.neighbor_address.getDataAddress();
-            int* pert_adr = Neighbors + _particle_cm.NeighborsOffset;
+            int* pert_adr = neighbors + _particle_cm.neighbors_offset;
 
             Float xp[n_pert][3], xcm[3], m[n_pert];
             // ChangeOver* changeover[n_pert_single];
@@ -216,9 +216,9 @@ public:
                 // H4::NBAdr<Particle>::Single* pertj;
                 Particle* pertj;
                 pertj = &particles[pert_adr[j]];
-                if (!pertj->isActive) {
-                    if (pertj->CMPtclIndex != -1) {
-                        CMPtclsSet.insert(pertj->CMPtclIndex);
+                if (!pertj->is_active) {
+                    if (pertj->cm_particle_index != -1) {
+                        CMPtclsSet.insert(pertj->cm_particle_index);
                     }
                     continue;
                 }
@@ -236,48 +236,48 @@ public:
                 //     n_single_count++;
                 // }
 
-                Float dt = time - pertj->CurrentTimeIrr*EnzoTimeStep;
+                Float dt = time - pertj->current_time_irr*enzo_time_step;
                 // ASSERT(dt>=0.0); // Eunwoo debug // Is this right?
                 //ASSERT(dt>=-1e-7);
-                xp[n_pert_active][0] = pertj->Position[0] + dt*(pertj->Velocity[0] + 0.5*dt*(pertj->a_tot[0][0] + inv3*dt*pertj->a_tot[0][1]));
-                xp[n_pert_active][1] = pertj->Position[1] + dt*(pertj->Velocity[1] + 0.5*dt*(pertj->a_tot[1][0] + inv3*dt*pertj->a_tot[1][1]));
-                xp[n_pert_active][2] = pertj->Position[2] + dt*(pertj->Velocity[2] + 0.5*dt*(pertj->a_tot[2][0] + inv3*dt*pertj->a_tot[2][1]));
+                xp[n_pert_active][0] = pertj->position[0] + dt*(pertj->velocity[0] + 0.5*dt*(pertj->acc_total[0][0] + inv3*dt*pertj->acc_total[0][1]));
+                xp[n_pert_active][1] = pertj->position[1] + dt*(pertj->velocity[1] + 0.5*dt*(pertj->acc_total[1][0] + inv3*dt*pertj->acc_total[1][1]));
+                xp[n_pert_active][2] = pertj->position[2] + dt*(pertj->velocity[2] + 0.5*dt*(pertj->acc_total[2][0] + inv3*dt*pertj->acc_total[2][1]));
 
-                m[n_pert_active] = pertj->Mass;
+                m[n_pert_active] = pertj->mass;
                 n_pert_active++;
             }
             for (int j: CMPtclsSet) {
                 Particle* pertj;
                 pertj = &particles[j];
 
-                if (_particle_cm.PID == pertj->PID) {
+                if (_particle_cm.pid == pertj->pid) {
                     continue;
                 }
 
-                if (!pertj->isActive) {
-                    fprintf(stderr, "Why inactive CM ptcl? this PID: %d, neighbor PID: %d\n", _particle_cm.PID, pertj->PID);
-                    assert(pertj->isActive);
+                if (!pertj->is_active) {
+                    fprintf(stderr, "Why inactive CM ptcl? this PID: %d, neighbor PID: %d\n", _particle_cm.pid, pertj->pid);
+                    assert(pertj->is_active);
                 }
 
-                Float dt = time - pertj->CurrentTimeIrr*EnzoTimeStep;
+                Float dt = time - pertj->current_time_irr*enzo_time_step;
                 // ASSERT(dt>=0.0); // Eunwoo debug // Is this right?
                 //ASSERT(dt>=-1e-7);
-                xp[n_pert_active][0] = pertj->Position[0] + dt*(pertj->Velocity[0] + 0.5*dt*(pertj->a_tot[0][0] + inv3*dt*pertj->a_tot[0][1]));
-                xp[n_pert_active][1] = pertj->Position[1] + dt*(pertj->Velocity[1] + 0.5*dt*(pertj->a_tot[1][0] + inv3*dt*pertj->a_tot[1][1]));
-                xp[n_pert_active][2] = pertj->Position[2] + dt*(pertj->Velocity[2] + 0.5*dt*(pertj->a_tot[2][0] + inv3*dt*pertj->a_tot[2][1]));
+                xp[n_pert_active][0] = pertj->position[0] + dt*(pertj->velocity[0] + 0.5*dt*(pertj->acc_total[0][0] + inv3*dt*pertj->acc_total[0][1]));
+                xp[n_pert_active][1] = pertj->position[1] + dt*(pertj->velocity[1] + 0.5*dt*(pertj->acc_total[1][0] + inv3*dt*pertj->acc_total[1][1]));
+                xp[n_pert_active][2] = pertj->position[2] + dt*(pertj->velocity[2] + 0.5*dt*(pertj->acc_total[2][0] + inv3*dt*pertj->acc_total[2][1]));
 
-                m[n_pert_active] = pertj->Mass;
+                m[n_pert_active] = pertj->mass;
                 n_pert_active++;
             }
             // ASSERT(n_single_count == n_pert_single);
             // ASSERT(n_group_count == n_pert_group);
 
-            Float dt = time - _particle_cm.CurrentTimeIrr*EnzoTimeStep;
+            Float dt = time - _particle_cm.current_time_irr*enzo_time_step;
             // ASSERT(dt>=0.0); // Eunwoo debug // Is this right?
 
-            xcm[0] = _particle_cm.Position[0] + dt*(_particle_cm.Velocity[0] + 0.5*dt*(_particle_cm.a_tot[0][0] + inv3*dt*_particle_cm.a_tot[0][1]));
-            xcm[1] = _particle_cm.Position[1] + dt*(_particle_cm.Velocity[1] + 0.5*dt*(_particle_cm.a_tot[1][0] + inv3*dt*_particle_cm.a_tot[1][1]));
-            xcm[2] = _particle_cm.Position[2] + dt*(_particle_cm.Velocity[2] + 0.5*dt*(_particle_cm.a_tot[2][0] + inv3*dt*_particle_cm.a_tot[2][1]));
+            xcm[0] = _particle_cm.position[0] + dt*(_particle_cm.velocity[0] + 0.5*dt*(_particle_cm.acc_total[0][0] + inv3*dt*_particle_cm.acc_total[0][1]));
+            xcm[1] = _particle_cm.position[1] + dt*(_particle_cm.velocity[1] + 0.5*dt*(_particle_cm.acc_total[1][0] + inv3*dt*_particle_cm.acc_total[1][1]));
+            xcm[2] = _particle_cm.position[2] + dt*(_particle_cm.velocity[2] + 0.5*dt*(_particle_cm.acc_total[2][0] + inv3*dt*_particle_cm.acc_total[2][1]));
 
 
             Float acc_pert_cm[3]={0.0, 0.0, 0.0};
@@ -293,9 +293,9 @@ public:
                 pot_pert = 0.0;
 
                 Float xi[3];
-                xi[0] = pi.Position[0] + xcm[0];
-                xi[1] = pi.Position[1] + xcm[1];
-                xi[2] = pi.Position[2] + xcm[2];
+                xi[0] = pi.position[0] + xcm[0];
+                xi[1] = pi.position[1] + xcm[1];
+                xi[2] = pi.position[2] + xcm[2];
 
                 // single perturber
                 for (int j=0; j<n_pert_active; j++) {
@@ -314,11 +314,11 @@ public:
 
                 }
 
-                acc_pert_cm[0] += pi.Mass *acc_pert[0];
-                acc_pert_cm[1] += pi.Mass *acc_pert[1];
-                acc_pert_cm[2] += pi.Mass *acc_pert[2];
+                acc_pert_cm[0] += pi.mass *acc_pert[0];
+                acc_pert_cm[1] += pi.mass *acc_pert[1];
+                acc_pert_cm[2] += pi.mass *acc_pert[2];
 
-                mcm += pi.Mass;
+                mcm += pi.mass;
 
             }
 //#ifdef AR_DEBUG
@@ -339,7 +339,7 @@ public:
                 acc_pert[1] -= acc_pert_cm[1];        
                 acc_pert[2] -= acc_pert_cm[2]; 
                 
-                pot_pert -= acc_pert[0]*pi.Position[0] + acc_pert[1]*pi.Position[1] + acc_pert[2]*pi.Position[2];
+                pot_pert -= acc_pert[0]*pi.position[0] + acc_pert[1]*pi.position[1] + acc_pert[2]*pi.position[2];
 
             }
 
@@ -452,20 +452,20 @@ public:
       @param[in] _pj: particle j 
      */
     void calcSlowDownPertOne(Float& _pert_out, Float& _t_min_sq, const Particle& pi, const Particle& pj) {
-        Float dr[3] = {pj.Position[0] - pi.Position[0],
-                       pj.Position[1] - pi.Position[1],
-                       pj.Position[2] - pi.Position[2]};
+        Float dr[3] = {pj.position[0] - pi.position[0],
+                       pj.position[1] - pi.position[1],
+                       pj.position[2] - pi.position[2]};
         Float r2 = dr[0]*dr[0] + dr[1]*dr[1] + dr[2]*dr[2];
         Float r = sqrt(r2);
-        _pert_out += calcPertFromMR(r, pi.Mass, pj.Mass);
+        _pert_out += calcPertFromMR(r, pi.mass, pj.mass);
             
 #ifdef AR_SLOWDOWN_TIMESCALE
-        Float dv[3] = {pj.Velocity[0] - pi.Velocity[0],
-                       pj.Velocity[1] - pi.Velocity[1],
-                       pj.Velocity[2] - pi.Velocity[2]};
+        Float dv[3] = {pj.velocity[0] - pi.velocity[0],
+                       pj.velocity[1] - pi.velocity[1],
+                       pj.velocity[2] - pi.velocity[2]};
 
         // identify whether hyperbolic or closed orbit
-        Float gm = gravitational_constant*(pi.Mass+pj.Mass);
+        Float gm = gravitational_constant*(pi.mass+pj.mass);
 
         calcSlowDownTimeScale(_t_min_sq, dv, dr, r, gm);
         // force dependent method
@@ -487,50 +487,50 @@ public:
         static const Float inv3 = 1.0 / 3.0;
 
         // const int n_pert = _perturber.neighbor_address.getSize();
-        const int n_pert = _particle_cm.NumberOfNeighbor;
+        const int n_pert = _particle_cm.num_neighbors;
 
         if (n_pert>0) {
 
-            int* pert_adr = Neighbors + _particle_cm.NeighborsOffset;
+            int* pert_adr = neighbors + _particle_cm.neighbors_offset;
 
             std::unordered_set<int> CMPtclsSet;
 
             Float xp[3], xcm[3];
-            Float dt = _time - _particle_cm.CurrentTimeIrr*EnzoTimeStep;
+            Float dt = _time - _particle_cm.current_time_irr*enzo_time_step;
             // ASSERT(dt>=0.0); // Eunwoo debug // Is this necessary?
-            xcm[0] = _particle_cm.Position[0] + dt*(_particle_cm.Velocity[0] + 0.5*dt*(_particle_cm.a_tot[0][0] + inv3*dt*_particle_cm.a_tot[0][1]));
-            xcm[1] = _particle_cm.Position[1] + dt*(_particle_cm.Velocity[1] + 0.5*dt*(_particle_cm.a_tot[1][0] + inv3*dt*_particle_cm.a_tot[1][1]));
-            xcm[2] = _particle_cm.Position[2] + dt*(_particle_cm.Velocity[2] + 0.5*dt*(_particle_cm.a_tot[2][0] + inv3*dt*_particle_cm.a_tot[2][1]));
+            xcm[0] = _particle_cm.position[0] + dt*(_particle_cm.velocity[0] + 0.5*dt*(_particle_cm.acc_total[0][0] + inv3*dt*_particle_cm.acc_total[0][1]));
+            xcm[1] = _particle_cm.position[1] + dt*(_particle_cm.velocity[1] + 0.5*dt*(_particle_cm.acc_total[1][0] + inv3*dt*_particle_cm.acc_total[1][1]));
+            xcm[2] = _particle_cm.position[2] + dt*(_particle_cm.velocity[2] + 0.5*dt*(_particle_cm.acc_total[2][0] + inv3*dt*_particle_cm.acc_total[2][1]));
 
-            Float mcm = _particle_cm.Mass;
+            Float mcm = _particle_cm.mass;
             // auto& chi = _particle_cm.changeover;
 
 #ifdef AR_SLOWDOWN_TIMESCALE
             // velocity dependent method 
             Float vp[3], vcm[3];
 
-            vcm[0] = _particle_cm.Velocity[0] + dt*(_particle_cm.a_tot[0][0] + 0.5*dt*_particle_cm.a_tot[0][1]);
-            vcm[1] = _particle_cm.Velocity[1] + dt*(_particle_cm.a_tot[1][0] + 0.5*dt*_particle_cm.a_tot[1][1]);
-            vcm[2] = _particle_cm.Velocity[2] + dt*(_particle_cm.a_tot[2][0] + 0.5*dt*_particle_cm.a_tot[2][1]);
+            vcm[0] = _particle_cm.velocity[0] + dt*(_particle_cm.acc_total[0][0] + 0.5*dt*_particle_cm.acc_total[0][1]);
+            vcm[1] = _particle_cm.velocity[1] + dt*(_particle_cm.acc_total[1][0] + 0.5*dt*_particle_cm.acc_total[1][1]);
+            vcm[2] = _particle_cm.velocity[2] + dt*(_particle_cm.acc_total[2][0] + 0.5*dt*_particle_cm.acc_total[2][1]);
 #endif
 
             for (int j=0; j<n_pert; j++) {
                 Particle* pertj;
                 pertj = &particles[pert_adr[j]];
-                if (!pertj->isActive) {
-                    if (pertj->CMPtclIndex != -1) {
-                        CMPtclsSet.insert(pertj->CMPtclIndex);
+                if (!pertj->is_active) {
+                    if (pertj->cm_particle_index != -1) {
+                        CMPtclsSet.insert(pertj->cm_particle_index);
                     }
                     continue;
                 }
 
-                Float dt = _time - pertj->CurrentTimeIrr*EnzoTimeStep;
+                Float dt = _time - pertj->current_time_irr*enzo_time_step;
                 // ASSERT(dt>=0.0); // Eunwoo debug // Is this necessary?
-                xp[0] = pertj->Position[0] + dt*(pertj->Velocity[0] + 0.5*dt*(pertj->a_tot[0][0] + inv3*dt*pertj->a_tot[0][1]));
-                xp[1] = pertj->Position[1] + dt*(pertj->Velocity[1] + 0.5*dt*(pertj->a_tot[1][0] + inv3*dt*pertj->a_tot[1][1]));
-                xp[2] = pertj->Position[2] + dt*(pertj->Velocity[2] + 0.5*dt*(pertj->a_tot[2][0] + inv3*dt*pertj->a_tot[2][1]));
+                xp[0] = pertj->position[0] + dt*(pertj->velocity[0] + 0.5*dt*(pertj->acc_total[0][0] + inv3*dt*pertj->acc_total[0][1]));
+                xp[1] = pertj->position[1] + dt*(pertj->velocity[1] + 0.5*dt*(pertj->acc_total[1][0] + inv3*dt*pertj->acc_total[1][1]));
+                xp[2] = pertj->position[2] + dt*(pertj->velocity[2] + 0.5*dt*(pertj->acc_total[2][0] + inv3*dt*pertj->acc_total[2][1]));
 
-                Float mj = pertj->Mass;
+                Float mj = pertj->mass;
 
                 // auto& chj = pertj->changeover;
 
@@ -546,9 +546,9 @@ public:
 
 #ifdef AR_SLOWDOWN_TIMESCALE
                 // velocity dependent method 
-                vp[0] = pertj->Velocity[0] + dt*(pertj->a_tot[0][0] + 0.5*dt*pertj->a_tot[0][1]);
-                vp[1] = pertj->Velocity[1] + dt*(pertj->a_tot[1][0] + 0.5*dt*pertj->a_tot[1][1]);
-                vp[2] = pertj->Velocity[2] + dt*(pertj->a_tot[2][0] + 0.5*dt*pertj->a_tot[2][1]);
+                vp[0] = pertj->velocity[0] + dt*(pertj->acc_total[0][0] + 0.5*dt*pertj->acc_total[0][1]);
+                vp[1] = pertj->velocity[1] + dt*(pertj->acc_total[1][0] + 0.5*dt*pertj->acc_total[1][1]);
+                vp[2] = pertj->velocity[2] + dt*(pertj->acc_total[2][0] + 0.5*dt*pertj->acc_total[2][1]);
 
                 Float dv[3] = {vp[0] - vcm[0],
                                vp[1] - vcm[1],
@@ -564,22 +564,22 @@ public:
                 Particle* pertj;
                 pertj = &particles[j];
 
-                if (_particle_cm.PID == pertj->PID) {
+                if (_particle_cm.pid == pertj->pid) {
                     continue;
                 }
 
-                if (!pertj->isActive) {
-                    fprintf(stderr, "Why inactive CM ptcl? this PID: %d, neighbor PID: %d\n", _particle_cm.PID, pertj->PID);
-                    assert(pertj->isActive);
+                if (!pertj->is_active) {
+                    fprintf(stderr, "Why inactive CM ptcl? this PID: %d, neighbor PID: %d\n", _particle_cm.pid, pertj->pid);
+                    assert(pertj->is_active);
                 }
 
-                Float dt = _time - pertj->CurrentTimeIrr*EnzoTimeStep;
+                Float dt = _time - pertj->current_time_irr*enzo_time_step;
                 // ASSERT(dt>=0.0); // Eunwoo debug // Is this necessary?
-                xp[0] = pertj->Position[0] + dt*(pertj->Velocity[0] + 0.5*dt*(pertj->a_tot[0][0] + inv3*dt*pertj->a_tot[0][1]));
-                xp[1] = pertj->Position[1] + dt*(pertj->Velocity[1] + 0.5*dt*(pertj->a_tot[1][0] + inv3*dt*pertj->a_tot[1][1]));
-                xp[2] = pertj->Position[2] + dt*(pertj->Velocity[2] + 0.5*dt*(pertj->a_tot[2][0] + inv3*dt*pertj->a_tot[2][1]));
+                xp[0] = pertj->position[0] + dt*(pertj->velocity[0] + 0.5*dt*(pertj->acc_total[0][0] + inv3*dt*pertj->acc_total[0][1]));
+                xp[1] = pertj->position[1] + dt*(pertj->velocity[1] + 0.5*dt*(pertj->acc_total[1][0] + inv3*dt*pertj->acc_total[1][1]));
+                xp[2] = pertj->position[2] + dt*(pertj->velocity[2] + 0.5*dt*(pertj->acc_total[2][0] + inv3*dt*pertj->acc_total[2][1]));
 
-                Float mj = pertj->Mass;
+                Float mj = pertj->mass;
 
                 // auto& chj = pertj->changeover;
 
@@ -595,9 +595,9 @@ public:
 
 #ifdef AR_SLOWDOWN_TIMESCALE
                 // velocity dependent method 
-                vp[0] = pertj->Velocity[0] + dt*(pertj->a_tot[0][0] + 0.5*dt*pertj->a_tot[0][1]);
-                vp[1] = pertj->Velocity[1] + dt*(pertj->a_tot[1][0] + 0.5*dt*pertj->a_tot[1][1]);
-                vp[2] = pertj->Velocity[2] + dt*(pertj->a_tot[2][0] + 0.5*dt*pertj->a_tot[2][1]);
+                vp[0] = pertj->velocity[0] + dt*(pertj->acc_total[0][0] + 0.5*dt*pertj->acc_total[0][1]);
+                vp[1] = pertj->velocity[1] + dt*(pertj->acc_total[1][0] + 0.5*dt*pertj->acc_total[1][1]);
+                vp[2] = pertj->velocity[2] + dt*(pertj->acc_total[2][0] + 0.5*dt*pertj->acc_total[2][1]);
 
                 Float dv[3] = {vp[0] - vcm[0],
                                vp[1] - vcm[1],
@@ -650,13 +650,13 @@ public:
 
                 Float radius = mergerRadius(p1, p2); // p1->radius + p2->radius;
 
-                if (p1->getBinaryInterruptState()== BinaryInterruptState::collisioncandidate && 
-                    p2->getBinaryInterruptState()== BinaryInterruptState::collisioncandidate &&
+                if (p1->get_binary_interrupt_state()== BinaryInterruptState::collision_candidate && 
+                    p2->get_binary_interrupt_state()== BinaryInterruptState::collision_candidate &&
                     (p1->time_check<_bin_interrupt.time_end || p2->time_check<_bin_interrupt.time_end) &&
-                    (p1->getBinaryPairID()==p2->ParticleIndex||p2->getBinaryPairID()==p1->ParticleIndex)) {
+                    (p1->get_binary_pair_id()==p2->particle_index||p2->get_binary_pair_id()==p1->particle_index)) {
 
-                        p1->setBinaryInterruptState(BinaryInterruptState::collision);
-                        p2->setBinaryInterruptState(BinaryInterruptState::collision);
+                        p1->set_binary_interrupt_state(BinaryInterruptState::collision);
+                        p2->set_binary_interrupt_state(BinaryInterruptState::collision);
                         _bin_interrupt.status = AR::InterruptStatus::merge;
                         _bin_interrupt.adr = &_bin;
 
@@ -667,21 +667,21 @@ public:
                     _bin.particleToSemiEcc(semi, ecc, dr, drdv, *_bin.getLeftMember(), *_bin.getRightMember(), gravitational_constant);
                     Float peri = semi*(1 - ecc);
 
-                    // if (peri<radius && p1->getBinaryPairID()!=p2->PID&&p2->getBinaryPairID()!=p1->PID) { // original
+                    // if (peri<radius && p1->get_binary_pair_id()!=p2->pid&&p2->get_binary_pair_id()!=p1->pid) { // original
                     if (peri<radius) { // Eunwoo modified
                         Float ecc_anomaly  = _bin.calcEccAnomaly(dr);
                         Float mean_anomaly = _bin.calcMeanAnomaly(ecc_anomaly, ecc);
-                        Float mean_motion  = sqrt(gravitational_constant*_bin.Mass/(fabs(_bin.semi*_bin.semi*_bin.semi))); 
+                        Float mean_motion  = sqrt(gravitational_constant*_bin.mass/(fabs(_bin.semi*_bin.semi*_bin.semi))); 
                         Float t_peri = mean_anomaly/mean_motion;
                         if (drdv<0 && t_peri<_bin_interrupt.time_end-_bin_interrupt.time_now) {
-                            fprintf(workerout, "Merger1. peri: %e pc, radius: %e pc\n", peri*position_unit, radius*position_unit);
-                            fprintf(workerout, "PID: %d and %d\n", p1->PID, p2->PID);
-                            fflush(workerout);
+                            fprintf(worker_output_file, "Merger1. peri: %e pc, radius: %e pc\n", peri*position_unit, radius*position_unit);
+                            fprintf(worker_output_file, "PID: %d and %d\n", p1->pid, p2->pid);
+                            fflush(worker_output_file);
 
-                            p1->setBinaryInterruptState(BinaryInterruptState::collision);
-                            p2->setBinaryInterruptState(BinaryInterruptState::collision);
-                            p1->setBinaryPairID(p2->ParticleIndex);
-                            p2->setBinaryPairID(p1->ParticleIndex);
+                            p1->set_binary_interrupt_state(BinaryInterruptState::collision);
+                            p2->set_binary_interrupt_state(BinaryInterruptState::collision);
+                            p1->set_binary_pair_id(p2->particle_index);
+                            p2->set_binary_pair_id(p1->particle_index);
                             _bin_interrupt.status = AR::InterruptStatus::merge;
                             _bin_interrupt.adr = &_bin;
 
@@ -689,15 +689,15 @@ public:
                         }
                             
                         else if (semi>0||(semi<0&&drdv<0)) {
-                            p1->setBinaryPairID(p2->ParticleIndex);
-                            p2->setBinaryPairID(p1->ParticleIndex);
-                            p1->setBinaryInterruptState(BinaryInterruptState::collisioncandidate);
-                            p2->setBinaryInterruptState(BinaryInterruptState::collisioncandidate);
+                            p1->set_binary_pair_id(p2->particle_index);
+                            p2->set_binary_pair_id(p1->particle_index);
+                            p1->set_binary_interrupt_state(BinaryInterruptState::collision_candidate);
+                            p2->set_binary_interrupt_state(BinaryInterruptState::collision_candidate);
                             p1->time_check = std::min(p1->time_check, _bin_interrupt.time_now + (drdv<0 ? t_peri : (_bin.period - t_peri)));
                             p2->time_check = std::min(p1->time_check, p2->time_check);
-                            fprintf(workerout, "Merger2. peri: %e pc, radius: %e pc\n", peri*position_unit, radius*position_unit);
-                            fprintf(workerout, "PID: %d and %d might merge soon!\n", p1->PID, p2->PID);
-                            fflush(workerout);
+                            fprintf(worker_output_file, "Merger2. peri: %e pc, radius: %e pc\n", peri*position_unit, radius*position_unit);
+                            fprintf(worker_output_file, "PID: %d and %d might merge soon!\n", p1->pid, p2->pid);
+                            fflush(worker_output_file);
                         }
                     }
                 }
@@ -732,19 +732,19 @@ public:
             if (drdv < 0)
                 mean_anomaly = 2*M_PI - mean_anomaly;
             mean_anomaly = fmod(mean_anomaly + 2*M_PI, 2*M_PI);
-            Float mean_motion  = sqrt(gravitational_constant*_bin.Mass/(fabs(_bin.semi*_bin.semi*_bin.semi))); 
+            Float mean_motion  = sqrt(gravitational_constant*_bin.mass/(fabs(_bin.semi*_bin.semi*_bin.semi))); 
             Float t_peri = abs(mean_anomaly/mean_motion); // always smaller than half the period
             Float period = 2*M_PI/mean_motion;
 
             if (peri < radius && _dt > t_peri) {
-                fprintf(workerout, "Merger in KeplerSolver. peri: %e pc, radius: %e pc\n", peri*position_unit, radius*position_unit);
-                fprintf(workerout, "PID: %d and %d\n", p1->PID, p2->PID);
-                fflush(workerout);
+                fprintf(worker_output_file, "Merger in KeplerSolver. peri: %e pc, radius: %e pc\n", peri*position_unit, radius*position_unit);
+                fprintf(worker_output_file, "PID: %d and %d\n", p1->pid, p2->pid);
+                fflush(worker_output_file);
 
-                p1->setBinaryInterruptState(BinaryInterruptState::collision);
-                p2->setBinaryInterruptState(BinaryInterruptState::collision);
-                p1->setBinaryPairID(p2->ParticleIndex);
-                p2->setBinaryPairID(p1->ParticleIndex);
+                p1->set_binary_interrupt_state(BinaryInterruptState::collision);
+                p2->set_binary_interrupt_state(BinaryInterruptState::collision);
+                p1->set_binary_pair_id(p2->particle_index);
+                p2->set_binary_pair_id(p1->particle_index);
                 _bin_interrupt.status = AR::InterruptStatus::merge;
                 _bin_interrupt.adr = &_bin;
 
@@ -769,18 +769,18 @@ public:
 
         Float radius = 0.0;
 
-        if (p1->ParticleType > REMNANT && p2->ParticleType > REMNANT) {
+        if (p1->particle_type > REMNANT && p2->particle_type > REMNANT) {
             // radius = (p1->radius > p2->radius) ? 3*p1->radius : 3*p2->radius; 
             // r_ISCO == 3 * Schwartzschild raiuds
-            radius = (p1->Mass >= p2->Mass) ? 6*p1->Mass/pow(299752.458/(velocity_unit/yr*pc/1e5), 2) : 6*p2->Mass/pow(299752.458/(velocity_unit/yr*pc/1e5), 2);
+            radius = (p1->mass >= p2->mass) ? 6*p1->mass/pow(299752.458/(velocity_unit/yr*pc/1e5), 2) : 6*p2->mass/pow(299752.458/(velocity_unit/yr*pc/1e5), 2);
         }
-        else if (p1->ParticleType > REMNANT && p2->ParticleType < REMNANT) {
-            radius = 1.3*pow((p1->Mass + p2->Mass)/p2->Mass, 1./3)*p2->radius; // TDE radius
+        else if (p1->particle_type > REMNANT && p2->particle_type < REMNANT) {
+            radius = 1.3*pow((p1->mass + p2->mass)/p2->mass, 1./3)*p2->radius; // TDE radius
         }
-        else if (p1->ParticleType < REMNANT && p2->ParticleType > REMNANT) {
-            radius = 1.3*pow((p1->Mass + p2->Mass)/p1->Mass, 1./3)*p1->radius; // TDE radius
+        else if (p1->particle_type < REMNANT && p2->particle_type > REMNANT) {
+            radius = 1.3*pow((p1->mass + p2->mass)/p1->mass, 1./3)*p1->radius; // TDE radius
         }
-        else if (p1->ParticleType < REMNANT && p2->ParticleType < REMNANT) {
+        else if (p1->particle_type < REMNANT && p2->particle_type < REMNANT) {
             radius = p1->radius + p2->radius; // Sum of two stellar radius
         }
 

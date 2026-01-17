@@ -5,13 +5,13 @@
 
 void calculateRegAccelerationOnGPU(std::unordered_set<int>& RegularList, QueueScheduler &queue_scheduler);
 #ifdef MULTIMAP
-void getRegularList(std::multimap<ULL,int>& RegularMap, std::unordered_set<int>& RegularList);
-void updateRegularMap(std::multimap<ULL,int>& RegularMap, std::unordered_set<int>& RegularList);
+void getRegularList(std::multimap<ull_t,int>& RegularMap, std::unordered_set<int>& RegularList);
+void updateRegularMap(std::multimap<ull_t,int>& RegularMap, std::unordered_set<int>& RegularList);
 #endif
 
 void RegularRoutines(QueueScheduler &queue_scheduler, Worker *workers, std::unordered_set<int>& RegularList) {
 
-    double next_time = NextRegTimeBlock*time_step;
+    double next_time = next_reg_time_block*time_step;
 
 // Performance tracing variables (kept for backward compatibility)
 #ifdef PERFORMANCETRACE
@@ -63,14 +63,14 @@ void RegularRoutines(QueueScheduler &queue_scheduler, Worker *workers, std::unor
 #endif
 
 #ifdef NSIGHT
-    nvtxRangePushA("RegForce");
+    nvtxRangePushA("TASK_REG_FORCE");
 #endif
 
 #ifdef DEBUG
     std::cout << "Regular force starts" << std::endl;
 #endif
     // Regular force
-    queue_scheduler.initialize(RegForce);
+    queue_scheduler.initialize(TASK_REG_FORCE);
     queue_scheduler.takeQueueRegularList(RegularList);
     do
     {
@@ -101,14 +101,14 @@ void RegularRoutines(QueueScheduler &queue_scheduler, Worker *workers, std::unor
 #endif
 
 #ifdef NSIGHT
-    nvtxRangePushA("RegUpdate");
+    nvtxRangePushA("TASK_REG_UPDATE");
 #endif
 
 #ifdef DEBUG
     std::cout << "update regular starts" << std::endl;
 #endif
     // Update Regular
-    queue_scheduler.initialize(RegUpdate);
+    queue_scheduler.initialize(TASK_REG_UPDATE);
     queue_scheduler.takeQueueRegularList(RegularList);
     do
     {
@@ -149,23 +149,23 @@ void RegularRoutines(QueueScheduler &queue_scheduler, Worker *workers, std::unor
 }
 
 #ifdef MULTIMAP
-void getRegularList(std::multimap<ULL,int>& RegularMap, std::unordered_set<int>& RegularList) {
+void getRegularList(std::multimap<ull_t,int>& RegularMap, std::unordered_set<int>& RegularList) {
 
-	// assert(RegularMap.size() == NumberOfParticle);
-	if (RegularMap.size() != NumberOfParticle) { // PISN case
+	// assert(RegularMap.size() == num_particles);
+	if (RegularMap.size() != num_particles) { // PISN case
 
-		int num_erased = RegularMap.size() - NumberOfParticle;
+		int num_erased = RegularMap.size() - num_particles;
 		int num = 0;
 
 		fprintf(stdout, "PISN search (number: %d) in RegularMap...\n", num_erased);
 
 		auto it = RegularMap.begin();
 		while (it != RegularMap.end()) {
-			if (particles[it->second].Mass > 0) {
+			if (particles[it->second].mass > 0) {
 				it++;
 			}
 			else {
-				fprintf(stdout, "PISN (PID: %d) is erased in RegularMap\n", particles[it->second].PID);
+				fprintf(stdout, "PISN (PID: %d) is erased in RegularMap\n", particles[it->second].pid);
 				it = RegularMap.erase(it);
 				num++;
 				if (num == num_erased)
@@ -173,31 +173,31 @@ void getRegularList(std::multimap<ULL,int>& RegularMap, std::unordered_set<int>&
 			}
 		}
 	}
-	assert(RegularMap.begin()->first == NextRegTimeBlock);
+	assert(RegularMap.begin()->first == next_reg_time_block);
 	assert(RegularList.empty());
 
 	auto it = RegularMap.begin();
-	while (it->first == NextRegTimeBlock) {
+	while (it->first == next_reg_time_block) {
 		RegularList.insert(it->second);
 		it = RegularMap.erase(it);
 	}
-	assert(RegularMap.size() + RegularList.size() == NumberOfParticle);
+	assert(RegularMap.size() + RegularList.size() == num_particles);
 }
 
-void updateRegularMap(std::multimap<ULL,int>& RegularMap, std::unordered_set<int>& RegularList) {
+void updateRegularMap(std::multimap<ull_t,int>& RegularMap, std::unordered_set<int>& RegularList) {
 
-	assert(RegularMap.size() + RegularList.size() == NumberOfParticle);
+	assert(RegularMap.size() + RegularList.size() == num_particles);
 
 	Particle* ptcl;
 	while (!RegularList.empty()) {
 		ptcl = &particles[*RegularList.begin()];
-		RegularMap.insert({ptcl->CurrentBlockReg + ptcl->TimeBlockReg, ptcl->ParticleIndex});
+		RegularMap.insert({ptcl->current_block_reg + ptcl->time_block_reg, ptcl->particle_index});
 		RegularList.erase(RegularList.begin());
 	}
 	assert(RegularList.empty());
-	assert(RegularMap.size() == NumberOfParticle);
+	assert(RegularMap.size() == num_particles);
 
-	NextRegTimeBlock = RegularMap.begin()->first;
-	global_variable->NextRegTimeBlock = NextRegTimeBlock;
+	next_reg_time_block = RegularMap.begin()->first;
+	g_state->next_reg_time_block = next_reg_time_block;
 }
 #endif

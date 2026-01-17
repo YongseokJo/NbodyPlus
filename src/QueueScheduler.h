@@ -16,18 +16,18 @@ public:
 
     QueueScheduler()
     {
-        _FreeWorkers.reserve(NumberOfWorker);
-        WorkersToGo.reserve(NumberOfWorker);
+        _FreeWorkers.reserve(num_workers);
+        WorkersToGo.reserve(num_workers);
     }
 
-    void initialize(TaskName task, double next_time)
+    void initialize(task_name_t task, double next_time)
     {
         _initialize();
         _task = task;
         _next_time = next_time;
     }
 
-    void initialize(TaskName task)
+    void initialize(task_name_t task)
     {
         _initialize();
         _task = task;
@@ -160,7 +160,7 @@ public:
 
     // this is only for a non-blocking wait.
     void callback(Worker* worker) {
-        if (worker->getCurrentQueue()->task == ARIntegration) 
+        if (worker->getCurrentQueue()->task == TASK_AR_INTEGRATION) 
             _completed_cm_queues++;
         worker->callback();
         _completed_queues++;
@@ -207,19 +207,19 @@ public:
 
         std::cout << "-----------Worker Status-----------" << std::endl;
         std::cout << std::left << std::setw(10) << "MyRank";
-        for (int i=1; i<=NumberOfWorker; i++) {
+        for (int i=1; i<=num_workers; i++) {
             std::cout << "|  " << std::setw(4) << workers[i].MyRank;
         }
         std::cout << std::endl;
 
         std::cout << std::left << std::setw(10) << "OnDuty";
-        for (int i=1; i<=NumberOfWorker; i++) {
+        for (int i=1; i<=num_workers; i++) {
             std::cout << "|  " << std::setw(4) << workers[i].onDuty ? "T" : "F" ;
         }
         std::cout << std::endl;
 
         std::cout << std::left << std::setw(10) << "#ofQueue";
-        for (int i=1; i<=NumberOfWorker; i++) {
+        for (int i=1; i<=num_workers; i++) {
             std::cout << "|  " << std::setw(4) << workers[i].NumberOfQueues;
         }
         std::cout << std::endl;
@@ -245,7 +245,7 @@ public:
     //int fb_total_tasks;    // this is for the SDAR computations by YS 2025.01.06
     //int fb_assigned_tasks; // this is for the SDAR computations by YS 2025.01.06
 
-    void initializeIrr(TaskName task, double next_time, std::vector<int> &queue_list)
+    void initializeIrr(task_name_t task, double next_time, std::vector<int> &queue_list)
     {
         _initialize();
         int pid;
@@ -261,8 +261,8 @@ public:
         for (int i=0; i<_total_queues; i++)
         {
             pid = queue_list[i];
-            particles[pid].isUpdateToDate = false;
-            if (!particles[pid].isCMptcl)
+            particles[pid].is_up_to_date = false;
+            if (!particles[pid].is_cm_particle)
             {
                 _queue_list[single_ptcl++] = pid;
             }
@@ -307,7 +307,7 @@ private:
     std::vector<int> _queue_list;
     std::unordered_set<int> _queue_list_;
     Queue _queue;
-    TaskName _task;
+    task_name_t _task;
     int _rank, _flag;
     double _next_time;
     int _total_queues, _assigned_queues, _completed_queues;
@@ -322,7 +322,7 @@ private:
     void _initialize() {
         WorkersToGo.clear();
         _FreeWorkers.clear();
-        for (int i = 1; i <= NumberOfWorker; i++) {
+        for (int i = 1; i <= num_workers; i++) {
             workers[i].initialize();
             _FreeWorkers.insert(&workers[i]);
         }

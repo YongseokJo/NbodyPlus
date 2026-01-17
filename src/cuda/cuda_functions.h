@@ -5,6 +5,6 @@ extern "C" {
 	void OpenDevice();
 	void CloseDevice();
 	void ProfileDevice();
-	void SendToDevice(std::vector<Jparticle> &Jparticles, std::vector<Iparticle> &Iparticles);
+	void SendToDevice(std::vector<j_particle_t> &j_particle_ts, std::vector<i_particle_t> &i_particle_ts);
 	void CalculateAccelerationOnDevice(int *NumTarget, std::vector<int>& RegularList);
 }
