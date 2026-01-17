@@ -77,6 +77,9 @@ void RootRoutines() {
 	/* Initialization */
 	InitializationRoutines(queue_scheduler, workers);
 
+	// Sync AoS to SoA after initialization completes
+	particle_data.sync_all_from_particles(particles, last_particle_index + 1);
+
 	/* Actual Loop */
 	{
 #ifdef MULTIMAP
