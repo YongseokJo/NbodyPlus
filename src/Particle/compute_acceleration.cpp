@@ -5,7 +5,56 @@
 #include <cassert>
 #include "../global.h"
 #include "../def.h"
+#include "../particle_data.h"
 #include <unordered_set>
+
+// ============================================================================
+// Acceleration accumulator for SoA-compatible force calculations
+// Stores temporary acceleration values in contiguous arrays for vectorization
+// ============================================================================
+struct AccumulatorSoA {
+    double a[3];      // acceleration components (x, y, z)
+    double adot[3];   // jerk components (x, y, z)
+
+    AccumulatorSoA() {
+        a[0] = a[1] = a[2] = 0.0;
+        adot[0] = adot[1] = adot[2] = 0.0;
+    }
+
+    void reset() {
+        a[0] = a[1] = a[2] = 0.0;
+        adot[0] = adot[1] = adot[2] = 0.0;
+    }
+
+    // Add contribution from a particle at distance dx with velocity difference dv
+    void add_contribution(double mass, double r2, const double dx[3], const double dv[3], double dxdv) {
+        double m_r3 = mass / (r2 * std::sqrt(r2));
+        double coeff_adot = -3.0 * dxdv / r2;
+        for (int d = 0; d < 3; d++) {
+            a[d] += m_r3 * dx[d];
+            adot[d] += m_r3 * (dv[d] + coeff_adot * dx[d]);
+        }
+    }
+
+    // Subtract contribution (for neighbor transitions)
+    void sub_contribution(double mass, double r2, const double dx[3], const double dv[3], double dxdv) {
+        double m_r3 = mass / (r2 * std::sqrt(r2));
+        double coeff_adot = -3.0 * dxdv / r2;
+        for (int d = 0; d < 3; d++) {
+            a[d] -= m_r3 * dx[d];
+            adot[d] -= m_r3 * (dv[d] + coeff_adot * dx[d]);
+        }
+    }
+};
+
+// ============================================================================
+// Helper: Predict neighbor position/velocity using SoA data
+// ============================================================================
+static inline void predict_neighbor_soa(const ParticleData& data, size_t j, double dt,
+                                         double pos_out[3], double vel_out[3]) {
+    // Use the free function version
+    predict_second_order(data, j, dt, pos_out, vel_out);
+}
 
 
 void Particle::compute_acceleration_irr() {
