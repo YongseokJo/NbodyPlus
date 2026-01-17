@@ -4,6 +4,118 @@
 #include <cmath>
 #include "../global.h"
 #include "../def.h"
+#include "../particle_data.h"
+
+// ============================================================================
+// SoA-compatible free functions for prediction and correction
+// ============================================================================
+
+// Predict particle position and velocity using second-order Taylor expansion
+// This operates on ParticleData directly without requiring a Particle struct
+void predict_second_order(const ParticleData& data, size_t i, double dt,
+                          double pos_out[3], double vel_out[3]) {
+    dt = dt * enzo_time_step;
+
+    if (dt == 0) {
+        pos_out[0] = data.get_pos_x(i);
+        pos_out[1] = data.get_pos_y(i);
+        pos_out[2] = data.get_pos_z(i);
+        vel_out[0] = data.get_vel_x(i);
+        vel_out[1] = data.get_vel_y(i);
+        vel_out[2] = data.get_vel_z(i);
+    } else {
+        double pos[3], vel[3], a0[3], a1[3];
+
+        // Extract current state from SoA
+        pos[0] = data.get_pos_x(i);
+        pos[1] = data.get_pos_y(i);
+        pos[2] = data.get_pos_z(i);
+        vel[0] = data.get_vel_x(i);
+        vel[1] = data.get_vel_y(i);
+        vel[2] = data.get_vel_z(i);
+
+        // Extract acceleration (order 0) and jerk (order 1)
+        a0[0] = data.get_acc_total(i, 0, 0);
+        a0[1] = data.get_acc_total(i, 1, 0);
+        a0[2] = data.get_acc_total(i, 2, 0);
+        a1[0] = data.get_acc_total(i, 0, 1);
+        a1[1] = data.get_acc_total(i, 1, 1);
+        a1[2] = data.get_acc_total(i, 2, 1);
+
+        // Second-order prediction
+        for (int dim = 0; dim < 3; dim++) {
+            pos_out[dim] = ((a1[dim] * dt / 3 + a0[dim]) * dt / 2 + vel[dim]) * dt + pos[dim];
+            vel_out[dim] = (a1[dim] * dt / 2 + a0[dim]) * dt + vel[dim];
+        }
+    }
+}
+
+// Fourth-order correction: apply snap and crackle corrections to predicted position/velocity
+// Writes result to new_position/new_velocity in ParticleData
+void correct_fourth_order(ParticleData& data, size_t i, double dt,
+                          const double pos[3], const double vel[3],
+                          const double a[3][4]) {
+    dt = dt * enzo_time_step;
+
+    double dt3 = dt * dt * dt;
+    double dt4 = dt3 * dt;
+    double dt5 = dt4 * dt;
+
+    // Apply 4th order corrections and store in new_position/velocity
+    double new_pos[3], new_vel[3];
+    for (int dim = 0; dim < 3; dim++) {
+        new_pos[dim] = pos[dim] + a[dim][2] * dt4 / 24 + a[dim][3] * dt5 / 120;
+        new_vel[dim] = vel[dim] + a[dim][2] * dt3 / 6 + a[dim][3] * dt4 / 24;
+    }
+
+    data.set_new_position(i, new_pos[0], new_pos[1], new_pos[2]);
+    data.set_new_velocity(i, new_vel[0], new_vel[1], new_vel[2]);
+}
+
+// Copy new_position/velocity to position/velocity (finalize update)
+void update_particle_state(ParticleData& data, size_t i) {
+    double new_pos[3], new_vel[3];
+    data.get_new_position(i, new_pos[0], new_pos[1], new_pos[2]);
+    data.get_new_velocity(i, new_vel[0], new_vel[1], new_vel[2]);
+    data.set_position(i, new_pos[0], new_pos[1], new_pos[2]);
+    data.set_velocity(i, new_vel[0], new_vel[1], new_vel[2]);
+}
+
+// Adjust neighbor radius based on neighbor count
+void update_neighbor_radius(ParticleData& data, size_t i, int target_neighbors) {
+    const double MaxRadius2 = MAX_NEIGHBOR_RADIUS * MAX_NEIGHBOR_RADIUS / (position_unit * position_unit);
+
+    int num_neighbors = data.get_num_neighbors(i);
+    double radius_sq = data.get_neighbor_radius_sq(i);
+
+    if (num_neighbors > target_neighbors) {
+        // Too many neighbors - shrink radius
+        const int n = 2;
+        const double c = (MAX_NUM_NEIGHBOR - target_neighbors);
+        const double b = 0.9 / std::pow(c, n);
+        double x = num_neighbors - target_neighbors;
+        double a = n % 2 == 0 ? b * std::abs(x) * std::pow(x, n - 1) : b * std::pow(x, n);
+        radius_sq *= (1.0 - a);
+        if (radius_sq > MaxRadius2)
+            radius_sq = MaxRadius2;
+    } else if (num_neighbors < target_neighbors) {
+        // Too few neighbors - grow radius
+        const int n = 3;
+        const double c = (MAX_NUM_NEIGHBOR - target_neighbors);
+        const double b = 0.5 / std::pow(c, n);
+        double x = num_neighbors - target_neighbors;
+        double a = n % 2 == 0 ? b * std::abs(x) * std::pow(x, n - 1) : b * std::pow(x, n);
+        radius_sq *= (1.0 - a);
+        if (radius_sq > MaxRadius2)
+            radius_sq = MaxRadius2;
+    }
+
+    data.set_neighbor_radius_sq(i, radius_sq);
+}
+
+// ============================================================================
+// End of SoA-compatible free functions
+// ============================================================================
 
 /* // commented out by EW 2025.7.15 to define this function as inline function
 template <typename T>

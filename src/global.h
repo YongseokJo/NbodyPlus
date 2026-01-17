@@ -113,6 +113,17 @@ double getNewTimeStepIrr(const ParticleData& data, size_t i);
 double getNewTimeStep(const ParticleData& data, size_t i);
 
 // ============================================================================
+// SoA-compatible prediction and correction routines
+// ============================================================================
+void predict_second_order(const ParticleData& data, size_t i, double dt,
+                          double pos_out[3], double vel_out[3]);
+void correct_fourth_order(ParticleData& data, size_t i, double dt,
+                          const double pos[3], const double vel[3],
+                          const double a[3][4]);
+void update_particle_state(ParticleData& data, size_t i);
+void update_neighbor_radius(ParticleData& data, size_t i, int target_neighbors);
+
+// ============================================================================
 // Time variables
 // ============================================================================
 extern double global_time;
