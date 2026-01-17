@@ -80,6 +80,9 @@ int main(int argc, char *argv[]) {
 	MPI_Win_free(&win3);
 	MPI_Win_free(&win4);
 
+	// Deallocate SoA particle data
+	particle_data.deallocate_shared();
+
 	MPI_Comm_free(&shared_comm);
 
 	MPI_Type_free(&queue_type_mpi);
