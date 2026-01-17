@@ -29,6 +29,9 @@ int* neighbors;
 MPI_Win win4;
 int* new_neighbors;
 
+// SoA particle data (MPI shared memory)
+ParticleDataMPI particle_data;
+
 // ============================================================================
 // MPI custom datatypes
 // ============================================================================
