@@ -7,6 +7,7 @@
 #include "./FewBody/group.h"
 #include "performance.h"
 #include "profiler.h"
+#include "particle_data_mpi.h"
 #include <mpi.h>
 #include <unordered_map>
 #include <string>
@@ -53,6 +54,9 @@ extern int* neighbors_original;
 extern MPI_Win win4;
 extern int* new_neighbors;
 extern int* new_neighbors_original;
+
+// SoA particle data (MPI shared memory)
+extern ParticleDataMPI particle_data;
 
 // ============================================================================
 // MPI custom datatypes
