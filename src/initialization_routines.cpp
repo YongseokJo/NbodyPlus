@@ -1,4 +1,4 @@
-#include "QueueScheduler.h"
+#include "queue_scheduler.h"
 
 void formPrimordialBinaries(int beforeLastParticleIndex);
 #ifdef SEVN_BINARY

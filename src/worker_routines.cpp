@@ -2,7 +2,7 @@
 #include <vector>
 #include <errno.h>
 #include "global.h"
-#include "Queue.h"
+#include "queue.h"
 
 void broadcastFromRoot(double &data);
 void broadcastFromRoot(ull_t &data);

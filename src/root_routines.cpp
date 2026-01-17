@@ -6,7 +6,7 @@
 #include <cassert>
 #include <mpi.h>
 #include "global.h"
-#include "QueueScheduler.h"
+#include "queue_scheduler.h"
 
 #ifdef NSIGHT
 #include <nvToolsExt.h>

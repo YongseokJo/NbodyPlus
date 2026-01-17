@@ -6,7 +6,7 @@
 #include "cstring"
 #include <vector>
 #include "cuda/cuda_defs.h"
-#include "GlobalVariable.h"
+#include "global_state.h"
 
 // SDAR
 #include "Common/Float.h"

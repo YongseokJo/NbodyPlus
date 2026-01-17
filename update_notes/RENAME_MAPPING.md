@@ -1,20 +1,75 @@
 # Variable/Function Rename Mapping (PascalCase/camelCase → snake_case)
 
+## Source File Renaming (Completed)
+
+### Main src/ Directory
+| Old Name | New Name |
+|----------|----------|
+| `DefaultGlobal.cpp` | `default_global.cpp` |
+| `GlobalVariable.h` | `global_state.h` |
+| `IrregularRoutines.cpp` | `irregular_routines.cpp` |
+| `InitializationRoutines.cpp` | `initialization_routines.cpp` |
+| `MPIRoutines.cpp` | `mpi_routines.cpp` |
+| `QueueScheduler.h` | `queue_scheduler.h` |
+| `Queue.h` | `queue.h` |
+| `ReadWrite.cpp` | `read_write.cpp` |
+| `RegularRoutines.cpp` | `regular_routines.cpp` |
+| `RootRoutines.cpp` | `root_routines.cpp` |
+| `SkipList.h` | `skip_list.h` |
+| `StellarEvolution.cpp` | `stellar_evolution.cpp` |
+| `TimeStepRoutines.cpp` | `timestep_routines.cpp` |
+| `Worker.h` | `worker.h` |
+| `WorkerRoutines.cpp` | `worker_routines.cpp` |
+| `readParameterFile.cpp` | `read_parameter_file.cpp` |
+
+### FewBody/ Directory
+| Old Name | New Name |
+|----------|----------|
+| `FBCheck.cpp` | `fb_check.cpp` |
+| `FBInitialization.cpp` | `fb_initialization.cpp` |
+| `FBIntegration.cpp` | `fb_integration.cpp` |
+| `FBTermination.cpp` | `fb_termination.cpp` |
+| `GroupAccelerationRoutine.cpp` | `group_acceleration.cpp` |
+| `Group.h` | `group.h` |
+
+### Particle/ Directory
+| Old Name | New Name |
+|----------|----------|
+| `Initialize.cpp` | `initialize.cpp` |
+| `UpdateParticle.cpp` | `update_particle.cpp` |
+| `ComputeAcceleration.cpp` | `compute_acceleration.cpp` |
+
+### cuda/ Directory
+| Old Name | New Name |
+|----------|----------|
+| `CalculateAccelerationForAll.cpp` | `calculate_acceleration_all.cpp` |
+| `CalculateRegularAcceleration.cpp` | `calculate_regular_acceleration.cpp` |
+| `cuda_my_acceleration.cu` | `cuda_acceleration.cu` |
+
+### Files Deleted
+- `src/cuda/old/` directory (old unused files)
+- `src/cuda/unuse.cu` (unused)
+- `templates/` (empty directory)
+- `logs/` (build logs)
+- Various `.log`, `.swp` files
+
+---
+
 ## Refactoring Status
 
 | File | Status | Notes |
 |------|--------|-------|
 | `src/def.h` | DONE | Constants, types with legacy aliases |
 | `src/particle.h` | DONE | All members/methods with legacy aliases |
-| `src/GlobalVariable.h` | DONE | Struct members with legacy aliases |
+| `src/global_state.h` | DONE | Struct members with legacy aliases |
 | `src/global.h` | DONE | All extern declarations with legacy aliases |
-| `src/DefaultGlobal.cpp` | DONE | Variable definitions |
+| `src/default_global.cpp` | DONE | Variable definitions |
 | `src/cuda/cuda_defs.h` | DONE | GPU structures with legacy aliases |
 | `src/cuda/cuda_kernels.h` | DONE | Kernel declarations |
 | `src/cuda/cuda_kernels.cu` | PARTIAL | Headers updated, kernels use macros |
-| `src/Worker.h` | DONE | Worker struct with legacy aliases |
-| `src/Queue.h` | DONE | TaskName enum with legacy aliases |
-| Other .cpp files | PENDING | Should work via legacy macros |
+| `src/worker.h` | DONE | Worker struct with legacy aliases |
+| `src/queue.h` | DONE | TaskName enum with legacy aliases |
+| All .cpp files | DONE | Variable/function names updated |
 
 ---
 
@@ -248,30 +303,3 @@
 |----------|----------|
 | BinaryInterruptState | binary_interrupt_state_t |
 | TimerID | timer_id_t |
-
----
-
-## Files to Modify (in order)
-
-1. `src/def.h` - Constants and type definitions
-2. `src/particle.h` - Particle struct
-3. `src/GlobalVariable.h` - Global state struct
-4. `src/global.h` - Global variable declarations
-5. `src/cuda/cuda_defs.h` - CUDA structures
-6. `src/cuda/cuda_kernels.cu` - CUDA kernels
-7. `src/cuda/cuda_kernels.h` - CUDA kernel declarations
-8. `src/cuda/cuda_my_acceleration.cu` - CUDA acceleration
-9. `src/cuda/cuda_routines.cu` - CUDA routines
-10. `src/cuda/CalculateRegularAcceleration.cpp`
-11. `src/Worker.h` - Worker class
-12. `src/QueueScheduler.h` - Queue scheduler
-13. `src/SkipList.h` - Skip list
-14. `src/performance.h` - Performance tracking
-15. `src/profiler.h` - Profiler
-16. `src/MPIRoutines.cpp` - MPI routines
-17. `src/IrregularRoutines.cpp` - Irregular force routines
-18. `src/RegularRoutines.cpp` - Regular force routines
-19. `src/RootRoutines.cpp` - Root process routines
-20. `src/WorkerRoutines.cpp` - Worker process routines
-21. `src/main.cpp` - Main entry point
-22. All other .cpp files

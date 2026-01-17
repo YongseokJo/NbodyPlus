@@ -1,5 +1,5 @@
-#include "QueueScheduler.h"
-#include "SkipList.h"
+#include "queue_scheduler.h"
+#include "skip_list.h"
 #ifdef NSIGHT
 #include <nvToolsExt.h>
 #endif

@@ -8,7 +8,7 @@
 #include <unistd.h>
 #include "def.h"
 #include "particle.h"
-#include "GlobalVariable.h"
+#include "global_state.h"
 #include "global.h"
 #include <mpi.h>
 #ifdef CUDA

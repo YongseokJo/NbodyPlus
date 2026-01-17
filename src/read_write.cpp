@@ -5,7 +5,7 @@
 #include <sys/stat.h>
 #include <iomanip>
 #include "global.h"
-#include "Queue.h"
+#include "queue.h"
 #include "H5Cpp.h"
 
 int getLineNumber();

@@ -7,7 +7,7 @@
 #include <unordered_set>
 #include "mpi.h"
 #include "global.h"
-#include "Queue.h"
+#include "queue.h"
 
 // ============================================================================
 // Worker structure for MPI task distribution

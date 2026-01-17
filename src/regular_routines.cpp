@@ -1,4 +1,4 @@
-#include "QueueScheduler.h"
+#include "queue_scheduler.h"
 #ifdef NSIGHT
 #include <nvToolsExt.h>
 #endif

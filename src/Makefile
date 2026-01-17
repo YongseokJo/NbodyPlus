@@ -35,16 +35,11 @@ LDFLAGS = -lm -lmpi $(LDFLAGS_HDF5)
 #LDFLAGS = -L/mnt/sw/nix/store/zi2wc26znf75csf5hhz77p0d2bbz53ih-cuda-11.8.0/lib64/ -lcudart
 
 # Source files
-CXX_SRCS = main.cpp DefaultGlobal.cpp MPIRoutines.cpp readParameterFile.cpp WorkerRoutines.cpp RootRoutines.cpp InitializationRoutines.cpp IrregularRoutines.cpp RegularRoutines.cpp TimeStepRoutines.cpp parser.cpp ReadWrite.cpp Particle/Initialize.cpp Particle/UpdateParticle.cpp Particle/ComputeAcceleration.cpp
-#cuda/cuda_routines.cpp
-
-
-# cuda/cuda_routines.cu
-
+CXX_SRCS = main.cpp default_global.cpp mpi_routines.cpp read_parameter_file.cpp worker_routines.cpp root_routines.cpp initialization_routines.cpp irregular_routines.cpp regular_routines.cpp timestep_routines.cpp parser.cpp read_write.cpp Particle/initialize.cpp Particle/update_particle.cpp Particle/compute_acceleration.cpp
 
 # SDAR
 CXXFLAGS += -I./../SDAR/src -DAR_TTL -DAR_SLOWDOWN_TREE -DAR_SLOWDOWN_TIMESCALE -DFEWBODY
-CXX_SRCS += FewBody/FBCheck.cpp FewBody/FBInitialization.cpp FewBody/FBIntegration.cpp FewBody/FBTermination.cpp FewBody/GroupAccelerationRoutine.cpp
+CXX_SRCS += FewBody/fb_check.cpp FewBody/fb_initialization.cpp FewBody/fb_integration.cpp FewBody/fb_termination.cpp FewBody/group_acceleration.cpp
 
 ifdef USE_CUDA
 	# CUDA paths - use CUDA_HOME if set, otherwise try common locations
@@ -54,14 +49,14 @@ ifdef USE_CUDA
 	NVCCFLAGS = -O2 -std=c++11 -Xcompiler -std=c++11 -Xcompiler -rdynamic -g -lineinfo -Xptxas=-v -I./../SDAR/src -I$(CUDA_PATH)/include
 	NVCC_FLAGS_DEBUG = -g -G --device-debug -lineinfo
 	LDFLAGS += -L$(CUDA_PATH)/lib64 -lcudart -lcublas -lnvToolsExt -lcuda
-	CXX_SRCS += cuda/CalculateRegularAcceleration.cpp
-	CU_SRCS = cuda/cuda_my_acceleration.cu cuda/cuda_kernels.cu
+	CXX_SRCS += cuda/calculate_regular_acceleration.cpp
+	CU_SRCS = cuda/cuda_acceleration.cu cuda/cuda_kernels.cu
 endif
 
 ifdef USE_SEVN
     CXXFLAGS += -DSEVN -DSEVN_BINARY -I/home/vinicius/install/sevn_custom/build_n15/include/sevn
     LDFLAGS += -L/home/vinicius/install/sevn_custom/build_n15/lib64/sevn -lsevn_lib_shared
-    CXX_SRCS += StellarEvolution.cpp
+    CXX_SRCS += stellar_evolution.cpp
 endif
 
 #

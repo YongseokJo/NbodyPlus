@@ -3,8 +3,8 @@
 
 #include "def.h"
 #include "particle.h"
-#include "GlobalVariable.h"
-#include "./FewBody/Group.h"
+#include "global_state.h"
+#include "./FewBody/group.h"
 #include "performance.h"
 #include "profiler.h"
 #include <mpi.h>

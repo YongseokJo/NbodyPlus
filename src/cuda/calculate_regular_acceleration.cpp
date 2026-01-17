@@ -4,7 +4,7 @@
 #include <cassert>
 #include <algorithm>
 #include "../global.h"
-#include "../QueueScheduler.h"
+#include "../queue_scheduler.h"
 #include "cuda_functions.h"
 #include <cstring>
 #include "cuda_defs.h"
