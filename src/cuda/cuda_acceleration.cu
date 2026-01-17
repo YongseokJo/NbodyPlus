@@ -41,19 +41,34 @@ struct GPU {
     int id = -1;
     cudaStream_t stream = 0;
 
-    // device
-    // cuda_real_t* d_diff = nullptr;
+    // device - output arrays
     int*       d_neighbor_block = nullptr;
     int*       d_neighbor  = nullptr;
     int*       d_neighbor_count = nullptr;
     int*       d_neighbor_count_block = nullptr;
     cuda_real_t* d_result = nullptr;
     cuda_real_t* d_result_block = nullptr;
-	j_particle_t* dJ = nullptr;
-	i_particle_t* dI = nullptr;
-	//CUDA_INT* dIdx = nullptr;
 
-    // host (should be pinned, but currently not)
+    // device - SoA arrays for j-particles (source)
+    cuda_real_t* d_j_pos_x = nullptr;
+    cuda_real_t* d_j_pos_y = nullptr;
+    cuda_real_t* d_j_pos_z = nullptr;
+    cuda_real_t* d_j_vel_x = nullptr;
+    cuda_real_t* d_j_vel_y = nullptr;
+    cuda_real_t* d_j_vel_z = nullptr;
+    cuda_real_t* d_j_mass = nullptr;
+    int* d_j_index = nullptr;
+
+    // device - SoA arrays for i-particles (target)
+    cuda_real_t* d_i_pos_x = nullptr;
+    cuda_real_t* d_i_pos_y = nullptr;
+    cuda_real_t* d_i_pos_z = nullptr;
+    cuda_real_t* d_i_vel_x = nullptr;
+    cuda_real_t* d_i_vel_y = nullptr;
+    cuda_real_t* d_i_vel_z = nullptr;
+    cuda_real_t* d_i_radius_sq = nullptr;
+
+    // host (pinned)
     cuda_real_t* h_result = nullptr;
     int*       h_neighbor_count = nullptr;
     int*       h_neighbor  = nullptr;
@@ -132,8 +147,24 @@ void GetAcceleration(
             	GRID_DIM_Y
             );
             compute_forces<<<gridDim, blockDim, 0, gpu[i].stream>>>(
-                gpu[i].dI,
-                gpu[i].dJ,
+                // I-particle arrays (target)
+                gpu[i].d_i_pos_x,
+                gpu[i].d_i_pos_y,
+                gpu[i].d_i_pos_z,
+                gpu[i].d_i_vel_x,
+                gpu[i].d_i_vel_y,
+                gpu[i].d_i_vel_z,
+                gpu[i].d_i_radius_sq,
+                // J-particle arrays (source)
+                gpu[i].d_j_pos_x,
+                gpu[i].d_j_pos_y,
+                gpu[i].d_j_pos_z,
+                gpu[i].d_j_vel_x,
+                gpu[i].d_j_vel_y,
+                gpu[i].d_j_vel_z,
+                gpu[i].d_j_mass,
+                gpu[i].d_j_index,
+                // Output
                 gpu[i].d_result_block,
 				gpu[i].d_neighbor_block,
 				gpu[i].d_neighbor_count_block,
@@ -284,11 +315,26 @@ void _ReceiveFromHost(
 				my_free(gpu[i].h_result, gpu[i].d_result);
 				my_free(gpu[i].h_neighbor_count, gpu[i].d_neighbor_count);
 				my_free(gpu[i].h_neighbor, gpu[i].d_neighbor);
-				my_free_d(gpu[i].dJ);
-				my_free_d(gpu[i].dI);
 				my_free_d(gpu[i].d_neighbor_count_block);
 				my_free_d(gpu[i].d_neighbor_block);
 				my_free_d(gpu[i].d_result_block);
+				// Free SoA j-particle arrays
+				cudaFree(gpu[i].d_j_pos_x);
+				cudaFree(gpu[i].d_j_pos_y);
+				cudaFree(gpu[i].d_j_pos_z);
+				cudaFree(gpu[i].d_j_vel_x);
+				cudaFree(gpu[i].d_j_vel_y);
+				cudaFree(gpu[i].d_j_vel_z);
+				cudaFree(gpu[i].d_j_mass);
+				cudaFree(gpu[i].d_j_index);
+				// Free SoA i-particle arrays
+				cudaFree(gpu[i].d_i_pos_x);
+				cudaFree(gpu[i].d_i_pos_y);
+				cudaFree(gpu[i].d_i_pos_z);
+				cudaFree(gpu[i].d_i_vel_x);
+				cudaFree(gpu[i].d_i_vel_y);
+				cudaFree(gpu[i].d_i_vel_z);
+				cudaFree(gpu[i].d_i_radius_sq);
 			}
 		}
 		else {
@@ -296,14 +342,29 @@ void _ReceiveFromHost(
 		}
 		for (int i = 0; i < deviceCount; i++) {
 			cudaSetDevice(i);
-			my_allocate(&gpu[i].h_result, &gpu[i].d_result, NUM_FORCE_COMPONENTS*I_capacity); // x,v,m
+			my_allocate(&gpu[i].h_result, &gpu[i].d_result, NUM_FORCE_COMPONENTS*I_capacity);
 			my_allocate(&gpu[i].h_neighbor_count, &gpu[i].d_neighbor_count, I_capacity);
 			my_allocate(&gpu[i].h_neighbor, &gpu[i].d_neighbor, I_capacity * MAX_NUM_NEIGHBOR);
 			my_allocate_d(&gpu[i].d_neighbor_block, GRID_DIM_Y * NNB_PER_BLOCK * I_capacity);
 			my_allocate_d(&gpu[i].d_neighbor_count_block, GRID_DIM_Y * I_capacity);
-			my_allocate_d(&gpu[i].dJ, J_capacity);
-			my_allocate_d(&gpu[i].dI, I_capacity);
 			my_allocate_d(&gpu[i].d_result_block, NUM_FORCE_COMPONENTS * GRID_DIM_Y * I_capacity);
+			// Allocate SoA j-particle arrays
+			cudaMalloc(&gpu[i].d_j_pos_x, J_capacity * sizeof(cuda_real_t));
+			cudaMalloc(&gpu[i].d_j_pos_y, J_capacity * sizeof(cuda_real_t));
+			cudaMalloc(&gpu[i].d_j_pos_z, J_capacity * sizeof(cuda_real_t));
+			cudaMalloc(&gpu[i].d_j_vel_x, J_capacity * sizeof(cuda_real_t));
+			cudaMalloc(&gpu[i].d_j_vel_y, J_capacity * sizeof(cuda_real_t));
+			cudaMalloc(&gpu[i].d_j_vel_z, J_capacity * sizeof(cuda_real_t));
+			cudaMalloc(&gpu[i].d_j_mass, J_capacity * sizeof(cuda_real_t));
+			cudaMalloc(&gpu[i].d_j_index, J_capacity * sizeof(int));
+			// Allocate SoA i-particle arrays
+			cudaMalloc(&gpu[i].d_i_pos_x, I_capacity * sizeof(cuda_real_t));
+			cudaMalloc(&gpu[i].d_i_pos_y, I_capacity * sizeof(cuda_real_t));
+			cudaMalloc(&gpu[i].d_i_pos_z, I_capacity * sizeof(cuda_real_t));
+			cudaMalloc(&gpu[i].d_i_vel_x, I_capacity * sizeof(cuda_real_t));
+			cudaMalloc(&gpu[i].d_i_vel_y, I_capacity * sizeof(cuda_real_t));
+			cudaMalloc(&gpu[i].d_i_vel_z, I_capacity * sizeof(cuda_real_t));
+			cudaMalloc(&gpu[i].d_i_radius_sq, I_capacity * sizeof(cuda_real_t));
 		}
 		
 #ifdef debuggig_verification
@@ -322,7 +383,7 @@ void _ReceiveFromHost(
 	}
 #endif
 
-    // -------------------- H2D copies --------------------
+    // -------------------- H2D copies (SoA) --------------------
     // J: partition across devices
 	size_t aJ, bJ;
 	int chunkPerGpu = (NNB + deviceCount - 1) / deviceCount;
@@ -330,11 +391,67 @@ void _ReceiveFromHost(
     for (int i = 0; i < deviceCount; ++i) {
         cudaSetDevice(i);
 		block_range(nJ, i, deviceCount, aJ, bJ);
-		size_t numJ = (bJ > aJ) ? (bJ - aJ) : 0; // I think this is redundant! by EW 2025.8.24
-        // copy the J slice for this device
-        toDevice(hJ.data() + aJ, gpu[i].dJ, numJ, gpu[i].stream);
-        // I: replicate to every device (common pattern). If you want to partition I, do block_range on nI instead.
-        toDevice(hI.data(), gpu[i].dI, nI, gpu[i].stream);
+		size_t numJ = (bJ > aJ) ? (bJ - aJ) : 0;
+
+        // Copy j-particles to SoA device arrays (extract from AoS vector)
+        // Note: For better performance, caller should provide SoA directly
+        for (size_t jj = 0; jj < numJ; jj++) {
+            size_t src_idx = aJ + jj;
+            // Use pinned staging if performance critical
+        }
+
+        // Transfer j-particles (SoA) - extract from AoS and copy
+        // Temporary: copy field by field from the AoS input
+        std::vector<cuda_real_t> tmp_j_pos_x(numJ), tmp_j_pos_y(numJ), tmp_j_pos_z(numJ);
+        std::vector<cuda_real_t> tmp_j_vel_x(numJ), tmp_j_vel_y(numJ), tmp_j_vel_z(numJ);
+        std::vector<cuda_real_t> tmp_j_mass(numJ);
+        std::vector<int> tmp_j_index(numJ);
+
+        for (size_t jj = 0; jj < numJ; jj++) {
+            const j_particle_t& jp = hJ[aJ + jj];
+            tmp_j_pos_x[jj] = jp.pos_x;
+            tmp_j_pos_y[jj] = jp.pos_y;
+            tmp_j_pos_z[jj] = jp.pos_z;
+            tmp_j_vel_x[jj] = jp.vel_x;
+            tmp_j_vel_y[jj] = jp.vel_y;
+            tmp_j_vel_z[jj] = jp.vel_z;
+            tmp_j_mass[jj] = jp.mass;
+            tmp_j_index[jj] = jp.index;
+        }
+
+        cudaMemcpyAsync(gpu[i].d_j_pos_x, tmp_j_pos_x.data(), numJ * sizeof(cuda_real_t), cudaMemcpyHostToDevice, gpu[i].stream);
+        cudaMemcpyAsync(gpu[i].d_j_pos_y, tmp_j_pos_y.data(), numJ * sizeof(cuda_real_t), cudaMemcpyHostToDevice, gpu[i].stream);
+        cudaMemcpyAsync(gpu[i].d_j_pos_z, tmp_j_pos_z.data(), numJ * sizeof(cuda_real_t), cudaMemcpyHostToDevice, gpu[i].stream);
+        cudaMemcpyAsync(gpu[i].d_j_vel_x, tmp_j_vel_x.data(), numJ * sizeof(cuda_real_t), cudaMemcpyHostToDevice, gpu[i].stream);
+        cudaMemcpyAsync(gpu[i].d_j_vel_y, tmp_j_vel_y.data(), numJ * sizeof(cuda_real_t), cudaMemcpyHostToDevice, gpu[i].stream);
+        cudaMemcpyAsync(gpu[i].d_j_vel_z, tmp_j_vel_z.data(), numJ * sizeof(cuda_real_t), cudaMemcpyHostToDevice, gpu[i].stream);
+        cudaMemcpyAsync(gpu[i].d_j_mass, tmp_j_mass.data(), numJ * sizeof(cuda_real_t), cudaMemcpyHostToDevice, gpu[i].stream);
+        cudaMemcpyAsync(gpu[i].d_j_index, tmp_j_index.data(), numJ * sizeof(int), cudaMemcpyHostToDevice, gpu[i].stream);
+
+        // Transfer i-particles (SoA) - extract from AoS and copy
+        std::vector<cuda_real_t> tmp_i_pos_x(nI), tmp_i_pos_y(nI), tmp_i_pos_z(nI);
+        std::vector<cuda_real_t> tmp_i_vel_x(nI), tmp_i_vel_y(nI), tmp_i_vel_z(nI);
+        std::vector<cuda_real_t> tmp_i_radius_sq(nI);
+
+        for (size_t ii = 0; ii < nI; ii++) {
+            const i_particle_t& ip = hI[ii];
+            tmp_i_pos_x[ii] = ip.pos_x;
+            tmp_i_pos_y[ii] = ip.pos_y;
+            tmp_i_pos_z[ii] = ip.pos_z;
+            tmp_i_vel_x[ii] = ip.vel_x;
+            tmp_i_vel_y[ii] = ip.vel_y;
+            tmp_i_vel_z[ii] = ip.vel_z;
+            tmp_i_radius_sq[ii] = ip.radius_sq;
+        }
+
+        cudaMemcpyAsync(gpu[i].d_i_pos_x, tmp_i_pos_x.data(), nI * sizeof(cuda_real_t), cudaMemcpyHostToDevice, gpu[i].stream);
+        cudaMemcpyAsync(gpu[i].d_i_pos_y, tmp_i_pos_y.data(), nI * sizeof(cuda_real_t), cudaMemcpyHostToDevice, gpu[i].stream);
+        cudaMemcpyAsync(gpu[i].d_i_pos_z, tmp_i_pos_z.data(), nI * sizeof(cuda_real_t), cudaMemcpyHostToDevice, gpu[i].stream);
+        cudaMemcpyAsync(gpu[i].d_i_vel_x, tmp_i_vel_x.data(), nI * sizeof(cuda_real_t), cudaMemcpyHostToDevice, gpu[i].stream);
+        cudaMemcpyAsync(gpu[i].d_i_vel_y, tmp_i_vel_y.data(), nI * sizeof(cuda_real_t), cudaMemcpyHostToDevice, gpu[i].stream);
+        cudaMemcpyAsync(gpu[i].d_i_vel_z, tmp_i_vel_z.data(), nI * sizeof(cuda_real_t), cudaMemcpyHostToDevice, gpu[i].stream);
+        cudaMemcpyAsync(gpu[i].d_i_radius_sq, tmp_i_radius_sq.data(), nI * sizeof(cuda_real_t), cudaMemcpyHostToDevice, gpu[i].stream);
+
 		gpu[i].J_start = aJ;
 		gpu[i].J_count = numJ;
     }
