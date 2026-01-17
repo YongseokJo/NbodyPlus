@@ -1,8 +1,28 @@
 #include "queue_scheduler.h"
 #include "skip_list.h"
+#include "particle_data.h"
 #ifdef NSIGHT
 #include <nvToolsExt.h>
 #endif
+
+// ============================================================================
+// Irregular force routines - SoA Integration Notes
+// ============================================================================
+// The irregular force loop uses:
+// 1. Particle::compute_acceleration_irr() - Uses SoA helpers from Phase 4
+// 2. Particle::update_particle() - State update (inline in particle.h)
+// 3. Skip list for time stepping - Uses particles[] indices
+//
+// Current data flow:
+// - particles[] (AoS) remains source of truth for:
+//   - Skip list operations (next_block_irr, current_block_irr)
+//   - FewBody group management (is_cm_particle, members[], etc.)
+//   - Active particle filtering
+// - Force calculation (compute_acceleration_irr) uses SoA helpers internally
+//
+// The SoA infrastructure enables future optimization where the inner force
+// loop can operate on contiguous SoA arrays for better cache efficiency.
+// ============================================================================
 
 
 bool createSkipList(SkipList *skiplist);

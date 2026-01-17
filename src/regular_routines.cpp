@@ -1,7 +1,25 @@
 #include "queue_scheduler.h"
+#include "particle_data.h"
 #ifdef NSIGHT
 #include <nvToolsExt.h>
 #endif
+
+// ============================================================================
+// Regular force routines - SoA Integration Notes
+// ============================================================================
+// The force calculation path uses:
+// 1. calculateRegAccelerationOnGPU() - GPU path (Phase 3 SoA integration)
+// 2. Particle::compute_acceleration_reg() - CPU path (SoA helpers in Phase 4)
+// 3. Particle::update_regular_particle_cuda() - Post-GPU neighbor update
+//
+// Current data flow:
+// - particles[] (AoS) remains source of truth for routine orchestration
+// - particle_data (SoA) is synced for GPU transfers (Phase 3)
+// - Force calculation uses SoA helpers when beneficial
+//
+// Future optimization: Add sync_from_particle()/sync_to_particle() at
+// RegularRoutines entry/exit to enable pure SoA force calculation.
+// ============================================================================
 
 void calculateRegAccelerationOnGPU(std::unordered_set<int>& RegularList, QueueScheduler &queue_scheduler);
 #ifdef MULTIMAP
