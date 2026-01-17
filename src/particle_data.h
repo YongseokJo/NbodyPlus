@@ -306,16 +306,17 @@ public:
     double get_delta_mass(size_t i) const { return delta_mass_[i]; }
     void set_delta_mass(size_t i, double val) { delta_mass_[i] = val; }
 
-private:
+protected:
     // ========================================================================
-    // Capacity and count
+    // Capacity and count (protected for MPI subclass access)
     // ========================================================================
     size_t capacity_;
     size_t count_;
 
     // ========================================================================
-    // Critical fields (43 double arrays)
+    // Array pointers (protected for MPI subclass access)
     // ========================================================================
+    // Critical fields (43 double arrays)
     // Position (3)
     double* pos_x_;
     double* pos_y_;
@@ -346,9 +347,7 @@ private:
     // Neighbor radius (1)
     double* neighbor_radius_sq_;
 
-    // ========================================================================
     // Important fields (13 arrays)
-    // ========================================================================
     // Timestep doubles (4)
     double* current_time_irr_;
     double* current_time_reg_;
@@ -368,9 +367,7 @@ private:
     int* new_num_neighbors_;
     int* neighbors_offset_;
 
-    // ========================================================================
     // Low priority fields (10 arrays)
-    // ========================================================================
     // IDs and indices (3)
     int* pid_;
     int* particle_index_;
