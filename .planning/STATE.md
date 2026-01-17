@@ -3,12 +3,12 @@
 ## Current Focus
 
 **Milestone:** 1 — AoS to SoA Conversion (v1.0)
-**Phase:** 3 — GPU Integration
+**Phase:** 2 — MPI Integration
 **Status:** Complete
 
 ## Quick Context
 
-Converting ABYSS from Array of Structures (AoS) to Structure of Arrays (SoA) for performance. Full SoA approach with accessor functions. GPU kernels now use SoA layout for coalesced memory access.
+Converting ABYSS from Array of Structures (AoS) to Structure of Arrays (SoA) for performance. Full SoA approach with accessor functions. MPI shared memory now uses multiple MPI_Win objects (66 windows for all SoA arrays).
 
 ## Baseline Metrics
 
@@ -23,22 +23,23 @@ Converting ABYSS from Array of Structures (AoS) to Structure of Arrays (SoA) for
 | Phase | Status | Notes |
 |-------|--------|-------|
 | 1. Core SoA Container | Complete ✓ | 3 plans, 3 commits |
-| 2. MPI Integration | Not Started | — |
+| 2. MPI Integration | Complete ✓ | 4 plans, 8 commits |
 | 3. GPU Integration | Complete ✓ | 5 plans, 5 commits |
 | 4. CPU Routines | Not Started | — |
 | 5. SDAR Compatibility | Not Started | — |
 | 6. I/O Updates | Not Started | — |
 | 7. Validation | Not Started | Baseline captured |
 
-## Phase 3 Summary
+## Phase 2 Summary
 
-Created GPU SoA infrastructure:
-- `particle_data_gpu.h/cu` — GPU container with allocate/deallocate/transfer
-- Updated `compute_forces` kernel to use 15 SoA arrays instead of AoS structs
-- Updated `cuda_acceleration.cu` with SoA arrays and AoS→SoA bridge
-- Makefile updated with new CUDA source
+Created MPI shared memory infrastructure for SoA:
+- `particle_data_mpi.h/cpp` — ParticleDataMPI class with 66 MPI_Win handles
+- Updated `global.h`, `default_global.cpp` with extern particle_data
+- Updated `mpi_routines.cpp` with allocate_shared(), sync_all(), timing
+- Updated `main.cpp` with clean shutdown (deallocate_shared)
+- DEBUG_MPI verification for cross-rank access
 
-Commits: `2d47626`, `3b8d55e`, `6b8fa90`, `90a8716`, `423bdd0`
+Commits: `b57b92e`, `3d06888`, `1b666dd`, `cc34c57`, `dae2e28`, `1c82ebc`, `9000806`, `a48af2c`, `665a8ad`
 
 ## Key Decisions
 
@@ -50,7 +51,7 @@ Commits: `2d47626`, `3b8d55e`, `6b8fa90`, `90a8716`, `423bdd0`
 
 ## Next Action
 
-Run `/gsd:plan-phase 4` to create detailed plan for CPU Routines phase, or `/gsd:plan-phase 2` for MPI Integration.
+Run `/gsd:plan-phase 4` to create detailed plan for CPU Routines phase.
 
 ---
-*Last updated: 2026-01-17 (Phase 3 complete)*
+*Last updated: 2026-01-17 (Phase 2 complete)*

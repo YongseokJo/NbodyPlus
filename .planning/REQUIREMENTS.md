@@ -10,11 +10,11 @@
 
 ## MPI Integration
 
-| REQ-ID | Requirement | Acceptance Criteria |
-|--------|-------------|---------------------|
-| MPI-01 | Allocate each SoA array as separate `MPI_Win` | Multiple `MPI_Win_allocate_shared` calls succeed |
-| MPI-02 | Workers can access all particle data arrays | Read access works across all MPI ranks |
-| MPI-03 | Root can update particle data arrays | Write access works from root rank |
+| REQ-ID | Requirement | Acceptance Criteria | Status |
+|--------|-------------|---------------------|--------|
+| MPI-01 | Allocate each SoA array as separate `MPI_Win` | Multiple `MPI_Win_allocate_shared` calls succeed | Complete ✓ |
+| MPI-02 | Workers can access all particle data arrays | Read access works across all MPI ranks | Complete ✓ |
+| MPI-03 | Root can update particle data arrays | Write access works from root rank | Complete ✓ |
 
 ## GPU Integration
 
