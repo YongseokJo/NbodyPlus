@@ -124,9 +124,7 @@ void Particle::update_radius() {
 
 
 
-double getNewTimeStepReg(double v[3], double f[3][4]);
-double getNewTimeStepIrr(double f[3][4], double df[3][4]);
-void getBlockTimeStep(double dt, int& TimeLevel, ull_t &TimeBlock, double &TimeStep);
+// Timestep routines declared in global.h
 
 void Particle::calculate_time_step_irr() {
 	double TimeStepTmp;

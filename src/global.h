@@ -100,6 +100,19 @@ extern std::unordered_map<int, int> cm_particle_worker_map;
 extern std::unordered_map<int, int> prev_cm_particle_worker_map;
 
 // ============================================================================
+// Timestep calculation routines (SoA-compatible overloads)
+// ============================================================================
+double getNewTimeStepReg(double v[3], double df[3][4]);
+double getNewTimeStepIrr(double f[3][4], double df[3][4]);
+double getNewTimeStep(double f[3][4], double df[3][4]);
+void getBlockTimeStep(double dt, int& TimeLevel, ull_t &TimeBlock, double &TimeStep);
+
+// SoA-compatible overloads: accept ParticleData& and particle index
+double getNewTimeStepReg(const ParticleData& data, size_t i);
+double getNewTimeStepIrr(const ParticleData& data, size_t i);
+double getNewTimeStep(const ParticleData& data, size_t i);
+
+// ============================================================================
 // Time variables
 // ============================================================================
 extern double global_time;

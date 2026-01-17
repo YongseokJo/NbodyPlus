@@ -1,5 +1,6 @@
 #include "global.h"
 #include "def.h"
+#include "particle_data.h"
 #include <cmath>
 #include <algorithm>
 #include <iostream>
@@ -104,7 +105,7 @@ void getBlockTimeStep(double dt, int &TimeLevel, ull_t &TimeBlock, double &TimeS
 	//TimeLevel = static_cast<int>(ceil(log(dt/enzo_time_step)/log(2.0)));
 	//std::cout << "NBODY+: TimeLevel = " << TimeLevel << std::endl;
 	//std::cout << "NBODY+: TimeStep = " << TimeStep << std::endl;
-	
+
 	if (TimeLevel < time_block) {
 		//std::cerr << "TimeLevel is less than time block!!" << std::endl;
 		TimeLevel = time_block;
@@ -112,6 +113,67 @@ void getBlockTimeStep(double dt, int &TimeLevel, ull_t &TimeBlock, double &TimeS
 
 	TimeStep = static_cast<double>(pow(2, TimeLevel));
 	TimeBlock = static_cast<ull_t>(pow(2, TimeLevel-time_block));
+}
+
+
+// ============================================================================
+// SoA-compatible overloads: accept ParticleData& and particle index
+// ============================================================================
+
+// Helper: extract velocity as contiguous array from ParticleData
+static void extract_velocity(const ParticleData& data, size_t i, double v[3]) {
+	v[0] = data.get_vel_x(i);
+	v[1] = data.get_vel_y(i);
+	v[2] = data.get_vel_z(i);
+}
+
+// Helper: extract acceleration array [3][4] from ParticleData for specified type
+static void extract_acc_total(const ParticleData& data, size_t i, double a[3][4]) {
+	for (int d = 0; d < 3; d++) {
+		for (int o = 0; o < 4; o++) {
+			a[d][o] = data.get_acc_total(i, d, o);
+		}
+	}
+}
+
+static void extract_acc_reg(const ParticleData& data, size_t i, double a[3][4]) {
+	for (int d = 0; d < 3; d++) {
+		for (int o = 0; o < 4; o++) {
+			a[d][o] = data.get_acc_reg(i, d, o);
+		}
+	}
+}
+
+static void extract_acc_irr(const ParticleData& data, size_t i, double a[3][4]) {
+	for (int d = 0; d < 3; d++) {
+		for (int o = 0; o < 4; o++) {
+			a[d][o] = data.get_acc_irr(i, d, o);
+		}
+	}
+}
+
+// SoA-compatible: getNewTimeStepReg using ParticleData
+double getNewTimeStepReg(const ParticleData& data, size_t i) {
+	double v[3], df[3][4];
+	extract_velocity(data, i, v);
+	extract_acc_reg(data, i, df);
+	return getNewTimeStepReg(v, df);
+}
+
+// SoA-compatible: getNewTimeStepIrr using ParticleData
+double getNewTimeStepIrr(const ParticleData& data, size_t i) {
+	double f[3][4], df[3][4];
+	extract_acc_total(data, i, f);
+	extract_acc_irr(data, i, df);
+	return getNewTimeStepIrr(f, df);
+}
+
+// SoA-compatible: getNewTimeStep using ParticleData
+double getNewTimeStep(const ParticleData& data, size_t i) {
+	double f[3][4], df[3][4];
+	extract_acc_total(data, i, f);
+	extract_acc_irr(data, i, df);
+	return getNewTimeStep(f, df);
 }
 
 
