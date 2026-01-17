@@ -1,6 +1,10 @@
 #ifdef FEWBODY
 #include "../global.h"
+#include "../particle_data.h"
 #include <unordered_set>
+
+// External SoA container
+extern ParticleDataMPI particle_data;
 
 void CalculateAcceleration01(Particle* ptcl1);
 void CalculateAcceleration23(Particle* ptcl1);
@@ -17,6 +21,8 @@ void FBTermination(Particle* ptclCM) {
 	fprintf(bin_output_file, "N_member: %d\n", ptclCM->num_members);
 
 	Particle* members;
+
+	// Note: particles[] already has current data - no sync needed at entry
 
 	ptclCM->is_active = false;
 	for (int i = 0; i < ptclCM->num_members; i++) {
@@ -159,7 +165,14 @@ void FBTermination(Particle* ptclCM) {
 		}
 
 		members->print_particle_info(bin_output_file);
+
+		// Sync this member particle to SoA
+		particle_data.sync_from_particle(*members, static_cast<size_t>(members->particle_index));
 	}
+
+	// Mark CM particle as inactive in SoA
+	particle_data.set_is_active(static_cast<size_t>(ptclCM->particle_index), false);
+
 	ptclCM->clear();
 
 	fflush(bin_output_file);
@@ -168,6 +181,8 @@ void FBTermination(Particle* ptclCM) {
 void computeMemberAcceleration01(Particle* members) {
 
 	double new_time = members->current_time_irr; // the time to be advanced to
+
+	// Note: particles[] already has current data - no sync needed at entry
 
 	double x[DIM], v[DIM]; // 0 for current and 1 for predicted positions and velocities
 	double r2, vx; // 0 for current and 1 for predicted values
@@ -426,6 +441,8 @@ void computeMemberAcceleration23(Particle* members) {
 
 // Calculate Position, Velocity, a_irr, a_tot at new_time
 void computeMemberAccelerationIrr(Particle* members, double new_time) {
+
+	// Note: particles[] already has current data - no sync needed at entry
 
 	double dt = (new_time - members->current_time_irr) * enzo_time_step;
 

@@ -377,3 +377,67 @@ void ParticleData::sync_to_particle(Particle& p, size_t i) const {
     p.radius = radius_[i];
     p.delta_mass = delta_mass_[i];
 }
+
+// ============================================================================
+// Batch sync helpers for FewBody operations
+// ============================================================================
+
+void ParticleData::sync_from_particles(const Particle* particles, const int* indices, size_t count) {
+    for (size_t j = 0; j < count; j++) {
+        int i = indices[j];
+        if (i >= 0 && static_cast<size_t>(i) < capacity_) {
+            sync_from_particle(particles[i], static_cast<size_t>(i));
+        }
+    }
+}
+
+void ParticleData::sync_to_particles(Particle* particles, const int* indices, size_t count) const {
+    for (size_t j = 0; j < count; j++) {
+        int i = indices[j];
+        if (i >= 0 && static_cast<size_t>(i) < capacity_) {
+            sync_to_particle(particles[i], static_cast<size_t>(i));
+        }
+    }
+}
+
+void ParticleData::sync_all_from_particles(const Particle* particles, size_t num_particles) {
+    for (size_t i = 0; i < num_particles && i < capacity_; i++) {
+        sync_from_particle(particles[i], i);
+    }
+    count_ = num_particles < capacity_ ? num_particles : capacity_;
+}
+
+void ParticleData::sync_all_to_particles(Particle* particles, size_t num_particles) const {
+    for (size_t i = 0; i < num_particles && i < capacity_; i++) {
+        sync_to_particle(particles[i], i);
+    }
+}
+
+// ============================================================================
+// Minimal sync for prediction - only fields needed for predict_particle_second_order
+// ============================================================================
+void ParticleData::sync_prediction_fields_from_particle(const Particle& p, size_t i) {
+    // Position
+    pos_x_[i] = p.position[0];
+    pos_y_[i] = p.position[1];
+    pos_z_[i] = p.position[2];
+
+    // Velocity
+    vel_x_[i] = p.velocity[0];
+    vel_y_[i] = p.velocity[1];
+    vel_z_[i] = p.velocity[2];
+
+    // First two acceleration orders only (for prediction)
+    for (int d = 0; d < 3; d++) {
+        acc_total_[d][0][i] = p.acc_total[d][0];
+        acc_total_[d][1][i] = p.acc_total[d][1];
+    }
+
+    // Timing for prediction
+    current_time_irr_[i] = p.current_time_irr;
+    current_time_reg_[i] = p.current_time_reg;
+
+    // Flags needed for perturber logic
+    is_active_[i] = p.is_active;
+    num_neighbors_[i] = p.num_neighbors;
+}

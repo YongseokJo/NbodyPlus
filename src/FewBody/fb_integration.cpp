@@ -1,7 +1,11 @@
 #ifdef FEWBODY
 #include "../global.h"
+#include "../particle_data.h"
 #include <random>
 #include <map>
+
+// External SoA container
+extern ParticleDataMPI particle_data;
 
 #ifdef SEVN
 void Mix(StarSEVN* star1, StarSEVN* star2);
@@ -18,6 +22,9 @@ void recoilKick(Particle* p1, Particle* p2);
 
 // Reference: SDAR/sample/AR/ar.cxx & PeTar/src/hard.hpp
 void Group::ARIntegration(double next_time) {
+
+    // Note: particles[] already has current data - no sync needed at entry
+    // We sync TO SoA at the end after modifications
 
     for (int dim=0; dim<DIM; dim++) {
         sym_int.particles.cm.position[dim] = groupCM->position[dim];
@@ -85,6 +92,9 @@ void Group::ARIntegration(double next_time) {
         for (int i = 0; i < sym_int.particles.getSize(); i++) {
             Particle* members = &sym_int.particles[i];
             particles[members->particle_index].current_time_irr = CurrentTime;
+            // Sync member to SoA
+            particle_data.sync_from_particle(particles[members->particle_index],
+                                             static_cast<size_t>(members->particle_index));
         }
         isTerminate = true;
         return;
@@ -188,11 +198,15 @@ void Group::ARIntegration(double next_time) {
                 particles[members->particle_index].mass = members->mass;
                 particles[members->particle_index].binary_state = members->binary_state;
                 particles[members->particle_index].current_time_irr = CurrentTime;
+
+                // Sync member to SoA
+                particle_data.sync_from_particle(particles[members->particle_index],
+                                                 static_cast<size_t>(members->particle_index));
             }
 
             isTerminate = true;
 
-            return;   
+            return;
         }
         else {
 
@@ -208,6 +222,10 @@ void Group::ARIntegration(double next_time) {
                 }
                 particles[members->particle_index].mass = members->mass;
                 particles[members->particle_index].binary_state = members->binary_state;
+
+                // Sync member to SoA
+                particle_data.sync_from_particle(particles[members->particle_index],
+                                                 static_cast<size_t>(members->particle_index));
             }
 
             // NewFBInitialization3(this);
@@ -226,10 +244,14 @@ void Group::ARIntegration(double next_time) {
         }
         particles[members->particle_index].mass = members->mass;
         particles[members->particle_index].current_time_irr = next_time;
+
+        // Sync modified member particle to SoA
+        particle_data.sync_from_particle(particles[members->particle_index],
+                                         static_cast<size_t>(members->particle_index));
     }
-    
+
     CurrentTime = next_time;
-    return; 
+    return;
 }
 
 // made 2024.09.19 by Eunwoo Chung
@@ -403,6 +425,9 @@ void Merge(Particle* p1, Particle* p2) { // Stellar merger
         }
 
         p2->mass = -1.0;
+        // Sync merged particles to SoA
+        particle_data.sync_from_particle(*p1, static_cast<size_t>(p1->particle_index));
+        particle_data.sync_from_particle(*p2, static_cast<size_t>(p2->particle_index));
         fprintf(merger_output_file, "---------------Merger remnant properties---------------\n");
         fprintf(merger_output_file, "Position (pc) - x:%e, y:%e, z:%e, \n", p1->position[0]*position_unit, p1->position[1]*position_unit, p1->position[2]*position_unit);
         fprintf(merger_output_file, "Velocity (km/s) - vx:%e, vy:%e, vz:%e, \n", p1->velocity[0]*velocity_unit/yr*pc/1e5, p1->velocity[1]*velocity_unit/yr*pc/1e5, p1->velocity[2]*velocity_unit/yr*pc/1e5);
@@ -445,6 +470,9 @@ void Merge(Particle* p1, Particle* p2) { // Stellar merger
         p1->delta_mass += 0.5 * p2->mass;
         p1->mass = mcm;
         p2->mass = -1.0;
+        // Sync TDE remnants to SoA
+        particle_data.sync_from_particle(*p1, static_cast<size_t>(p1->particle_index));
+        particle_data.sync_from_particle(*p2, static_cast<size_t>(p2->particle_index));
         fprintf(merger_output_file, "---------------Merger remnant properties---------------\n");
         fprintf(merger_output_file, "Position (pc) - x:%e, y:%e, z:%e, \n", p1->position[0]*position_unit, p1->position[1]*position_unit, p1->position[2]*position_unit);
         fprintf(merger_output_file, "Velocity (km/s) - vx:%e, vy:%e, vz:%e, \n", p1->velocity[0]*velocity_unit/yr*pc/1e5, p1->velocity[1]*velocity_unit/yr*pc/1e5, p1->velocity[2]*velocity_unit/yr*pc/1e5);
@@ -647,8 +675,11 @@ void Merge(Particle* p1, Particle* p2) { // Stellar merger
         fprintf(merger_output_file, "Velocity (km/s) - vx:%e, vy:%e, vz:%e, \n", p1->velocity[0]*velocity_unit/yr*pc/1e5, p1->velocity[1]*velocity_unit/yr*pc/1e5, p1->velocity[2]*velocity_unit/yr*pc/1e5);
         fprintf(merger_output_file, "Mass (Msol) - %e, \n", p1->mass*mass_unit);
         fprintf(merger_output_file, "---------------------END-OF-MERGER---------------------\n\n");
+        // Sync stellar merger remnants to SoA (non-SEVN path)
+        particle_data.sync_from_particle(*p1, static_cast<size_t>(p1->particle_index));
+        particle_data.sync_from_particle(*p2, static_cast<size_t>(p2->particle_index));
     }
-    fflush(merger_output_file);   
+    fflush(merger_output_file);
 #endif
 }
 

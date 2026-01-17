@@ -320,6 +320,34 @@ public:
     void sync_to_particle(Particle& p, size_t i) const;
 
     // ========================================================================
+    // Batch sync helpers for FewBody operations
+    // ========================================================================
+
+    // Sync a list of particles from Particle array to SoA
+    // particles: pointer to Particle array
+    // indices: particle indices to sync
+    // count: number of particles to sync
+    void sync_from_particles(const Particle* particles, const int* indices, size_t count);
+
+    // Sync a list of particles from SoA back to Particle array
+    // particles: pointer to Particle array
+    // indices: particle indices to sync
+    // count: number of particles to sync
+    void sync_to_particles(Particle* particles, const int* indices, size_t count) const;
+
+    // Sync all active particles from Particle array to SoA
+    // Used before operations that need consistent SoA state
+    void sync_all_from_particles(const Particle* particles, size_t num_particles);
+
+    // Sync all active particles from SoA back to Particle array
+    // Used after operations that modified SoA
+    void sync_all_to_particles(Particle* particles, size_t num_particles) const;
+
+    // Minimal sync for prediction only (position, velocity, acc_total[dim][0:1], current_time_irr)
+    // Used for perturber particles in FewBody operations
+    void sync_prediction_fields_from_particle(const Particle& p, size_t i);
+
+    // ========================================================================
     // Bulk 3-vector accessors - return pointers for contiguous access
     // ========================================================================
 

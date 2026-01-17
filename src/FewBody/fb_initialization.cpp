@@ -1,6 +1,10 @@
 #ifdef FEWBODY
 #include "../global.h"
+#include "../particle_data.h"
 #include "unordered_set"
+
+// External SoA container
+extern ParticleDataMPI particle_data;
 
 void CalculateAcceleration01(Particle* ptcl1);
 void CalculateAcceleration23(Particle* ptcl1);
@@ -101,6 +105,9 @@ void Group::initialIntegrator(int NumMembers) {
 
 // Initialize new Few body group
 void NewFBInitialization(Particle* ptclCM) {
+
+	// Note: particles[] already has current data - no sync needed at entry
+	// We sync TO SoA at the end after modifications
 
 	ptclCM->is_active = true;
 	ptclCM->is_cm_particle = true;
@@ -298,6 +305,15 @@ void NewFBInitialization(Particle* ptclCM) {
 
 	fprintf(worker_output_file, "---------------------END-OF-NEW-GROUP---------------------\n\n");
 	fflush(worker_output_file);
+
+	// Sync CM particle to SoA
+	particle_data.sync_from_particle(*ptclCM, static_cast<size_t>(ptclCM->particle_index));
+
+	// Mark member particles as inactive in SoA
+	for (int i = 0; i < ptclCM->num_members; i++) {
+		int idx = ptclCM->members[i];
+		particle_data.set_is_active(static_cast<size_t>(idx), false);
+	}
 }
 
 // Use this function when many-body (>3) group breaks during SDAR integration.
@@ -308,6 +324,9 @@ void NewFBInitialization3(Group* group) {
 	fprintf(worker_output_file, "NewFBInitialization3. CurrentTimeIrr (Myr): %e\n", group->CurrentTime*enzo_time_step*1e4);
 
 	Particle* ptclCM = group->groupCM;
+
+	// Note: particles[] already has current data - no sync needed at entry
+	// We sync TO SoA at the end after modifications
 
 	ptclGroup->groupCM = ptclCM;
 	ptclGroup->isTerminate = group->isTerminate;
@@ -393,11 +412,16 @@ void NewFBInitialization3(Group* group) {
 
 	fprintf(worker_output_file, "---------------------END-OF-NEW-GROUP---------------------\n\n");
 	fflush(worker_output_file);
+
+	// Sync CM particle to SoA after group reform
+	particle_data.sync_from_particle(*ptclCM, static_cast<size_t>(ptclCM->particle_index));
 }
 
 void computeCMAcceleration(Particle* ptclCM) {
 
 	double new_time = ptclCM->current_time_irr; // the time to be advanced to
+
+	// Note: particles[] already has current data - no sync needed at entry
 
 	double x[DIM], v[DIM]; // 0 for current and 1 for predicted positions and velocities
 	double r2, vx; // 0 for current and 1 for predicted values
