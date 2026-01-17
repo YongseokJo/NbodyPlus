@@ -967,6 +967,10 @@ bool readCheckpoint(const std::string& filename) {
 		}
 
 		file.close();
+
+		// Sync restored AoS data to SoA
+		particle_data.sync_all_from_particles(particles, last_particle_index + 1);
+
 		std::cout << "Checkpoint loaded successfully: " << saveCount << " particles restored." << std::endl;
 		std::cout << "Resuming from time: " << global_time * enzo_time_step * 1e10 / 1e6 << " Myr" << std::endl;
 
