@@ -68,6 +68,9 @@ void initializeMPI(int argc, char *argv[]) {
 	MPI_Win_shared_query(win2, 0, &size_bytes, &disp_unit, &g_state);
 	MPI_Win_shared_query(win3, 0, &size_bytes, &disp_unit, &neighbors);
 	MPI_Win_shared_query(win4, 0, &size_bytes, &disp_unit, &new_neighbors);
+
+	// Allocate SoA particle data via MPI shared memory
+	particle_data.allocate_shared(MAX_NUM_PARTICLE, shared_comm);
 }
 
 void InitialAssignmentOfTasks(std::vector<int>& data, int NumTask, int TAG) {
@@ -140,6 +143,8 @@ void ParticleSynchronization() {
 		InitialAssignmentOfTasks(task, num_workers, TASK_TAG);
 		//std::cerr << "before, Rank=" << my_rank <<" pid=" << ptcl_id << ", current_time=" << particles[ptcl_id].current_time_irr << std::endl;
 		MPI_Win_sync(win);  // TASK_SYNCHRONIZE memory
+		// Sync SoA particle data
+		particle_data.sync_all();
 		MPI_Barrier(shared_comm);
 		//std::cerr << "after, Rank=" << my_rank <<" pid=" << ptcl_id << ", current_time=" << particles[ptcl_id].current_time_irr << std::endl;
 		for (int i=0; i<num_workers; i++) {
