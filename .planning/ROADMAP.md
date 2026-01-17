@@ -124,7 +124,7 @@
 | 3 | GPU Integration | GPU-01..05 | Complete ✓ |
 | 4 | CPU Routines | CPU-01..05 | Complete ✓ |
 | 5 | SDAR Compatibility | SDAR-01, SDAR-02, SDAR-03 | Complete ✓ |
-| 6 | I/O Updates | IO-01, IO-02 | Pending |
+| 6 | I/O Updates | IO-01, IO-02 | Complete ✓ |
 | 7 | Validation | VAL-01..04 | Pending |
 
 ---

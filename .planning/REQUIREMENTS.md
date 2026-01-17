@@ -46,10 +46,10 @@
 
 ## I/O
 
-| REQ-ID | Requirement | Acceptance Criteria |
-|--------|-------------|---------------------|
-| IO-01 | Update HDF5 output for SoA | `output.h5` contains correct particle data |
-| IO-02 | Update particle initialization from file | Reading from input files populates SoA correctly |
+| REQ-ID | Requirement | Acceptance Criteria | Status |
+|--------|-------------|---------------------|--------|
+| IO-01 | Update HDF5 output for SoA | `output.h5` contains correct particle data | Complete ✓ |
+| IO-02 | Update particle initialization from file | Reading from input files populates SoA correctly | Complete ✓ |
 
 ## Validation
 
