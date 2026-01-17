@@ -4,6 +4,9 @@
 #include <cstddef>
 #include "def.h"
 
+// Forward declaration for sync methods
+struct Particle;
+
 // ============================================================================
 // ParticleData: Structure of Arrays (SoA) container for particle data
 // ============================================================================
@@ -305,6 +308,196 @@ public:
     const double* delta_mass() const { return delta_mass_; }
     double get_delta_mass(size_t i) const { return delta_mass_[i]; }
     void set_delta_mass(size_t i, double val) { delta_mass_[i] = val; }
+
+    // ========================================================================
+    // Particle sync methods - copy between AoS Particle and SoA ParticleData
+    // ========================================================================
+
+    // Copy all fields from a Particle struct to ParticleData at index i
+    void sync_from_particle(const Particle& p, size_t i);
+
+    // Copy all fields from ParticleData at index i back to Particle struct
+    void sync_to_particle(Particle& p, size_t i) const;
+
+    // ========================================================================
+    // Bulk 3-vector accessors - return pointers for contiguous access
+    // ========================================================================
+
+    // Get position as array: out[0]=x, out[1]=y, out[2]=z
+    void get_position_vec(size_t i, double out[3]) const {
+        out[0] = pos_x_[i]; out[1] = pos_y_[i]; out[2] = pos_z_[i];
+    }
+
+    // Get velocity as array: out[0]=vx, out[1]=vy, out[2]=vz
+    void get_velocity_vec(size_t i, double out[3]) const {
+        out[0] = vel_x_[i]; out[1] = vel_y_[i]; out[2] = vel_z_[i];
+    }
+
+    // Get new_position as array
+    void get_new_position_vec(size_t i, double out[3]) const {
+        out[0] = new_pos_x_[i]; out[1] = new_pos_y_[i]; out[2] = new_pos_z_[i];
+    }
+
+    // Get new_velocity as array
+    void get_new_velocity_vec(size_t i, double out[3]) const {
+        out[0] = new_vel_x_[i]; out[1] = new_vel_y_[i]; out[2] = new_vel_z_[i];
+    }
+
+    // Set position from array
+    void set_position_vec(size_t i, const double in[3]) {
+        pos_x_[i] = in[0]; pos_y_[i] = in[1]; pos_z_[i] = in[2];
+    }
+
+    // Set velocity from array
+    void set_velocity_vec(size_t i, const double in[3]) {
+        vel_x_[i] = in[0]; vel_y_[i] = in[1]; vel_z_[i] = in[2];
+    }
+
+    // Set new_position from array
+    void set_new_position_vec(size_t i, const double in[3]) {
+        new_pos_x_[i] = in[0]; new_pos_y_[i] = in[1]; new_pos_z_[i] = in[2];
+    }
+
+    // Set new_velocity from array
+    void set_new_velocity_vec(size_t i, const double in[3]) {
+        new_vel_x_[i] = in[0]; new_vel_y_[i] = in[1]; new_vel_z_[i] = in[2];
+    }
+
+    // ========================================================================
+    // Acceleration array accessors - get/set [3][4] acceleration arrays
+    // ========================================================================
+
+    // Get acceleration total as [3][4] array
+    void get_acc_total_array(size_t i, double out[3][4]) const {
+        for (int d = 0; d < 3; d++) {
+            for (int o = 0; o < 4; o++) {
+                out[d][o] = acc_total_[d][o][i];
+            }
+        }
+    }
+
+    // Set acceleration total from [3][4] array
+    void set_acc_total_array(size_t i, const double in[3][4]) {
+        for (int d = 0; d < 3; d++) {
+            for (int o = 0; o < 4; o++) {
+                acc_total_[d][o][i] = in[d][o];
+            }
+        }
+    }
+
+    // Get acceleration regular as [3][4] array
+    void get_acc_reg_array(size_t i, double out[3][4]) const {
+        for (int d = 0; d < 3; d++) {
+            for (int o = 0; o < 4; o++) {
+                out[d][o] = acc_reg_[d][o][i];
+            }
+        }
+    }
+
+    // Set acceleration regular from [3][4] array
+    void set_acc_reg_array(size_t i, const double in[3][4]) {
+        for (int d = 0; d < 3; d++) {
+            for (int o = 0; o < 4; o++) {
+                acc_reg_[d][o][i] = in[d][o];
+            }
+        }
+    }
+
+    // Get acceleration irregular as [3][4] array
+    void get_acc_irr_array(size_t i, double out[3][4]) const {
+        for (int d = 0; d < 3; d++) {
+            for (int o = 0; o < 4; o++) {
+                out[d][o] = acc_irr_[d][o][i];
+            }
+        }
+    }
+
+    // Set acceleration irregular from [3][4] array
+    void set_acc_irr_array(size_t i, const double in[3][4]) {
+        for (int d = 0; d < 3; d++) {
+            for (int o = 0; o < 4; o++) {
+                acc_irr_[d][o][i] = in[d][o];
+            }
+        }
+    }
+
+    // ========================================================================
+    // Acceleration accumulation helpers
+    // ========================================================================
+
+    // Zero all acceleration components for particle i (total, reg, irr)
+    void zero_all_acc(size_t i) {
+        for (int d = 0; d < 3; d++) {
+            for (int o = 0; o < 4; o++) {
+                acc_total_[d][o][i] = 0.0;
+                acc_reg_[d][o][i] = 0.0;
+                acc_irr_[d][o][i] = 0.0;
+            }
+        }
+    }
+
+    // Zero total acceleration for particle i
+    void zero_acc_total(size_t i) {
+        for (int d = 0; d < 3; d++) {
+            for (int o = 0; o < 4; o++) {
+                acc_total_[d][o][i] = 0.0;
+            }
+        }
+    }
+
+    // Zero regular acceleration for particle i
+    void zero_acc_reg(size_t i) {
+        for (int d = 0; d < 3; d++) {
+            for (int o = 0; o < 4; o++) {
+                acc_reg_[d][o][i] = 0.0;
+            }
+        }
+    }
+
+    // Zero irregular acceleration for particle i
+    void zero_acc_irr(size_t i) {
+        for (int d = 0; d < 3; d++) {
+            for (int o = 0; o < 4; o++) {
+                acc_irr_[d][o][i] = 0.0;
+            }
+        }
+    }
+
+    // Add to total acceleration [dim][order] for particle i
+    void add_to_acc_total(size_t i, int dim, int order, double val) {
+        acc_total_[dim][order][i] += val;
+    }
+
+    // Add to regular acceleration [dim][order] for particle i
+    void add_to_acc_reg(size_t i, int dim, int order, double val) {
+        acc_reg_[dim][order][i] += val;
+    }
+
+    // Add to irregular acceleration [dim][order] for particle i
+    void add_to_acc_irr(size_t i, int dim, int order, double val) {
+        acc_irr_[dim][order][i] += val;
+    }
+
+    // Add 3-vector to total acceleration at order 0 (position-dependent force)
+    void add_to_acc_total_vec(size_t i, const double a[3]) {
+        acc_total_[0][0][i] += a[0];
+        acc_total_[1][0][i] += a[1];
+        acc_total_[2][0][i] += a[2];
+    }
+
+    // Add 3-vector to regular acceleration at order 0
+    void add_to_acc_reg_vec(size_t i, const double a[3]) {
+        acc_reg_[0][0][i] += a[0];
+        acc_reg_[1][0][i] += a[1];
+        acc_reg_[2][0][i] += a[2];
+    }
+
+    // Add 3-vector to irregular acceleration at order 0
+    void add_to_acc_irr_vec(size_t i, const double a[3]) {
+        acc_irr_[0][0][i] += a[0];
+        acc_irr_[1][0][i] += a[1];
+        acc_irr_[2][0][i] += a[2];
+    }
 
 protected:
     // ========================================================================

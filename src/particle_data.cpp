@@ -1,4 +1,5 @@
 #include "particle_data.h"
+#include "particle.h"
 
 // ============================================================================
 // Helper: Compute padded capacity to avoid cache associativity issues
@@ -229,4 +230,150 @@ void ParticleData::deallocate() {
 
     capacity_ = 0;
     count_ = 0;
+}
+
+// ============================================================================
+// sync_from_particle: Copy data from Particle struct to SoA at index i
+// ============================================================================
+void ParticleData::sync_from_particle(const Particle& p, size_t i) {
+    // Position
+    pos_x_[i] = p.position[0];
+    pos_y_[i] = p.position[1];
+    pos_z_[i] = p.position[2];
+
+    // Velocity
+    vel_x_[i] = p.velocity[0];
+    vel_y_[i] = p.velocity[1];
+    vel_z_[i] = p.velocity[2];
+
+    // Mass
+    mass_[i] = p.mass;
+
+    // Accelerations (total, regular, irregular)
+    for (int d = 0; d < 3; d++) {
+        for (int o = 0; o < 4; o++) {
+            acc_total_[d][o][i] = p.acc_total[d][o];
+            acc_reg_[d][o][i] = p.acc_regular[d][o];
+            acc_irr_[d][o][i] = p.acc_irregular[d][o];
+        }
+    }
+
+    // New position/velocity (prediction output)
+    new_pos_x_[i] = p.new_position[0];
+    new_pos_y_[i] = p.new_position[1];
+    new_pos_z_[i] = p.new_position[2];
+    new_vel_x_[i] = p.new_velocity[0];
+    new_vel_y_[i] = p.new_velocity[1];
+    new_vel_z_[i] = p.new_velocity[2];
+
+    // Neighbor info
+    neighbor_radius_sq_[i] = p.neighbor_radius_sq;
+    num_neighbors_[i] = p.num_neighbors;
+    new_num_neighbors_[i] = p.new_num_neighbors;
+    neighbors_offset_[i] = p.neighbors_offset;
+
+    // Timestep doubles
+    current_time_irr_[i] = p.current_time_irr;
+    current_time_reg_[i] = p.current_time_reg;
+    time_step_irr_[i] = p.time_step_irr;
+    time_step_reg_[i] = p.time_step_reg;
+
+    // Block times
+    current_block_irr_[i] = p.current_block_irr;
+    new_current_block_irr_[i] = p.new_current_block_irr;
+    current_block_reg_[i] = p.current_block_reg;
+    time_block_irr_[i] = p.time_block_irr;
+    time_block_reg_[i] = p.time_block_reg;
+    next_block_irr_[i] = p.next_block_irr;
+
+    // IDs and indices
+    pid_[i] = p.pid;
+    particle_index_[i] = p.particle_index;
+    particle_type_[i] = p.particle_type;
+
+    // Time levels
+    time_level_irr_[i] = p.time_level_irr;
+    time_level_reg_[i] = p.time_level_reg;
+
+    // Bool flags
+    is_active_[i] = p.is_active;
+    is_up_to_date_[i] = p.is_up_to_date;
+    is_cm_particle_[i] = p.is_cm_particle;
+
+    // Other doubles
+    radius_[i] = p.radius;
+    delta_mass_[i] = p.delta_mass;
+}
+
+// ============================================================================
+// sync_to_particle: Copy data from SoA at index i back to Particle struct
+// ============================================================================
+void ParticleData::sync_to_particle(Particle& p, size_t i) const {
+    // Position
+    p.position[0] = pos_x_[i];
+    p.position[1] = pos_y_[i];
+    p.position[2] = pos_z_[i];
+
+    // Velocity
+    p.velocity[0] = vel_x_[i];
+    p.velocity[1] = vel_y_[i];
+    p.velocity[2] = vel_z_[i];
+
+    // Mass
+    p.mass = mass_[i];
+
+    // Accelerations (total, regular, irregular)
+    for (int d = 0; d < 3; d++) {
+        for (int o = 0; o < 4; o++) {
+            p.acc_total[d][o] = acc_total_[d][o][i];
+            p.acc_regular[d][o] = acc_reg_[d][o][i];
+            p.acc_irregular[d][o] = acc_irr_[d][o][i];
+        }
+    }
+
+    // New position/velocity (prediction output)
+    p.new_position[0] = new_pos_x_[i];
+    p.new_position[1] = new_pos_y_[i];
+    p.new_position[2] = new_pos_z_[i];
+    p.new_velocity[0] = new_vel_x_[i];
+    p.new_velocity[1] = new_vel_y_[i];
+    p.new_velocity[2] = new_vel_z_[i];
+
+    // Neighbor info
+    p.neighbor_radius_sq = neighbor_radius_sq_[i];
+    p.num_neighbors = num_neighbors_[i];
+    p.new_num_neighbors = new_num_neighbors_[i];
+    p.neighbors_offset = neighbors_offset_[i];
+
+    // Timestep doubles
+    p.current_time_irr = current_time_irr_[i];
+    p.current_time_reg = current_time_reg_[i];
+    p.time_step_irr = time_step_irr_[i];
+    p.time_step_reg = time_step_reg_[i];
+
+    // Block times
+    p.current_block_irr = current_block_irr_[i];
+    p.new_current_block_irr = new_current_block_irr_[i];
+    p.current_block_reg = current_block_reg_[i];
+    p.time_block_irr = time_block_irr_[i];
+    p.time_block_reg = time_block_reg_[i];
+    p.next_block_irr = next_block_irr_[i];
+
+    // IDs and indices
+    p.pid = pid_[i];
+    p.particle_index = particle_index_[i];
+    p.particle_type = particle_type_[i];
+
+    // Time levels
+    p.time_level_irr = time_level_irr_[i];
+    p.time_level_reg = time_level_reg_[i];
+
+    // Bool flags
+    p.is_active = is_active_[i];
+    p.is_up_to_date = is_up_to_date_[i];
+    p.is_cm_particle = is_cm_particle_[i];
+
+    // Other doubles
+    p.radius = radius_[i];
+    p.delta_mass = delta_mass_[i];
 }
