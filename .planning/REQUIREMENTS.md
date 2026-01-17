@@ -18,13 +18,13 @@
 
 ## GPU Integration
 
-| REQ-ID | Requirement | Acceptance Criteria |
-|--------|-------------|---------------------|
-| GPU-01 | Create `ParticleDataGPU` device container | Struct with device pointers for all GPU-needed fields |
-| GPU-02 | Implement host-to-device transfer | `copy_from_host()` transfers all arrays |
-| GPU-03 | Implement device-to-host transfer | `copy_to_host()` transfers results back |
-| GPU-04 | Update `compute_forces_kernel` for SoA | Kernel accepts separate array pointers |
-| GPU-05 | Update `predict_particle_kernel` for SoA | Kernel accepts separate array pointers |
+| REQ-ID | Requirement | Acceptance Criteria | Status |
+|--------|-------------|---------------------|--------|
+| GPU-01 | Create `ParticleDataGPU` device container | Struct with device pointers for all GPU-needed fields | Complete ✓ |
+| GPU-02 | Implement host-to-device transfer | `copy_from_host()` transfers all arrays | Complete ✓ |
+| GPU-03 | Implement device-to-host transfer | `copy_to_host()` transfers results back | Complete ✓ |
+| GPU-04 | Update `compute_forces_kernel` for SoA | Kernel accepts separate array pointers | Complete ✓ |
+| GPU-05 | Update `predict_particle_kernel` for SoA | Kernel accepts separate array pointers | N/A (no kernel found) |
 
 ## CPU Routines
 
