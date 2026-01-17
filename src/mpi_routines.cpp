@@ -79,8 +79,10 @@ void initializeMPI(int argc, char *argv[]) {
 	}
 
 #ifdef DEBUG_MPI
-	// Verify cross-rank access
-	if (my_rank == ROOT) {
+	// Verify cross-rank access within each shared memory region
+	// Note: shared_rank is the rank within the shared_comm (per-node),
+	// not the global rank. Each node has its own shared memory.
+	if (shared_rank == 0) {
 		particle_data.set_pos_x(0, 1.234);
 		particle_data.set_mass(0, 5.678);
 		particle_data.set_pid(0, 42);
@@ -93,16 +95,18 @@ void initializeMPI(int argc, char *argv[]) {
 	int test_pid = particle_data.get_pid(0);
 
 	if (test_pos != 1.234 || test_mass != 5.678 || test_pid != 42) {
-		fprintf(stderr, "Rank %d: MPI shared memory verification FAILED\n", my_rank);
+		fprintf(stderr, "Rank %d (shared_rank %d): MPI shared memory verification FAILED "
+		        "(pos=%.3f, mass=%.3f, pid=%d)\n",
+		        my_rank, shared_rank, test_pos, test_mass, test_pid);
 		MPI_Abort(MPI_COMM_WORLD, 1);
 	}
 
-	if (my_rank == ROOT) {
-		fprintf(stdout, "ParticleDataMPI: Cross-rank access verified\n");
+	if (shared_rank == 0) {
+		fprintf(stdout, "ParticleDataMPI: Cross-rank access verified (shared_size=%d)\n", shared_size);
 	}
 
 	// Clear test values
-	if (my_rank == ROOT) {
+	if (shared_rank == 0) {
 		particle_data.set_pos_x(0, 0.0);
 		particle_data.set_mass(0, 0.0);
 		particle_data.set_pid(0, 0);
