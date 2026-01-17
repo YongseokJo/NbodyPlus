@@ -37,7 +37,7 @@ LDFLAGS_BASE = -lm -lmpi $(LDFLAGS_HDF5)
 LDFLAGS_ALL  = $(LDFLAGS_BASE) $(LDFLAGS)
 
 # Source files
-CXX_SRCS = main.cpp default_global.cpp mpi_routines.cpp read_parameter_file.cpp worker_routines.cpp root_routines.cpp initialization_routines.cpp irregular_routines.cpp regular_routines.cpp timestep_routines.cpp parser.cpp read_write.cpp Particle/initialize.cpp Particle/update_particle.cpp Particle/compute_acceleration.cpp
+CXX_SRCS = main.cpp default_global.cpp mpi_routines.cpp read_parameter_file.cpp worker_routines.cpp root_routines.cpp initialization_routines.cpp irregular_routines.cpp regular_routines.cpp timestep_routines.cpp parser.cpp read_write.cpp particle_data.cpp Particle/initialize.cpp Particle/update_particle.cpp Particle/compute_acceleration.cpp
 
 # SDAR (always included)
 CXXFLAGS_ALL += -I./../SDAR/src -DAR_TTL -DAR_SLOWDOWN_TREE -DAR_SLOWDOWN_TIMESCALE -DFEWBODY
