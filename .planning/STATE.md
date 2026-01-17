@@ -3,7 +3,7 @@
 ## Current Focus
 
 **Milestone:** 1 — AoS to SoA Conversion (v1.0)
-**Phase:** 1 — Core SoA Container
+**Phase:** 2 — MPI Integration
 **Status:** Not Started
 
 ## Quick Context
@@ -22,7 +22,7 @@ Converting ABYSS from Array of Structures (AoS) to Structure of Arrays (SoA) for
 
 | Phase | Status | Notes |
 |-------|--------|-------|
-| 1. Core SoA Container | Not Started | — |
+| 1. Core SoA Container | Complete ✓ | 3 plans, 3 commits |
 | 2. MPI Integration | Not Started | — |
 | 3. GPU Integration | Not Started | — |
 | 4. CPU Routines | Not Started | — |
@@ -39,7 +39,7 @@ Converting ABYSS from Array of Structures (AoS) to Structure of Arrays (SoA) for
 
 ## Next Action
 
-Run `/gsd:plan-phase 1` to create detailed plan for Core SoA Container phase.
+Run `/gsd:plan-phase 2` to create detailed plan for MPI Integration phase.
 
 ---
-*Last updated: 2026-01-17*
+*Last updated: 2026-01-17 (Phase 1 complete)*

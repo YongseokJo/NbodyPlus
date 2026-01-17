@@ -119,7 +119,7 @@
 
 | Phase | Name | Requirements | Status |
 |-------|------|--------------|--------|
-| 1 | Core SoA Container | CONT-01, CONT-02, CONT-03 | Pending |
+| 1 | Core SoA Container | CONT-01, CONT-02, CONT-03 | Complete ✓ |
 | 2 | MPI Integration | MPI-01, MPI-02, MPI-03 | Pending |
 | 3 | GPU Integration | GPU-01..05 | Pending |
 | 4 | CPU Routines | CPU-01..05 | Pending |

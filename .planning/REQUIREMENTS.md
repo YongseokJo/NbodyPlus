@@ -2,11 +2,11 @@
 
 ## Core Container
 
-| REQ-ID | Requirement | Acceptance Criteria |
-|--------|-------------|---------------------|
-| CONT-01 | Create `ParticleData` SoA container class | Class exists with separate arrays for all Particle fields |
-| CONT-02 | Implement accessor functions for all fields | `get_X(i)`, `set_X(i, val)`, and `X()` (pointer) for each field |
-| CONT-03 | Implement memory allocation/deallocation | `allocate(N)`, `deallocate()` methods work correctly |
+| REQ-ID | Requirement | Acceptance Criteria | Status |
+|--------|-------------|---------------------|--------|
+| CONT-01 | Create `ParticleData` SoA container class | Class exists with separate arrays for all Particle fields | Complete ✓ |
+| CONT-02 | Implement accessor functions for all fields | `get_X(i)`, `set_X(i, val)`, and `X()` (pointer) for each field | Complete ✓ |
+| CONT-03 | Implement memory allocation/deallocation | `allocate(N)`, `deallocate()` methods work correctly | Complete ✓ |
 
 ## MPI Integration
 
