@@ -67,6 +67,15 @@ A performance optimization project to convert ABYSS's core data structures from 
 - `tools/analyze_energy.py` for energy conservation validation
 - Performance profiling via `PERFORMANCETRACE` flag
 
+**Validation Workflow:**
+- Run tests: `workflow/bin/submit.sh --tag <name> --scheduler slurm --profile`
+- Review results: `summary_runs.tsv` (TSV with key metrics)
+- Key metrics in `summary_runs.tsv`:
+  - `dE_over_E0_mean`, `dE_over_E0_std` — energy conservation
+  - `total_wall_s` — performance (wall clock time)
+  - `git_commit` — tracks which code version was tested
+- Baseline run already captured: `baseline_20260116_234947` (dE/E0 ≈ 3.2e-5, 28s wall time)
+
 ## Constraints
 
 - **Tech stack**: C++11, CUDA 12.x, MPI (OpenMPI), HDF5
