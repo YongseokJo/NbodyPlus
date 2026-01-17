@@ -19,10 +19,14 @@ LOG="$RUN_DIR/build.log"
   echo "== ABYSS compile =="
   echo "date=$(date)"
   echo "repo_root=$REPO_ROOT"
-  echo "mpicxx=$(command -v mpicxx)"
+  echo "CXX=${CXX:-}"
+  echo "USE_CUDA=${USE_CUDA:-0}"
+  echo "USE_SEVN=${USE_SEVN:-0}"
+  echo "ENABLE_PROFILING=${ENABLE_PROFILING:-0}"
   if [[ "${USE_CUDA:-0}" == "1" ]]; then
     echo "nvcc=$(command -v nvcc)"
     nvcc --version | head -4 || true
+    echo "CUDA_HOME=${CUDA_HOME:-}"
     echo "CUDAHOSTCXX=${CUDAHOSTCXX:-}"
   fi
   echo "HDF5_DIR=${HDF5_DIR:-}"
@@ -40,6 +44,10 @@ if [[ "${USE_CUDA:-0}" == "1" ]]; then
 fi
 if [[ "${USE_SEVN:-0}" == "1" ]]; then
   MAKE_ARGS+=("USE_SEVN=1")
+  MAKE_ARGS+=("SEVN_DIR=$SEVN_DIR")
+fi
+if [[ "${ENABLE_PROFILING:-0}" == "1" ]]; then
+  MAKE_ARGS+=("CXXFLAGS=-DPERFORMANCETRACE")
 fi
 
 # Build

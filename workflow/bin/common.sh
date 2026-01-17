@@ -47,6 +47,9 @@ workflow_load_config() {
   if [[ -n "${WF_USE_SEVN_OVERRIDE:-}" ]]; then
     USE_SEVN="$WF_USE_SEVN_OVERRIDE"
   fi
+  if [[ -n "${WF_ENABLE_PROFILING_OVERRIDE:-}" ]]; then
+    ENABLE_PROFILING="$WF_ENABLE_PROFILING_OVERRIDE"
+  fi
   if [[ -n "${WF_NTASKS_OVERRIDE:-}" ]]; then
     NTASKS="$WF_NTASKS_OVERRIDE"
   fi
@@ -68,14 +71,17 @@ workflow_setup_env() {
   # Uses MPI_CANDIDATES/CUDA_CANDIDATES/HDF5_CANDIDATES from config.
 
   # MPI
-  if ! command -v mpicxx &>/dev/null; then
-    for mpi_path in "${MPI_CANDIDATES[@]:-}"; do
-      if [[ -x "$mpi_path/bin/mpicxx" ]]; then
-        export PATH="$mpi_path/bin:$PATH"
-        export LD_LIBRARY_PATH="$mpi_path/lib:${LD_LIBRARY_PATH:-}"
-        break
-      fi
-    done
+  for mpi_path in "${MPI_CANDIDATES[@]:-}"; do
+    if [[ -x "$mpi_path/bin/mpicxx" ]]; then
+      export PATH="$mpi_path/bin:$PATH"
+      export LD_LIBRARY_PATH="$mpi_path/lib:${LD_LIBRARY_PATH:-}"
+      export CXX="$mpi_path/bin/mpicxx"
+      break
+    fi
+  done
+  # Fallback to PATH if no candidate matched
+  if [[ -z "${CXX:-}" ]] && command -v mpicxx &>/dev/null; then
+    export CXX="$(command -v mpicxx)"
   fi
 
   # HDF5
@@ -108,13 +114,31 @@ workflow_setup_env() {
       export CUDAHOSTCXX="$(command -v g++)"
     fi
   fi
+
+  # SEVN
+  if [[ "${USE_SEVN:-0}" == "1" ]]; then
+    if [[ -z "${SEVN_DIR:-}" ]]; then
+      for sevn_path in "${SEVN_CANDIDATES[@]:-}"; do
+        if [[ -d "$sevn_path/include/sevn" ]]; then
+          export SEVN_DIR="$sevn_path"
+          break
+        fi
+      done
+    fi
+    if [[ -n "${SEVN_DIR:-}" ]]; then
+      export LD_LIBRARY_PATH="$SEVN_DIR/lib64/sevn:${LD_LIBRARY_PATH:-}"
+    fi
+  fi
 }
 
 workflow_sanity() {
-  command -v mpicxx &>/dev/null || workflow_die "mpicxx not found (load MPI or set MPI_CANDIDATES)"
+  [[ -n "${CXX:-}" ]] || workflow_die "CXX not set (check MPI_CANDIDATES in config.sh)"
+  [[ -x "${CXX}" ]] || workflow_die "CXX=$CXX is not executable"
+  [[ -n "${HDF5_DIR:-}" ]] || workflow_die "HDF5_DIR not set (set HDF5_DIR or HDF5_CANDIDATES)"
 
   if [[ "${USE_CUDA:-0}" == "1" ]]; then
     command -v nvcc &>/dev/null || workflow_die "nvcc not found (load CUDA or set CUDA_CANDIDATES)"
+    [[ -n "${CUDA_HOME:-}" ]] || workflow_die "CUDA_HOME not set (set CUDA_HOME or CUDA_CANDIDATES)"
 
     if [[ -n "${CUDAHOSTCXX:-}" ]]; then
       if ! echo 'int main(){return 0;}' | "$CUDAHOSTCXX" -std=c++11 -x c++ -c -o /tmp/abyss_cuda_hostcxx_test.o - 2>/dev/null; then
@@ -122,6 +146,10 @@ workflow_sanity() {
       fi
       rm -f /tmp/abyss_cuda_hostcxx_test.o
     fi
+  fi
+
+  if [[ "${USE_SEVN:-0}" == "1" ]]; then
+    [[ -n "${SEVN_DIR:-}" ]] || workflow_die "SEVN_DIR not set (set SEVN_DIR or SEVN_CANDIDATES)"
   fi
 }
 

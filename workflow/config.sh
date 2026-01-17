@@ -19,6 +19,7 @@ SRUN_MPI="pmix_v4"
 # Build toggles
 USE_CUDA="1"
 USE_SEVN="0"
+ENABLE_PROFILING="0"  # Set to 1 to enable PERFORMANCETRACE
 
 # What to run
 TEST_DIR="tests/test1"
@@ -66,6 +67,13 @@ HDF5_CANDIDATES=(
   "/hpc/software/2025/spack/opt/spack/linux-rhel8-x86_64/gcc-12.4.0/hdf5-1.14.5-yke7pax3ot3kyspoqxw6lc4qolvpk43t"
   "/usr/local"
   "/usr"
+)
+
+# SEVN path (required when USE_SEVN=1)
+# Set SEVN_DIR directly or add candidates for auto-discovery
+SEVN_DIR=""
+SEVN_CANDIDATES=(
+  # Add your SEVN installation paths here
 )
 
 # Ensure module command is available, then load git (safe for non-interactive shells)

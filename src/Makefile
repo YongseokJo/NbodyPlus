@@ -1,95 +1,101 @@
-# Compiler
-#CXX = icc
-#CXX = mpiicpc
-CXX = /hpc/software/spack_v20d1/spack/opt/spack/linux-rhel7-x86_64/gcc-12.3.0/openmpi-4.1.6rc2-4jmm4uy2wrgvpfqpoc6geocztczhw6yx/bin/mpicxx
-#CXX = g++
+# =============================================================================
+# ABYSS Makefile
+# =============================================================================
+# All paths and options can be configured externally via environment variables.
+# See workflow/config.sh for cluster-specific settings.
+#
+# Environment variables:
+#   CXX         - C++ compiler (default: mpicxx)
+#   CXXFLAGS    - Additional compiler flags (appended to defaults)
+#   LDFLAGS     - Additional linker flags (appended to defaults)
+#   HDF5_DIR    - HDF5 installation prefix (or HDF5_ROOT)
+#   CUDA_HOME   - CUDA installation prefix (or CUDA_ROOT)
+#   USE_CUDA    - Set to 1 to enable CUDA support
+#   USE_SEVN    - Set to 1 to enable SEVN support
+#   SEVN_DIR    - SEVN installation prefix
+# =============================================================================
 
-# Compiler flags
-CXXFLAGS  = -O2 -march=native -ftree-vectorize -std=c++11 -Wall -Wextra -Wuninitialized -g -DPERFORMANCETRACE #-fopenmp #-DDEBUG #-DMULTIMAP #-DDEBUG #-fopenmp  -fsanitize=thread
-#CXXFLAGS  = -O0 -std=c++11 -Wall -Wextra -Wuninitialized -I./Particle -I./ -g -qopenmp  #-fopenmp  -fsanitize=thread
-#CXXFLAGS  = -O0 -std=c++11 -Wall -Wextra -Wuninitialized -I./Particle -I./ -g -fopenmp  -fsanitize=thread
-#CXXFLAGS  = -O2 -std=c++11 -Wall -Wextra -Wuninitialized -I./Particle -I./ -g -fopenmp  #-fsanitize=thread
+# Compiler (override via environment)
+CXX ?= mpicxx
 
-# TOML parsing uses the in-tree src/toml.hpp (no external include needed).
+# Base compiler flags
+CXXFLAGS_BASE = -O2 -march=native -ftree-vectorize -std=c++11 -Wall -Wextra -Wuninitialized -g
+CXXFLAGS_ALL  = $(CXXFLAGS_BASE) $(CXXFLAGS)
 
-# HDF5 paths (adjust as needed for your system)
-# Set HDF5_DIR environment variable or load HDF5 module before compiling
-# Example: module load hdf5/1.14.1-2-openmpi-gcc-12.3.0
-ifdef HDF5_ROOT
-	HDF5_PATH = $(HDF5_ROOT)
-else ifdef HDF5_DIR
-	HDF5_PATH = $(HDF5_DIR)
+# HDF5 (required)
+HDF5_PATH := $(or $(HDF5_ROOT),$(HDF5_DIR))
+ifdef HDF5_PATH
+  CXXFLAGS_ALL += -I$(HDF5_PATH)/include
+  LDFLAGS_HDF5  = -L$(HDF5_PATH)/lib -L$(HDF5_PATH)/lib64 -lhdf5_cpp -lhdf5
 else
-	HDF5_PATH = /hpc/software/2025/spack/opt/spack/linux-rhel8-x86_64/gcc-12.4.0/hdf5-1.14.5-yke7pax3ot3kyspoqxw6lc4qolvpk43t
+  $(warning HDF5_DIR or HDF5_ROOT not set; HDF5 headers/libs may not be found)
+  LDFLAGS_HDF5 = -lhdf5_cpp -lhdf5
 endif
-CXXFLAGS += -I$(HDF5_PATH)/include
-LDFLAGS_HDF5 = -L$(HDF5_PATH)/lib -L$(HDF5_PATH)/lib64 -lhdf5_cpp -lhdf5
 
-#NVCC_FLAGS_PROFILE = -g -lineinfo
-
-# Libraries
-#LDFLAGS = -L/usr/local/cuda-11.8/lib64/ -lcudart -lcublas -lnvToolsExt -lm -lcuda -lmpi #node14
-LDFLAGS = -lm -lmpi $(LDFLAGS_HDF5)
-# LDFLAGS = -L/usr/local/cuda/lib64/ -lm -lmpi #node15
-#add -lnvToolsExt for <nvToolsExt.h>
-#LDFLAGS = -L/mnt/sw/nix/store/zi2wc26znf75csf5hhz77p0d2bbz53ih-cuda-11.8.0/lib64/ -lcudart
+# Base linker flags
+LDFLAGS_BASE = -lm -lmpi $(LDFLAGS_HDF5)
+LDFLAGS_ALL  = $(LDFLAGS_BASE) $(LDFLAGS)
 
 # Source files
 CXX_SRCS = main.cpp default_global.cpp mpi_routines.cpp read_parameter_file.cpp worker_routines.cpp root_routines.cpp initialization_routines.cpp irregular_routines.cpp regular_routines.cpp timestep_routines.cpp parser.cpp read_write.cpp Particle/initialize.cpp Particle/update_particle.cpp Particle/compute_acceleration.cpp
 
-# SDAR
-CXXFLAGS += -I./../SDAR/src -DAR_TTL -DAR_SLOWDOWN_TREE -DAR_SLOWDOWN_TIMESCALE -DFEWBODY
+# SDAR (always included)
+CXXFLAGS_ALL += -I./../SDAR/src -DAR_TTL -DAR_SLOWDOWN_TREE -DAR_SLOWDOWN_TIMESCALE -DFEWBODY
 CXX_SRCS += FewBody/fb_check.cpp FewBody/fb_initialization.cpp FewBody/fb_integration.cpp FewBody/fb_termination.cpp FewBody/group_acceleration.cpp
 
+# CUDA support (set USE_CUDA=1 to enable)
 ifdef USE_CUDA
-	# CUDA paths - use CUDA_HOME if set, otherwise try common locations
-	CUDA_PATH ?= $(if $(CUDA_HOME),$(CUDA_HOME),$(if $(CUDA_ROOT),$(CUDA_ROOT),/usr/local/cuda))
-	CXXFLAGS += -I./cuda -I$(CUDA_PATH)/include -DCUDA -DNSIGHT
-	NVCC = $(CUDA_PATH)/bin/nvcc
-	NVCCFLAGS = -O2 -std=c++11 -Xcompiler -std=c++11 -Xcompiler -rdynamic -g -lineinfo -Xptxas=-v -I./../SDAR/src -I$(CUDA_PATH)/include
-	NVCC_FLAGS_DEBUG = -g -G --device-debug -lineinfo
-	LDFLAGS += -L$(CUDA_PATH)/lib64 -lcudart -lcublas -lnvToolsExt -lcuda
-	CXX_SRCS += cuda/calculate_regular_acceleration.cpp
-	CU_SRCS = cuda/cuda_acceleration.cu cuda/cuda_kernels.cu
+  CUDA_PATH := $(or $(CUDA_HOME),$(CUDA_ROOT))
+  ifndef CUDA_PATH
+    $(error USE_CUDA=1 but CUDA_HOME or CUDA_ROOT not set)
+  endif
+  CXXFLAGS_ALL += -I./cuda -I$(CUDA_PATH)/include -DCUDA -DNSIGHT
+  NVCC          = $(CUDA_PATH)/bin/nvcc
+  NVCCFLAGS     = -O2 -std=c++11 -Xcompiler -std=c++11 -Xcompiler -rdynamic -g -lineinfo -Xptxas=-v -I./../SDAR/src -I$(CUDA_PATH)/include
+  NVCC_FLAGS_DEBUG = -g -G --device-debug -lineinfo
+  LDFLAGS_ALL  += -L$(CUDA_PATH)/lib64 -lcudart -lcublas -lnvToolsExt -lcuda
+  CXX_SRCS     += cuda/calculate_regular_acceleration.cpp
+  CU_SRCS       = cuda/cuda_acceleration.cu cuda/cuda_kernels.cu
 endif
 
+# SEVN support (set USE_SEVN=1 and SEVN_DIR to enable)
 ifdef USE_SEVN
-    CXXFLAGS += -DSEVN -DSEVN_BINARY -I/home/vinicius/install/sevn_custom/build_n15/include/sevn
-    LDFLAGS += -L/home/vinicius/install/sevn_custom/build_n15/lib64/sevn -lsevn_lib_shared
-    CXX_SRCS += stellar_evolution.cpp
+  ifndef SEVN_DIR
+    $(error USE_SEVN=1 but SEVN_DIR not set)
+  endif
+  CXXFLAGS_ALL += -DSEVN -DSEVN_BINARY -I$(SEVN_DIR)/include/sevn
+  LDFLAGS_ALL  += -L$(SEVN_DIR)/lib64/sevn -lsevn_lib_shared
+  CXX_SRCS     += stellar_evolution.cpp
 endif
 
-#
+# Object files
 OBJS = $(CXX_SRCS:.cpp=.o)
 ifdef USE_CUDA
-	OBJS += $(CU_SRCS:.cu=.o) 
+  OBJS += $(CU_SRCS:.cu=.o)
 endif
 
 # Executable name
 EXEC = abyss.exe
 
-# Main target
+# =============================================================================
+# Build rules
+# =============================================================================
+
 all: $(EXEC)
 
-
-# Link object files into the executable
 $(EXEC): $(OBJS)
-	#$(NVCC) $(NVCCFLAGS) $(OBJS) -o $@ $(LDFLAGS)
-	#$(NVCC) $(CXXFLAGS) $(NVCCFLAGS) $(OBJS) -o $(EXEC) -v
-	$(CXX) $(CXXFLAGS) $(OBJS) -o $@ -v $(LDFLAGS)
-	#$(NVCC) $(CXXFLAGS) $(NVCCFLAGS) $(OBJS) -o $@ -v
+	$(CXX) $(CXXFLAGS_ALL) $(OBJS) -o $@ $(LDFLAGS_ALL)
 
-# Compile source files into object files
 %.o: %.cpp
-	$(CXX) $(CXXFLAGS) -c $< -o $@
+	$(CXX) $(CXXFLAGS_ALL) -c $< -o $@
 
 ifdef USE_CUDA
 %.o: %.cu
-	$(NVCC) $(NVCCFLAGS) $(NVCC_FLAGS_DEBUG) -c $< -o $@
+	$(NVCC) $(NVCCFLAGS) -c $< -o $@
 endif
 
-
-# Clean the project directory
 clean:
 	find . -type f -name "*.o" -delete
 	rm -f $(EXEC)
+
+.PHONY: all clean

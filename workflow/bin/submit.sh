@@ -36,6 +36,9 @@ Common examples:
   workflow/bin/submit.sh --skip-run
   workflow/bin/submit.sh --skip-analyze
 
+  # Enable profiling (adds -DPERFORMANCETRACE)
+  workflow/bin/submit.sh --profile
+
 Options:
   --tag <name>               Prefix for run directory name (default: run)
   --scheduler <slurm|pbs|local>
@@ -47,6 +50,10 @@ Options:
   --summary-file <name>      Summary file name written into the run dir (default: summary.txt)
   --summary-stack-file <path>
                              Stacked summary file path (default: summary_runs.tsv)
+  --profile                  Enable profiling (adds -DPERFORMANCETRACE to build)
+  --skip-compile             Skip the compile step
+  --skip-run                 Skip the run step
+  --skip-analyze             Skip the analyze step
 
 Stacking / summary_runs.tsv:
   By default the workflow appends ONLY the current run to the stack file.
@@ -99,6 +106,8 @@ while [[ $# -gt 0 ]]; do
       SKIP_RUN=1; shift 1 ;;
     --skip-analyze)
       SKIP_ANALYZE=1; shift 1 ;;
+    --profile|--profiling)
+      ENABLE_PROFILING=1; shift 1 ;;
     --stack-rebuild-all)
       STACK_REBUILD_ALL=1; shift 1 ;;
     -h|--help)
@@ -177,6 +186,7 @@ export WF_TEST_DIR_OVERRIDE="$TEST_DIR"
 export WF_RUN_CONFIG_OVERRIDE="$RUN_CONFIG"
 export WF_USE_CUDA_OVERRIDE="$USE_CUDA"
 export WF_USE_SEVN_OVERRIDE="$USE_SEVN"
+export WF_ENABLE_PROFILING_OVERRIDE="${ENABLE_PROFILING:-0}"
 export WF_NTASKS_OVERRIDE="$NTASKS"
 export WF_GPUS_OVERRIDE="$GPUS"
 export WF_PYTHON_OVERRIDE="${PYTHON:-}"
@@ -221,6 +231,7 @@ fi
   echo "run_config=$RUN_CONFIG"
   echo "use_cuda=$USE_CUDA"
   echo "use_sevn=$USE_SEVN"
+  echo "enable_profiling=${ENABLE_PROFILING:-0}"
   echo "nodes=$NODES"
   echo "ntasks=$NTASKS"
   echo "gpus=$GPUS"
