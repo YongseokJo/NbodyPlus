@@ -70,7 +70,45 @@ void initializeMPI(int argc, char *argv[]) {
 	MPI_Win_shared_query(win4, 0, &size_bytes, &disp_unit, &new_neighbors);
 
 	// Allocate SoA particle data via MPI shared memory
+	double alloc_start_time = MPI_Wtime();
 	particle_data.allocate_shared(MAX_NUM_PARTICLE, shared_comm);
+	double alloc_time = MPI_Wtime() - alloc_start_time;
+
+	if (my_rank == ROOT) {
+		fprintf(stdout, "ParticleDataMPI: Allocated 66 windows in %.3f seconds\n", alloc_time);
+	}
+
+#ifdef DEBUG_MPI
+	// Verify cross-rank access
+	if (my_rank == ROOT) {
+		particle_data.set_pos_x(0, 1.234);
+		particle_data.set_mass(0, 5.678);
+		particle_data.set_pid(0, 42);
+	}
+
+	particle_data.sync_all();
+
+	double test_pos = particle_data.get_pos_x(0);
+	double test_mass = particle_data.get_mass(0);
+	int test_pid = particle_data.get_pid(0);
+
+	if (test_pos != 1.234 || test_mass != 5.678 || test_pid != 42) {
+		fprintf(stderr, "Rank %d: MPI shared memory verification FAILED\n", my_rank);
+		MPI_Abort(MPI_COMM_WORLD, 1);
+	}
+
+	if (my_rank == ROOT) {
+		fprintf(stdout, "ParticleDataMPI: Cross-rank access verified\n");
+	}
+
+	// Clear test values
+	if (my_rank == ROOT) {
+		particle_data.set_pos_x(0, 0.0);
+		particle_data.set_mass(0, 0.0);
+		particle_data.set_pid(0, 0);
+	}
+	particle_data.sync_all();
+#endif
 }
 
 void InitialAssignmentOfTasks(std::vector<int>& data, int NumTask, int TAG) {
