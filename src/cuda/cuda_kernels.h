@@ -79,11 +79,27 @@ __global__ void print_forces_subset(
 );
 
 // ============================================================================
-// Main force computation kernel (optimized)
+// Main force computation kernel (SoA version)
 // ============================================================================
 __global__ void compute_forces_kernel(
-    const i_particle_t* __restrict__ d_i_particles,
-    const j_particle_t* __restrict__ d_j_particles,
+    // I-particle arrays (target)
+    const cuda_real_t* __restrict__ d_i_pos_x,
+    const cuda_real_t* __restrict__ d_i_pos_y,
+    const cuda_real_t* __restrict__ d_i_pos_z,
+    const cuda_real_t* __restrict__ d_i_vel_x,
+    const cuda_real_t* __restrict__ d_i_vel_y,
+    const cuda_real_t* __restrict__ d_i_vel_z,
+    const cuda_real_t* __restrict__ d_i_radius_sq,
+    // J-particle arrays (source)
+    const cuda_real_t* __restrict__ d_j_pos_x,
+    const cuda_real_t* __restrict__ d_j_pos_y,
+    const cuda_real_t* __restrict__ d_j_pos_z,
+    const cuda_real_t* __restrict__ d_j_vel_x,
+    const cuda_real_t* __restrict__ d_j_vel_y,
+    const cuda_real_t* __restrict__ d_j_vel_z,
+    const cuda_real_t* __restrict__ d_j_mass,
+    const int* __restrict__ d_j_index,
+    // Output arrays
     cuda_real_t* __restrict__ acc,
     int* __restrict__ neighbor,
     int* num_neighbor,

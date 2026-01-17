@@ -30,92 +30,135 @@ __global__ void print_forces_subset(cuda_real_t* result, int m, int n) {
 // NJBlock = 28
 // NNB_PER_BLOCK = 256;
 
-__global__ void compute_forces(const i_particle_t* __restrict__ d_Ip, const j_particle_t* __restrict__ d_Jp, cuda_real_t* __restrict__ acc, int* __restrict__ neighbor, int* num_neighbor,
-	 							int m, int n, int i_start){
-	// define i and j. in this code, grid is 2D and block is 1D
-    int i = threadIdx.x + blockIdx.x * blockDim.x; // Unique thread index across all blocks
-	int tid = threadIdx.x;
-	int I;
-	// int BATCH_SIZE = blockDim.x;
-	int idx_save_size = gridDim.y * m;
+// ============================================================================
+// Main force computation kernel (SoA version)
+// Uses separate arrays instead of AoS structs for coalesced memory access
+// ============================================================================
+__global__ void compute_forces(
+    // I-particle arrays (target)
+    const cuda_real_t* __restrict__ d_i_pos_x,
+    const cuda_real_t* __restrict__ d_i_pos_y,
+    const cuda_real_t* __restrict__ d_i_pos_z,
+    const cuda_real_t* __restrict__ d_i_vel_x,
+    const cuda_real_t* __restrict__ d_i_vel_y,
+    const cuda_real_t* __restrict__ d_i_vel_z,
+    const cuda_real_t* __restrict__ d_i_radius_sq,
+    // J-particle arrays (source)
+    const cuda_real_t* __restrict__ d_j_pos_x,
+    const cuda_real_t* __restrict__ d_j_pos_y,
+    const cuda_real_t* __restrict__ d_j_pos_z,
+    const cuda_real_t* __restrict__ d_j_vel_x,
+    const cuda_real_t* __restrict__ d_j_vel_y,
+    const cuda_real_t* __restrict__ d_j_vel_z,
+    const cuda_real_t* __restrict__ d_j_mass,
+    const int* __restrict__ d_j_index,
+    // Output arrays
+    cuda_real_t* __restrict__ acc,
+    int* __restrict__ neighbor,
+    int* num_neighbor,
+    int m,
+    int n,
+    int i_start)
+{
+    // Grid is 2D, block is 1D
+    int i = threadIdx.x + blockIdx.x * blockDim.x;
+    int tid = threadIdx.x;
+    int idx_save_size = gridDim.y * m;
 
-	int j_begin = blockIdx.y * n / gridDim.y;
-	int j_end = (blockIdx.y + 1) * n / gridDim.y;
-	if (blockIdx.y == gridDim.y - 1) j_end = n;  // Ensure the last block covers all remaining elements
-	
-	while (i < m + BATCH_SIZE){ // even with i > m, the last block needs to assign the shared memory for each tid
-		int i_ptcl = (i < m) ? i + i_start : m - 1 + i_start; //assign dummy values for the last block	
-		i_particle_t Ip = d_Ip[i_ptcl];
-		// cuda_real_t i_r2 = Ip.radius_sq;
-		
-		int NumNeighbor = 0;
-		int idx_save = i * gridDim.y + blockIdx.y;
-		// cuda_real_t save_acc[6] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-		cuda_real_t ax=0, ay=0, az=0;
-		cuda_real_t jx=0, jy=0, jz=0;
-		int* BlockNeighbor = &neighbor[NNB_PER_BLOCK*idx_save]; // Pointer to the neighbor list of the current block
+    int j_begin = blockIdx.y * n / gridDim.y;
+    int j_end = (blockIdx.y + 1) * n / gridDim.y;
+    if (blockIdx.y == gridDim.y - 1) j_end = n;
 
-		for (int j=j_begin; j < j_end; j+=BATCH_SIZE){ // total particles
-			int current_batch_size = min(BATCH_SIZE, j_end - j);
-			// assing shared particles for BATCH_SIZE particles to each block
-			__shared__ j_particle_t Jp_sh[BATCH_SIZE];
+    // SoA shared memory for j-particles
+    __shared__ cuda_real_t s_j_pos_x[BATCH_SIZE];
+    __shared__ cuda_real_t s_j_pos_y[BATCH_SIZE];
+    __shared__ cuda_real_t s_j_pos_z[BATCH_SIZE];
+    __shared__ cuda_real_t s_j_vel_x[BATCH_SIZE];
+    __shared__ cuda_real_t s_j_vel_y[BATCH_SIZE];
+    __shared__ cuda_real_t s_j_vel_z[BATCH_SIZE];
+    __shared__ cuda_real_t s_j_mass[BATCH_SIZE];
+    __shared__ int s_j_index[BATCH_SIZE];
 
-			__syncthreads();
-			if (tid < current_batch_size) {
-				Jp_sh[tid] = d_Jp[j + tid];
-			}
-			__syncthreads();
+    while (i < m + BATCH_SIZE) {
+        int i_ptcl = (i < m) ? i + i_start : m - 1 + i_start;
+
+        // Load i-particle data (SoA - coalesced reads)
+        cuda_real_t i_pos_x = d_i_pos_x[i_ptcl];
+        cuda_real_t i_pos_y = d_i_pos_y[i_ptcl];
+        cuda_real_t i_pos_z = d_i_pos_z[i_ptcl];
+        cuda_real_t i_vel_x = d_i_vel_x[i_ptcl];
+        cuda_real_t i_vel_y = d_i_vel_y[i_ptcl];
+        cuda_real_t i_vel_z = d_i_vel_z[i_ptcl];
+        cuda_real_t i_r2 = d_i_radius_sq[i_ptcl];
+
+        int NumNeighbor = 0;
+        int idx_save = i * gridDim.y + blockIdx.y;
+        cuda_real_t ax = 0, ay = 0, az = 0;
+        cuda_real_t jx = 0, jy = 0, jz = 0;
+        int* BlockNeighbor = &neighbor[NNB_PER_BLOCK * idx_save];
+
+        for (int j = j_begin; j < j_end; j += BATCH_SIZE) {
+            int current_batch_size = min(BATCH_SIZE, j_end - j);
+
+            __syncthreads();
+            if (tid < current_batch_size) {
+                int jidx = j + tid;
+                // Coalesced loads from global memory
+                s_j_pos_x[tid] = d_j_pos_x[jidx];
+                s_j_pos_y[tid] = d_j_pos_y[jidx];
+                s_j_pos_z[tid] = d_j_pos_z[jidx];
+                s_j_vel_x[tid] = d_j_vel_x[jidx];
+                s_j_vel_y[tid] = d_j_vel_y[jidx];
+                s_j_vel_z[tid] = d_j_vel_z[jidx];
+                s_j_mass[tid] = d_j_mass[jidx];
+                s_j_index[tid] = d_j_index[jidx];
+            }
+            __syncthreads();
 
             #pragma unroll 4
-			for (int jj=0; jj<current_batch_size; jj++){
-				if (i<m){
-					// Calculate forces
-					cuda_real_t dx = Jp_sh[jj].pos_x - Ip.pos_x;
-					cuda_real_t dy = Jp_sh[jj].pos_y - Ip.pos_y;
-					cuda_real_t dz = Jp_sh[jj].pos_z - Ip.pos_z;
-					cuda_real_t d2 = dx*dx + dy*dy + dz*dz;
+            for (int jj = 0; jj < current_batch_size; jj++) {
+                if (i < m) {
+                    // Calculate position differences
+                    cuda_real_t dx = s_j_pos_x[jj] - i_pos_x;
+                    cuda_real_t dy = s_j_pos_y[jj] - i_pos_y;
+                    cuda_real_t dz = s_j_pos_z[jj] - i_pos_z;
+                    cuda_real_t d2 = dx * dx + dy * dy + dz * dz;
 
-					if (d2 > Ip.radius_sq) {
-						// Calculate velocity differences
-						cuda_real_t dvx = Jp_sh[jj].vel_x - Ip.vel_x;
-						cuda_real_t dvy = Jp_sh[jj].vel_y - Ip.vel_y;
-						cuda_real_t dvz = Jp_sh[jj].vel_z - Ip.vel_z;
-						cuda_real_t inv_sqrt_d2 = rsqrt(d2);
-						cuda_real_t inv_d2 = inv_sqrt_d2 * inv_sqrt_d2; // or 1 / magnitude0
-						cuda_real_t scale = Jp_sh[jj].mass * inv_sqrt_d2 * inv_d2;
-						// Calculate adot_temp
-						cuda_real_t common_factor = 3.0 * (dx*dvx + dy*dvy + dz*dvz) * inv_d2;
-						
-						ax += scale * dx;
-						ay += scale * dy;
-						az += scale * dz;
-						jx += scale * (dvx - common_factor * dx);
-						jy += scale * (dvy - common_factor * dy);
-						jz += scale * (dvz - common_factor * dz);
-						
+                    if (d2 > i_r2) {
+                        // Calculate velocity differences
+                        cuda_real_t dvx = s_j_vel_x[jj] - i_vel_x;
+                        cuda_real_t dvy = s_j_vel_y[jj] - i_vel_y;
+                        cuda_real_t dvz = s_j_vel_z[jj] - i_vel_z;
+                        cuda_real_t inv_sqrt_d2 = rsqrt(d2);
+                        cuda_real_t inv_d2 = inv_sqrt_d2 * inv_sqrt_d2;
+                        cuda_real_t scale = s_j_mass[jj] * inv_sqrt_d2 * inv_d2;
+                        cuda_real_t common_factor = 3.0 * (dx * dvx + dy * dvy + dz * dvz) * inv_d2;
 
-					}
-					else { //if (i_ptcl != j_start + j + jj) 
-						// BlockNeighbor[NumNeighbor++] = j_start + j + jj;
-						BlockNeighbor[NumNeighbor++] = Jp_sh[jj].index;
-						assert (NumNeighbor < NNB_PER_BLOCK);
-					}
+                        ax += scale * dx;
+                        ay += scale * dy;
+                        az += scale * dz;
+                        jx += scale * (dvx - common_factor * dx);
+                        jy += scale * (dvy - common_factor * dy);
+                        jz += scale * (dvz - common_factor * dz);
+                    } else {
+                        BlockNeighbor[NumNeighbor++] = s_j_index[jj];
+                        assert(NumNeighbor < NNB_PER_BLOCK);
+                    }
+                }
+            }
+        }
 
-				} // end of if (i < m)
-			} // end of jj loop
-		}// end of j loop
-		if (i < m){
-			// printf("i, bIdx.y, i_ptcl: (ax, adotx): %d, %d, %d, %.3e, %.3e, %.3e, %d %d %d\n", i, blockIdx.y, i_ptcl, save_acc[2], save_acc[5], pi_x, NumNeighbor, j_begin, j_end);
-			acc[idx_save] = ax;
-			acc[idx_save + idx_save_size] = ay;
-			acc[idx_save + 2 * idx_save_size] = az;
-			acc[idx_save + 3 * idx_save_size] = jx;
-			acc[idx_save + 4 * idx_save_size] = jy;
-			acc[idx_save + 5 * idx_save_size] = jz;
-			num_neighbor[idx_save] = NumNeighbor;
-		}
-		i += gridDim.x * blockDim.x;
-	} //end of i loop
+        if (i < m) {
+            acc[idx_save] = ax;
+            acc[idx_save + idx_save_size] = ay;
+            acc[idx_save + 2 * idx_save_size] = az;
+            acc[idx_save + 3 * idx_save_size] = jx;
+            acc[idx_save + 4 * idx_save_size] = jy;
+            acc[idx_save + 5 * idx_save_size] = jz;
+            num_neighbor[idx_save] = NumNeighbor;
+        }
+        i += gridDim.x * blockDim.x;
+    }
 }
 
 
