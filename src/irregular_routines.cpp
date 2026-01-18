@@ -169,6 +169,10 @@ bool IrregularRoutines(QueueScheduler &queue_scheduler, Worker *workers, std::un
                         iter = queue_scheduler.CMPtcls.begin();
                     cm_pid = *(iter);
                     ptcl = &particles[cm_pid];
+#ifdef DEBUG
+                    fprintf(stdout, "(ASYNC_CM) Dispatching CM particle PID: %d to worker %d\n",
+                            ptcl->pid, cm_particle_worker_map[cm_pid]);
+#endif
                     /*
                     for (int j = 0; j < ptcl->num_neighbors; j++)
                     {
@@ -194,6 +198,10 @@ bool IrregularRoutines(QueueScheduler &queue_scheduler, Worker *workers, std::un
                 }
                 if (worker != nullptr)
                 {
+#ifdef DEBUG
+                    fprintf(stdout, "(ASYNC_COMPLETE) Worker %d completed task for PID: %d\n",
+                            worker->rank, worker->getCurrentQueue()->pid);
+#endif
                     queue_scheduler.callbackAsync(worker);  // Async callback (Phase 12)
                 }
             } while (worker == nullptr);
