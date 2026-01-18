@@ -40,9 +40,9 @@ Requirements for performance profiling infrastructure and optimization.
 
 ### Optimization
 
-- [ ] **OPT-01**: Primary bottleneck addressed based on profiling findings
-- [ ] **OPT-02**: Optimization validated with before/after profiling comparison
-- [ ] **OPT-03**: Energy conservation verified after optimization (within baseline tolerance)
+- [x] **OPT-01**: Primary bottleneck addressed based on profiling findings
+- [x] **OPT-02**: Optimization validated with before/after profiling comparison (3.2% improvement, below 20% target)
+- [x] **OPT-03**: Energy conservation verified after optimization (within baseline tolerance)
 
 ## v2.1+ Requirements
 
@@ -92,15 +92,15 @@ Deferred to future release. Tracked but not in current roadmap.
 | ANLZ-01 | Phase 9 | Complete |
 | ANLZ-02 | Phase 9 | Complete |
 | ANLZ-03 | Phase 9 | Complete |
-| OPT-01 | Phase 10 | Pending |
-| OPT-02 | Phase 10 | Pending |
-| OPT-03 | Phase 10 | Pending |
+| OPT-01 | Phase 10 | Complete |
+| OPT-02 | Phase 10 | Complete |
+| OPT-03 | Phase 10 | Complete |
 
 **Coverage:**
 - v2.0 requirements: 22 total
 - Mapped to phases: 22
-- Unmapped: 0 ✓
+- Complete: 22 ✓
 
 ---
 *Requirements defined: 2026-01-17*
-*Last updated: 2026-01-17 Phase 9 complete*
+*Last updated: 2026-01-18 Phase 10 complete*

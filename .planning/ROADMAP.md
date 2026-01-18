@@ -9,7 +9,7 @@
 |-------|------|--------------|--------|
 | 8 | Enhanced Profiler Infrastructure | PROF-01 to PROF-05, IRR-01 to IRR-05, MPI-01 to MPI-06 | Complete |
 | 9 | Profile & Analyze | ANLZ-01 to ANLZ-03 | Complete |
-| 10 | Targeted Optimization | OPT-01 to OPT-03 | Pending |
+| 10 | Targeted Optimization | OPT-01 to OPT-03 | Complete |
 
 ---
 
@@ -77,19 +77,28 @@
 
 **Depends On:** Phase 9 complete (bottleneck identified)
 
-**Potential Optimizations (depending on Phase 2 findings):**
-- **If force loop is bottleneck:** SIMD vectorization of neighbor loop
-- **If MPI communication is bottleneck:** Reduce message count, batch sends
-- **If load imbalance is bottleneck:** Improve work distribution algorithm
-- **If queue scheduling is bottleneck:** Optimize assignment algorithm
+**Optimization Implemented:**
+- AVX-512 vectorization of irregular force neighbor loop
+- Pre-gather pattern for aligned SIMD access
+- Newton-Raphson refinement for double precision rsqrt
 
 **Success Criteria:**
-1. Optimization implemented for primary bottleneck
-2. Before/after profiling shows measurable improvement
-3. Energy conservation verified (within baseline tolerance: dE/E0 < 1e-4)
-4. No regression in simulation correctness
+1. ✓ Optimization implemented for primary bottleneck (AVX-512 vectorization)
+2. ⚠ Before/after profiling shows improvement (3.2% vs 20% target)
+3. ✓ Energy conservation verified (dE/E0 = 1.34e-6 < 1e-4)
+4. ✓ No regression in simulation correctness
 
-**Estimated Plans:** 3-5
+**Completed:** 2026-01-18 (3 plans in 2 waves)
+
+**Results:**
+- IrregularForce: 69.5s → 67.3s (-3.2%)
+- Wall time: 130s → 126.4s (-2.8%)
+- Limited gain due to gather overhead and memory-bound workload
+
+**Recommendations for v2.1:**
+- MPI batching to reduce message overhead
+- SIMD gather intrinsics to avoid pre-gather copies
+- GPU irregular forces kernel
 
 ---
 
@@ -114,4 +123,4 @@ v2.0 is complete when:
 
 ---
 *Roadmap created: 2026-01-17*
-*Last updated: 2026-01-17 Phase 9 complete*
+*Last updated: 2026-01-18 v2.0 milestone complete*
