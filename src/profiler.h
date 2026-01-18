@@ -64,6 +64,12 @@ enum class TimerID : int {
     MPIBcast,
     MPIWindowSync,
 
+    // Async MPI timers (Phase 11)
+    MPIIsend,       // Time in MPI_Isend calls
+    MPIIrecv,       // Time in MPI_Irecv calls
+    MPIWaitany,     // Time in MPI_Waitany calls
+    MPITestany,     // Time in MPI_Testany calls
+
     // Worker timers
     WorkerCompute,
     WorkerIdle,
@@ -381,6 +387,11 @@ public:
             "MPIReduce",
             "MPIBcast",
             "MPIWindowSync",
+            // Async MPI timers (Phase 11)
+            "MPIIsend",
+            "MPIIrecv",
+            "MPIWaitany",
+            "MPITestany",
             "WorkerCompute",
             "WorkerIdle",
             "QueueWait",
