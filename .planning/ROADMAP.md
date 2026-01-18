@@ -7,13 +7,13 @@
 
 | Phase | Name | Requirements | Status |
 |-------|------|--------------|--------|
-| 1 | Enhanced Profiler Infrastructure | PROF-01 to PROF-05, IRR-01 to IRR-05, MPI-01 to MPI-06 | Pending |
-| 2 | Profile & Analyze | ANLZ-01 to ANLZ-03 | Pending |
-| 3 | Targeted Optimization | OPT-01 to OPT-03 | Pending |
+| 8 | Enhanced Profiler Infrastructure | PROF-01 to PROF-05, IRR-01 to IRR-05, MPI-01 to MPI-06 | Pending |
+| 9 | Profile & Analyze | ANLZ-01 to ANLZ-03 | Pending |
+| 10 | Targeted Optimization | OPT-01 to OPT-03 | Pending |
 
 ---
 
-## Phase 1: Enhanced Profiler Infrastructure
+## Phase 8: Enhanced Profiler Infrastructure
 
 **Goal:** Build comprehensive profiling infrastructure with per-rank statistics, sub-timers, work counters, and load balance metrics.
 
@@ -36,13 +36,13 @@
 
 ---
 
-## Phase 2: Profile & Analyze
+## Phase 9: Profile & Analyze
 
 **Goal:** Collect profiling data from representative simulations and identify the primary bottleneck with quantitative evidence.
 
 **Requirements:** ANLZ-01, ANLZ-02, ANLZ-03
 
-**Depends On:** Phase 1 complete
+**Depends On:** Phase 8 complete
 
 **Key Activities:**
 - Run standard test simulation with enhanced profiler
@@ -60,13 +60,13 @@
 
 ---
 
-## Phase 3: Targeted Optimization
+## Phase 10: Targeted Optimization
 
 **Goal:** Implement optimization for the identified bottleneck and validate with before/after comparison.
 
 **Requirements:** OPT-01, OPT-02, OPT-03
 
-**Depends On:** Phase 2 complete (bottleneck identified)
+**Depends On:** Phase 9 complete (bottleneck identified)
 
 **Potential Optimizations (depending on Phase 2 findings):**
 - **If force loop is bottleneck:** SIMD vectorization of neighbor loop

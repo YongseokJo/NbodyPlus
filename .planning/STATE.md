@@ -5,13 +5,13 @@
 See: .planning/PROJECT.md (updated 2026-01-17)
 
 **Core value:** Identify and eliminate irregular force bottlenecks through systematic profiling
-**Current focus:** Phase 1 — Enhanced Profiler Infrastructure
+**Current focus:** Phase 8 — Enhanced Profiler Infrastructure
 
 ## Current Position
 
 **Milestone:** v2.0 — Performance Profiling & Optimization
-**Phase:** 1 of 3
-**Status:** Ready to plan
+**Phase:** 8 (first of v2.0)
+**Status:** Planned (6 plans in 3 waves)
 
 Last activity: 2026-01-17 — v2.0 milestone initialized
 
@@ -21,9 +21,9 @@ Progress: ░░░░░░░░░░ 0%
 
 | Phase | Name | Requirements | Status |
 |-------|------|--------------|--------|
-| 1 | Enhanced Profiler Infrastructure | 16 | ○ Pending |
-| 2 | Profile & Analyze | 3 | ○ Pending |
-| 3 | Targeted Optimization | 3 | ○ Pending |
+| 8 | Enhanced Profiler Infrastructure | 16 | ◆ Planned |
+| 9 | Profile & Analyze | 3 | ○ Pending |
+| 10 | Targeted Optimization | 3 | ○ Pending |
 
 ## v2.0 Focus
 
@@ -52,7 +52,7 @@ Progress: ░░░░░░░░░░ 0%
 
 ## Next Action
 
-Run `/gsd:plan-phase 1` to create execution plan for Phase 1.
+Run `/gsd:plan-phase 8` to create execution plan for Phase 8.
 
 ---
 *Last updated: 2026-01-17 (v2.0 initialized)*

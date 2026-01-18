@@ -73,28 +73,28 @@ Deferred to future release. Tracked but not in current roadmap.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| PROF-01 | Phase 1 | Pending |
-| PROF-02 | Phase 1 | Pending |
-| PROF-03 | Phase 1 | Pending |
-| PROF-04 | Phase 1 | Pending |
-| PROF-05 | Phase 1 | Pending |
-| IRR-01 | Phase 1 | Pending |
-| IRR-02 | Phase 1 | Pending |
-| IRR-03 | Phase 1 | Pending |
-| IRR-04 | Phase 1 | Pending |
-| IRR-05 | Phase 1 | Pending |
-| MPI-01 | Phase 1 | Pending |
-| MPI-02 | Phase 1 | Pending |
-| MPI-03 | Phase 1 | Pending |
-| MPI-04 | Phase 1 | Pending |
-| MPI-05 | Phase 1 | Pending |
-| MPI-06 | Phase 1 | Pending |
-| ANLZ-01 | Phase 2 | Pending |
-| ANLZ-02 | Phase 2 | Pending |
-| ANLZ-03 | Phase 2 | Pending |
-| OPT-01 | Phase 3 | Pending |
-| OPT-02 | Phase 3 | Pending |
-| OPT-03 | Phase 3 | Pending |
+| PROF-01 | Phase 8 | Pending |
+| PROF-02 | Phase 8 | Pending |
+| PROF-03 | Phase 8 | Pending |
+| PROF-04 | Phase 8 | Pending |
+| PROF-05 | Phase 8 | Pending |
+| IRR-01 | Phase 8 | Pending |
+| IRR-02 | Phase 8 | Pending |
+| IRR-03 | Phase 8 | Pending |
+| IRR-04 | Phase 8 | Pending |
+| IRR-05 | Phase 8 | Pending |
+| MPI-01 | Phase 8 | Pending |
+| MPI-02 | Phase 8 | Pending |
+| MPI-03 | Phase 8 | Pending |
+| MPI-04 | Phase 8 | Pending |
+| MPI-05 | Phase 8 | Pending |
+| MPI-06 | Phase 8 | Pending |
+| ANLZ-01 | Phase 9 | Pending |
+| ANLZ-02 | Phase 9 | Pending |
+| ANLZ-03 | Phase 9 | Pending |
+| OPT-01 | Phase 10 | Pending |
+| OPT-02 | Phase 10 | Pending |
+| OPT-03 | Phase 10 | Pending |
 
 **Coverage:**
 - v2.0 requirements: 22 total
