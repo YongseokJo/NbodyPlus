@@ -2,17 +2,29 @@
 
 ## What This Is
 
-A performance optimization project to convert ABYSS's core data structures from Array of Structures (AoS) to Structure of Arrays (SoA) layout. This affects the `Particle` struct, GPU data types (`j_particle_t`, `i_particle_t`), and MPI shared memory windows. The goal is improved CPU cache efficiency and GPU memory coalescing while maintaining simulation correctness.
+ABYSS N-body simulation code with Structure of Arrays (SoA) data layout. The v1.0 conversion replaced the original Array of Structures (AoS) `Particle` struct with a `ParticleData` SoA container (66 arrays), `ParticleDataMPI` for shared memory (66 MPI_Win handles), and `ParticleDataGPU` for device data. SDAR few-body integration maintained via exit-only sync pattern.
 
 ## Core Value
 
-**Improve simulation performance through optimized memory layout while maintaining physics correctness (energy conservation, test reproducibility).**
+**Physics correctness (energy conservation) with clean SoA architecture for future optimizations.**
 
 ## Requirements
 
 ### Validated
 
-<!-- Existing capabilities that must continue working -->
+<!-- Shipped in v1.0 -->
+
+- ✓ ParticleData SoA container with 66 arrays — v1.0
+- ✓ Accessor functions (get/set/pointer) for all fields — v1.0
+- ✓ ParticleDataMPI with 66 MPI_Win shared memory windows — v1.0
+- ✓ ParticleDataGPU device container with async transfers — v1.0
+- ✓ SoA-compatible CUDA force kernels — v1.0
+- ✓ CPU routines with SoA helper functions — v1.0
+- ✓ SDAR compatibility via exit-only sync pattern — v1.0
+- ✓ I/O sync (initialization and checkpoint restore) — v1.0
+- ✓ Energy conservation validated (2.52e-5 vs 3.21e-5 baseline) — v1.0
+
+<!-- Existing capabilities maintained -->
 
 - ✓ 4th-order Hermite integration with block timesteps — existing
 - ✓ GPU-accelerated force calculations (CUDA) — existing
@@ -23,58 +35,47 @@ A performance optimization project to convert ABYSS's core data structures from 
 - ✓ HDF5 output with compression — existing
 - ✓ TOML configuration parsing — existing
 - ✓ Optional SEVN stellar evolution integration — existing
-- ✓ Energy conservation within tolerance — existing
 
 ### Active
 
-<!-- Current scope being built toward -->
+<!-- For next milestone -->
 
-- [ ] Convert `Particle` struct to SoA container with accessor functions
-- [ ] Convert GPU types (`j_particle_t`, `i_particle_t`) to SoA
-- [ ] Convert MPI shared memory to multiple `MPI_Win` windows (one per array)
-- [ ] Update all particle data access to use accessor functions
-- [ ] Update CUDA kernels to work with SoA layout
-- [ ] Update CPU force calculations to work with SoA layout
-- [ ] Maintain SDAR/Group compatibility with new data layout
-- [ ] Validate energy conservation matches pre-conversion baseline
-- [ ] Benchmark performance improvement vs AoS baseline
+(None defined yet — run `/gsd:new-milestone` to define)
 
 ### Out of Scope
 
-- SDAR `Group` struct conversion — complex integration with SDAR library, defer
-- Hybrid AoS/SoA approach — decided on full conversion for cleaner architecture
-- Algorithm changes — this is purely a data layout optimization
-- New physics features — focus on conversion only
+- SDAR `Group` struct conversion — kept as-is with exit-only sync
+- Performance improvement — v1.0 showed no change; bottleneck elsewhere
+- Algorithm changes — SoA is data layout only
 
 ## Context
 
-**Current Architecture:**
-- `Particle` struct in `src/particle.h` contains ~120 fields including position[3], velocity[3], acceleration arrays [3][4], neighbor info, timestep data, and SDAR/SEVN pointers
-- GPU types defined in `src/cuda/cuda_defs.h`
-- MPI uses `MPI_Win_allocate_shared` for particle array in `src/mpi_routines.cpp`
-- Force calculations in `src/cuda/cuda_kernels.cu` and `src/Particle/compute_acceleration.cpp`
+**Current State (v1.0 shipped):**
 
-**Key Files to Modify:**
-- `src/particle.h` — main struct → SoA container
-- `src/cuda/cuda_defs.h` — GPU types
-- `src/mpi_routines.cpp` — shared memory allocation
-- `src/cuda/cuda_kernels.cu` — kernel access patterns
-- `src/cuda/cuda_acceleration.cu` — GPU dispatch
-- All files accessing `particles[i].field`
+- `ParticleData` SoA container in `src/particle_data.h` — 66 arrays with accessors
+- `ParticleDataMPI` in `src/particle_data_mpi.h` — 66 MPI_Win handles
+- `ParticleDataGPU` in `src/particle_data_gpu.h` — device container
+- Original `Particle` struct retained for SDAR compatibility (exit-only sync)
+- 57 commits on AoS_to_SoA branch
 
-**Existing Tests:**
-- `tests/test1/` with TOML config
-- `tools/analyze_energy.py` for energy conservation validation
-- Performance profiling via `PERFORMANCETRACE` flag
+**Validation Results:**
+
+| Metric | Baseline | v1.0 SoA | Result |
+|--------|----------|----------|--------|
+| dE/E0 mean | 3.21e-05 | 2.52e-05 | ✓ Better |
+| Wall time | 28.33s | 28.40s | No change |
+
+**Key Files:**
+
+- `src/particle_data.h/.cpp` — SoA container
+- `src/particle_data_mpi.h/.cpp` — MPI shared memory
+- `src/particle_data_gpu.h/.cu` — GPU container
+- `src/particle.h` — original AoS struct (kept for SDAR)
 
 **Validation Workflow:**
-- Run tests: `workflow/bin/submit.sh --tag <name> --scheduler slurm --profile`
-- Review results: `summary_runs.tsv` (TSV with key metrics)
-- Key metrics in `summary_runs.tsv`:
-  - `dE_over_E0_mean`, `dE_over_E0_std` — energy conservation
-  - `total_wall_s` — performance (wall clock time)
-  - `git_commit` — tracks which code version was tested
-- Baseline run already captured: `baseline_20260116_234947` (dE/E0 ≈ 3.2e-5, 28s wall time)
+
+- Run tests: `workflow/bin/submit.sh --tag <name> --scheduler slurm`
+- Review results: `summary_runs.tsv`
 
 ## Constraints
 
@@ -87,10 +88,11 @@ A performance optimization project to convert ABYSS's core data structures from 
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Full SoA (not hybrid) | Cleaner architecture, no data format conversions at runtime | — Pending |
-| Accessor functions | Encapsulation, easier future changes, explicit intent | — Pending |
-| SoA for MPI shared memory | Avoids AoS↔SoA conversion overhead on every access | — Pending |
-| Keep SDAR Group as-is | Complex library integration, conversion risk outweighs benefit | — Pending |
+| Full SoA (not hybrid) | Cleaner architecture, no data format conversions at runtime | ✓ Good — simpler code |
+| Accessor functions | Encapsulation, easier future changes, explicit intent | ✓ Good — clean API |
+| SoA for MPI shared memory | Avoids AoS↔SoA conversion overhead on every access | ✓ Good — 66 windows work fine |
+| Keep SDAR Group as-is | Complex library integration, conversion risk outweighs benefit | ✓ Good — exit-only sync works |
+| Exit-only sync pattern | SDAR uses AoS, sync to SoA only on exit | ✓ Good — simpler than proxy |
 
 ---
-*Last updated: 2026-01-17 after initialization*
+*Last updated: 2026-01-17 after v1.0 milestone*
