@@ -7,6 +7,7 @@
 #include "../def.h"
 #include "../particle_data.h"
 #include "../profiler.h"
+#include "../simd_force.h"
 #include <unordered_set>
 
 // ============================================================================
@@ -102,119 +103,102 @@ void Particle::compute_acceleration_irr() {
 	int neighbor_pairs = 0;  // Track neighbor pairs for throughput
 
 	PROFILE_START(TimerID::IrregularNeighborLoop);
-	for (int i=0; i<this->num_neighbors; i++) {
 
-		ptcl = &particles[neighbors[this->neighbors_offset + i]];
+	// Pre-gather neighbor data into aligned buffers for SIMD processing
+	NeighborBatch batch;
+	int cm_indices[NEIGHBOR_BATCH_SIZE];
+	int cm_indices_count = 0;
 
-		if (!ptcl->is_active) {
-			if (ptcl->cm_particle_index != -1) {
-				CMPtclsSet.insert(ptcl->cm_particle_index);
-			}
-			continue;
+	gather_neighbor_data(particles, neighbors, this->neighbors_offset,
+	                     this->num_neighbors, new_time, batch,
+	                     cm_indices, cm_indices_count);
+
+	// Compute forces using vectorized kernel
+	double a_nb[3] = {0.0, 0.0, 0.0};
+	double adot_nb[3] = {0.0, 0.0, 0.0};
+
+	compute_force_vectorized(pos, vel, batch, a_nb, adot_nb);
+
+	// Accumulate into temporary acceleration
+	for (int dim = 0; dim < DIM; dim++) {
+		a_tmp[dim] += a_nb[dim];
+		adot_tmp[dim] += adot_nb[dim];
+	}
+
+	neighbor_pairs = batch.count;
+
+	// Check for new members (used for few-body search)
+	// This uses the pre-gathered data to avoid redundant prediction
+	for (int i = 0; i < batch.count; i++) {
+		double dx = batch.pos_x[i] - pos[0];
+		double dy = batch.pos_y[i] - pos[1];
+		double dz = batch.pos_z[i] - pos[2];
+		double dvx = batch.vel_x[i] - vel[0];
+		double dvy = batch.vel_y[i] - vel[1];
+		double dvz = batch.vel_z[i] - vel[2];
+		double r2_check = dx*dx + dy*dy + dz*dz;
+		double vx_check = dx*dvx + dy*dvy + dz*dvz;
+		if (sqrt(r2_check) < r_search && vx_check < 0) {
+			this->new_members[this->new_num_members++] = batch.indices[i];
 		}
+	}
 
+	// Build CM particle set from gathered indices
+	for (int i = 0; i < cm_indices_count; i++) {
+		CMPtclsSet.insert(cm_indices[i]);
+	}
 
-		/*
-		if (ptcl->is_cm_particle) {
-			fprintf(stderr, "my = %d , pid of cm = %d\n", this->pid, ptcl->pid);
-			fflush(stderr);
-		}
-
-	 if (ptcl->position[0]!=ptcl->position[0]) {
-			fprintf(stderr, "Nan occurs, %lf", ptcl->position[0]);
-			fflush(stderr);
-			assert(this->position[0] ==  this->position[0]);
-			exit(EXIT_FAILURE);
-	 }
-		if (ptcl->pid == this->pid)  {
-			fprintf(stderr, "Myself in neighbor (%d)", PID);
-			fflush(stderr);
-			exit(EXIT_FAILURE);
-			continue;
-		}
-		*/
-
-		// reset temporary variables at the start of a new calculation
-		r2 = 0.0;
-		vx = 0.0;
-
-		ptcl->predict_particle_second_order(new_time-ptcl->current_time_irr, pos_neighbor, vel_neighbor);
-
-		for (int dim=0; dim<DIM; dim++) {
-			// calculate position and velocity differences for current time
-			x[dim] = pos_neighbor[dim] - pos[dim];
-			v[dim] = vel_neighbor[dim] - vel[dim];
-
-			// calculate the square of radius and inner product of r and v for each case
-			r2 += x[dim]*x[dim];
-			vx += v[dim]*x[dim];
-		}
-
-		if (sqrt(r2) < r_search && vx < 0)
-			this->new_members[this->new_num_members++] = ptcl->particle_index;
-
-		//mdot = ptcl->evolveStarMass(CurrentTimeIrr,
-				//CurrentTimeIrr+TimeStepIrr*1.01)/TimeStepIrr*1e-2; // derivative can be improved
-																													 //
-																													 // add the contribution of jth particle to acceleration of current and predicted times
-
-		m_r3 = ptcl->mass/(r2*sqrt(r2));
-
-		for (int dim=0; dim<DIM; dim++){
-			a_tmp[dim]    += m_r3*x[dim];
-			adot_tmp[dim] += m_r3*(v[dim] - 3*x[dim]*vx/r2);
-		}
-		neighbor_pairs++;
-	} // endfor ptcl
 	PROFILE_STOP(TimerID::IrregularNeighborLoop);
 	PROFILE_WORK(TimerID::IrregularPairsEvaluated, neighbor_pairs);
 
 	PROFILE_START(TimerID::IrregularCMLoop);
 	int cm_pairs = 0;
-	for (int i: CMPtclsSet) {
-		ptcl = &particles[i];
 
-		if (this->pid == ptcl->pid) {
-			continue;
+	if (!CMPtclsSet.empty()) {
+		// Convert set to array for vectorized processing
+		int cm_array[NEIGHBOR_BATCH_SIZE];
+		int cm_array_count = 0;
+		for (int idx : CMPtclsSet) {
+			if (cm_array_count < NEIGHBOR_BATCH_SIZE) {
+				cm_array[cm_array_count++] = idx;
+			}
 		}
 
-		if (!ptcl->is_active) {
-			fprintf(stderr, "Why inactive CM ptcl? this PID: %d, neighbor PID: %d\n", this->pid, ptcl->pid);
-			assert(ptcl->is_active);
+		// Gather CM particle data
+		NeighborBatch cm_batch;
+		gather_cm_particle_data(particles, cm_array, cm_array_count,
+		                        this->pid, new_time, cm_batch);
+
+		// Compute forces using vectorized kernel
+		double a_cm[3] = {0.0, 0.0, 0.0};
+		double adot_cm[3] = {0.0, 0.0, 0.0};
+
+		compute_force_vectorized(pos, vel, cm_batch, a_cm, adot_cm);
+
+		// Accumulate into temporary acceleration
+		for (int dim = 0; dim < DIM; dim++) {
+			a_tmp[dim] += a_cm[dim];
+			adot_tmp[dim] += adot_cm[dim];
 		}
 
-		// reset temporary variables at the start of a new calculation
-		r2 = 0.0;
-		vx = 0.0;
+		cm_pairs = cm_batch.count;
 
-		ptcl->predict_particle_second_order(new_time-ptcl->current_time_irr, pos_neighbor, vel_neighbor);
-
-		for (int dim=0; dim<DIM; dim++) {
-			// calculate position and velocity differences for current time
-			x[dim] = pos_neighbor[dim] - pos[dim];
-			v[dim] = vel_neighbor[dim] - vel[dim];
-
-			// calculate the square of radius and inner product of r and v for each case
-			r2 += x[dim]*x[dim];
-			vx += v[dim]*x[dim];
+		// Check for new members from CM particles
+		for (int i = 0; i < cm_batch.count; i++) {
+			double dx = cm_batch.pos_x[i] - pos[0];
+			double dy = cm_batch.pos_y[i] - pos[1];
+			double dz = cm_batch.pos_z[i] - pos[2];
+			double dvx = cm_batch.vel_x[i] - vel[0];
+			double dvy = cm_batch.vel_y[i] - vel[1];
+			double dvz = cm_batch.vel_z[i] - vel[2];
+			double r2_check = dx*dx + dy*dy + dz*dz;
+			double vx_check = dx*dvx + dy*dvy + dz*dvz;
+			if (sqrt(r2_check) < r_search && vx_check < 0) {
+				this->new_members[this->new_num_members++] = cm_batch.indices[i];
+			}
 		}
-
-		if (sqrt(r2) < r_search && vx < 0)
-			this->new_members[this->new_num_members++] = i;
-
-		//mdot = ptcl->evolveStarMass(CurrentTimeIrr,
-				//CurrentTimeIrr+TimeStepIrr*1.01)/TimeStepIrr*1e-2; // derivative can be improved
-																													//
-																													// add the contribution of jth particle to acceleration of current and predicted times
-
-		m_r3 = ptcl->mass/(r2*sqrt(r2));
-
-		for (int dim=0; dim<DIM; dim++){
-			a_tmp[dim]    += m_r3*x[dim];
-			adot_tmp[dim] += m_r3*(v[dim] - 3*x[dim]*vx/r2);
-		}
-		cm_pairs++;
 	}
+
 	PROFILE_STOP(TimerID::IrregularCMLoop);
 	PROFILE_WORK(TimerID::IrregularPairsEvaluated, cm_pairs);
 
