@@ -279,7 +279,7 @@ struct TimerStats {
     }
 
     void enableHistogram() {
-        if (!histogram) histogram = std::make_unique<Histogram>();
+        if (!histogram) histogram = std::unique_ptr<Histogram>(new Histogram());
     }
 
     double totalSeconds() const { return total_ns * 1e-9; }
