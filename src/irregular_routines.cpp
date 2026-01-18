@@ -159,9 +159,12 @@ bool IrregularRoutines(QueueScheduler &queue_scheduler, Worker *workers, std::un
         do {
             queue_scheduler.assignQueueAuto();
             queue_scheduler.runQueueAsync();  // Async sends (Phase 12)
+#ifdef DEBUG
+            int cm_tasks_dispatched = 0;  // Track local work during async window (Phase 12)
+#endif
             do {
                 worker = queue_scheduler.testQueueAsync();  // Non-blocking test (Phase 12)
-                // if there's any CMPtcl
+                // if there's any CMPtcl - this is our local work during async window
                 if (queue_scheduler.CMPtcls.size() > 0)
                 {
                     // check if there's any CM ptcl ready to go for SDAR
@@ -172,6 +175,7 @@ bool IrregularRoutines(QueueScheduler &queue_scheduler, Worker *workers, std::un
 #ifdef DEBUG
                     fprintf(stdout, "(ASYNC_CM) Dispatching CM particle PID: %d to worker %d\n",
                             ptcl->pid, cm_particle_worker_map[cm_pid]);
+                    cm_tasks_dispatched++;
 #endif
                     /*
                     for (int j = 0; j < ptcl->num_neighbors; j++)
@@ -205,6 +209,12 @@ bool IrregularRoutines(QueueScheduler &queue_scheduler, Worker *workers, std::un
                     queue_scheduler.callbackAsync(worker);  // Async callback (Phase 12)
                 }
             } while (worker == nullptr);
+#ifdef DEBUG
+            if (cm_tasks_dispatched > 0) {
+                fprintf(stdout, "(ASYNC_OVERLAP) Dispatched %d CM tasks during async window\n",
+                        cm_tasks_dispatched);
+            }
+#endif
         } while (queue_scheduler.isComplete());
 
 #ifdef SEVN_BINARY
