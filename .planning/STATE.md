@@ -11,11 +11,11 @@ See: .planning/PROJECT.md (updated 2026-01-18)
 
 **Milestone:** v2.1 — MPI Communication Optimization
 **Phase:** 11 (Async Infrastructure)
-**Status:** Ready to plan
+**Status:** Complete — ready to verify
 
-Last activity: 2026-01-18 — v2.1 milestone initialized
+Last activity: 2026-01-18 — Phase 11 executed (6 plans complete)
 
-Progress: ░░░░░░░░░░ 0%
+Progress: ██░░░░░░░░ 25%
 
 ## v2.1 Overview
 
@@ -35,7 +35,7 @@ Progress: ░░░░░░░░░░ 0%
 
 | Phase | Name | Status | Requirements |
 |-------|------|--------|--------------|
-| 11 | Async Infrastructure | ○ Ready | 0/15 |
+| 11 | Async Infrastructure | ✓ Complete | 15/15 |
 | 12 | Integration & Overlap | ○ Pending | 0/8 |
 | 13 | Validation & Measurement | ○ Pending | 0/6 |
 | 14 | Batching Research | ○ Pending | 0/5 |
@@ -55,7 +55,7 @@ Progress: ░░░░░░░░░░ 0%
 
 ## Next Action
 
-Run `/gsd:plan-phase 11` to plan the Async Infrastructure phase.
+Run `/gsd:plan-phase 12` to plan the Integration & Overlap phase.
 
 ---
-*Last updated: 2026-01-18 (v2.1 milestone initialized)*
+*Last updated: 2026-01-18 (Phase 11 complete)*

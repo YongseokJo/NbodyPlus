@@ -92,17 +92,17 @@ Deferred to future release. Tracked but not in current roadmap.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| ASYNC-01 | Phase 11 | Pending |
-| ASYNC-02 | Phase 11 | Pending |
-| ASYNC-03 | Phase 11 | Pending |
-| ASYNC-04 | Phase 11 | Pending |
-| ASYNC-05 | Phase 11 | Pending |
-| ASYNC-06 | Phase 11 | Pending |
-| QSCH-01 | Phase 11 | Pending |
-| QSCH-02 | Phase 11 | Pending |
-| QSCH-03 | Phase 11 | Pending |
-| QSCH-04 | Phase 11 | Pending |
-| QSCH-05 | Phase 11 | Pending |
+| ASYNC-01 | Phase 11 | Complete |
+| ASYNC-02 | Phase 11 | Complete |
+| ASYNC-03 | Phase 11 | Complete |
+| ASYNC-04 | Phase 11 | Complete |
+| ASYNC-05 | Phase 11 | Complete |
+| ASYNC-06 | Phase 11 | Complete |
+| QSCH-01 | Phase 11 | Complete |
+| QSCH-02 | Phase 11 | Complete |
+| QSCH-03 | Phase 11 | Complete |
+| QSCH-04 | Phase 11 | Complete |
+| QSCH-05 | Phase 11 | Complete |
 | IRRG-01 | Phase 12 | Pending |
 | IRRG-02 | Phase 12 | Pending |
 | IRRG-03 | Phase 12 | Pending |
@@ -111,10 +111,10 @@ Deferred to future release. Tracked but not in current roadmap.
 | OVLP-01 | Phase 12 | Pending |
 | OVLP-02 | Phase 12 | Pending |
 | OVLP-03 | Phase 12 | Pending |
-| PROF-01 | Phase 11 | Pending |
-| PROF-02 | Phase 11 | Pending |
-| PROF-03 | Phase 11 | Pending |
-| PROF-04 | Phase 11 | Pending |
+| PROF-01 | Phase 11 | Complete |
+| PROF-02 | Phase 11 | Complete |
+| PROF-03 | Phase 11 | Complete |
+| PROF-04 | Phase 11 | Complete |
 | PROF-05 | Phase 13 | Pending |
 | PROF-06 | Phase 13 | Pending |
 | VALD-01 | Phase 13 | Pending |
@@ -134,4 +134,4 @@ Deferred to future release. Tracked but not in current roadmap.
 
 ---
 *Requirements defined: 2026-01-18*
-*Last updated: 2026-01-18 after initial definition*
+*Last updated: 2026-01-18 — Phase 11 requirements marked Complete*

@@ -6,12 +6,12 @@
 
 ## Phase Overview
 
-| Phase | Name | Requirements | Focus |
-|-------|------|--------------|-------|
-| 11 | Async Infrastructure | 15 | Worker, QueueScheduler, profiler timers |
-| 12 | Integration & Overlap | 8 | IrregularRoutines, overlap implementation |
-| 13 | Validation & Measurement | 6 | Correctness, performance comparison |
-| 14 | Batching Research | 5 | Document strategy for v2.2 |
+| Phase | Name | Requirements | Focus | Status |
+|-------|------|--------------|-------|--------|
+| 11 | Async Infrastructure | 15 | Worker, QueueScheduler, profiler timers | ✓ Complete |
+| 12 | Integration & Overlap | 8 | IrregularRoutines, overlap implementation | Pending |
+| 13 | Validation & Measurement | 6 | Correctness, performance comparison | Pending |
+| 14 | Batching Research | 5 | Document strategy for v2.2 | Pending |
 
 **Total:** 4 phases, 34 requirements
 
