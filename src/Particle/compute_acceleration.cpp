@@ -6,6 +6,7 @@
 #include "../global.h"
 #include "../def.h"
 #include "../particle_data.h"
+#include "../profiler.h"
 #include <unordered_set>
 
 // ============================================================================
@@ -94,8 +95,13 @@ void Particle::compute_acceleration_irr() {
 	/*******************************************************
 	 * Irregular Acceleartion Calculation
 	 ********************************************************/
+	PROFILE_START(TimerID::IrregularPredict);
 	this->predict_particle_second_order(this->time_step_irr, pos, vel);
+	PROFILE_STOP(TimerID::IrregularPredict);
 
+	int neighbor_pairs = 0;  // Track neighbor pairs for throughput
+
+	PROFILE_START(TimerID::IrregularNeighborLoop);
 	for (int i=0; i<this->num_neighbors; i++) {
 
 		ptcl = &particles[neighbors[this->neighbors_offset + i]];
@@ -158,8 +164,13 @@ void Particle::compute_acceleration_irr() {
 			a_tmp[dim]    += m_r3*x[dim];
 			adot_tmp[dim] += m_r3*(v[dim] - 3*x[dim]*vx/r2);
 		}
+		neighbor_pairs++;
 	} // endfor ptcl
+	PROFILE_STOP(TimerID::IrregularNeighborLoop);
+	PROFILE_WORK(TimerID::IrregularPairsEvaluated, neighbor_pairs);
 
+	PROFILE_START(TimerID::IrregularCMLoop);
+	int cm_pairs = 0;
 	for (int i: CMPtclsSet) {
 		ptcl = &particles[i];
 
@@ -202,7 +213,10 @@ void Particle::compute_acceleration_irr() {
 			a_tmp[dim]    += m_r3*x[dim];
 			adot_tmp[dim] += m_r3*(v[dim] - 3*x[dim]*vx/r2);
 		}
+		cm_pairs++;
 	}
+	PROFILE_STOP(TimerID::IrregularCMLoop);
+	PROFILE_WORK(TimerID::IrregularPairsEvaluated, cm_pairs);
 
 
 	double a2, a3, da_dt2, adot_dt, dt2, dt3, dt4, dt5;
@@ -218,10 +232,11 @@ void Particle::compute_acceleration_irr() {
 	/*******************************************************
 	 * Position and velocity correction due to 4th order correction
 	 ********************************************************/
+	PROFILE_START(TimerID::IrregularCorrection);
 	for (int dim=0; dim<DIM; dim++) {
 
 
-#define noOptimization // I don't think it works 
+#define noOptimization // I don't think it works
 #ifdef Optimization
 		// do the higher order correcteion
 
@@ -248,7 +263,7 @@ void Particle::compute_acceleration_irr() {
 		this->acc_irregular[dim][3] = a3*120/dt4;
 #else
 		// do the higher order correcteion
-		da_dt2  = (this->acc_irregular[dim][0] - a_tmp[dim]) / dt2; 
+		da_dt2  = (this->acc_irregular[dim][0] - a_tmp[dim]) / dt2;
 		adot_dt = (this->acc_irregular[dim][1] + adot_tmp[dim]) / dt;
 		a2 =  -6*da_dt2  - 2*adot_dt - 2*this->acc_irregular[dim][1]/dt;
 		a3 =  (12*da_dt2 + 6*adot_dt)/dt;
@@ -265,6 +280,7 @@ void Particle::compute_acceleration_irr() {
 		this->acc_irregular[dim][3] = a3;
 #endif
 	}
+	PROFILE_STOP(TimerID::IrregularCorrection);
 
 
 
