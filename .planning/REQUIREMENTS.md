@@ -34,9 +34,9 @@ Requirements for performance profiling infrastructure and optimization.
 
 ### Analysis
 
-- [ ] **ANLZ-01**: Profile data collected from representative simulation runs
-- [ ] **ANLZ-02**: Bottleneck identified with quantitative evidence (percentage of wall time)
-- [ ] **ANLZ-03**: Load imbalance quantified (max/avg ratio across ranks)
+- [x] **ANLZ-01**: Profile data collected from representative simulation runs
+- [x] **ANLZ-02**: Bottleneck identified with quantitative evidence (percentage of wall time)
+- [x] **ANLZ-03**: Load imbalance quantified (max/avg ratio across ranks)
 
 ### Optimization
 
@@ -89,9 +89,9 @@ Deferred to future release. Tracked but not in current roadmap.
 | MPI-04 | Phase 8 | Complete |
 | MPI-05 | Phase 8 | Complete |
 | MPI-06 | Phase 8 | Complete |
-| ANLZ-01 | Phase 9 | Pending |
-| ANLZ-02 | Phase 9 | Pending |
-| ANLZ-03 | Phase 9 | Pending |
+| ANLZ-01 | Phase 9 | Complete |
+| ANLZ-02 | Phase 9 | Complete |
+| ANLZ-03 | Phase 9 | Complete |
 | OPT-01 | Phase 10 | Pending |
 | OPT-02 | Phase 10 | Pending |
 | OPT-03 | Phase 10 | Pending |
@@ -103,4 +103,4 @@ Deferred to future release. Tracked but not in current roadmap.
 
 ---
 *Requirements defined: 2026-01-17*
-*Last updated: 2026-01-17 Phase 8 complete*
+*Last updated: 2026-01-17 Phase 9 complete*
