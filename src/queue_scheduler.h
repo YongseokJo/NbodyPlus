@@ -7,6 +7,7 @@
 #include <iomanip>
 #include "global.h"
 #include "worker.h"
+#include "profiler.h"
 
 
 class QueueScheduler
@@ -41,8 +42,11 @@ public:
 
 
     void assignQueueAuto() {
-        if (_queue_list.size() == 0)
+        PROFILE_START(TimerID::QueueAssign);
+        if (_queue_list.size() == 0) {
+            PROFILE_STOP(TimerID::QueueAssign);
             return;
+        }
         for (auto worker = _FreeWorkers.begin(); worker != _FreeWorkers.end();)
         {
             if (_queue_list.size() > 0 && (*worker)->NumberOfQueues == 0)
@@ -58,9 +62,10 @@ public:
                 //_queue.print();
             }
             else {
-               ++worker; 
+               ++worker;
             }
         }
+        PROFILE_STOP(TimerID::QueueAssign);
     }
 
 
@@ -69,6 +74,7 @@ public:
 
 
     void runQueueAuto() {
+        PROFILE_START(TimerID::QueueRun);
         for (auto worker = WorkersToGo.begin(); worker != WorkersToGo.end();)
         {
             if ((*worker)->NumberOfQueues > 0 && !(*worker)->onDuty)
@@ -81,6 +87,7 @@ public:
                 ++worker;
             }
         }
+        PROFILE_STOP(TimerID::QueueRun);
     }
 
     void sendQueueforRegCuda(Worker *worker) {
@@ -94,8 +101,11 @@ public:
     }
 
     void assignQueueAutoRegularList() {
-        if (_queue_list_.size() == 0)
+        PROFILE_START(TimerID::QueueAssign);
+        if (_queue_list_.size() == 0) {
+            PROFILE_STOP(TimerID::QueueAssign);
             return;
+        }
         for (auto worker = _FreeWorkers.begin(); worker != _FreeWorkers.end();)
         {
             if (_queue_list_.size() > 0 && (*worker)->NumberOfQueues == 0)
@@ -112,9 +122,10 @@ public:
                 //_queue.print();
             }
             else {
-               ++worker; 
+               ++worker;
             }
         }
+        PROFILE_STOP(TimerID::QueueAssign);
     }
 
 
@@ -160,7 +171,8 @@ public:
 
     // this is only for a non-blocking wait.
     void callback(Worker* worker) {
-        if (worker->getCurrentQueue()->task == TASK_AR_INTEGRATION) 
+        PROFILE_START(TimerID::QueueCallback);
+        if (worker->getCurrentQueue()->task == TASK_AR_INTEGRATION)
             _completed_cm_queues++;
         worker->callback();
         _completed_queues++;
@@ -168,6 +180,7 @@ public:
             WorkersToGo.insert(worker);
         else
             _FreeWorkers.insert(worker);
+        PROFILE_STOP(TimerID::QueueCallback);
     }
 
 
