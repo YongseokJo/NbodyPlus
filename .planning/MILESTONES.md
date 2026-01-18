@@ -1,4 +1,47 @@
-# Project Milestones: ABYSS SoA Conversion
+# Project Milestones: ABYSS Performance Optimization
+
+## v2.0 Performance Profiling & Optimization (Shipped: 2026-01-18)
+
+**Delivered:** Comprehensive profiling infrastructure to identify bottlenecks, plus targeted AVX-512 vectorization of the irregular force calculation (primary bottleneck at 53.5% of wall time).
+
+**Phases completed:** 8-10 (11 plans total)
+
+**Key accomplishments:**
+
+- Built enhanced profiler with per-rank MPI statistics (min/avg/max across ranks)
+- Added sub-timers for irregular force breakdown (NeighborLoop, CMLoop, Correction)
+- Implemented work counters, histogram support, and load balance metrics
+- Added worker-side timing and queue scheduler profiling
+- Identified IrregularForce as primary bottleneck (53.5% of wall time, 122x more calls than regular forces)
+- Implemented AVX-512 vectorization of neighbor loop with pre-gather pattern
+- Validated optimization (3.2% improvement, energy conservation maintained)
+
+**Stats:**
+
+- 3 phases, 11 plans, 22 requirements
+- 19 commits on IrrForce_optimization branch
+- 40 files changed, +4,638 / -116 lines
+- Performance: 3.2% improvement (69.5s → 67.3s IrregularForce)
+- Energy conservation: ✓ Pass (dE/E0 = 1.34e-6)
+
+**Git range:** `dbbbfcc` → `03dd8dc`
+
+**Validation results:**
+
+| Metric | Baseline | Optimized | Result |
+|--------|----------|-----------|--------|
+| IrregularForce | 69.5s | 67.3s | -3.2% |
+| Wall time | 130s | 126.4s | -2.8% |
+| dE/E0 | — | 1.34e-6 | ✓ Pass |
+
+**Notes:** AVX-512 vectorization achieved modest gain limited by gather overhead and memory-bound workload. Profiling infrastructure provides foundation for future optimization work.
+
+**Recommendations for v2.1:**
+1. MPI batching to reduce ~105M messages/interval
+2. SIMD gather intrinsics to avoid pre-gather copies
+3. GPU irregular forces kernel
+
+---
 
 ## v1.0 AoS to SoA Conversion (Shipped: 2026-01-17)
 

@@ -1,12 +1,12 @@
-# ABYSS SoA Conversion
+# ABYSS N-body Simulation
 
 ## What This Is
 
-ABYSS N-body simulation code with Structure of Arrays (SoA) data layout. The v1.0 conversion replaced the original Array of Structures (AoS) `Particle` struct with a `ParticleData` SoA container (66 arrays), `ParticleDataMPI` for shared memory (66 MPI_Win handles), and `ParticleDataGPU` for device data. SDAR few-body integration maintained via exit-only sync pattern.
+ABYSS N-body simulation code with Structure of Arrays (SoA) data layout and enhanced profiling infrastructure. The v1.0 conversion replaced the original Array of Structures (AoS) with `ParticleData` SoA containers, `ParticleDataMPI` for shared memory, and `ParticleDataGPU` for device data. v2.0 added comprehensive profiler infrastructure with per-rank statistics, sub-timers, work counters, and AVX-512 vectorized irregular force calculation.
 
 ## Core Value
 
-**Physics correctness (energy conservation) with clean SoA architecture for future optimizations.**
+**Physics correctness (energy conservation) with clean architecture for targeted optimizations.**
 
 ## Requirements
 
@@ -24,6 +24,20 @@ ABYSS N-body simulation code with Structure of Arrays (SoA) data layout. The v1.
 - ✓ I/O sync (initialization and checkpoint restore) — v1.0
 - ✓ Energy conservation validated (2.52e-5 vs 3.21e-5 baseline) — v1.0
 
+<!-- Shipped in v2.0 -->
+
+- ✓ Enhanced profiler with per-rank MPI statistics (min/avg/max) — v2.0
+- ✓ Sub-timers for irregular force breakdown (NeighborLoop, CMLoop, Correction) — v2.0
+- ✓ Work counters (particles processed, neighbor pairs evaluated) — v2.0
+- ✓ Histogram support for call-time distributions — v2.0
+- ✓ Load balance metrics and analysis output — v2.0
+- ✓ Worker-side timing (MPI_Recv wait, task dispatch, send completion) — v2.0
+- ✓ Queue scheduler timing (assign, run operations) — v2.0
+- ✓ Bottleneck identified: IrregularForce at 53.5% of wall time — v2.0
+- ✓ AVX-512 vectorization of irregular force neighbor loop — v2.0
+- ✓ Performance improvement: 3.2% (69.5s → 67.3s IrregularForce) — v2.0
+- ✓ Energy conservation maintained (dE/E0 = 1.34e-6) — v2.0
+
 <!-- Existing capabilities maintained -->
 
 - ✓ 4th-order Hermite integration with block timesteps — existing
@@ -38,47 +52,39 @@ ABYSS N-body simulation code with Structure of Arrays (SoA) data layout. The v1.
 
 ### Active
 
-<!-- v2.0 Performance Profiling & Optimization -->
-
-- [ ] Enhanced profiler with per-rank statistics (min/avg/max across MPI ranks)
-- [ ] Sub-timers for irregular force breakdown (NeighborLoop, CMLoop, Correction)
-- [ ] Work counters (particles processed, neighbor pairs evaluated)
-- [ ] Histogram support for call-time distributions
-- [ ] Load balance metrics and analysis output
-- [ ] Worker-side timing (MPI_Recv wait, task dispatch, send completion)
-- [ ] Queue scheduler timing (assign, run operations)
-- [ ] Profile runs to identify actual bottleneck
-- [ ] Optimization based on profiling findings (vectorization, MPI, load balancing)
+(No active requirements — awaiting next milestone definition)
 
 ### Out of Scope
 
 - SDAR `Group` struct conversion — kept as-is with exit-only sync
-- Performance improvement — v1.0 showed no change; bottleneck elsewhere
-- Algorithm changes — SoA is data layout only
+- Algorithm changes — SoA/profiler work is infrastructure only
+- GPU irregular forces — v2.0 optimization limited to CPU; GPU port deferred to v2.1+
 
 ## Context
 
-**Current State (v1.0 shipped):**
+**Current State (v2.0 shipped):**
 
-- `ParticleData` SoA container in `src/particle_data.h` — 66 arrays with accessors
-- `ParticleDataMPI` in `src/particle_data_mpi.h` — 66 MPI_Win handles
-- `ParticleDataGPU` in `src/particle_data_gpu.h` — device container
-- Original `Particle` struct retained for SDAR compatibility (exit-only sync)
-- 57 commits on AoS_to_SoA branch
+- `src/profiler.h` — Enhanced profiler with MPI aggregation, histograms, work counters
+- `src/simd_force.h/.cpp` — AVX-512 vectorized force kernel with pre-gather pattern
+- `src/Particle/compute_acceleration.cpp` — Integrated vectorized neighbor loop
+- IrregularForce bottleneck identified and addressed (53.5% → still dominant but 3.2% faster)
+- Energy conservation: ✓ Pass (dE/E0 = 1.34e-6)
 
-**Validation Results:**
+**Optimization Results:**
 
-| Metric | Baseline | v1.0 SoA | Result |
-|--------|----------|----------|--------|
-| dE/E0 mean | 3.21e-05 | 2.52e-05 | ✓ Better |
-| Wall time | 28.33s | 28.40s | No change |
+| Metric | v2.0 Baseline | v2.0 Optimized | Result |
+|--------|---------------|----------------|--------|
+| IrregularForce | 69.5s | 67.3s | -3.2% |
+| Wall time | 130s | 126.4s | -2.8% |
+| dE/E0 | — | 1.34e-6 | ✓ Pass |
 
 **Key Files:**
 
-- `src/particle_data.h/.cpp` — SoA container
-- `src/particle_data_mpi.h/.cpp` — MPI shared memory
-- `src/particle_data_gpu.h/.cu` — GPU container
-- `src/particle.h` — original AoS struct (kept for SDAR)
+- `src/particle_data.h/.cpp` — SoA container (v1.0)
+- `src/particle_data_mpi.h/.cpp` — MPI shared memory (v1.0)
+- `src/particle_data_gpu.h/.cu` — GPU container (v1.0)
+- `src/profiler.h` — Enhanced profiler (v2.0)
+- `src/simd_force.h/.cpp` — AVX-512 vectorization (v2.0)
 
 **Validation Workflow:**
 
@@ -91,6 +97,7 @@ ABYSS N-body simulation code with Structure of Arrays (SoA) data layout. The v1.
 - **Compatibility**: Must maintain SDAR library integration (uses macro-based field aliases)
 - **Correctness**: Energy conservation must remain within existing tolerances
 - **Build**: Must work with existing Makefile and workflow scripts
+- **AVX-512**: Requires Skylake-AVX512 or later CPU architecture
 
 ## Key Decisions
 
@@ -101,16 +108,14 @@ ABYSS N-body simulation code with Structure of Arrays (SoA) data layout. The v1.
 | SoA for MPI shared memory | Avoids AoS↔SoA conversion overhead on every access | ✓ Good — 66 windows work fine |
 | Keep SDAR Group as-is | Complex library integration, conversion risk outweighs benefit | ✓ Good — exit-only sync works |
 | Exit-only sync pattern | SDAR uses AoS, sync to SoA only on exit | ✓ Good — simpler than proxy |
+| Pre-gather for SIMD | Align scattered neighbor data before vectorized compute | ⚠ Revisit — gather overhead limits gains |
+| AVX-512 vectorization | Target IrregularForce bottleneck with SIMD | ⚠ Limited — 3.2% gain vs 20% target |
 
-## Current Milestone: v2.0 Performance Profiling & Optimization
+## Recommendations for v2.1
 
-**Goal:** Build detailed profiler infrastructure to identify irregular force bottlenecks, then optimize based on findings.
-
-**Target features:**
-- Enhanced profiler with per-rank MPI statistics and sub-timers
-- Work counters and histogram support for performance analysis
-- Bottleneck identification through systematic profiling
-- Targeted optimizations (vectorization, MPI improvements, load balancing)
+1. **MPI batching** — Reduce ~105M messages/interval overhead
+2. **SIMD gather intrinsics** — Use `_mm512_i64gather_pd` to avoid pre-gather copies
+3. **GPU irregular forces** — Port irregular force kernel to GPU
 
 ---
-*Last updated: 2026-01-17 after v2.0 milestone initialization*
+*Last updated: 2026-01-18 after v2.0 milestone*
