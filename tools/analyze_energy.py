@@ -23,6 +23,31 @@ except ImportError as exc:
     sys.stderr.write("ERROR: matplotlib is required to plot results.\n")
     raise
 
+# Optional high-performance backends (priority: C++ > numba > scipy > numpy)
+HAS_CPP = False
+HAS_NUMBA = False
+HAS_SCIPY = False
+
+try:
+    from potential_energy import compute_potential_energy as _potential_cpp
+    HAS_CPP = True
+except ImportError:
+    pass
+
+if not HAS_CPP:
+    try:
+        from numba import njit, prange
+        HAS_NUMBA = True
+    except ImportError:
+        pass
+
+if not HAS_CPP and not HAS_NUMBA:
+    try:
+        from scipy.spatial.distance import pdist
+        HAS_SCIPY = True
+    except ImportError:
+        pass
+
 # Units from src/def.h
 POSITION_UNIT_PC = 4.0
 TIME_UNIT_YR = 1e10
@@ -32,6 +57,92 @@ MASS_UNIT_MSUN = 0.0001424198
 PC_IN_KM = 3.08567758149137e13
 SEC_PER_YR = 3.1536e7
 KM_S_TO_PC_YR = SEC_PER_YR / PC_IN_KM
+
+
+# -----------------------------------------------------------------------------
+# High-performance potential energy backends
+# -----------------------------------------------------------------------------
+
+if HAS_NUMBA:
+    @njit(parallel=True, fastmath=True)
+    def _potential_numba(pos, m):
+        """Numba-accelerated potential energy computation with parallel loops."""
+        n = pos.shape[0]
+        potential = 0.0
+        # Use parallel reduction over chunks
+        for i in prange(n - 1):
+            local_sum = 0.0
+            xi, yi, zi = pos[i, 0], pos[i, 1], pos[i, 2]
+            mi = m[i]
+            for j in range(i + 1, n):
+                dx = xi - pos[j, 0]
+                dy = yi - pos[j, 1]
+                dz = zi - pos[j, 2]
+                r = np.sqrt(dx * dx + dy * dy + dz * dz)
+                if r > 0.0:
+                    local_sum += mi * m[j] / r
+            potential += local_sum
+        return -potential
+
+
+def _potential_scipy(pos, m):
+    """Scipy-accelerated potential energy using pdist."""
+    n = pos.shape[0]
+    # pdist returns condensed distance matrix (upper triangle, row-major)
+    distances = pdist(pos, metric='euclidean')
+    # Build mass products for upper triangle pairs
+    # For pdist, the index mapping is: pair (i,j) where i<j maps to
+    # index = n*i - i*(i+1)/2 + j - i - 1
+    # But we can use broadcasting: for all pairs (i,j) with i<j
+    iu = np.triu_indices(n, k=1)
+    mass_products = m[iu[0]] * m[iu[1]]
+    inv_r = np.where(distances > 0.0, 1.0 / distances, 0.0)
+    return -np.sum(mass_products * inv_r)
+
+
+def _potential_numpy(pos, m):
+    """Standard numpy computation (fallback)."""
+    n = pos.shape[0]
+    if n > 5000:
+        # Chunked computation for memory efficiency
+        potential = 0.0
+        chunk_size = 1000
+        for i in range(0, n, chunk_size):
+            i_end = min(i + chunk_size, n)
+            for j in range(i, n, chunk_size):
+                j_end = min(j + chunk_size, n)
+                diff = pos[i:i_end, None, :] - pos[None, j:j_end, :]
+                r = np.linalg.norm(diff, axis=2)
+                if i == j:
+                    iu = np.triu_indices(i_end - i, k=1)
+                    rij = r[iu]
+                    inv_r = np.where(rij > 0.0, 1.0 / rij, 0.0)
+                    potential -= np.sum(m[i:i_end][iu[0]] * m[i:i_end][iu[1]] * inv_r)
+                else:
+                    inv_r = np.where(r > 0.0, 1.0 / r, 0.0)
+                    m_i = m[i:i_end][:, None]
+                    m_j = m[j:j_end][None, :]
+                    potential -= np.sum(m_i * m_j * inv_r)
+    else:
+        diff = pos[:, None, :] - pos[None, :, :]
+        r = np.linalg.norm(diff, axis=2)
+        iu = np.triu_indices(n, k=1)
+        rij = r[iu]
+        inv_r = np.where(rij > 0.0, 1.0 / rij, 0.0)
+        potential = -np.sum(m[iu[0]] * m[iu[1]] * inv_r)
+    return potential
+
+
+def compute_potential(pos, m):
+    """Compute potential energy using the fastest available backend."""
+    if HAS_CPP:
+        return _potential_cpp(pos, m)
+    elif HAS_NUMBA:
+        return _potential_numba(pos, m)
+    elif HAS_SCIPY:
+        return _potential_scipy(pos, m)
+    else:
+        return _potential_numpy(pos, m)
 
 
 def read_hdf5_step(filename, step_name):
@@ -96,41 +207,8 @@ def compute_energy_code_units(m_msun, pos_pc, vel_kms):
 
     # Potential energy: -G * sum(mi * mj / rij) for all pairs
     # In code units, G = 1
-    n = pos_code.shape[0]
-
-    # For large N, use vectorized computation
-    if n > 5000:
-        # Use chunked computation for memory efficiency
-        potential = 0.0
-        chunk_size = 1000
-        for i in range(0, n, chunk_size):
-            i_end = min(i + chunk_size, n)
-            for j in range(i, n, chunk_size):
-                j_end = min(j + chunk_size, n)
-
-                diff = pos_code[i:i_end, None, :] - pos_code[None, j:j_end, :]
-                r = np.linalg.norm(diff, axis=2)
-
-                if i == j:
-                    # Same chunk - only upper triangle
-                    iu = np.triu_indices(i_end - i, k=1)
-                    rij = r[iu]
-                    inv_r = np.where(rij > 0.0, 1.0 / rij, 0.0)
-                    potential -= np.sum(m_code[i:i_end][iu[0]] * m_code[i:i_end][iu[1]] * inv_r)
-                else:
-                    # Different chunks - all pairs
-                    inv_r = np.where(r > 0.0, 1.0 / r, 0.0)
-                    m_i = m_code[i:i_end][:, None]
-                    m_j = m_code[j:j_end][None, :]
-                    potential -= np.sum(m_i * m_j * inv_r)
-    else:
-        # Standard computation for smaller systems
-        diff = pos_code[:, None, :] - pos_code[None, :, :]
-        r = np.linalg.norm(diff, axis=2)
-        iu = np.triu_indices(n, k=1)
-        rij = r[iu]
-        inv_r = np.where(rij > 0.0, 1.0 / rij, 0.0)
-        potential = -np.sum(m_code[iu[0]] * m_code[iu[1]] * inv_r)
+    # Use optimized backend (Numba > scipy > numpy fallback)
+    potential = compute_potential(pos_code, m_code)
 
     return kinetic, potential, kinetic + potential
 
@@ -151,7 +229,12 @@ def main():
     parser.add_argument(
         "--csv",
         default=None,
-        help="Optional path to save CSV table.",
+        help="Path to save CSV table (default: <input_dir>/energy_analysis.csv).",
+    )
+    parser.add_argument(
+        "--no-csv",
+        action="store_true",
+        help="Skip generating CSV output.",
     )
     parser.add_argument(
         "--no-plot",
@@ -166,7 +249,16 @@ def main():
 
     print(f"\n{'='*60}")
     print(f"Analyzing energy conservation: {hdf5_path.name}")
-    print(f"{'='*60}\n")
+    print(f"{'='*60}")
+    if HAS_CPP:
+        print(f"Backend: C++ OpenMP (potential_energy module)")
+    elif HAS_NUMBA:
+        print(f"Backend: Numba (parallel JIT)")
+    elif HAS_SCIPY:
+        print(f"Backend: scipy.spatial.distance.pdist")
+    else:
+        print(f"Backend: numpy (install numba/scipy or build C++ module for better performance)")
+    print()
 
     # Get all timesteps
     steps = get_timesteps(args.hdf5_file)
@@ -235,16 +327,17 @@ def main():
     print(f"Mean |dE/E0|:        {np.nanmean(residual_abs):.6e}")
     print(f"Simulation time:     {times[0]:.4f} - {times[-1]:.4f} Myr")
 
-    # Save CSV if requested
-    if args.csv:
-        with open(args.csv, "w") as handle:
+    # Save CSV by default (unless --no-csv is specified)
+    if not args.no_csv:
+        csv_path = args.csv or str(hdf5_path.parent / "energy_analysis.csv")
+        with open(csv_path, "w") as handle:
             handle.write("idx,time_myr,kinetic,potential,total,dE_over_E0,E_binary,E_merger\n")
             for idx, (t, k, u, e, de, eb, em) in enumerate(
                 zip(times, kinetic_list, potential_list, total_list, residual,
                     e_binary_list, e_merger_list)
             ):
                 handle.write(f"{idx},{t},{k},{u},{e},{de},{eb},{em}\n")
-        print(f"\nCSV saved to: {args.csv}")
+        print(f"\nCSV saved to: {csv_path}")
 
     # Create plot
     if not args.no_plot:

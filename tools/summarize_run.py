@@ -18,24 +18,10 @@ from __future__ import annotations
 
 import argparse
 import csv
-import math
 import re
 import subprocess
 import sys
 from pathlib import Path
-
-np = None
-h5py = None
-
-# Units from src/def.h (aligned with tools/analyze_energy.py)
-POSITION_UNIT_PC = 4.0
-TIME_UNIT_YR = 1e10
-VELOCITY_UNIT_PC_YR = 4e-10
-MASS_UNIT_MSUN = 0.0001424198
-
-PC_IN_KM = 3.08567758149137e13
-SEC_PER_YR = 3.1536e7
-KM_S_TO_PC_YR = SEC_PER_YR / PC_IN_KM
 
 
 def find_run_artifacts(run_dir: Path):
@@ -165,109 +151,49 @@ def summarize_profiling_csv(csv_path: Path):
     }
 
 
-def compute_energy_code_units(m_msun, pos_pc, vel_kms):
-    global np
-    if np is None:
-        try:
-            import numpy as _np
-            np = _np
-        except Exception:
-            raise RuntimeError("numpy is required for energy computations")
+def summarize_energy_from_csv(csv_path: Path):
+    """Read energy statistics from energy_analysis.csv produced by analyze_energy.py."""
+    if not csv_path.exists():
+        return None
 
-    m_code = m_msun / MASS_UNIT_MSUN
-    pos_code = pos_pc / POSITION_UNIT_PC
-    vel_pcyr = vel_kms * KM_S_TO_PC_YR
-    vel_code = vel_pcyr / VELOCITY_UNIT_PC_YR
+    times = []
+    totals = []
+    dE_values = []
 
-    kinetic = 0.5 * np.sum(m_code * np.sum(vel_code ** 2, axis=1))
+    with csv_path.open(newline="") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            times.append(float(row["time_myr"]))
+            totals.append(float(row["total"]))
+            dE_values.append(float(row["dE_over_E0"]))
 
-    n = pos_code.shape[0]
-    if n > 5000:
-        potential = 0.0
-        chunk_size = 1000
-        for i in range(0, n, chunk_size):
-            i_end = min(i + chunk_size, n)
-            for j in range(i, n, chunk_size):
-                j_end = min(j + chunk_size, n)
-                diff = pos_code[i:i_end, None, :] - pos_code[None, j:j_end, :]
-                r = np.linalg.norm(diff, axis=2)
-                if i == j:
-                    iu = np.triu_indices(i_end - i, k=1)
-                    rij = r[iu]
-                    inv_r = np.where(rij > 0.0, 1.0 / rij, 0.0)
-                    potential -= np.sum(m_code[i:i_end][iu[0]] * m_code[i:i_end][iu[1]] * inv_r)
-                else:
-                    inv_r = np.where(r > 0.0, 1.0 / r, 0.0)
-                    potential -= np.sum(
-                        m_code[i:i_end][:, None] * m_code[j:j_end][None, :] * inv_r
-                    )
-    else:
-        diff = pos_code[:, None, :] - pos_code[None, :, :]
-        r = np.linalg.norm(diff, axis=2)
-        with np.errstate(divide='ignore', invalid='ignore'):
-            inv_r = np.where(r > 0.0, 1.0 / r, 0.0)
-        potential = -0.5 * np.sum(m_code[:, None] * m_code[None, :] * inv_r)
+    if not times:
+        return {"error": "no data in CSV"}
 
-    total = kinetic + potential
-    return kinetic, potential, total
+    return {
+        "n_steps": len(times),
+        "time_min": min(times),
+        "time_max": max(times),
+        "energy_mean": sum(totals) / len(totals),
+        "energy_std": (sum((x - sum(totals) / len(totals)) ** 2 for x in totals) / len(totals)) ** 0.5,
+        "energy_min": min(totals),
+        "energy_max": max(totals),
+        "dE_mean": sum(dE_values) / len(dE_values),
+        "dE_std": (sum((x - sum(dE_values) / len(dE_values)) ** 2 for x in dE_values) / len(dE_values)) ** 0.5,
+        "dE_min": min(dE_values),
+        "dE_max": max(dE_values),
+    }
 
 
 def summarize_energy(h5_path: Path):
-    global h5py, np
-    if h5py is None:
-        try:
-            import h5py as _h5py
-            h5py = _h5py
-        except Exception:
-            return {"error": "h5py not available"}
+    """Get energy statistics, preferring CSV if available."""
+    # Look for energy_analysis.csv in same directory as h5 file
+    csv_path = h5_path.parent / "energy_analysis.csv"
+    if csv_path.exists():
+        return summarize_energy_from_csv(csv_path)
 
-    if np is None:
-        try:
-            import numpy as _np
-            np = _np
-        except Exception:
-            return {"error": "numpy not available"}
-
-    with h5py.File(h5_path, "r") as f:
-        steps = [k for k in f.keys() if k.startswith("Step_")]
-        if not steps:
-            return {"error": "no Step_* groups found"}
-        steps.sort(key=lambda x: int(x.split("_")[1]))
-
-        times = []
-        totals = []
-        for k in steps:
-            step = f[k]
-            time_myr = float(step.attrs.get("Time_Myr", 0.0))
-            masses = step["Mass_Msun"][:]
-            pos = np.column_stack([step["X_pc"][:], step["Y_pc"][:], step["Z_pc"][:]])
-            vel = np.column_stack([step["Vx_km_s"][:], step["Vy_km_s"][:], step["Vz_km_s"][:]])
-            _, _, total = compute_energy_code_units(masses, pos, vel)
-            times.append(time_myr)
-            totals.append(total)
-
-    totals = np.asarray(totals, dtype=float)
-    times = np.asarray(times, dtype=float)
-
-    e0 = totals[0] if totals.size else 0.0
-    if e0 != 0.0:
-        dE = (totals - e0) / abs(e0)
-    else:
-        dE = np.zeros_like(totals)
-
-    return {
-        "n_steps": len(totals),
-        "time_min": float(times.min()) if times.size else None,
-        "time_max": float(times.max()) if times.size else None,
-        "energy_mean": float(totals.mean()) if totals.size else None,
-        "energy_std": float(totals.std()) if totals.size else None,
-        "energy_min": float(totals.min()) if totals.size else None,
-        "energy_max": float(totals.max()) if totals.size else None,
-        "dE_mean": float(dE.mean()) if dE.size else None,
-        "dE_std": float(dE.std()) if dE.size else None,
-        "dE_min": float(dE.min()) if dE.size else None,
-        "dE_max": float(dE.max()) if dE.size else None,
-    }
+    # CSV not found - return error pointing user to run analyze_energy.py
+    return {"error": f"energy_analysis.csv not found. Run: python tools/analyze_energy.py {h5_path}"}
 
 
 def tsv_header():

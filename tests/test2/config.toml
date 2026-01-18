@@ -1,0 +1,48 @@
+# ABYSS Configuration File (TOML format)
+# This file contains simulation parameters for N-body dynamics
+
+# === Required Parameters ===
+# Input file containing initial conditions
+Filename = "nbody.dat"
+
+# Simulation end time (in years)
+StopTime = 1.0e6
+
+# Output directory for results
+OutputDirectory = "output"
+
+# === Numerics Parameters (optional, with defaults) ===
+[numerics]
+# Timestep parameter (eta parameter for adaptive timestepping)
+eta = 0.01
+
+# Number of neighbors for force calculation
+FixNumNeighbor = 500
+
+# Initial search radius for neighbors (in parsecs)
+InitialRadius = 0.2
+
+# Few-body search radius (in parsecs) - default: 2.5e-4 pc
+RSearch = 2.5e-4
+
+# Few-body search time threshold (in Myr) - default: 1e-6 Myr
+TSearch = 1e-6
+
+# === Output Parameters (optional) ===
+[output]
+# Output timestep interval (in years)
+dtOutput = 1.0e5
+
+# Enable HDF5 compression (default: true)
+Compression = true
+
+# GZIP compression level 1-9 (default: 6)
+CompressionLevel = 6
+
+# === Restart Parameters (optional) ===
+[restart]
+# Enable checkpoint/restart capability (default: false)
+Enabled = false
+
+# Checkpoint file to restart from (if Enabled = true)
+# CheckpointFile = "output/checkpoint_0.h5"
