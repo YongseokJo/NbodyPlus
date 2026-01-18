@@ -19,6 +19,12 @@ public:
     {
         _FreeWorkers.reserve(num_workers);
         WorkersToGo.reserve(num_workers);
+
+        // Initialize async infrastructure (Phase 11)
+        // +1 because workers are 1-indexed (rank 0 is root)
+        _recv_requests.resize(num_workers + 1, MPI_REQUEST_NULL);
+        _result_buffers.resize(num_workers + 1, 0);
+        _async_receives_posted = false;
     }
 
     void initialize(task_name_t task, double next_time)
@@ -80,6 +86,25 @@ public:
             if ((*worker)->NumberOfQueues > 0 && !(*worker)->onDuty)
             {
                 (*worker)->runQueue();
+                worker = WorkersToGo.erase(worker);
+            }
+            else
+            {
+                ++worker;
+            }
+        }
+        PROFILE_STOP(TimerID::QueueRun);
+    }
+
+    // Run queued tasks with async sends (Phase 11)
+    void runQueueAsync() {
+        PROFILE_START(TimerID::QueueRun);
+        for (auto worker = WorkersToGo.begin(); worker != WorkersToGo.end();)
+        {
+            if ((*worker)->NumberOfQueues > 0 && !(*worker)->onDuty)
+            {
+                // Use async send instead of blocking send
+                (*worker)->send_task_async();
                 worker = WorkersToGo.erase(worker);
             }
             else
@@ -168,6 +193,176 @@ public:
         return nullptr;  // Safety return for undefined type
     }
 
+    // ========================================================================
+    // Async receive management (Phase 11)
+    // ========================================================================
+
+    // Pre-post receives for all workers
+    void postAllReceives() {
+        PROFILE_START(TimerID::MPIIrecv);
+        for (int i = 1; i <= num_workers; i++) {
+            if (_recv_requests[i] == MPI_REQUEST_NULL) {
+                MPI_Irecv(&_result_buffers[i], 1, MPI_INT, i,
+                          TERMINATE_TAG, MPI_COMM_WORLD, &_recv_requests[i]);
+            }
+        }
+        _async_receives_posted = true;
+        PROFILE_STOP(TimerID::MPIIrecv);
+    }
+
+    // Re-post receive for a specific worker (Phase 11)
+    void postReceiveForWorker(int worker_rank) {
+        if (_recv_requests[worker_rank] == MPI_REQUEST_NULL) {
+            PROFILE_START(TimerID::MPIIrecv);
+            MPI_Irecv(&_result_buffers[worker_rank], 1, MPI_INT, worker_rank,
+                      TERMINATE_TAG, MPI_COMM_WORLD, &_recv_requests[worker_rank]);
+            PROFILE_STOP(TimerID::MPIIrecv);
+        }
+    }
+
+    // Wait for any worker completion using MPI_Waitany (Phase 11)
+    // Returns the completed worker, or nullptr if no workers are on duty
+    Worker* waitQueueAsync() {
+        if (_total_queues == 0)
+            return nullptr;
+
+        // Ensure receives are posted
+        if (!_async_receives_posted) {
+            postAllReceives();
+        }
+
+        // Count active requests (workers on duty)
+        int active_count = 0;
+        for (int i = 1; i <= num_workers; i++) {
+            if (workers[i].on_duty && _recv_requests[i] != MPI_REQUEST_NULL) {
+                active_count++;
+            }
+        }
+
+        if (active_count == 0) {
+            return nullptr;
+        }
+
+        // Build array of active requests for MPI_Waitany
+        // MPI_Waitany needs contiguous array, so we build mapping
+        std::vector<MPI_Request> active_requests;
+        std::vector<int> request_to_rank;  // Maps index back to worker rank
+        active_requests.reserve(num_workers);
+        request_to_rank.reserve(num_workers);
+
+        for (int i = 1; i <= num_workers; i++) {
+            if (workers[i].on_duty && _recv_requests[i] != MPI_REQUEST_NULL) {
+                active_requests.push_back(_recv_requests[i]);
+                request_to_rank.push_back(i);
+            }
+        }
+
+        int index;
+        MPI_Status status;
+
+        PROFILE_START(TimerID::MPIWaitany);
+        MPI_Waitany(active_requests.size(), active_requests.data(), &index, &status);
+        PROFILE_STOP(TimerID::MPIWaitany);
+
+        if (index == MPI_UNDEFINED) {
+            // No active requests (shouldn't happen given our check above)
+            return nullptr;
+        }
+
+        // Get the worker rank that completed
+        _rank = request_to_rank[index];
+
+        // Mark request as completed in our tracking array
+        _recv_requests[_rank] = MPI_REQUEST_NULL;
+
+        _completed_queues++;
+        return &workers[_rank];
+    }
+
+    // Non-blocking check for any worker completion (Phase 11)
+    // Returns completed worker if one is ready, nullptr otherwise
+    Worker* testQueueAsync() {
+        if (_total_queues == 0)
+            return nullptr;
+
+        // Ensure receives are posted
+        if (!_async_receives_posted) {
+            postAllReceives();
+        }
+
+        // Build array of active requests
+        std::vector<MPI_Request> active_requests;
+        std::vector<int> request_to_rank;
+        active_requests.reserve(num_workers);
+        request_to_rank.reserve(num_workers);
+
+        for (int i = 1; i <= num_workers; i++) {
+            if (workers[i].on_duty && _recv_requests[i] != MPI_REQUEST_NULL) {
+                active_requests.push_back(_recv_requests[i]);
+                request_to_rank.push_back(i);
+            }
+        }
+
+        if (active_requests.empty()) {
+            return nullptr;
+        }
+
+        int index;
+        int flag;
+        MPI_Status status;
+
+        PROFILE_START(TimerID::MPITestany);
+        MPI_Testany(active_requests.size(), active_requests.data(),
+                    &index, &flag, &status);
+        PROFILE_STOP(TimerID::MPITestany);
+
+        if (!flag || index == MPI_UNDEFINED) {
+            // No completion ready
+            return nullptr;
+        }
+
+        // Get the worker rank that completed
+        _rank = request_to_rank[index];
+
+        // Mark request as completed
+        _recv_requests[_rank] = MPI_REQUEST_NULL;
+
+        _completed_queues++;
+        return &workers[_rank];
+    }
+
+    // Process async completion and re-post receive (Phase 11)
+    void callbackAsync(Worker* worker) {
+        PROFILE_START(TimerID::QueueCallback);
+
+        if (worker->getCurrentQueue()->task == TASK_AR_INTEGRATION)
+            _completed_cm_queues++;
+
+        worker->callback_async();  // Use async callback (no MPI_Recv needed)
+
+        if (worker->NumberOfQueues > 0)
+            WorkersToGo.insert(worker);
+        else
+            _FreeWorkers.insert(worker);
+
+        // Re-post receive for this worker
+        postReceiveForWorker(worker->rank);
+
+        PROFILE_STOP(TimerID::QueueCallback);
+    }
+
+    // Cancel all pending async receives (Phase 11)
+    // Call this when terminating early or resetting
+    void cancelAllReceives() {
+        for (int i = 1; i <= num_workers; i++) {
+            if (_recv_requests[i] != MPI_REQUEST_NULL) {
+                MPI_Cancel(&_recv_requests[i]);
+                MPI_Request_free(&_recv_requests[i]);
+                _recv_requests[i] = MPI_REQUEST_NULL;
+            }
+        }
+        _async_receives_posted = false;
+    }
 
     // this is only for a non-blocking wait.
     void callback(Worker* worker) {
@@ -330,7 +525,10 @@ private:
     MPI_Status _status;    // Pointer to the status object
     MPI_Request _request;    // Pointer to the status object
 
-
+    // Async MPI infrastructure (Phase 11)
+    std::vector<MPI_Request> _recv_requests;  // Indexed by worker rank (1-indexed)
+    std::vector<int> _result_buffers;         // Receive buffers per worker
+    bool _async_receives_posted;              // Track if receives are active
 
     void _initialize() {
         WorkersToGo.clear();
@@ -342,6 +540,12 @@ private:
         _total_queues=0;
         _assigned_queues=0;
         _completed_queues=0;
+
+        // Reset async state (Phase 11)
+        _async_receives_posted = false;
+        for (size_t i = 0; i < _recv_requests.size(); i++) {
+            _recv_requests[i] = MPI_REQUEST_NULL;
+        }
     }
 
 #ifdef unuse
