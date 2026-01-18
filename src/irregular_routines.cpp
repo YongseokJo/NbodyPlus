@@ -159,6 +159,9 @@ bool IrregularRoutines(QueueScheduler &queue_scheduler, Worker *workers, std::un
         do {
             queue_scheduler.assignQueueAuto();
             queue_scheduler.runQueueAsync();  // Async sends (Phase 12)
+
+            // Start async window timer (Phase 12)
+            PROFILE_START(TimerID::AsyncWindow);
 #ifdef DEBUG
             int cm_tasks_dispatched = 0;  // Track local work during async window (Phase 12)
 #endif
@@ -167,6 +170,7 @@ bool IrregularRoutines(QueueScheduler &queue_scheduler, Worker *workers, std::un
                 // if there's any CMPtcl - this is our local work during async window
                 if (queue_scheduler.CMPtcls.size() > 0)
                 {
+                    PROFILE_START(TimerID::OverlapWork);
                     // check if there's any CM ptcl ready to go for SDAR
                     if (iter == queue_scheduler.CMPtcls.end())
                         iter = queue_scheduler.CMPtcls.begin();
@@ -198,6 +202,7 @@ bool IrregularRoutines(QueueScheduler &queue_scheduler, Worker *workers, std::un
                     if (ptcl->binary_evolution != nullptr)
                         CMPtclsForSEVN.push_back(cm_pid);
 #endif
+                    PROFILE_STOP(TimerID::OverlapWork);
                 // skip_to_next:;
                 }
                 if (worker != nullptr)
@@ -209,6 +214,9 @@ bool IrregularRoutines(QueueScheduler &queue_scheduler, Worker *workers, std::un
                     queue_scheduler.callbackAsync(worker);  // Async callback (Phase 12)
                 }
             } while (worker == nullptr);
+
+            // Stop async window timer (Phase 12)
+            PROFILE_STOP(TimerID::AsyncWindow);
 #ifdef DEBUG
             if (cm_tasks_dispatched > 0) {
                 fprintf(stdout, "(ASYNC_OVERLAP) Dispatched %d CM tasks during async window\n",

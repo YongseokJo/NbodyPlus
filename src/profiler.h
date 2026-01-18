@@ -70,6 +70,10 @@ enum class TimerID : int {
     MPIWaitany,     // Time in MPI_Waitany calls
     MPITestany,     // Time in MPI_Testany calls
 
+    // Overlap measurement timers (Phase 12)
+    AsyncWindow,    // Total time in async window (sends to completion)
+    OverlapWork,    // Time doing local work during async window
+
     // Worker timers
     WorkerCompute,
     WorkerIdle,
@@ -392,6 +396,9 @@ public:
             "MPIIrecv",
             "MPIWaitany",
             "MPITestany",
+            // Overlap measurement timers (Phase 12)
+            "AsyncWindow",
+            "OverlapWork",
             "WorkerCompute",
             "WorkerIdle",
             "QueueWait",
@@ -462,6 +469,22 @@ public:
         printTimerLine(os, TimerID::MPIWait, whole.interval_total_ns);
         printTimerLine(os, TimerID::MPIBarrier, whole.interval_total_ns);
         printTimerLine(os, TimerID::QueueWait, whole.interval_total_ns);
+        os << "\n";
+
+        // Async overlap metrics (Phase 12)
+        printTimerLine(os, TimerID::AsyncWindow, whole.interval_total_ns);
+        printTimerLine(os, TimerID::OverlapWork, whole.interval_total_ns);
+        printTimerLine(os, TimerID::MPITestany, whole.interval_total_ns);
+        // Calculate overlap effectiveness (Phase 12)
+        {
+            const auto& async_window = stats_[static_cast<int>(TimerID::AsyncWindow)];
+            const auto& overlap_work = stats_[static_cast<int>(TimerID::OverlapWork)];
+            if (async_window.interval_total_ns > 0) {
+                double overlap_pct = 100.0 * overlap_work.interval_total_ns / async_window.interval_total_ns;
+                os << "Async Overlap Effectiveness: " << std::fixed << std::setprecision(1)
+                   << overlap_pct << "% of async window spent on local work\n";
+            }
+        }
         os << "\n";
 
         printTimerLine(os, TimerID::StellarEvolution, whole.interval_total_ns);
@@ -675,6 +698,12 @@ public:
         printAggregatedLine(os, TimerID::QueueAssign);
         printAggregatedLine(os, TimerID::QueueRun);
         printAggregatedLine(os, TimerID::QueueWait);
+        os << "\n";
+
+        // Async overlap metrics (Phase 12)
+        printAggregatedLine(os, TimerID::AsyncWindow);
+        printAggregatedLine(os, TimerID::OverlapWork);
+        printAggregatedLine(os, TimerID::MPITestany);
         os << "\n";
 
         os << std::string(94, '=') << "\n";
