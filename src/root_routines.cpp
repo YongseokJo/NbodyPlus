@@ -91,6 +91,13 @@ void RootRoutines() {
 
 			// create output at appropriate time intervals
 			if (global_time >= output_time) {
+#if defined(PERFORMANCETRACE) && defined(USE_MPI)
+				// Aggregate profiler statistics across all MPI ranks and print summary
+				profiler().aggregateAcrossRanks(MPI_COMM_WORLD);
+				profiler().printAggregatedSummary(std::cout, global_time * enzo_time_step * 1e4);
+				profiler().printHistograms(std::cout);
+				profiler().resetIntervalStats();
+#endif
 				writeParticle(global_time, output_num++);
 				output_time += output_time_step;
 			}
