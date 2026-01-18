@@ -153,11 +153,14 @@ bool IrregularRoutines(QueueScheduler &queue_scheduler, Worker *workers, std::un
 #ifdef SEVN_BINARY
         std::vector<int> CMPtclsForSEVN;
 #endif
+        // Pre-post receives for async pattern (Phase 12)
+        queue_scheduler.postAllReceives();
+
         do {
             queue_scheduler.assignQueueAuto();
-            queue_scheduler.runQueueAuto();
+            queue_scheduler.runQueueAsync();  // Async sends (Phase 12)
             do {
-                worker = queue_scheduler.waitQueue(1); // non-blocking wait
+                worker = queue_scheduler.testQueueAsync();  // Non-blocking test (Phase 12)
                 // if there's any CMPtcl
                 if (queue_scheduler.CMPtcls.size() > 0)
                 {
@@ -189,12 +192,11 @@ bool IrregularRoutines(QueueScheduler &queue_scheduler, Worker *workers, std::un
 #endif
                 // skip_to_next:;
                 }
-                if (worker != nullptr) 
+                if (worker != nullptr)
                 {
-
+                    queue_scheduler.callbackAsync(worker);  // Async callback (Phase 12)
                 }
             } while (worker == nullptr);
-            queue_scheduler.callback(worker);
         } while (queue_scheduler.isComplete());
 
 #ifdef SEVN_BINARY
@@ -245,11 +247,15 @@ bool IrregularRoutines(QueueScheduler &queue_scheduler, Worker *workers, std::un
 #else
         queue_scheduler.initialize(TASK_IRR_FORCE, next_time);
         queue_scheduler.takeQueue(ThisLevelNode->ParticleList);
+        queue_scheduler.postAllReceives();  // Pre-post receives (Phase 12)
         do
         {
             queue_scheduler.assignQueueAuto();
-            queue_scheduler.runQueueAuto();
-            queue_scheduler.waitQueue(0); // blocking wait
+            queue_scheduler.runQueueAsync();  // Async sends (Phase 12)
+            Worker* completed_worker = queue_scheduler.waitQueueAsync();  // Async wait (Phase 12)
+            if (completed_worker != nullptr) {
+                queue_scheduler.callbackAsync(completed_worker);  // Async callback (Phase 12)
+            }
         } while (queue_scheduler.isComplete());
 #endif
 
