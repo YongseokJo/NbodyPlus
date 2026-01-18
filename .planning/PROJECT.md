@@ -38,9 +38,17 @@ ABYSS N-body simulation code with Structure of Arrays (SoA) data layout. The v1.
 
 ### Active
 
-<!-- For next milestone -->
+<!-- v2.0 Performance Profiling & Optimization -->
 
-(None defined yet — run `/gsd:new-milestone` to define)
+- [ ] Enhanced profiler with per-rank statistics (min/avg/max across MPI ranks)
+- [ ] Sub-timers for irregular force breakdown (NeighborLoop, CMLoop, Correction)
+- [ ] Work counters (particles processed, neighbor pairs evaluated)
+- [ ] Histogram support for call-time distributions
+- [ ] Load balance metrics and analysis output
+- [ ] Worker-side timing (MPI_Recv wait, task dispatch, send completion)
+- [ ] Queue scheduler timing (assign, run operations)
+- [ ] Profile runs to identify actual bottleneck
+- [ ] Optimization based on profiling findings (vectorization, MPI, load balancing)
 
 ### Out of Scope
 
@@ -94,5 +102,15 @@ ABYSS N-body simulation code with Structure of Arrays (SoA) data layout. The v1.
 | Keep SDAR Group as-is | Complex library integration, conversion risk outweighs benefit | ✓ Good — exit-only sync works |
 | Exit-only sync pattern | SDAR uses AoS, sync to SoA only on exit | ✓ Good — simpler than proxy |
 
+## Current Milestone: v2.0 Performance Profiling & Optimization
+
+**Goal:** Build detailed profiler infrastructure to identify irregular force bottlenecks, then optimize based on findings.
+
+**Target features:**
+- Enhanced profiler with per-rank MPI statistics and sub-timers
+- Work counters and histogram support for performance analysis
+- Bottleneck identification through systematic profiling
+- Targeted optimizations (vectorization, MPI improvements, load balancing)
+
 ---
-*Last updated: 2026-01-17 after v1.0 milestone*
+*Last updated: 2026-01-17 after v2.0 milestone initialization*
