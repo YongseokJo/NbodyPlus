@@ -4,6 +4,7 @@
 #include <chrono>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 #include <iostream>
 #include <iomanip>
@@ -11,6 +12,11 @@
 #include <algorithm>
 #include <cmath>
 #include <climits>
+#include <memory>
+#include <sstream>
+#ifdef USE_MPI
+#include <mpi.h>
+#endif
 
 // Timer IDs for fast lookup (avoid string hashing in hot paths)
 enum class TimerID : int {
@@ -21,6 +27,13 @@ enum class TimerID : int {
     IrregularForce,
     IrregularUpdate,
     IrregularTotal,
+
+    // Irregular force sub-timers (Phase 8)
+    IrregularNeighborLoop,    // Main neighbor loop
+    IrregularCMLoop,          // CM particle loop
+    IrregularCorrection,      // 4th order correction
+    IrregularPredict,         // Self and neighbor predictions
+    IrregularPairsEvaluated,  // Count of neighbor pairs computed (work counter)
 
     // Regular step timers
     RegularForce,
@@ -56,6 +69,17 @@ enum class TimerID : int {
     WorkerIdle,
     QueueWait,
 
+    // Worker-side timers (Phase 8)
+    WorkerRecvWait,      // Time waiting in MPI_Recv for next task
+    WorkerTaskDispatch,  // Time executing the assigned task
+    WorkerSendComplete,  // Time in MPI_Isend + MPI_Wait
+    WorkerIdleTime,      // Cumulative idle time (recv wait + sync waits)
+
+    // Queue scheduler timers (Phase 8)
+    QueueAssign,      // Time in assignQueueAuto()
+    QueueRun,         // Time in runQueueAuto()
+    QueueCallback,    // Time in callback()
+
     // I/O timers
     FileWrite,
     FileRead,
@@ -72,6 +96,138 @@ enum class TimerID : int {
     NUM_TIMERS
 };
 
+// Aggregated statistics across MPI ranks (Phase 8)
+struct AggregatedStats {
+    double min_seconds = 0.0;
+    double max_seconds = 0.0;
+    double avg_seconds = 0.0;
+    double total_seconds = 0.0;
+    long long min_count = 0;
+    long long max_count = 0;
+    long long total_count = 0;
+    int min_rank = 0;
+    int max_rank = 0;
+    double load_balance_ratio = 1.0;  // max/avg, >1.2 indicates imbalance
+    double throughput = 0.0;          // work_units per second (if applicable)
+};
+
+// Histogram class for call-time distributions (Phase 8)
+class Histogram {
+public:
+    static constexpr int NUM_BUCKETS = 20;
+    // Buckets cover: <1us, 1-10us, 10-100us, 100us-1ms, 1-10ms, 10-100ms, 100ms-1s, 1-10s, >10s
+    // Using log10 scale: each bucket covers one order of magnitude
+
+    void record(long long duration_ns) {
+        int idx = getBucketIndex(duration_ns);
+        buckets_[idx]++;
+        total_count_++;
+    }
+
+    void reset() {
+        for (int i = 0; i < NUM_BUCKETS; ++i) buckets_[i] = 0;
+        total_count_ = 0;
+    }
+
+    void merge(const Histogram& other) {
+        for (int i = 0; i < NUM_BUCKETS; ++i) {
+            buckets_[i] += other.buckets_[i];
+        }
+        total_count_ += other.total_count_;
+    }
+
+    // Output
+    void print(std::ostream& os) const {
+        static const char* labels[] = {
+            "<1us", "1-10us", "10-100us", "100us-1ms",
+            "1-10ms", "10-100ms", "100ms-1s", "1-10s", ">10s"
+        };
+        // Map our 20 buckets to 9 display ranges
+        long long display[9] = {0};
+        for (int i = 0; i < NUM_BUCKETS; ++i) {
+            int display_idx = std::min(i / 2, 8);
+            display[display_idx] += buckets_[i];
+        }
+        for (int i = 0; i < 9; ++i) {
+            double pct = total_count_ > 0 ? 100.0 * display[i] / total_count_ : 0.0;
+            if (display[i] > 0) {
+                os << "  " << std::left << std::setw(12) << labels[i]
+                   << std::right << std::setw(8) << display[i]
+                   << " (" << std::fixed << std::setprecision(1) << std::setw(5) << pct << "%)\n";
+            }
+        }
+        if (total_count_ > 0) {
+            os << "  p50: " << formatTime(getPercentile(0.5))
+               << ", p90: " << formatTime(getPercentile(0.9))
+               << ", p99: " << formatTime(getPercentile(0.99)) << "\n";
+        }
+    }
+
+    std::string toJSON() const {
+        std::ostringstream oss;
+        oss << "{\"buckets\":[";
+        for (int i = 0; i < NUM_BUCKETS; ++i) {
+            if (i > 0) oss << ",";
+            oss << buckets_[i];
+        }
+        oss << "],\"total\":" << total_count_;
+        if (total_count_ > 0) {
+            oss << ",\"p50_ns\":" << getPercentile(0.5)
+                << ",\"p90_ns\":" << getPercentile(0.9)
+                << ",\"p99_ns\":" << getPercentile(0.99);
+        }
+        oss << "}";
+        return oss.str();
+    }
+
+    // Statistics
+    long long getPercentile(double p) const {
+        if (total_count_ == 0) return 0;
+        long long target = static_cast<long long>(p * total_count_);
+        long long cumulative = 0;
+        for (int i = 0; i < NUM_BUCKETS; ++i) {
+            cumulative += buckets_[i];
+            if (cumulative >= target) {
+                // Return approximate value at bucket midpoint
+                auto range = getBucketRange(i);
+                return (range.first + range.second) / 2;
+            }
+        }
+        return getBucketRange(NUM_BUCKETS - 1).second;
+    }
+
+    long long getMedian() const { return getPercentile(0.5); }
+    long long getCount() const { return total_count_; }
+
+private:
+    long long buckets_[NUM_BUCKETS] = {0};
+    long long total_count_ = 0;
+
+    int getBucketIndex(long long ns) const {
+        // Log10 scale: bucket i covers [10^(i/2) us, 10^((i+1)/2) us)
+        // Convert ns to us first
+        if (ns < 1000) return 0;  // <1us
+        double us = ns / 1000.0;
+        int idx = static_cast<int>(2.0 * std::log10(us));
+        return std::min(std::max(idx, 0), NUM_BUCKETS - 1);
+    }
+
+    std::pair<long long, long long> getBucketRange(int idx) const {
+        // Returns range in nanoseconds
+        if (idx == 0) return {0, 1000};  // 0 to 1us
+        long long low_us = static_cast<long long>(std::pow(10.0, idx / 2.0));
+        long long high_us = static_cast<long long>(std::pow(10.0, (idx + 1) / 2.0));
+        return {low_us * 1000, high_us * 1000};
+    }
+
+    static std::string formatTime(long long ns) {
+        if (ns < 1000) return std::to_string(ns) + "ns";
+        if (ns < 1000000) return std::to_string(ns / 1000) + "us";
+        if (ns < 1000000000) return std::to_string(ns / 1000000) + "ms";
+        return std::to_string(ns / 1000000000) + "s";
+    }
+};
+
 // Statistics for a single timer
 struct TimerStats {
     long long total_ns = 0;        // Total time in nanoseconds
@@ -86,6 +242,13 @@ struct TimerStats {
     long long interval_min_ns = LLONG_MAX;
     long long interval_max_ns = 0;
 
+    // Work unit tracking (Phase 8)
+    long long work_units = 0;           // e.g., particles or pairs
+    long long interval_work_units = 0;
+
+    // Histogram for call-time distributions (Phase 8)
+    std::unique_ptr<Histogram> histogram;
+
     void record(long long duration_ns) {
         total_ns += duration_ns;
         count++;
@@ -97,6 +260,8 @@ struct TimerStats {
         interval_count++;
         interval_min_ns = std::min(interval_min_ns, duration_ns);
         interval_max_ns = std::max(interval_max_ns, duration_ns);
+
+        if (histogram) histogram->record(duration_ns);
     }
 
     void resetInterval() {
@@ -104,6 +269,17 @@ struct TimerStats {
         interval_count = 0;
         interval_min_ns = LLONG_MAX;
         interval_max_ns = 0;
+        interval_work_units = 0;
+        if (histogram) histogram->reset();
+    }
+
+    void recordWork(long long units) {
+        work_units += units;
+        interval_work_units += units;
+    }
+
+    void enableHistogram() {
+        if (!histogram) histogram = std::make_unique<Histogram>();
     }
 
     double totalSeconds() const { return total_ns * 1e-9; }
@@ -114,6 +290,10 @@ struct TimerStats {
     }
     double meanMicros() const { return meanNs() * 1e-3; }
     double intervalMeanMicros() const { return intervalMeanNs() * 1e-3; }
+    double throughputPerSecond() const {
+        return interval_total_ns > 0 ?
+               interval_work_units * 1e9 / interval_total_ns : 0.0;
+    }
 };
 
 // Main profiler class
@@ -173,6 +353,13 @@ public:
             "IrregularForce",
             "IrregularUpdate",
             "IrregularTotal",
+            // Irregular force sub-timers (Phase 8)
+            "IrregularNeighborLoop",
+            "IrregularCMLoop",
+            "IrregularCorrection",
+            "IrregularPredict",
+            "IrregularPairsEvaluated",
+            // Regular step timers
             "RegularForce",
             "RegularUpdate",
             "RegularTotal",
@@ -197,6 +384,16 @@ public:
             "WorkerCompute",
             "WorkerIdle",
             "QueueWait",
+            // Worker-side timers (Phase 8)
+            "WorkerRecvWait",
+            "WorkerTaskDispatch",
+            "WorkerSendComplete",
+            "WorkerIdleTime",
+            // Queue scheduler timers (Phase 8)
+            "QueueAssign",
+            "QueueRun",
+            "QueueCallback",
+            // I/O and other timers
             "FileWrite",
             "FileRead",
             "StellarEvolution",
@@ -329,10 +526,186 @@ public:
         file << "}\n";
     }
 
+    // Record work units for throughput calculation (Phase 8)
+    void recordWork(TimerID id, long long units) {
+        stats_[static_cast<int>(id)].recordWork(units);
+    }
+
+    // Enable histogram for a specific timer (Phase 8)
+    void enableHistogram(TimerID id) {
+        stats_[static_cast<int>(id)].enableHistogram();
+    }
+
+    // Print histograms for all timers that have them enabled (Phase 8)
+    void printHistograms(std::ostream& os) const {
+        os << "\n==================== Timing Histograms ====================\n";
+        for (int i = 0; i < static_cast<int>(TimerID::NUM_TIMERS); ++i) {
+            const auto& s = stats_[i];
+            if (s.histogram && s.histogram->getCount() > 0) {
+                os << "\n" << getTimerName(static_cast<TimerID>(i)) << " histogram:\n";
+                s.histogram->print(os);
+            }
+        }
+        os << "============================================================\n";
+    }
+
+#ifdef USE_MPI
+    // Aggregate statistics across all MPI ranks (Phase 8)
+    void aggregateAcrossRanks(MPI_Comm comm) {
+        int rank, num_ranks;
+        MPI_Comm_rank(comm, &rank);
+        MPI_Comm_size(comm, &num_ranks);
+        num_ranks_ = num_ranks;
+        my_rank_ = rank;
+
+        aggregated_stats_.resize(static_cast<int>(TimerID::NUM_TIMERS));
+
+        for (int i = 0; i < static_cast<int>(TimerID::NUM_TIMERS); ++i) {
+            const auto& local = stats_[i];
+            auto& agg = aggregated_stats_[i];
+
+            double local_seconds = local.intervalSeconds();
+
+            // Get sum for average
+            double sum_seconds = 0.0;
+            MPI_Reduce(&local_seconds, &sum_seconds, 1, MPI_DOUBLE, MPI_SUM, 0, comm);
+
+            // Get min with rank using MPI_MINLOC
+            struct { double val; int rank; } local_min = {local_seconds, rank};
+            struct { double val; int rank; } global_min;
+            MPI_Reduce(&local_min, &global_min, 1, MPI_DOUBLE_INT, MPI_MINLOC, 0, comm);
+
+            // Get max with rank using MPI_MAXLOC
+            struct { double val; int rank; } local_max = {local_seconds, rank};
+            struct { double val; int rank; } global_max;
+            MPI_Reduce(&local_max, &global_max, 1, MPI_DOUBLE_INT, MPI_MAXLOC, 0, comm);
+
+            // Aggregate counts
+            long long local_count = local.interval_count;
+            long long sum_count = 0;
+            MPI_Reduce(&local_count, &sum_count, 1, MPI_LONG_LONG, MPI_SUM, 0, comm);
+
+            // Aggregate work units
+            long long local_work = local.interval_work_units;
+            long long sum_work = 0;
+            MPI_Reduce(&local_work, &sum_work, 1, MPI_LONG_LONG, MPI_SUM, 0, comm);
+
+            if (rank == 0) {
+                agg.min_seconds = global_min.val;
+                agg.max_seconds = global_max.val;
+                agg.avg_seconds = sum_seconds / num_ranks;
+                agg.total_seconds = sum_seconds;
+                agg.min_rank = global_min.rank;
+                agg.max_rank = global_max.rank;
+                agg.total_count = sum_count;
+                agg.load_balance_ratio = agg.avg_seconds > 0 ? agg.max_seconds / agg.avg_seconds : 1.0;
+                agg.throughput = sum_seconds > 0 ? sum_work / sum_seconds : 0.0;
+            }
+        }
+    }
+
+    // Get load balance ratio for a timer (Phase 8)
+    double getLoadBalanceRatio(TimerID id) const {
+        if (aggregated_stats_.empty()) return 1.0;
+        return aggregated_stats_[static_cast<int>(id)].load_balance_ratio;
+    }
+
+    // Get aggregated stats for a timer (Phase 8)
+    const AggregatedStats& getAggregatedStats(TimerID id) const {
+        static AggregatedStats empty;
+        if (aggregated_stats_.empty()) return empty;
+        return aggregated_stats_[static_cast<int>(id)];
+    }
+
+    // Print aggregated summary across MPI ranks (Phase 8)
+    void printAggregatedSummary(std::ostream& os, double sim_time_myr) const {
+        if (my_rank_ != 0) return;  // Only root prints
+
+        const auto& whole = aggregated_stats_[static_cast<int>(TimerID::WholeRoutine)];
+        if (whole.total_seconds == 0) return;
+
+        os << "\n==================== Aggregated Performance Summary ====================\n";
+        os << "Simulation Time: " << std::fixed << std::setprecision(6) << sim_time_myr << " Myr\n";
+        os << "MPI Ranks: " << num_ranks_ << "\n";
+        os << "Total Wall-clock Time: " << std::fixed << std::setprecision(2)
+           << whole.max_seconds << " s (slowest rank)\n";
+        os << "========================================================================\n\n";
+
+        os << std::left << std::setw(24) << "Timer"
+           << std::right << std::setw(10) << "Min (s)"
+           << std::setw(10) << "Avg (s)"
+           << std::setw(10) << "Max (s)"
+           << std::setw(8) << "LB"
+           << std::setw(10) << "MinRank"
+           << std::setw(10) << "MaxRank"
+           << std::setw(12) << "Throughput" << "\n";
+        os << std::string(94, '-') << "\n";
+
+        // Print in logical groups
+        printAggregatedLine(os, TimerID::IrregularForce);
+        printAggregatedLine(os, TimerID::IrregularNeighborLoop);
+        printAggregatedLine(os, TimerID::IrregularCMLoop);
+        printAggregatedLine(os, TimerID::IrregularCorrection);
+        printAggregatedLine(os, TimerID::IrregularPredict);
+        printAggregatedLine(os, TimerID::IrregularUpdate);
+        os << "\n";
+
+        printAggregatedLine(os, TimerID::RegularForce);
+        printAggregatedLine(os, TimerID::RegularGPU);
+        printAggregatedLine(os, TimerID::RegularUpdate);
+        os << "\n";
+
+        printAggregatedLine(os, TimerID::FewBodyIntegration);
+        os << "\n";
+
+        printAggregatedLine(os, TimerID::WorkerRecvWait);
+        printAggregatedLine(os, TimerID::WorkerTaskDispatch);
+        printAggregatedLine(os, TimerID::WorkerSendComplete);
+        printAggregatedLine(os, TimerID::QueueAssign);
+        printAggregatedLine(os, TimerID::QueueRun);
+        printAggregatedLine(os, TimerID::QueueWait);
+        os << "\n";
+
+        os << std::string(94, '=') << "\n";
+
+        // Print load balance warnings
+        os << "\n--- Load Balance Analysis ---\n";
+        for (int i = 0; i < static_cast<int>(TimerID::NUM_TIMERS); ++i) {
+            const auto& agg = aggregated_stats_[i];
+            if (agg.load_balance_ratio > 1.2 && agg.max_seconds > 0.1) {
+                os << "WARNING: " << getTimerName(static_cast<TimerID>(i))
+                   << " has load imbalance ratio " << std::fixed << std::setprecision(2)
+                   << agg.load_balance_ratio << " (max on rank " << agg.max_rank << ")\n";
+            }
+        }
+
+        // Print throughput metrics
+        const auto& pairs = aggregated_stats_[static_cast<int>(TimerID::IrregularPairsEvaluated)];
+        if (pairs.throughput > 0) {
+            os << "\n--- Throughput Metrics ---\n";
+            os << "Neighbor pairs evaluated: " << std::scientific << std::setprecision(2)
+               << pairs.throughput << " pairs/s\n";
+        }
+    }
+#endif
+
 private:
     Profiler() {
         stats_.resize(static_cast<int>(TimerID::NUM_TIMERS));
         start_times_.resize(static_cast<int>(TimerID::NUM_TIMERS));
+
+        // Enable histograms for key timers (Phase 8)
+        enableHistogramForTimer(TimerID::IrregularForce);
+        enableHistogramForTimer(TimerID::RegularForce);
+        enableHistogramForTimer(TimerID::FewBodyIntegration);
+        enableHistogramForTimer(TimerID::QueueWait);
+        enableHistogramForTimer(TimerID::WorkerCompute);
+        enableHistogramForTimer(TimerID::IrregularNeighborLoop);
+        enableHistogramForTimer(TimerID::WorkerRecvWait);
+    }
+
+    void enableHistogramForTimer(TimerID id) {
+        stats_[static_cast<int>(id)].enableHistogram();
     }
 
     void printTimerLine(std::ostream& os, TimerID id, long long total_ns) const {
@@ -351,8 +724,35 @@ private:
            << std::setw(14) << max_us << "\n";
     }
 
+#ifdef USE_MPI
+    void printAggregatedLine(std::ostream& os, TimerID id) const {
+        const auto& agg = aggregated_stats_[static_cast<int>(id)];
+        if (agg.total_count == 0 && agg.total_seconds == 0) return;
+
+        os << std::left << std::setw(24) << getTimerName(id)
+           << std::right << std::fixed << std::setprecision(3)
+           << std::setw(10) << agg.min_seconds
+           << std::setw(10) << agg.avg_seconds
+           << std::setw(10) << agg.max_seconds
+           << std::setprecision(2) << std::setw(8) << agg.load_balance_ratio
+           << std::setw(10) << agg.min_rank
+           << std::setw(10) << agg.max_rank;
+        if (agg.throughput > 0) {
+            os << std::scientific << std::setprecision(1) << std::setw(12) << agg.throughput;
+        } else {
+            os << std::setw(12) << "-";
+        }
+        os << "\n";
+    }
+#endif
+
     std::vector<TimerStats> stats_;
     std::vector<std::chrono::high_resolution_clock::time_point> start_times_;
+#ifdef USE_MPI
+    std::vector<AggregatedStats> aggregated_stats_;
+    int num_ranks_ = 1;
+    int my_rank_ = 0;
+#endif
 };
 
 // RAII-style scoped timer for automatic start/stop
@@ -382,6 +782,7 @@ private:
 #define PROFILE_STOP(timer_id) Profiler::instance().stop(timer_id)
 #define PROFILE_COUNT(timer_id) Profiler::instance().incrementCount(timer_id)
 #define PROFILE_COUNT_N(timer_id, n) Profiler::instance().incrementCount(timer_id, n)
+#define PROFILE_WORK(timer_id, units) Profiler::instance().recordWork(timer_id, units)
 
 #else
 
@@ -390,6 +791,7 @@ private:
 #define PROFILE_STOP(timer_id) ((void)0)
 #define PROFILE_COUNT(timer_id) ((void)0)
 #define PROFILE_COUNT_N(timer_id, n) ((void)0)
+#define PROFILE_WORK(timer_id, units) ((void)0)
 
 #endif
 
