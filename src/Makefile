@@ -19,7 +19,10 @@
 CXX ?= mpicxx
 
 # Base compiler flags
-CXXFLAGS_BASE = -O2 -march=native -ftree-vectorize -std=c++11 -Wall -Wextra -Wuninitialized -g
+# Use -march=skylake-avx512 to explicitly enable AVX-512 for the cluster's compute nodes.
+# This ensures __AVX512F__ is defined even when compiling on login nodes without AVX-512.
+# Add -mavx512f -mavx512dq for explicit AVX-512 instruction support.
+CXXFLAGS_BASE = -O2 -march=skylake-avx512 -mavx512f -mavx512dq -ftree-vectorize -std=c++11 -Wall -Wextra -Wuninitialized -g
 CXXFLAGS_ALL  = $(CXXFLAGS_BASE) $(CXXFLAGS)
 
 # HDF5 (required)
