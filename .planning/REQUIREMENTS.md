@@ -9,28 +9,28 @@ Requirements for performance profiling infrastructure and optimization.
 
 ### Profiler Core
 
-- [ ] **PROF-01**: Profiler aggregates per-rank statistics via MPI_Reduce (min/avg/max across all ranks)
-- [ ] **PROF-02**: Profiler supports histogram buckets for call-time distributions
-- [ ] **PROF-03**: Profiler tracks work counters (particles processed, neighbor pairs evaluated)
-- [ ] **PROF-04**: Profiler outputs load balance report showing work distribution across ranks
-- [ ] **PROF-05**: Profiler can compute throughput metrics (pairs/second, particles/second)
+- [x] **PROF-01**: Profiler aggregates per-rank statistics via MPI_Reduce (min/avg/max across all ranks)
+- [x] **PROF-02**: Profiler supports histogram buckets for call-time distributions
+- [x] **PROF-03**: Profiler tracks work counters (particles processed, neighbor pairs evaluated)
+- [x] **PROF-04**: Profiler outputs load balance report showing work distribution across ranks
+- [x] **PROF-05**: Profiler can compute throughput metrics (pairs/second, particles/second)
 
 ### Irregular Force Profiling
 
-- [ ] **IRR-01**: Sub-timer captures time in main neighbor loop (lines 99-161 in compute_acceleration.cpp)
-- [ ] **IRR-02**: Sub-timer captures time in CM particle loop (lines 163-205)
-- [ ] **IRR-03**: Sub-timer captures time in 4th-order correction (lines 221-267)
-- [ ] **IRR-04**: Counter tracks total neighbor pairs evaluated per timestep
-- [ ] **IRR-05**: Per-rank irregular force timing visible in aggregated output
+- [x] **IRR-01**: Sub-timer captures time in main neighbor loop (lines 99-161 in compute_acceleration.cpp)
+- [x] **IRR-02**: Sub-timer captures time in CM particle loop (lines 163-205)
+- [x] **IRR-03**: Sub-timer captures time in 4th-order correction (lines 221-267)
+- [x] **IRR-04**: Counter tracks total neighbor pairs evaluated per timestep
+- [x] **IRR-05**: Per-rank irregular force timing visible in aggregated output
 
 ### MPI/Worker Profiling
 
-- [ ] **MPI-01**: Worker-side timer captures time waiting in MPI_Recv for work
-- [ ] **MPI-02**: Worker-side timer captures task dispatch/execution time
-- [ ] **MPI-03**: Worker-side timer captures MPI_Isend/Wait completion time
-- [ ] **MPI-04**: Queue scheduler timer captures assignQueueAuto() time
-- [ ] **MPI-05**: Queue scheduler timer captures runQueueAuto() time
-- [ ] **MPI-06**: Idle time per rank is trackable (time between task completion and next assignment)
+- [x] **MPI-01**: Worker-side timer captures time waiting in MPI_Recv for work
+- [x] **MPI-02**: Worker-side timer captures task dispatch/execution time
+- [x] **MPI-03**: Worker-side timer captures MPI_Isend/Wait completion time
+- [x] **MPI-04**: Queue scheduler timer captures assignQueueAuto() time
+- [x] **MPI-05**: Queue scheduler timer captures runQueueAuto() time
+- [x] **MPI-06**: Idle time per rank is trackable (time between task completion and next assignment)
 
 ### Analysis
 
@@ -73,22 +73,22 @@ Deferred to future release. Tracked but not in current roadmap.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| PROF-01 | Phase 8 | Pending |
-| PROF-02 | Phase 8 | Pending |
-| PROF-03 | Phase 8 | Pending |
-| PROF-04 | Phase 8 | Pending |
-| PROF-05 | Phase 8 | Pending |
-| IRR-01 | Phase 8 | Pending |
-| IRR-02 | Phase 8 | Pending |
-| IRR-03 | Phase 8 | Pending |
-| IRR-04 | Phase 8 | Pending |
-| IRR-05 | Phase 8 | Pending |
-| MPI-01 | Phase 8 | Pending |
-| MPI-02 | Phase 8 | Pending |
-| MPI-03 | Phase 8 | Pending |
-| MPI-04 | Phase 8 | Pending |
-| MPI-05 | Phase 8 | Pending |
-| MPI-06 | Phase 8 | Pending |
+| PROF-01 | Phase 8 | Complete |
+| PROF-02 | Phase 8 | Complete |
+| PROF-03 | Phase 8 | Complete |
+| PROF-04 | Phase 8 | Complete |
+| PROF-05 | Phase 8 | Complete |
+| IRR-01 | Phase 8 | Complete |
+| IRR-02 | Phase 8 | Complete |
+| IRR-03 | Phase 8 | Complete |
+| IRR-04 | Phase 8 | Complete |
+| IRR-05 | Phase 8 | Complete |
+| MPI-01 | Phase 8 | Complete |
+| MPI-02 | Phase 8 | Complete |
+| MPI-03 | Phase 8 | Complete |
+| MPI-04 | Phase 8 | Complete |
+| MPI-05 | Phase 8 | Complete |
+| MPI-06 | Phase 8 | Complete |
 | ANLZ-01 | Phase 9 | Pending |
 | ANLZ-02 | Phase 9 | Pending |
 | ANLZ-03 | Phase 9 | Pending |
@@ -103,4 +103,4 @@ Deferred to future release. Tracked but not in current roadmap.
 
 ---
 *Requirements defined: 2026-01-17*
-*Last updated: 2026-01-17 after initial definition*
+*Last updated: 2026-01-17 Phase 8 complete*
