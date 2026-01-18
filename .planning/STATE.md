@@ -5,43 +5,44 @@
 See: .planning/PROJECT.md (updated 2026-01-17)
 
 **Core value:** Identify and eliminate irregular force bottlenecks through systematic profiling
-**Current focus:** Phase 9 — Profile & Analyze
+**Current focus:** Phase 10 — Targeted Optimization
 
 ## Current Position
 
 **Milestone:** v2.0 — Performance Profiling & Optimization
-**Phase:** 9 (pending planning)
-**Status:** Phase 8 complete, Phase 9 not started
+**Phase:** 10 (pending planning)
+**Status:** Phase 9 complete, Phase 10 not started
 
-Last activity: 2026-01-17 — Phase 8 complete
+Last activity: 2026-01-17 — Phase 9 complete
 
-Progress: ███░░░░░░░ 33%
+Progress: ██████░░░░ 67%
 
 ## Phase Overview
 
 | Phase | Name | Requirements | Status |
 |-------|------|--------------|--------|
 | 8 | Enhanced Profiler Infrastructure | 16 | ✓ Complete |
-| 9 | Profile & Analyze | 3 | ○ Pending |
+| 9 | Profile & Analyze | 3 | ✓ Complete |
 | 10 | Targeted Optimization | 3 | ○ Pending |
 
-## Phase 8 Summary
+## Phase 9 Summary
 
-**Enhanced Profiler Infrastructure** (Completed 2026-01-17)
+**Profile & Analyze** (Completed 2026-01-17)
 
-6 plans in 3 waves:
-- Wave 1: Per-rank MPI statistics, histogram support
-- Wave 2: Irregular force sub-timers, worker timing, queue timing
-- Wave 3: Integration and load balance report
+2 plans in 2 waves:
+- Wave 1: Run profiled simulation (human execution)
+- Wave 2: Analyze data, document findings
 
-Key additions:
-- `AggregatedStats` struct with min/avg/max across MPI ranks
-- `Histogram` class with logarithmic buckets and percentiles
-- Irregular force sub-timers (NeighborLoop, CMLoop, Correction, Predict)
-- Worker-side timing (RecvWait, TaskDispatch, SendComplete)
-- Queue scheduler timing (Assign, Run, Callback)
-- Load balance warnings (ratio > 1.2)
-- Throughput tracking for neighbor pairs
+Key findings:
+- **Primary bottleneck: IrregularForce at 53.5%** of wall time
+- Irregular forces evaluated ~122x more frequently than regular forces
+- 69.5 seconds per interval for irregular force vs 14.8 seconds for GPU regular
+- QueueWait variance indicates load balancing overhead
+
+Optimization targets for Phase 10:
+1. Irregular force loop optimization (vectorization, cache locality)
+2. MPI message batching to reduce overhead
+3. Worker-side sub-timer profiling for deeper analysis
 
 ## v2.0 Focus
 
@@ -55,10 +56,15 @@ Key additions:
 - Worker-side timing ✓
 - Queue scheduler timing ✓
 
-**Next: Phase 9**
-- Run profiler on representative simulations
-- Identify primary bottleneck with quantitative data
-- Document findings for Phase 10 optimization
+**Phase 9 delivered:**
+- Profiling data collected from test1 simulation ✓
+- Primary bottleneck identified: IrregularForce (53.5%) ✓
+- Optimization targets documented ✓
+
+**Next: Phase 10**
+- Implement optimization for irregular force bottleneck
+- Validate with before/after profiling
+- Verify energy conservation
 
 ## Previous Milestone
 
@@ -69,7 +75,7 @@ Key additions:
 
 ## Next Action
 
-Run `/gsd:plan-phase 9` to plan the profiling and analysis phase.
+Run `/gsd:plan-phase 10` to plan the targeted optimization phase.
 
 ---
-*Last updated: 2026-01-17 (Phase 8 complete)*
+*Last updated: 2026-01-17 (Phase 9 complete)*

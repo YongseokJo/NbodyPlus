@@ -8,7 +8,7 @@
 | Phase | Name | Requirements | Status |
 |-------|------|--------------|--------|
 | 8 | Enhanced Profiler Infrastructure | PROF-01 to PROF-05, IRR-01 to IRR-05, MPI-01 to MPI-06 | Complete |
-| 9 | Profile & Analyze | ANLZ-01 to ANLZ-03 | Pending |
+| 9 | Profile & Analyze | ANLZ-01 to ANLZ-03 | Complete |
 | 10 | Targeted Optimization | OPT-01 to OPT-03 | Pending |
 
 ---
@@ -60,6 +60,13 @@
 
 **Estimated Plans:** 2-3
 
+**Completed:** 2026-01-17 (2 plans in 2 waves)
+
+**Key Findings:**
+- Primary bottleneck: IrregularForce at 53.5% of wall time
+- Irregular forces evaluated ~122x more frequently than regular forces
+- Optimization targets: force loop vectorization, MPI batching
+
 ---
 
 ## Phase 10: Targeted Optimization
@@ -107,4 +114,4 @@ v2.0 is complete when:
 
 ---
 *Roadmap created: 2026-01-17*
-*Last updated: 2026-01-17*
+*Last updated: 2026-01-17 Phase 9 complete*
