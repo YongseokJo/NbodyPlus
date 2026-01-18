@@ -3,6 +3,7 @@
 #include <errno.h>
 #include "global.h"
 #include "queue.h"
+#include "profiler.h"
 
 void broadcastFromRoot(double &data);
 void broadcastFromRoot(ull_t &data);
@@ -31,11 +32,14 @@ void WorkerRoutines() {
 
 	while (true) {
 
+		PROFILE_START(TimerID::WorkerRecvWait);
 		MPI_Recv(&queue, 1, queue_type_mpi, ROOT, QUEUE_TAG, MPI_COMM_WORLD, &status);
+		PROFILE_STOP(TimerID::WorkerRecvWait);
 		task = queue.task;
 		ptcl_id = queue.pid;
 		next_time = queue.next_time;
 
+		PROFILE_START(TimerID::WorkerTaskDispatch);
 		switch (task) {
 			case TASK_IRR_FORCE: // Irregular Acceleration
 
@@ -272,15 +276,18 @@ void WorkerRoutines() {
 			default:
 				break;
 		}
+		PROFILE_STOP(TimerID::WorkerTaskDispatch);
 
 		// return that it's over
 		//task = -1;
+		PROFILE_START(TimerID::WorkerSendComplete);
 		int send_value = ptcl_id;
 		if (!(task == TASK_IRR_FORCE || task == TASK_REG_FORCE || task == TASK_IRR_UPDATE || task == TASK_REG_UPDATE))
 			send_value = static_cast<int>(task);
 		MPI_Isend(&send_value, 1, MPI_INT, ROOT, TERMINATE_TAG, MPI_COMM_WORLD, &request);
 
 		MPI_Wait(&request, &status);
+		PROFILE_STOP(TimerID::WorkerSendComplete);
 		//std::cerr << "Processor " << my_rank << " done." << std::endl;
 	}
 }
