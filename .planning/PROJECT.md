@@ -52,13 +52,28 @@ ABYSS N-body simulation code with Structure of Arrays (SoA) data layout and enha
 
 ### Active
 
-(No active requirements — awaiting next milestone definition)
+<!-- v2.1 MPI Communication Optimization -->
+
+**Async MPI Implementation:**
+- [ ] Convert root-side MPI to async operations (MPI_Isend/MPI_Irecv)
+- [ ] Replace blocking waits with MPI_Waitany/MPI_Testany
+- [ ] Overlap communication with computation on root
+- [ ] Evaluate worker-side async (if beneficial)
+- [ ] Measure MPI wait time reduction
+- [ ] Validate energy conservation
+
+**Batching Research:**
+- [ ] Research batching strategies for CM particle dependencies
+- [ ] Research load balancing for variable work per particle
+- [ ] Research callback mechanism changes for batch completion
+- [ ] Document recommended approach for v2.2+
 
 ### Out of Scope
 
 - SDAR `Group` struct conversion — kept as-is with exit-only sync
-- Algorithm changes — SoA/profiler work is infrastructure only
-- GPU irregular forces — v2.0 optimization limited to CPU; GPU port deferred to v2.1+
+- Algorithm changes — infrastructure optimization only
+- GPU irregular forces — deferred to v2.2+
+- Implementing batching — research only for this milestone, implementation deferred
 
 ## Context
 
@@ -111,11 +126,25 @@ ABYSS N-body simulation code with Structure of Arrays (SoA) data layout and enha
 | Pre-gather for SIMD | Align scattered neighbor data before vectorized compute | ⚠ Revisit — gather overhead limits gains |
 | AVX-512 vectorization | Target IrregularForce bottleneck with SIMD | ⚠ Limited — 3.2% gain vs 20% target |
 
-## Recommendations for v2.1
+## Current Milestone: v2.1 MPI Communication Optimization
 
-1. **MPI batching** — Reduce ~105M messages/interval overhead
+**Goal:** Reduce MPI overhead in irregular force communication through async operations, and research batching strategies for future work.
+
+**Key insight from v2.0 profiling:**
+- ~105M MPI messages per interval for ~140K particle evaluations
+- Current pattern: 1 particle per message, blocking send/recv
+- Root and workers spend significant time waiting on MPI operations
+
+**Approach:**
+1. Convert to async MPI (MPI_Isend/MPI_Irecv) starting with root-side
+2. Replace blocking waits with MPI_Waitany/MPI_Testany
+3. Research batching strategies (complex due to CM dependencies, variable work, callback mechanism)
+
+## Recommendations for v2.2+
+
+1. **Implement batching** — Based on v2.1 research findings
 2. **SIMD gather intrinsics** — Use `_mm512_i64gather_pd` to avoid pre-gather copies
 3. **GPU irregular forces** — Port irregular force kernel to GPU
 
 ---
-*Last updated: 2026-01-18 after v2.0 milestone*
+*Last updated: 2026-01-18 after v2.1 milestone start*
