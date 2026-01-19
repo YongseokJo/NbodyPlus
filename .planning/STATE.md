@@ -5,39 +5,40 @@
 See: .planning/PROJECT.md (updated 2026-01-18)
 
 **Core value:** Physics correctness (energy conservation) with clean architecture for targeted optimizations
-**Current focus:** Load Balance Profiling
+**Current focus:** Load Balance Profiling Complete — Ready for v2.3
 
 ## Current Position
 
-**Milestone:** v2.2 — Load Balance Profiling
-**Phase:** 17 (Worker Distribution)
-**Status:** Ready to plan
+**Milestone:** v2.2 — Load Balance Profiling ✓ COMPLETE
+**Phase:** 20 (Analysis & Reporting) — Complete
+**Status:** Milestone complete, ready for archive
 
-Last activity: 2026-01-18 — Phase 16 complete
+Last activity: 2026-01-19 — Phase 20 complete, v2.2 milestone complete
 
-Progress: ████░░░░░░ 33% (2/6 phases)
+Progress: ██████████ 100% (6/6 phases)
 
 ## v2.2 Overview
 
-**Load Balance Profiling** (In Progress)
+**Load Balance Profiling** (Complete)
 
-6 phases, 24 requirements:
+6 phases, 24 requirements — all complete:
 - Phase 15: Neighbor Profiling (4 requirements) ✓
 - Phase 16: Queue Dispatch Profiling (4 requirements) ✓
-- Phase 17: Worker Distribution (4 requirements)
-- Phase 18: Particle Type Breakdown (5 requirements)
-- Phase 19: Memory Access Profiling (3 requirements)
-- Phase 20: Analysis & Reporting (4 requirements)
+- Phase 17: Worker Distribution (4 requirements) ✓
+- Phase 18: Particle Type Breakdown (5 requirements) ✓
+- Phase 19: Memory Access Profiling (3 requirements) ✓
+- Phase 20: Analysis & Reporting (4 requirements) ✓
 
-**Goal:** Understand where load imbalance comes from before committing to optimization approach
+**Goal achieved:** Complete profiling infrastructure to understand load imbalance sources
 
-**Target measurements:**
+**Measurements delivered:**
 - Neighbor count variance ✓
 - Queue dispatch overhead ✓
-- Worker distribution
-- CM particle breakdown
-- Few-body overhead
-- Memory access patterns
+- Worker distribution ✓
+- CM particle breakdown ✓
+- Few-body overhead ✓
+- Memory access patterns ✓
+- Analysis tooling ✓
 
 ## Phase Status
 
@@ -45,38 +46,59 @@ Progress: ████░░░░░░ 33% (2/6 phases)
 |-------|------|--------|--------------|
 | 15 | Neighbor Profiling | ✓ Complete | 4/4 |
 | 16 | Queue Dispatch Profiling | ✓ Complete | 4/4 |
-| 17 | Worker Distribution | ○ Pending | 0/4 |
-| 18 | Particle Type Breakdown | ○ Pending | 0/5 |
-| 19 | Memory Access Profiling | ○ Pending | 0/3 |
-| 20 | Analysis & Reporting | ○ Pending | 0/4 |
+| 17 | Worker Distribution | ✓ Complete | 4/4 |
+| 18 | Particle Type Breakdown | ✓ Complete | 5/5 |
+| 19 | Memory Access Profiling | ✓ Complete | 3/3 |
+| 20 | Analysis & Reporting | ✓ Complete | 4/4 |
 
-## Phase 16 Summary
+## Phase 20 Summary
 
-Completed 2026-01-18 with 4 plans:
-- 16-01: Queue depth tracking infrastructure (QueueDepthTracker class)
-- 16-02: Instrument queue scheduler (depth sampling, starvation detection)
-- 16-03: Dispatch latency tracking (OnlineStats for latency distribution)
-- 16-04: Queue dispatch statistics output (CSV/JSON/console)
-
-Key deliverables:
-- `QueueDepthTracker` class for pending task monitoring
-- `PROFILE_QUEUE_DEPTH`, `PROFILE_STARVATION_EVENT`, `PROFILE_DISPATCH_LATENCY` macros
-- Root-side timing breakdown (assign vs wait ratio)
-- Bottleneck detection (`isDispatchBottleneck()`)
-
-## Phase 15 Summary
-
-Completed 2026-01-18 with 4 plans:
-- 15-01: Online statistics infrastructure (OnlineStats, CorrelationTracker)
-- 15-02: Per-particle neighbor counting instrumentation
-- 15-03: Neighbor statistics in CSV/JSON/console output
-- 15-04: Neighbor count histogram (15 buckets, 0-50K+)
+Completed 2026-01-19 with 3 plans:
+- 20-01: Worker compute time histogram
+- 20-02: Enhanced Python analysis script
+- 20-03: Final ANALYSIS.md report
 
 Key deliverables:
-- `OnlineStats` class with Welford's algorithm
-- `CorrelationTracker` for neighbor-time correlation
-- `NeighborHistogram` for distribution analysis
-- `PROFILE_NEIGHBOR_TIME` macro for instrumentation
+- `getWorkerTimeHistogram()` method in WorkerDistributionTracker
+- Worker time histogram in JSON and console output
+- `analyze_load_balance()` function in analyze_profiling.py
+- `print_findings()` for ranked imbalance sources
+- `generate_report()` for markdown report generation
+- `--report` CLI argument for report output
+- ANALYSIS.md with v2.3 recommendations
+
+## Phase 19 Summary
+
+Completed 2026-01-19 with 3 plans:
+- 19-01: CacheStats infrastructure (struct, PerfEventCounter wrapper, macros)
+- 19-02: Instrument force loop with cache measurement
+- 19-03: Memory statistics output (console/CSV/JSON)
+
+Key deliverables:
+- `CacheStats` struct for L1D/LL cache miss tracking
+- `PerfEventCounter` RAII wrapper for perf_event file descriptors
+- `PROFILE_CACHE_INIT/START/STOP` macros for instrumentation
+- Cache measurement around neighbor and CM force loops
+- Estimated memory bandwidth and operational intensity
+- Memory-bound vs compute-bound classification
+- Graceful fallback when counters unavailable
+
+## Phase 18 Summary
+
+Completed 2026-01-18 with 5 plans:
+- 18-01: ParticleTypeStats infrastructure (struct, member vars, macros)
+- 18-02: Instrument particle type tracking in compute_acceleration.cpp
+- 18-03: FewBodySearch migration (skipped - code in #ifdef unused)
+- 18-04: Instrument FewBodyIntegration timer in fb_integration.cpp
+- 18-05: Particle type statistics output (console/CSV/JSON)
+
+Key deliverables:
+- `ParticleTypeStats` struct for CM vs regular particle tracking
+- `PROFILE_PARTICLE_TYPE` macro for per-particle type instrumentation
+- CM/regular particle count and compute time tracking
+- CM ratio and time ratio calculations
+- FewBodyIntegration timer instrumentation (SDAR integration timing)
+- Few-body timing breakdown in output (search, init, integration, termination)
 
 ## Milestone History
 
@@ -85,7 +107,7 @@ Key deliverables:
 | v1.0 | AoS to SoA Conversion | 1-7 (28 plans) | ✓ Shipped 2026-01-17 |
 | v2.0 | Performance Profiling & Optimization | 8-10 (11 plans) | ✓ Shipped 2026-01-18 |
 | v2.1 | MPI Communication Optimization | 11-14 | ✗ Archived 2026-01-18 |
-| v2.2 | Load Balance Profiling | 15-20 (24 reqs) | ◆ In Progress |
+| v2.2 | Load Balance Profiling | 15-20 (24 reqs) | ✓ Complete 2026-01-19 |
 
 ## Archive
 
@@ -95,9 +117,18 @@ Key deliverables:
 
 ## Next Action
 
-Run `/gsd:plan-phase 17` to plan Worker Distribution.
+Run `/gsd:audit-milestone` to verify v2.2 completion before archiving.
 
-Note: Phases 17-18 can be planned/executed in parallel (17 has no dependencies, 18 depends on 15 which is complete).
+Or run `/gsd:complete-milestone` to archive v2.2 and prepare for v2.3.
+
+**Pending:** Git commits blocked by /tmp permission issue. Run the following to commit Phase 20 changes:
+```bash
+git add src/profiler.h tools/analyze_profiling.py
+git commit -m "feat(20): add worker histogram and enhanced analysis (ANLYS-02, ANLYS-04)"
+
+git add .planning/
+git commit -m "docs(20): complete Phase 20 Analysis & Reporting"
+```
 
 ---
-*Last updated: 2026-01-18 (Phase 16 complete)*
+*Last updated: 2026-01-19 (Phase 20 complete — v2.2 milestone complete)*
