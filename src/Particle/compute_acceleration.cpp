@@ -68,8 +68,14 @@ void Particle::compute_acceleration_irr() {
 			this->new_position[dim] = this->position[dim];
 			this->new_velocity[dim] = this->velocity[dim];
 		}
+		// Phase 15: Record zero neighbors with zero time
+		PROFILE_NEIGHBOR_TIME(0, 0);
 		return;
 	}
+
+	// Phase 15: Record initial neighbor count and start timing
+	int initial_neighbor_count = this->num_neighbors;
+	auto particle_start_time = std::chrono::high_resolution_clock::now();
 
 	double dt, mdot, epsilon=1e-6;
 	double new_time; // 0 for current and 1 for advanced times
@@ -266,7 +272,14 @@ void Particle::compute_acceleration_irr() {
 	}
 	PROFILE_STOP(TimerID::IrregularCorrection);
 
+	// Phase 15: Record total neighbor count (including CM particles) with timing
+	auto particle_end_time = std::chrono::high_resolution_clock::now();
+	long long particle_compute_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(
+	    particle_end_time - particle_start_time).count();
 
+	// Total neighbors = original + CM particles processed
+	int total_neighbors = neighbor_pairs + cm_pairs;
+	PROFILE_NEIGHBOR_TIME(total_neighbors, particle_compute_ns);
 
 	for (int dim=0; dim<DIM; dim++) {
 		this->acc_total[dim][0] = this->acc_regular[dim][0] + this->acc_irregular[dim][0] + this->acc_regular[dim][1]*dt_ex; // affect the next
