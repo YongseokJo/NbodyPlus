@@ -127,6 +127,185 @@ def analyze_csv(df):
     return results
 
 
+def analyze_load_balance(df):
+    """Analyze Phase 15-19 load balance metrics (Phase 20: ANLYS-04)."""
+    print("\n" + "-" * 70)
+    print("Load Balance Analysis (Phases 15-19)")
+    print("-" * 70)
+
+    findings = []
+
+    # Phase 15: Neighbor count analysis
+    if 'NeighborCount_stddev' in df.columns:
+        mean_stddev = df['NeighborCount_stddev'].mean()
+        mean_mean = df['NeighborCount_mean'].mean()
+        if mean_mean > 0:
+            cv = mean_stddev / mean_mean  # Coefficient of variation
+            if cv > 0.5:
+                findings.append({
+                    'source': 'Neighbor Count Variance',
+                    'severity': 'HIGH' if cv > 1.0 else 'MEDIUM',
+                    'metric': f'CV={cv:.2f} (stddev/mean)',
+                    'recommendation': 'Consider work stealing or neighbor-aware scheduling'
+                })
+            print(f"  Neighbor count: mean={mean_mean:.0f}, stddev={mean_stddev:.0f}, CV={cv:.2f}")
+
+    # Phase 16: Queue dispatch analysis
+    if 'Starvation_events' in df.columns:
+        total_starvation = df['Starvation_events'].sum()
+        if total_starvation > 0:
+            findings.append({
+                'source': 'Worker Starvation',
+                'severity': 'HIGH' if total_starvation > 100 else 'MEDIUM',
+                'metric': f'{total_starvation} starvation events',
+                'recommendation': 'Consider MPI batching or larger work chunks'
+            })
+        print(f"  Starvation events: {total_starvation}")
+
+    if 'AssignTime_ratio' in df.columns:
+        mean_assign_ratio = df['AssignTime_ratio'].mean()
+        if mean_assign_ratio > 0.5:
+            findings.append({
+                'source': 'Queue Dispatch Overhead',
+                'severity': 'HIGH' if mean_assign_ratio > 0.7 else 'MEDIUM',
+                'metric': f'Assign ratio={mean_assign_ratio:.1%}',
+                'recommendation': 'Root is bottleneck - batch task assignments'
+            })
+        print(f"  Queue assign time ratio: {mean_assign_ratio:.1%}")
+
+    # Phase 17: Worker distribution analysis
+    if 'LoadBalanceRatio' in df.columns:
+        mean_lb_ratio = df['LoadBalanceRatio'].mean()
+        max_lb_ratio = df['LoadBalanceRatio'].max()
+        if mean_lb_ratio > 1.5:
+            findings.append({
+                'source': 'Worker Load Imbalance',
+                'severity': 'HIGH' if mean_lb_ratio > 2.0 else 'MEDIUM',
+                'metric': f'Mean LB ratio={mean_lb_ratio:.2f}, Max={max_lb_ratio:.2f}',
+                'recommendation': 'Consider dynamic scheduling or work stealing'
+            })
+        print(f"  Load balance ratio: mean={mean_lb_ratio:.2f}, max={max_lb_ratio:.2f}")
+
+    if 'HeavyParticleCount' in df.columns:
+        total_heavy = df['HeavyParticleCount'].sum()
+        if total_heavy > 0:
+            print(f"  Heavy particles (>2σ): {total_heavy} total")
+
+    # Phase 18: Particle type analysis
+    if 'CMTimeRatio' in df.columns:
+        mean_cm_time_ratio = df['CMTimeRatio'].mean()
+        mean_cm_ratio = df['CMRatio'].mean() if 'CMRatio' in df.columns else 0
+        if mean_cm_time_ratio > 0.3:
+            findings.append({
+                'source': 'CM Particle Overhead',
+                'severity': 'MEDIUM',
+                'metric': f'CM time ratio={mean_cm_time_ratio:.1%}, CM count ratio={mean_cm_ratio:.1%}',
+                'recommendation': 'CM particles are expensive - consider CM-specific optimization'
+            })
+        print(f"  CM particle time ratio: {mean_cm_time_ratio:.1%}")
+
+    # Phase 19: Memory analysis
+    if 'MemoryBound' in df.columns:
+        memory_bound_pct = df['MemoryBound'].mean() * 100
+        if memory_bound_pct > 50:
+            findings.append({
+                'source': 'Memory-Bound Execution',
+                'severity': 'HIGH' if memory_bound_pct > 80 else 'MEDIUM',
+                'metric': f'{memory_bound_pct:.0f}% of intervals memory-bound',
+                'recommendation': 'Focus on cache optimization and data locality'
+            })
+        print(f"  Memory-bound intervals: {memory_bound_pct:.0f}%")
+
+    if 'L1DMissRate' in df.columns:
+        mean_l1d_miss = df['L1DMissRate'].mean()
+        print(f"  L1D cache miss rate: {mean_l1d_miss:.2%}")
+
+    # Rank findings by severity
+    severity_order = {'HIGH': 0, 'MEDIUM': 1, 'LOW': 2}
+    findings.sort(key=lambda x: severity_order.get(x['severity'], 2))
+
+    return findings
+
+
+def print_findings(findings):
+    """Print ranked findings and recommendations (Phase 20: ANLYS-04)."""
+    print("\n" + "-" * 70)
+    print("Top Imbalance Sources (Ranked)")
+    print("-" * 70)
+
+    if not findings:
+        print("  No significant imbalance sources detected.")
+        return
+
+    for i, f in enumerate(findings[:3], 1):
+        print(f"\n  {i}. [{f['severity']}] {f['source']}")
+        print(f"     Metric: {f['metric']}")
+        print(f"     Recommendation: {f['recommendation']}")
+
+
+def generate_report(df, findings, output_path):
+    """Generate markdown analysis report (Phase 20: ANLYS-04)."""
+    import datetime
+
+    with open(output_path, 'w') as f:
+        f.write("# ABYSS Load Balance Analysis Report\n\n")
+        f.write(f"**Generated:** {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
+
+        # Summary section
+        f.write("## Summary\n\n")
+        if 'WholeRoutine_ns' in df.columns:
+            total_time = df['WholeRoutine_ns'].sum() * 1e-9
+            f.write(f"- Total wall-clock time: {total_time:.2f} seconds\n")
+        f.write(f"- Output intervals analyzed: {len(df)}\n")
+        if 'sim_time_myr' in df.columns:
+            f.write(f"- Simulation time range: {df['sim_time_myr'].min():.6f} - {df['sim_time_myr'].max():.6f} Myr\n")
+        f.write("\n")
+
+        # Findings section
+        f.write("## Top Imbalance Sources\n\n")
+        if not findings:
+            f.write("No significant imbalance sources detected.\n\n")
+        else:
+            for i, finding in enumerate(findings[:3], 1):
+                f.write(f"### {i}. {finding['source']} ({finding['severity']})\n\n")
+                f.write(f"**Metric:** {finding['metric']}\n\n")
+                f.write(f"**Recommendation:** {finding['recommendation']}\n\n")
+
+        # v2.3 Recommendations section
+        f.write("## Recommended Optimization Approach for v2.3\n\n")
+        if findings:
+            top = findings[0]
+            if 'Neighbor' in top['source'] or 'Worker Load' in top['source']:
+                f.write("Based on the analysis, the primary imbalance source is **work distribution**.\n\n")
+                f.write("Recommended approach:\n")
+                f.write("1. Implement work stealing between workers\n")
+                f.write("2. Consider neighbor-count-aware task scheduling\n")
+                f.write("3. Profile specific heavy particles for targeted optimization\n")
+            elif 'Queue' in top['source'] or 'Starvation' in top['source']:
+                f.write("Based on the analysis, the primary bottleneck is **queue dispatch overhead**.\n\n")
+                f.write("Recommended approach:\n")
+                f.write("1. Implement MPI message batching\n")
+                f.write("2. Consider larger work chunks per assignment\n")
+                f.write("3. Evaluate OpenMP hybrid parallelism\n")
+            elif 'Memory' in top['source']:
+                f.write("Based on the analysis, execution is **memory-bound**.\n\n")
+                f.write("Recommended approach:\n")
+                f.write("1. Improve data locality in force calculation\n")
+                f.write("2. Consider cache-blocking techniques\n")
+                f.write("3. Evaluate GPU offload for irregular forces\n")
+            else:
+                f.write("Based on the analysis, consider the specific recommendations above.\n")
+        else:
+            f.write("Performance appears balanced. Consider:\n")
+            f.write("- Running longer simulations for more data\n")
+            f.write("- Profiling at finer granularity\n")
+
+        f.write("\n---\n")
+        f.write("*Report generated by ABYSS analyze_profiling.py*\n")
+
+    print(f"\nReport written to: {output_path}")
+
+
 def analyze_json(data):
     """Analyze a single JSON profiling snapshot."""
     print("\n" + "=" * 70)
@@ -202,6 +381,7 @@ def main():
     parser.add_argument('input', nargs='+', help='Profiling CSV file, JSON file(s), or output directory')
     parser.add_argument('--plot', action='store_true', help='Generate plots (requires matplotlib)')
     parser.add_argument('--output', '-o', help='Output file for plot')
+    parser.add_argument('--report', '-r', help='Generate markdown report to specified path (Phase 20)')
     args = parser.parse_args()
 
     for input_path in args.input:
@@ -213,7 +393,12 @@ def main():
             if csv_path.exists():
                 df = load_csv(csv_path)
                 if df is not None:
-                    analyze_csv(df)
+                    results = analyze_csv(df)
+                    # Phase 20: Load balance analysis
+                    findings = analyze_load_balance(df)
+                    print_findings(findings)
+                    if args.report:
+                        generate_report(df, findings, args.report)
                     if args.plot:
                         plot_path = args.output or str(path / 'profiling_plot.png')
                         plot_timeline(df, plot_path)
@@ -230,7 +415,12 @@ def main():
         elif path.suffix == '.csv':
             df = load_csv(path)
             if df is not None:
-                analyze_csv(df)
+                results = analyze_csv(df)
+                # Phase 20: Load balance analysis
+                findings = analyze_load_balance(df)
+                print_findings(findings)
+                if args.report:
+                    generate_report(df, findings, args.report)
                 if args.plot:
                     plot_path = args.output or str(path.with_suffix('.png'))
                     plot_timeline(df, plot_path)
