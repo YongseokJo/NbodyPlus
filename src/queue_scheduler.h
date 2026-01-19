@@ -47,6 +47,8 @@ public:
             PROFILE_STOP(TimerID::QueueAssign);
             return;
         }
+        // Phase 16: Sample queue depth before assignment
+        PROFILE_QUEUE_DEPTH(static_cast<int>(_queue_list.size()));
         for (auto worker = _FreeWorkers.begin(); worker != _FreeWorkers.end();)
         {
             if (_queue_list.size() > 0 && (*worker)->NumberOfQueues == 0)
@@ -106,6 +108,8 @@ public:
             PROFILE_STOP(TimerID::QueueAssign);
             return;
         }
+        // Phase 16: Sample queue depth before assignment
+        PROFILE_QUEUE_DEPTH(static_cast<int>(_queue_list_.size()));
         for (auto worker = _FreeWorkers.begin(); worker != _FreeWorkers.end();)
         {
             if (_queue_list_.size() > 0 && (*worker)->NumberOfQueues == 0)
@@ -139,6 +143,12 @@ public:
             PROFILE_START(TimerID::QueueWait);
             MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &_status);
             PROFILE_STOP(TimerID::QueueWait);
+            // Phase 16: Detect starvation (worker waited while queue non-empty)
+            // This happens when waitQueue is called but queue still has items
+            // indicating root couldn't dispatch fast enough
+            if (_queue_list.size() > 0 || _queue_list_.size() > 0) {
+                PROFILE_STARVATION_EVENT();
+            }
             _completed_queues++;
             // Retrieve the rank of the source processor
             _rank = _status.MPI_SOURCE;
@@ -176,6 +186,9 @@ public:
             _completed_cm_queues++;
         worker->callback();
         _completed_queues++;
+        // Phase 16: Sample queue depth at task completion
+        int remaining = static_cast<int>(_queue_list.size() + _queue_list_.size());
+        PROFILE_QUEUE_DEPTH(remaining);
         if (worker->NumberOfQueues > 0)
             WorkersToGo.insert(worker);
         else

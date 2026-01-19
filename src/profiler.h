@@ -336,6 +336,46 @@ private:
     double sum_x2_ = 0.0, sum_y2_ = 0.0;
 };
 
+// Queue depth tracker for monitoring pending tasks (Phase 16)
+// Samples queue depth to identify dispatch bottlenecks
+class QueueDepthTracker {
+public:
+    void sample(int depth) {
+        sample_count_++;
+        depth_stats_.update(depth);
+        if (depth == 0) {
+            empty_count_++;
+        }
+        // Track if queue was non-empty when sampled (for starvation correlation)
+        last_depth_ = depth;
+    }
+
+    void reset() {
+        sample_count_ = 0;
+        empty_count_ = 0;
+        depth_stats_.reset();
+        last_depth_ = 0;
+    }
+
+    // Accessors
+    long long sampleCount() const { return sample_count_; }
+    long long emptyCount() const { return empty_count_; }
+    int lastDepth() const { return last_depth_; }
+    double meanDepth() const { return depth_stats_.mean(); }
+    double stddevDepth() const { return depth_stats_.stddev(); }
+    long long minDepth() const { return depth_stats_.min_val(); }
+    long long maxDepth() const { return depth_stats_.max_val(); }
+    double emptyRatio() const {
+        return sample_count_ > 0 ? static_cast<double>(empty_count_) / sample_count_ : 0.0;
+    }
+
+private:
+    long long sample_count_ = 0;
+    long long empty_count_ = 0;
+    int last_depth_ = 0;
+    OnlineStats depth_stats_;
+};
+
 // Histogram for neighbor count distribution (Phase 15)
 // Uses linear buckets for small counts, exponential for large
 class NeighborHistogram {
@@ -534,6 +574,12 @@ public:
         interval_neighbor_time_correlation_.reset();
         interval_outlier_count_ = 0;
         interval_neighbor_histogram_.reset();
+        // Reset queue dispatch profiling stats (Phase 16)
+        interval_queue_depth_tracker_.reset();
+        interval_starvation_events_ = 0;
+        interval_dispatch_latency_ns_ = 0;
+        interval_dispatch_count_ = 0;
+        interval_dispatch_latency_stats_.reset();
     }
 
     // Reset all statistics
@@ -685,6 +731,35 @@ public:
                 interval_neighbor_histogram_.print(os);
             }
         }
+
+        // Phase 16: Queue dispatch statistics
+        const auto& qd = interval_queue_depth_tracker_;
+        if (qd.sampleCount() > 0) {
+            os << "\n--- Queue Dispatch Statistics ---\n";
+            os << "Queue depth: min=" << qd.minDepth()
+               << ", max=" << qd.maxDepth()
+               << ", mean=" << std::fixed << std::setprecision(1) << qd.meanDepth()
+               << ", empty=" << std::setprecision(1) << (qd.emptyRatio() * 100) << "%\n";
+            os << "Starvation events: " << interval_starvation_events_ << "\n";
+            os << "Dispatch count: " << interval_dispatch_count_ << "\n";
+            if (interval_dispatch_count_ > 0) {
+                os << "Dispatch latency: mean=" << std::fixed << std::setprecision(0)
+                   << getIntervalAvgDispatchLatencyNs() / 1000 << "us"
+                   << ", stddev=" << std::setprecision(0)
+                   << interval_dispatch_latency_stats_.stddev() / 1000 << "us\n";
+            }
+            os << "Root time breakdown: assign=" << std::fixed << std::setprecision(1)
+               << (getIntervalAssignTimeRatio() * 100) << "%"
+               << ", wait=" << std::setprecision(1)
+               << (getIntervalWaitTimeRatio() * 100) << "%\n";
+            if (isDispatchBottleneck()) {
+                os << "WARNING: Dispatch appears to be bottleneck (assign > 50%)\n";
+            }
+            if (interval_starvation_events_ > 0) {
+                os << "WARNING: " << interval_starvation_events_
+                   << " starvation events (workers waited with non-empty queue)\n";
+            }
+        }
     }
 
     // Write detailed stats to CSV file for analysis
@@ -704,6 +779,12 @@ public:
             file << ",NeighborCount_count,NeighborCount_min,NeighborCount_max"
                  << ",NeighborCount_mean,NeighborCount_stddev"
                  << ",NeighborCount_outliers,NeighborTime_correlation";
+            // Phase 16: Queue dispatch profiling columns
+            file << ",QueueDepth_samples,QueueDepth_min,QueueDepth_max"
+                 << ",QueueDepth_mean,QueueDepth_empty_ratio"
+                 << ",Starvation_events,Dispatch_count"
+                 << ",DispatchLatency_mean_ns,DispatchLatency_stddev_ns"
+                 << ",AssignTime_ratio,WaitTime_ratio";
             file << "\n";
         }
 
@@ -721,6 +802,19 @@ public:
              << "," << std::fixed << std::setprecision(2) << ns.stddev()
              << "," << interval_outlier_count_
              << "," << std::fixed << std::setprecision(4) << interval_neighbor_time_correlation_.correlation();
+        // Phase 16: Queue dispatch profiling data
+        const auto& qd = interval_queue_depth_tracker_;
+        file << "," << qd.sampleCount()
+             << "," << qd.minDepth()
+             << "," << qd.maxDepth()
+             << "," << std::fixed << std::setprecision(2) << qd.meanDepth()
+             << "," << std::fixed << std::setprecision(4) << qd.emptyRatio()
+             << "," << interval_starvation_events_
+             << "," << interval_dispatch_count_
+             << "," << std::fixed << std::setprecision(0) << getIntervalAvgDispatchLatencyNs()
+             << "," << std::fixed << std::setprecision(0) << interval_dispatch_latency_stats_.stddev()
+             << "," << std::fixed << std::setprecision(4) << getIntervalAssignTimeRatio()
+             << "," << std::fixed << std::setprecision(4) << getIntervalWaitTimeRatio();
         file << "\n";
     }
 
@@ -763,6 +857,23 @@ public:
         file << "    \"time_correlation\": " << std::fixed << std::setprecision(4)
              << interval_neighbor_time_correlation_.correlation() << ",\n";
         file << "    \"histogram\": " << interval_neighbor_histogram_.toJSON() << "\n";
+        file << "  },\n";  // Close neighbor_profiling
+
+        // Phase 16: Queue dispatch profiling
+        file << "  \"queue_dispatch\": {\n";
+        const auto& qd = interval_queue_depth_tracker_;
+        file << "    \"depth_samples\": " << qd.sampleCount() << ",\n";
+        file << "    \"depth_min\": " << qd.minDepth() << ",\n";
+        file << "    \"depth_max\": " << qd.maxDepth() << ",\n";
+        file << "    \"depth_mean\": " << std::fixed << std::setprecision(2) << qd.meanDepth() << ",\n";
+        file << "    \"depth_empty_ratio\": " << std::fixed << std::setprecision(4) << qd.emptyRatio() << ",\n";
+        file << "    \"starvation_events\": " << interval_starvation_events_ << ",\n";
+        file << "    \"dispatch_count\": " << interval_dispatch_count_ << ",\n";
+        file << "    \"latency_mean_ns\": " << std::fixed << std::setprecision(0) << getIntervalAvgDispatchLatencyNs() << ",\n";
+        file << "    \"latency_stddev_ns\": " << std::fixed << std::setprecision(0) << interval_dispatch_latency_stats_.stddev() << ",\n";
+        file << "    \"assign_time_ratio\": " << std::fixed << std::setprecision(4) << getIntervalAssignTimeRatio() << ",\n";
+        file << "    \"wait_time_ratio\": " << std::fixed << std::setprecision(4) << getIntervalWaitTimeRatio() << ",\n";
+        file << "    \"is_dispatch_bottleneck\": " << (isDispatchBottleneck() ? "true" : "false") << "\n";
         file << "  }\n";
         file << "}\n";
     }
@@ -802,6 +913,61 @@ public:
     }
     long long getOutlierCount() const { return outlier_count_; }
     long long getIntervalOutlierCount() const { return interval_outlier_count_; }
+
+    // Queue dispatch profiling (Phase 16)
+    void sampleQueueDepth(int depth) {
+        queue_depth_tracker_.sample(depth);
+        interval_queue_depth_tracker_.sample(depth);
+    }
+
+    void recordStarvationEvent() {
+        starvation_events_++;
+        interval_starvation_events_++;
+    }
+
+    void recordDispatchLatency(long long latency_ns) {
+        total_dispatch_latency_ns_ += latency_ns;
+        interval_dispatch_latency_ns_ += latency_ns;
+        dispatch_count_++;
+        interval_dispatch_count_++;
+        // Phase 16: Track latency distribution
+        dispatch_latency_stats_.update(latency_ns);
+        interval_dispatch_latency_stats_.update(latency_ns);
+    }
+
+    // Queue dispatch accessors (Phase 16)
+    const QueueDepthTracker& getQueueDepthTracker() const { return queue_depth_tracker_; }
+    const QueueDepthTracker& getIntervalQueueDepthTracker() const { return interval_queue_depth_tracker_; }
+    long long getStarvationEvents() const { return starvation_events_; }
+    long long getIntervalStarvationEvents() const { return interval_starvation_events_; }
+    double getIntervalAvgDispatchLatencyNs() const {
+        return interval_dispatch_count_ > 0 ?
+               static_cast<double>(interval_dispatch_latency_ns_) / interval_dispatch_count_ : 0.0;
+    }
+
+    // Dispatch latency statistics (Phase 16)
+    const OnlineStats& getDispatchLatencyStats() const { return dispatch_latency_stats_; }
+    const OnlineStats& getIntervalDispatchLatencyStats() const { return interval_dispatch_latency_stats_; }
+    double getDispatchLatencyStddev() const { return dispatch_latency_stats_.stddev(); }
+    double getIntervalDispatchLatencyStddev() const { return interval_dispatch_latency_stats_.stddev(); }
+
+    // Root-side dispatch breakdown (Phase 16)
+    // Uses existing QueueAssign and QueueWait timers
+    double getIntervalAssignTimeRatio() const {
+        const auto& assign = stats_[static_cast<int>(TimerID::QueueAssign)];
+        const auto& wait = stats_[static_cast<int>(TimerID::QueueWait)];
+        double total = assign.interval_total_ns + wait.interval_total_ns;
+        return total > 0 ? static_cast<double>(assign.interval_total_ns) / total : 0.0;
+    }
+
+    double getIntervalWaitTimeRatio() const {
+        return 1.0 - getIntervalAssignTimeRatio();
+    }
+
+    bool isDispatchBottleneck() const {
+        // If assign time > 50% of (assign + wait), dispatch is bottleneck
+        return getIntervalAssignTimeRatio() > 0.5;
+    }
 
     // Enable histogram for a specific timer (Phase 8)
     void enableHistogram(TimerID id) {
@@ -972,6 +1138,23 @@ public:
             os << "Neighbor-Time correlation: " << std::fixed << std::setprecision(3)
                << interval_neighbor_time_correlation_.correlation() << "\n";
         }
+
+        // Phase 16: Queue dispatch statistics (local, not aggregated)
+        const auto& qd = interval_queue_depth_tracker_;
+        if (qd.sampleCount() > 0) {
+            os << "\n--- Queue Dispatch Statistics (Root rank) ---\n";
+            os << "Queue depth: min=" << qd.minDepth()
+               << ", max=" << qd.maxDepth()
+               << ", mean=" << std::fixed << std::setprecision(1) << qd.meanDepth() << "\n";
+            os << "Starvation events: " << interval_starvation_events_ << "\n";
+            os << "Root time breakdown: assign=" << std::fixed << std::setprecision(1)
+               << (getIntervalAssignTimeRatio() * 100) << "%"
+               << ", wait=" << std::setprecision(1)
+               << (getIntervalWaitTimeRatio() * 100) << "%\n";
+            if (isDispatchBottleneck()) {
+                os << "WARNING: Dispatch appears to be bottleneck\n";
+            }
+        }
     }
 #endif
 
@@ -1050,6 +1233,19 @@ private:
     // Neighbor histogram (Phase 15)
     NeighborHistogram neighbor_histogram_;
     NeighborHistogram interval_neighbor_histogram_;
+
+    // Queue dispatch profiling (Phase 16)
+    QueueDepthTracker queue_depth_tracker_;
+    QueueDepthTracker interval_queue_depth_tracker_;
+    long long starvation_events_ = 0;
+    long long interval_starvation_events_ = 0;
+    long long total_dispatch_latency_ns_ = 0;
+    long long interval_dispatch_latency_ns_ = 0;
+    long long dispatch_count_ = 0;
+    long long interval_dispatch_count_ = 0;
+    // Dispatch latency statistics (Phase 16)
+    OnlineStats dispatch_latency_stats_;
+    OnlineStats interval_dispatch_latency_stats_;
 };
 
 // RAII-style scoped timer for automatic start/stop
@@ -1082,6 +1278,9 @@ private:
 #define PROFILE_WORK(timer_id, units) Profiler::instance().recordWork(timer_id, units)
 #define PROFILE_NEIGHBOR(count) Profiler::instance().recordNeighborCount(count)
 #define PROFILE_NEIGHBOR_TIME(count, time_ns) Profiler::instance().recordNeighborWithTime(count, time_ns)
+#define PROFILE_QUEUE_DEPTH(depth) Profiler::instance().sampleQueueDepth(depth)
+#define PROFILE_STARVATION_EVENT() Profiler::instance().recordStarvationEvent()
+#define PROFILE_DISPATCH_LATENCY(latency_ns) Profiler::instance().recordDispatchLatency(latency_ns)
 
 #else
 
@@ -1093,6 +1292,9 @@ private:
 #define PROFILE_WORK(timer_id, units) ((void)0)
 #define PROFILE_NEIGHBOR(count) ((void)0)
 #define PROFILE_NEIGHBOR_TIME(count, time_ns) ((void)0)
+#define PROFILE_QUEUE_DEPTH(depth) ((void)0)
+#define PROFILE_STARVATION_EVENT() ((void)0)
+#define PROFILE_DISPATCH_LATENCY(latency_ns) ((void)0)
 
 #endif
 
