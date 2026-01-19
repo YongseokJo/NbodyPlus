@@ -336,6 +336,90 @@ private:
     double sum_x2_ = 0.0, sum_y2_ = 0.0;
 };
 
+// Histogram for neighbor count distribution (Phase 15)
+// Uses linear buckets for small counts, exponential for large
+class NeighborHistogram {
+public:
+    static constexpr int NUM_BUCKETS = 15;
+    // Buckets: 0, 1-5, 6-10, 11-20, 21-50, 51-100, 101-200, 201-500,
+    //          501-1000, 1001-2000, 2001-5000, 5001-10000, 10001-20000,
+    //          20001-50000, 50001+
+
+    void record(long long count) {
+        int idx = getBucketIndex(count);
+        buckets_[idx]++;
+        total_count_++;
+    }
+
+    void reset() {
+        for (int i = 0; i < NUM_BUCKETS; ++i) buckets_[i] = 0;
+        total_count_ = 0;
+    }
+
+    void print(std::ostream& os) const {
+        static const char* labels[] = {
+            "0", "1-5", "6-10", "11-20", "21-50", "51-100", "101-200",
+            "201-500", "501-1K", "1K-2K", "2K-5K", "5K-10K", "10K-20K",
+            "20K-50K", "50K+"
+        };
+        os << "Neighbor count distribution:\n";
+        for (int i = 0; i < NUM_BUCKETS; ++i) {
+            if (buckets_[i] > 0) {
+                double pct = 100.0 * buckets_[i] / total_count_;
+                os << "  " << std::left << std::setw(10) << labels[i]
+                   << std::right << std::setw(8) << buckets_[i]
+                   << " (" << std::fixed << std::setprecision(1) << std::setw(5) << pct << "%)\n";
+            }
+        }
+    }
+
+    std::string toJSON() const {
+        std::ostringstream oss;
+        oss << "{\"buckets\":[";
+        for (int i = 0; i < NUM_BUCKETS; ++i) {
+            if (i > 0) oss << ",";
+            oss << buckets_[i];
+        }
+        oss << "],\"total\":" << total_count_ << "}";
+        return oss.str();
+    }
+
+    long long getCount() const { return total_count_; }
+
+    // Get bucket boundaries for analysis
+    static std::pair<long long, long long> getBucketRange(int idx) {
+        static const long long bounds[] = {
+            0, 1, 6, 11, 21, 51, 101, 201, 501, 1001, 2001, 5001, 10001, 20001, 50001
+        };
+        static const long long upper[] = {
+            0, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 50000, LLONG_MAX
+        };
+        return {bounds[idx], upper[idx]};
+    }
+
+private:
+    long long buckets_[NUM_BUCKETS] = {0};
+    long long total_count_ = 0;
+
+    int getBucketIndex(long long count) const {
+        if (count == 0) return 0;
+        if (count <= 5) return 1;
+        if (count <= 10) return 2;
+        if (count <= 20) return 3;
+        if (count <= 50) return 4;
+        if (count <= 100) return 5;
+        if (count <= 200) return 6;
+        if (count <= 500) return 7;
+        if (count <= 1000) return 8;
+        if (count <= 2000) return 9;
+        if (count <= 5000) return 10;
+        if (count <= 10000) return 11;
+        if (count <= 20000) return 12;
+        if (count <= 50000) return 13;
+        return 14;  // 50001+
+    }
+};
+
 // Statistics for a single timer
 struct TimerStats {
     long long total_ns = 0;        // Total time in nanoseconds
@@ -449,6 +533,7 @@ public:
         interval_neighbor_count_stats_.reset();
         interval_neighbor_time_correlation_.reset();
         interval_outlier_count_ = 0;
+        interval_neighbor_histogram_.reset();
     }
 
     // Reset all statistics
@@ -583,6 +668,23 @@ public:
             os << "Note: " << std::fixed << std::setprecision(1) << unaccounted_pct
                << "% of time unaccounted (overhead, uninstrumented code)\n";
         }
+
+        // Phase 15: Neighbor count statistics
+        const auto& ns = interval_neighbor_count_stats_;
+        if (ns.count() > 0) {
+            os << "\n--- Neighbor Count Statistics ---\n";
+            os << "Particles processed: " << ns.count() << "\n";
+            os << "Neighbor count: min=" << ns.min_val()
+               << ", max=" << ns.max_val()
+               << ", mean=" << std::fixed << std::setprecision(1) << ns.mean()
+               << ", stddev=" << std::setprecision(1) << ns.stddev() << "\n";
+            os << "Outliers (>2σ): " << interval_outlier_count_ << "\n";
+            os << "Neighbor-Time correlation: " << std::fixed << std::setprecision(3)
+               << interval_neighbor_time_correlation_.correlation() << "\n";
+            if (interval_neighbor_histogram_.getCount() > 0) {
+                interval_neighbor_histogram_.print(os);
+            }
+        }
     }
 
     // Write detailed stats to CSV file for analysis
@@ -598,6 +700,10 @@ public:
                 file << "," << getTimerName(static_cast<TimerID>(i)) << "_ns"
                      << "," << getTimerName(static_cast<TimerID>(i)) << "_count";
             }
+            // Phase 15: Neighbor profiling columns
+            file << ",NeighborCount_count,NeighborCount_min,NeighborCount_max"
+                 << ",NeighborCount_mean,NeighborCount_stddev"
+                 << ",NeighborCount_outliers,NeighborTime_correlation";
             file << "\n";
         }
 
@@ -606,6 +712,15 @@ public:
             file << "," << stats_[i].interval_total_ns
                  << "," << stats_[i].interval_count;
         }
+        // Phase 15: Neighbor profiling data
+        const auto& ns = interval_neighbor_count_stats_;
+        file << "," << ns.count()
+             << "," << ns.min_val()
+             << "," << ns.max_val()
+             << "," << std::fixed << std::setprecision(2) << ns.mean()
+             << "," << std::fixed << std::setprecision(2) << ns.stddev()
+             << "," << interval_outlier_count_
+             << "," << std::fixed << std::setprecision(4) << interval_neighbor_time_correlation_.correlation();
         file << "\n";
     }
 
@@ -634,6 +749,20 @@ public:
             file << "\n";
         }
 
+        file << "  },\n";  // Close timers object
+
+        // Phase 15: Neighbor profiling
+        file << "  \"neighbor_profiling\": {\n";
+        const auto& ns = interval_neighbor_count_stats_;
+        file << "    \"count\": " << ns.count() << ",\n";
+        file << "    \"min\": " << ns.min_val() << ",\n";
+        file << "    \"max\": " << ns.max_val() << ",\n";
+        file << "    \"mean\": " << std::fixed << std::setprecision(2) << ns.mean() << ",\n";
+        file << "    \"stddev\": " << std::fixed << std::setprecision(2) << ns.stddev() << ",\n";
+        file << "    \"outlier_count\": " << interval_outlier_count_ << ",\n";
+        file << "    \"time_correlation\": " << std::fixed << std::setprecision(4)
+             << interval_neighbor_time_correlation_.correlation() << ",\n";
+        file << "    \"histogram\": " << interval_neighbor_histogram_.toJSON() << "\n";
         file << "  }\n";
         file << "}\n";
     }
@@ -647,6 +776,8 @@ public:
     void recordNeighborCount(long long count) {
         neighbor_count_stats_.update(count);
         interval_neighbor_count_stats_.update(count);
+        neighbor_histogram_.record(count);
+        interval_neighbor_histogram_.record(count);
     }
 
     void recordNeighborWithTime(long long neighbor_count, long long compute_time_ns) {
@@ -827,6 +958,20 @@ public:
             os << "Neighbor pairs evaluated: " << std::scientific << std::setprecision(2)
                << pairs.throughput << " pairs/s\n";
         }
+
+        // Phase 15: Neighbor count statistics (local, not aggregated)
+        const auto& ns = interval_neighbor_count_stats_;
+        if (ns.count() > 0) {
+            os << "\n--- Neighbor Count Statistics (Root rank) ---\n";
+            os << "Particles processed: " << ns.count() << "\n";
+            os << "Neighbor count: min=" << ns.min_val()
+               << ", max=" << ns.max_val()
+               << ", mean=" << std::fixed << std::setprecision(1) << ns.mean()
+               << ", stddev=" << std::setprecision(1) << ns.stddev() << "\n";
+            os << "Outliers (>2σ): " << interval_outlier_count_ << "\n";
+            os << "Neighbor-Time correlation: " << std::fixed << std::setprecision(3)
+               << interval_neighbor_time_correlation_.correlation() << "\n";
+        }
     }
 #endif
 
@@ -902,6 +1047,9 @@ private:
     CorrelationTracker interval_neighbor_time_correlation_;
     long long outlier_count_ = 0;
     long long interval_outlier_count_ = 0;
+    // Neighbor histogram (Phase 15)
+    NeighborHistogram neighbor_histogram_;
+    NeighborHistogram interval_neighbor_histogram_;
 };
 
 // RAII-style scoped timer for automatic start/stop
