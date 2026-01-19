@@ -228,6 +228,114 @@ private:
     }
 };
 
+// Online statistics calculator using Welford's algorithm (Phase 15)
+// Computes mean, variance, min, max in single pass without storing values
+class OnlineStats {
+public:
+    void update(long long value) {
+        count_++;
+        double delta = value - mean_;
+        mean_ += delta / count_;
+        M2_ += delta * (value - mean_);
+        min_val_ = std::min(min_val_, value);
+        max_val_ = std::max(max_val_, value);
+    }
+
+    void reset() {
+        count_ = 0;
+        mean_ = 0.0;
+        M2_ = 0.0;
+        min_val_ = LLONG_MAX;
+        max_val_ = 0;
+    }
+
+    // Accessors
+    long long count() const { return count_; }
+    double mean() const { return mean_; }
+    double variance() const { return count_ > 1 ? M2_ / (count_ - 1) : 0.0; }
+    double stddev() const { return std::sqrt(variance()); }
+    long long min_val() const { return count_ > 0 ? min_val_ : 0; }
+    long long max_val() const { return max_val_; }
+
+    // Outlier detection (> mean + n*stddev)
+    bool isOutlier(long long value, double n_sigma = 2.0) const {
+        if (count_ < 2) return false;
+        return value > mean_ + n_sigma * stddev();
+    }
+
+    // For aggregation across MPI ranks
+    void merge(const OnlineStats& other) {
+        if (other.count_ == 0) return;
+        if (count_ == 0) {
+            *this = other;
+            return;
+        }
+        // Combined statistics using parallel algorithm
+        long long combined_count = count_ + other.count_;
+        double delta = other.mean_ - mean_;
+        double combined_mean = mean_ + delta * other.count_ / combined_count;
+        double combined_M2 = M2_ + other.M2_ + delta * delta * count_ * other.count_ / combined_count;
+        count_ = combined_count;
+        mean_ = combined_mean;
+        M2_ = combined_M2;
+        min_val_ = std::min(min_val_, other.min_val_);
+        max_val_ = std::max(max_val_, other.max_val_);
+    }
+
+private:
+    long long count_ = 0;
+    double mean_ = 0.0;
+    double M2_ = 0.0;  // Sum of squared differences from mean
+    long long min_val_ = LLONG_MAX;
+    long long max_val_ = 0;
+};
+
+// Online correlation tracker using incremental algorithm (Phase 15)
+// Computes Pearson correlation coefficient between two variables
+class CorrelationTracker {
+public:
+    void update(double x, double y) {
+        n_++;
+        sum_x_ += x;
+        sum_y_ += y;
+        sum_xy_ += x * y;
+        sum_x2_ += x * x;
+        sum_y2_ += y * y;
+    }
+
+    void reset() {
+        n_ = 0;
+        sum_x_ = sum_y_ = sum_xy_ = sum_x2_ = sum_y2_ = 0.0;
+    }
+
+    double correlation() const {
+        if (n_ < 2) return 0.0;
+        double num = n_ * sum_xy_ - sum_x_ * sum_y_;
+        double den_x = n_ * sum_x2_ - sum_x_ * sum_x_;
+        double den_y = n_ * sum_y2_ - sum_y_ * sum_y_;
+        double den = std::sqrt(den_x * den_y);
+        return den > 0 ? num / den : 0.0;
+    }
+
+    long long count() const { return n_; }
+
+    // For aggregation across MPI ranks
+    void merge(const CorrelationTracker& other) {
+        n_ += other.n_;
+        sum_x_ += other.sum_x_;
+        sum_y_ += other.sum_y_;
+        sum_xy_ += other.sum_xy_;
+        sum_x2_ += other.sum_x2_;
+        sum_y2_ += other.sum_y2_;
+    }
+
+private:
+    long long n_ = 0;
+    double sum_x_ = 0.0, sum_y_ = 0.0;
+    double sum_xy_ = 0.0;
+    double sum_x2_ = 0.0, sum_y2_ = 0.0;
+};
+
 // Statistics for a single timer
 struct TimerStats {
     long long total_ns = 0;        // Total time in nanoseconds
@@ -337,6 +445,10 @@ public:
         for (int i = 0; i < static_cast<int>(TimerID::NUM_TIMERS); ++i) {
             stats_[i].resetInterval();
         }
+        // Reset neighbor profiling stats (Phase 15)
+        interval_neighbor_count_stats_.reset();
+        interval_neighbor_time_correlation_.reset();
+        interval_outlier_count_ = 0;
     }
 
     // Reset all statistics
@@ -530,6 +642,35 @@ public:
     void recordWork(TimerID id, long long units) {
         stats_[static_cast<int>(id)].recordWork(units);
     }
+
+    // Neighbor count profiling (Phase 15)
+    void recordNeighborCount(long long count) {
+        neighbor_count_stats_.update(count);
+        interval_neighbor_count_stats_.update(count);
+    }
+
+    void recordNeighborWithTime(long long neighbor_count, long long compute_time_ns) {
+        recordNeighborCount(neighbor_count);
+        neighbor_time_correlation_.update(static_cast<double>(neighbor_count),
+                                          static_cast<double>(compute_time_ns));
+        interval_neighbor_time_correlation_.update(static_cast<double>(neighbor_count),
+                                                   static_cast<double>(compute_time_ns));
+        // Check for outlier
+        if (interval_neighbor_count_stats_.count() > 10 &&
+            interval_neighbor_count_stats_.isOutlier(neighbor_count, 2.0)) {
+            outlier_count_++;
+            interval_outlier_count_++;
+        }
+    }
+
+    const OnlineStats& getNeighborStats() const { return neighbor_count_stats_; }
+    const OnlineStats& getIntervalNeighborStats() const { return interval_neighbor_count_stats_; }
+    double getNeighborTimeCorrelation() const { return neighbor_time_correlation_.correlation(); }
+    double getIntervalNeighborTimeCorrelation() const {
+        return interval_neighbor_time_correlation_.correlation();
+    }
+    long long getOutlierCount() const { return outlier_count_; }
+    long long getIntervalOutlierCount() const { return interval_outlier_count_; }
 
     // Enable histogram for a specific timer (Phase 8)
     void enableHistogram(TimerID id) {
@@ -753,6 +894,14 @@ private:
     int num_ranks_ = 1;
     int my_rank_ = 0;
 #endif
+
+    // Neighbor profiling (Phase 15)
+    OnlineStats neighbor_count_stats_;
+    OnlineStats interval_neighbor_count_stats_;
+    CorrelationTracker neighbor_time_correlation_;
+    CorrelationTracker interval_neighbor_time_correlation_;
+    long long outlier_count_ = 0;
+    long long interval_outlier_count_ = 0;
 };
 
 // RAII-style scoped timer for automatic start/stop
@@ -783,6 +932,8 @@ private:
 #define PROFILE_COUNT(timer_id) Profiler::instance().incrementCount(timer_id)
 #define PROFILE_COUNT_N(timer_id, n) Profiler::instance().incrementCount(timer_id, n)
 #define PROFILE_WORK(timer_id, units) Profiler::instance().recordWork(timer_id, units)
+#define PROFILE_NEIGHBOR(count) Profiler::instance().recordNeighborCount(count)
+#define PROFILE_NEIGHBOR_TIME(count, time_ns) Profiler::instance().recordNeighborWithTime(count, time_ns)
 
 #else
 
@@ -792,6 +943,8 @@ private:
 #define PROFILE_COUNT(timer_id) ((void)0)
 #define PROFILE_COUNT_N(timer_id, n) ((void)0)
 #define PROFILE_WORK(timer_id, units) ((void)0)
+#define PROFILE_NEIGHBOR(count) ((void)0)
+#define PROFILE_NEIGHBOR_TIME(count, time_ns) ((void)0)
 
 #endif
 
