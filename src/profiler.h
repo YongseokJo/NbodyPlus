@@ -376,6 +376,165 @@ private:
     OnlineStats depth_stats_;
 };
 
+// Heavy particle info for tracking outliers (Phase 17)
+struct HeavyParticleInfo {
+    int particle_id;
+    int worker_rank;
+    long long compute_time_ns;
+    long long neighbor_count;
+};
+
+// Worker distribution tracker for load balance analysis (Phase 17)
+// Tracks per-worker particle counts and compute times
+class WorkerDistributionTracker {
+public:
+    void initialize(int num_workers) {
+        num_workers_ = num_workers;
+        particles_per_worker_.resize(num_workers + 1, 0);
+        compute_time_per_worker_ns_.resize(num_workers + 1, 0);
+        heavy_particles_.reserve(100);  // Cap heavy particles per interval
+    }
+
+    void recordAssignment(int worker_rank) {
+        if (worker_rank > 0 && worker_rank <= num_workers_) {
+            particles_per_worker_[worker_rank]++;
+        }
+    }
+
+    void recordComputeTime(int worker_rank, long long compute_ns) {
+        if (worker_rank > 0 && worker_rank <= num_workers_) {
+            compute_time_per_worker_ns_[worker_rank] += compute_ns;
+            worker_time_stats_.update(compute_ns);
+        }
+    }
+
+    void recordHeavyParticle(int particle_id, int worker_rank,
+                             long long compute_time_ns, long long neighbor_count) {
+        if (heavy_particles_.size() < 100) {  // Cap at 100 per interval
+            heavy_particles_.push_back({particle_id, worker_rank,
+                                       compute_time_ns, neighbor_count});
+        }
+    }
+
+    void reset() {
+        std::fill(particles_per_worker_.begin(), particles_per_worker_.end(), 0);
+        std::fill(compute_time_per_worker_ns_.begin(), compute_time_per_worker_ns_.end(), 0);
+        heavy_particles_.clear();
+        worker_time_stats_.reset();
+        particle_count_stats_.reset();
+    }
+
+    // Compute statistics after interval completes
+    void computeStats() const {
+        particle_count_stats_.reset();
+        for (int i = 1; i <= num_workers_; i++) {
+            if (particles_per_worker_[i] > 0) {
+                particle_count_stats_.update(particles_per_worker_[i]);
+            }
+        }
+    }
+
+    // Accessors
+    int getNumWorkers() const { return num_workers_; }
+    int getParticleCount(int worker_rank) const {
+        return (worker_rank > 0 && worker_rank <= num_workers_)
+               ? particles_per_worker_[worker_rank] : 0;
+    }
+    long long getComputeTimeNs(int worker_rank) const {
+        return (worker_rank > 0 && worker_rank <= num_workers_)
+               ? compute_time_per_worker_ns_[worker_rank] : 0;
+    }
+    double getComputeTimeSeconds(int worker_rank) const {
+        return getComputeTimeNs(worker_rank) * 1e-9;
+    }
+
+    // Aggregate statistics
+    int getTotalParticles() const {
+        int total = 0;
+        for (int i = 1; i <= num_workers_; i++) {
+            total += particles_per_worker_[i];
+        }
+        return total;
+    }
+
+    const OnlineStats& getParticleCountStats() const { return particle_count_stats_; }
+
+    double getLoadBalanceRatio() const {
+        if (num_workers_ == 0) return 1.0;
+        long long max_time = 0;
+        long long total_time = 0;
+        int active_workers = 0;
+        for (int i = 1; i <= num_workers_; i++) {
+            if (compute_time_per_worker_ns_[i] > 0) {
+                max_time = std::max(max_time, compute_time_per_worker_ns_[i]);
+                total_time += compute_time_per_worker_ns_[i];
+                active_workers++;
+            }
+        }
+        if (active_workers == 0 || total_time == 0) return 1.0;
+        double avg_time = static_cast<double>(total_time) / active_workers;
+        return max_time / avg_time;
+    }
+
+    int getMaxTimeWorker() const {
+        int max_worker = 0;
+        long long max_time = 0;
+        for (int i = 1; i <= num_workers_; i++) {
+            if (compute_time_per_worker_ns_[i] > max_time) {
+                max_time = compute_time_per_worker_ns_[i];
+                max_worker = i;
+            }
+        }
+        return max_worker;
+    }
+
+    double getMinComputeTimeSeconds() const {
+        long long min_time = LLONG_MAX;
+        for (int i = 1; i <= num_workers_; i++) {
+            if (compute_time_per_worker_ns_[i] > 0) {
+                min_time = std::min(min_time, compute_time_per_worker_ns_[i]);
+            }
+        }
+        return (min_time == LLONG_MAX) ? 0.0 : min_time * 1e-9;
+    }
+
+    double getMaxComputeTimeSeconds() const {
+        long long max_time = 0;
+        for (int i = 1; i <= num_workers_; i++) {
+            max_time = std::max(max_time, compute_time_per_worker_ns_[i]);
+        }
+        return max_time * 1e-9;
+    }
+
+    double getMeanComputeTimeSeconds() const {
+        long long total_time = 0;
+        int active_workers = 0;
+        for (int i = 1; i <= num_workers_; i++) {
+            if (compute_time_per_worker_ns_[i] > 0) {
+                total_time += compute_time_per_worker_ns_[i];
+                active_workers++;
+            }
+        }
+        return (active_workers > 0) ? (total_time * 1e-9 / active_workers) : 0.0;
+    }
+
+    const std::vector<HeavyParticleInfo>& getHeavyParticles() const {
+        return heavy_particles_;
+    }
+
+    bool hasSignificantImbalance() const {
+        return getLoadBalanceRatio() > 1.5;
+    }
+
+private:
+    int num_workers_ = 0;
+    std::vector<int> particles_per_worker_;
+    std::vector<long long> compute_time_per_worker_ns_;
+    std::vector<HeavyParticleInfo> heavy_particles_;
+    OnlineStats worker_time_stats_;
+    mutable OnlineStats particle_count_stats_;
+};
+
 // Histogram for neighbor count distribution (Phase 15)
 // Uses linear buckets for small counts, exponential for large
 class NeighborHistogram {
@@ -580,6 +739,8 @@ public:
         interval_dispatch_latency_ns_ = 0;
         interval_dispatch_count_ = 0;
         interval_dispatch_latency_stats_.reset();
+        // Reset worker distribution tracking (Phase 17)
+        interval_worker_distribution_.reset();
     }
 
     // Reset all statistics
@@ -969,6 +1130,45 @@ public:
         return getIntervalAssignTimeRatio() > 0.5;
     }
 
+    // Worker distribution tracking (Phase 17)
+    void initializeWorkerTracking(int num_workers) {
+        worker_distribution_.initialize(num_workers);
+        interval_worker_distribution_.initialize(num_workers);
+    }
+
+    void recordWorkerAssignment(int worker_rank) {
+        worker_distribution_.recordAssignment(worker_rank);
+        interval_worker_distribution_.recordAssignment(worker_rank);
+        current_particle_worker_rank_ = worker_rank;
+    }
+
+    void recordWorkerComputeTime(int worker_rank, long long compute_ns) {
+        worker_distribution_.recordComputeTime(worker_rank, compute_ns);
+        interval_worker_distribution_.recordComputeTime(worker_rank, compute_ns);
+    }
+
+    void recordHeavyParticle(int particle_id, int worker_rank,
+                             long long compute_time_ns, long long neighbor_count) {
+        worker_distribution_.recordHeavyParticle(particle_id, worker_rank,
+                                                 compute_time_ns, neighbor_count);
+        interval_worker_distribution_.recordHeavyParticle(particle_id, worker_rank,
+                                                          compute_time_ns, neighbor_count);
+    }
+
+    int getCurrentParticleWorkerRank() const { return current_particle_worker_rank_; }
+
+    const WorkerDistributionTracker& getWorkerDistribution() const {
+        return worker_distribution_;
+    }
+    const WorkerDistributionTracker& getIntervalWorkerDistribution() const {
+        return interval_worker_distribution_;
+    }
+
+    void computeWorkerStats() {
+        worker_distribution_.computeStats();
+        interval_worker_distribution_.computeStats();
+    }
+
     // Enable histogram for a specific timer (Phase 8)
     void enableHistogram(TimerID id) {
         stats_[static_cast<int>(id)].enableHistogram();
@@ -1246,6 +1446,11 @@ private:
     // Dispatch latency statistics (Phase 16)
     OnlineStats dispatch_latency_stats_;
     OnlineStats interval_dispatch_latency_stats_;
+
+    // Worker distribution tracking (Phase 17)
+    WorkerDistributionTracker worker_distribution_;
+    WorkerDistributionTracker interval_worker_distribution_;
+    int current_particle_worker_rank_ = 0;  // Tracks worker for current particle
 };
 
 // RAII-style scoped timer for automatic start/stop
@@ -1281,6 +1486,9 @@ private:
 #define PROFILE_QUEUE_DEPTH(depth) Profiler::instance().sampleQueueDepth(depth)
 #define PROFILE_STARVATION_EVENT() Profiler::instance().recordStarvationEvent()
 #define PROFILE_DISPATCH_LATENCY(latency_ns) Profiler::instance().recordDispatchLatency(latency_ns)
+#define PROFILE_WORKER_ASSIGNMENT(worker_rank) Profiler::instance().recordWorkerAssignment(worker_rank)
+#define PROFILE_WORKER_COMPUTE(worker_rank, compute_ns) Profiler::instance().recordWorkerComputeTime(worker_rank, compute_ns)
+#define PROFILE_HEAVY_PARTICLE(pid, worker, time_ns, neighbors) Profiler::instance().recordHeavyParticle(pid, worker, time_ns, neighbors)
 
 #else
 
@@ -1295,6 +1503,9 @@ private:
 #define PROFILE_QUEUE_DEPTH(depth) ((void)0)
 #define PROFILE_STARVATION_EVENT() ((void)0)
 #define PROFILE_DISPATCH_LATENCY(latency_ns) ((void)0)
+#define PROFILE_WORKER_ASSIGNMENT(worker_rank) ((void)0)
+#define PROFILE_WORKER_COMPUTE(worker_rank, compute_ns) ((void)0)
+#define PROFILE_HEAVY_PARTICLE(pid, worker, time_ns, neighbors) ((void)0)
 
 #endif
 
