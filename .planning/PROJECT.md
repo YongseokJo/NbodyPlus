@@ -8,6 +8,18 @@ ABYSS N-body simulation code with Structure of Arrays (SoA) data layout and enha
 
 **Physics correctness (energy conservation) with clean architecture for targeted optimizations.**
 
+## Current Milestone: v2.2 Load Balance Profiling
+
+**Goal:** Instrument and analyze load balance across MPI workers to understand where imbalance comes from before committing to optimization approach (OpenMP, batching, work stealing, etc.).
+
+**Target measurements:**
+- Neighbor count variance (per-particle counts, distribution, correlation with compute time)
+- Queue dispatch overhead (dispatch latency, root overhead, queue depth over time)
+- Worker distribution (particles per worker, compute time per worker, heavy particle detection)
+- CM particle breakdown (time comparison: CM vs regular particles)
+- Few-body overhead (search/init/integration time breakdown)
+- Memory access patterns (cache miss rates in force loops)
+
 ## Requirements
 
 ### Validated
@@ -52,31 +64,40 @@ ABYSS N-body simulation code with Structure of Arrays (SoA) data layout and enha
 
 ### Active
 
-(No active requirements — awaiting next milestone definition)
+<!-- v2.2 Load Balance Profiling -->
+
+- [ ] Neighbor count profiling (per-particle, distribution, outlier detection)
+- [ ] Queue dispatch latency measurement (time between completion and next task)
+- [ ] Queue depth tracking over time (worker starvation detection)
+- [ ] Per-worker particle distribution analysis
+- [ ] Per-worker compute time breakdown
+- [ ] CM particle timing comparison (CM vs regular particles)
+- [ ] Few-body timing breakdown (search, init, integration separately)
+- [ ] Cache miss rate measurement in force loops
+- [ ] Load balance analysis report with recommendations
 
 ### Out of Scope
 
 - SDAR `Group` struct conversion — kept as-is with exit-only sync
-- Algorithm changes — SoA/profiler work is infrastructure only
-- GPU irregular forces — v2.0 optimization limited to CPU; GPU port deferred to v2.1+
+- Algorithm changes — profiling work is measurement only
+- Optimization implementation — v2.2 is analysis; optimization deferred to v2.3+
+- Async MPI — archived in v2.1, single-message async doesn't help
 
 ## Context
 
-**Current State (v2.0 shipped):**
+**Current State (v2.0 shipped, v2.1 archived):**
 
 - `src/profiler.h` — Enhanced profiler with MPI aggregation, histograms, work counters
 - `src/simd_force.h/.cpp` — AVX-512 vectorized force kernel with pre-gather pattern
 - `src/Particle/compute_acceleration.cpp` — Integrated vectorized neighbor loop
-- IrregularForce bottleneck identified and addressed (53.5% → still dominant but 3.2% faster)
-- Energy conservation: ✓ Pass (dE/E0 = 1.34e-6)
+- IrregularForce bottleneck identified (53.5% of wall time)
+- v2.1 async MPI archived — single-message async adds overhead, doesn't help
 
-**Optimization Results:**
+**v2.1 Archive Learnings:**
 
-| Metric | v2.0 Baseline | v2.0 Optimized | Result |
-|--------|---------------|----------------|--------|
-| IrregularForce | 69.5s | 67.3s | -3.2% |
-| Wall time | 130s | 126.4s | -2.8% |
-| dE/E0 | — | 1.34e-6 | ✓ Pass |
+- Async MPI at single-message granularity is slower than blocking (126.4B vs 125.0B ns)
+- ~105M MPI messages/interval creates unavoidable overhead at current granularity
+- Future optimization must reduce message count (batching) or change parallelization model
 
 **Key Files:**
 
@@ -84,7 +105,8 @@ ABYSS N-body simulation code with Structure of Arrays (SoA) data layout and enha
 - `src/particle_data_mpi.h/.cpp` — MPI shared memory (v1.0)
 - `src/particle_data_gpu.h/.cu` — GPU container (v1.0)
 - `src/profiler.h` — Enhanced profiler (v2.0)
-- `src/simd_force.h/.cpp` — AVX-512 vectorization (v2.0)
+- `src/queue_scheduler.h` — Worker dispatch (target for load balance profiling)
+- `src/irregular_routines.cpp` — Main irregular force loop (target for profiling)
 
 **Validation Workflow:**
 
@@ -98,6 +120,7 @@ ABYSS N-body simulation code with Structure of Arrays (SoA) data layout and enha
 - **Correctness**: Energy conservation must remain within existing tolerances
 - **Build**: Must work with existing Makefile and workflow scripts
 - **AVX-512**: Requires Skylake-AVX512 or later CPU architecture
+- **Profiling overhead**: New instrumentation should not significantly impact runtime (< 5% overhead)
 
 ## Key Decisions
 
@@ -110,12 +133,16 @@ ABYSS N-body simulation code with Structure of Arrays (SoA) data layout and enha
 | Exit-only sync pattern | SDAR uses AoS, sync to SoA only on exit | ✓ Good — simpler than proxy |
 | Pre-gather for SIMD | Align scattered neighbor data before vectorized compute | ⚠ Revisit — gather overhead limits gains |
 | AVX-512 vectorization | Target IrregularForce bottleneck with SIMD | ⚠ Limited — 3.2% gain vs 20% target |
+| Archive async MPI (v2.1) | Single-message async adds overhead, doesn't help | ✓ Good — data-driven decision |
+| Profile before optimizing | Understand load imbalance source before committing to fix | — Pending |
 
-## Recommendations for v2.1
+## Recommendations for v2.3+
 
-1. **MPI batching** — Reduce ~105M messages/interval overhead
-2. **SIMD gather intrinsics** — Use `_mm512_i64gather_pd` to avoid pre-gather copies
-3. **GPU irregular forces** — Port irregular force kernel to GPU
+After v2.2 analysis, likely directions:
+1. **MPI batching** — Reduce message count if queue dispatch is bottleneck
+2. **OpenMP hybrid** — Add thread parallelism if workers are underutilized
+3. **Work stealing** — Rebalance if particle distribution is uneven
+4. **GPU irregular forces** — Port if compute is the bottleneck, not communication
 
 ---
-*Last updated: 2026-01-18 after v2.0 milestone*
+*Last updated: 2026-01-18 after v2.2 milestone start*

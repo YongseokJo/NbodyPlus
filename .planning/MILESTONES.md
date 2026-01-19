@@ -1,5 +1,32 @@
 # Project Milestones: ABYSS Performance Optimization
 
+## v2.1 MPI Communication Optimization (Archived: 2026-01-18)
+
+**Status:** Archived — async MPI at single-message granularity did not achieve performance improvement
+
+**Phases attempted:** 11-14
+
+**Key findings:**
+
+- Async MPI (MPI_Isend/Irecv/Waitany) adds overhead that exceeds overlap benefits
+- Best async configuration: MPI_Recv(ANY_SOURCE) + sync MPI_Send = 126.4B ns
+- Baseline blocking: 125.0B ns (1% faster than best async)
+- Root cause: ~105M MPI messages/interval creates unavoidable async overhead
+
+**Attempted optimizations:**
+
+1. Pre-posted receives + MPI_Waitany — too much overhead
+2. Pre-allocated arrays to avoid vector allocations — insufficient
+3. MPI_Recv(ANY_SOURCE) instead of MPI_Waitany — best but still slower
+4. MPI_Probe + specific source recv — worse performance
+5. Sequential worker waiting — catastrophic (4x slower)
+
+**Conclusion:** Async MPI at single-message granularity does not provide speedup. Future optimization must reduce message count (batching) or change parallelization model.
+
+**Archive location:** Tag `archive-phase13-async-attempts` on branch `MPI_async`
+
+---
+
 ## v2.0 Performance Profiling & Optimization (Shipped: 2026-01-18)
 
 **Delivered:** Comprehensive profiling infrastructure to identify bottlenecks, plus targeted AVX-512 vectorization of the irregular force calculation (primary bottleneck at 53.5% of wall time).
@@ -36,11 +63,6 @@
 
 **Notes:** AVX-512 vectorization achieved modest gain limited by gather overhead and memory-bound workload. Profiling infrastructure provides foundation for future optimization work.
 
-**Recommendations for v2.1:**
-1. MPI batching to reduce ~105M messages/interval
-2. SIMD gather intrinsics to avoid pre-gather copies
-3. GPU irregular forces kernel
-
 ---
 
 ## v1.0 AoS to SoA Conversion (Shipped: 2026-01-17)
@@ -76,7 +98,5 @@
 | Wall time | 28.33s | 28.40s | No change |
 
 **Notes:** No performance improvement observed. Bottleneck likely in GPU compute or MPI communication rather than CPU memory access patterns. SoA layout provides foundation for future SIMD optimizations.
-
-**What's next:** Merge to main branch, consider profiling to identify actual bottlenecks.
 
 ---
