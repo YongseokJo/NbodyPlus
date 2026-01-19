@@ -18,6 +18,15 @@
 #include <mpi.h>
 #endif
 
+// Phase 19: Linux perf_event for cache counters
+#ifdef __linux__
+#include <linux/perf_event.h>
+#include <sys/ioctl.h>
+#include <sys/syscall.h>
+#include <unistd.h>
+#include <cstring>
+#endif
+
 // Timer IDs for fast lookup (avoid string hashing in hot paths)
 enum class TimerID : int {
     // Main loop timers
@@ -526,6 +535,17 @@ public:
         return getLoadBalanceRatio() > 1.5;
     }
 
+    // Phase 20: Get histogram of per-worker compute times (ANLYS-02)
+    Histogram getWorkerTimeHistogram() const {
+        Histogram hist;
+        for (int i = 1; i <= num_workers_; i++) {
+            if (compute_time_per_worker_ns_[i] > 0) {
+                hist.record(compute_time_per_worker_ns_[i]);
+            }
+        }
+        return hist;
+    }
+
 private:
     int num_workers_ = 0;
     std::vector<int> particles_per_worker_;
@@ -534,6 +554,157 @@ private:
     OnlineStats worker_time_stats_;
     mutable OnlineStats particle_count_stats_;
 };
+
+// Particle type breakdown for CM vs regular particles (Phase 18)
+struct ParticleTypeStats {
+    // Counts
+    int cm_particle_count = 0;
+    int regular_particle_count = 0;
+
+    // Timing (nanoseconds)
+    long long cm_compute_time_ns = 0;
+    long long regular_compute_time_ns = 0;
+
+    void reset() {
+        cm_particle_count = 0;
+        regular_particle_count = 0;
+        cm_compute_time_ns = 0;
+        regular_compute_time_ns = 0;
+    }
+
+    // Accessors
+    int getTotalParticles() const {
+        return cm_particle_count + regular_particle_count;
+    }
+
+    double getCMRatio() const {
+        int total = getTotalParticles();
+        return (total > 0) ? static_cast<double>(cm_particle_count) / total : 0.0;
+    }
+
+    double getCMTimeRatio() const {
+        long long total = cm_compute_time_ns + regular_compute_time_ns;
+        return (total > 0) ? static_cast<double>(cm_compute_time_ns) / total : 0.0;
+    }
+
+    double getCMTimeSeconds() const { return cm_compute_time_ns * 1e-9; }
+    double getRegularTimeSeconds() const { return regular_compute_time_ns * 1e-9; }
+    double getTotalTimeSeconds() const {
+        return (cm_compute_time_ns + regular_compute_time_ns) * 1e-9;
+    }
+};
+
+// Phase 19: Cache statistics for memory access profiling
+struct CacheStats {
+    long long l1d_misses = 0;
+    long long l1d_accesses = 0;
+    long long ll_misses = 0;     // Last-level (L3) cache
+    long long ll_accesses = 0;
+    long long measurement_count = 0;
+    double total_time_seconds = 0.0;
+
+    void reset() {
+        l1d_misses = l1d_accesses = 0;
+        ll_misses = ll_accesses = 0;
+        measurement_count = 0;
+        total_time_seconds = 0.0;
+    }
+
+    void accumulate(long long l1d_miss, long long l1d_acc,
+                    long long ll_miss, long long ll_acc, double time_s) {
+        l1d_misses += l1d_miss;
+        l1d_accesses += l1d_acc;
+        ll_misses += ll_miss;
+        ll_accesses += ll_acc;
+        measurement_count++;
+        total_time_seconds += time_s;
+    }
+
+    double getL1DMissRate() const {
+        return l1d_accesses > 0 ? static_cast<double>(l1d_misses) / l1d_accesses : 0.0;
+    }
+
+    double getLLMissRate() const {
+        return ll_accesses > 0 ? static_cast<double>(ll_misses) / ll_accesses : 0.0;
+    }
+
+    // Estimate memory bandwidth (assuming 64-byte cache lines)
+    double getEstimatedBandwidthGBs() const {
+        if (total_time_seconds <= 0) return 0.0;
+        // LL misses go to memory, so LL misses * 64 bytes = memory traffic
+        return (ll_misses * 64.0) / total_time_seconds / 1e9;
+    }
+
+    // Operational intensity estimate (FLOPs/byte)
+    // Assumes ~50 FLOPs per particle pair, 64 bytes per LL miss
+    double getOperationalIntensity() const {
+        if (ll_misses <= 0) return 0.0;
+        // Rough estimate: measurement_count ~ particle pairs processed
+        double estimated_flops = measurement_count * 50.0;
+        double bytes_transferred = ll_misses * 64.0;
+        return estimated_flops / bytes_transferred;
+    }
+
+    bool isMemoryBound() const {
+        // Machine balance for Skylake ~20 FLOPs/byte
+        // If OI < 5, definitely memory-bound
+        return getOperationalIntensity() < 5.0;
+    }
+};
+
+// Phase 19: RAII wrapper for perf_event file descriptors
+#ifdef __linux__
+class PerfEventCounter {
+public:
+    PerfEventCounter() : fd_(-1), enabled_(false) {}
+
+    ~PerfEventCounter() {
+        if (fd_ >= 0) close(fd_);
+    }
+
+    // Initialize counter for cache events
+    // cache_id: PERF_COUNT_HW_CACHE_L1D or PERF_COUNT_HW_CACHE_LL
+    // op_result: PERF_COUNT_HW_CACHE_RESULT_MISS or PERF_COUNT_HW_CACHE_RESULT_ACCESS
+    bool init(int cache_id, int op_id, int op_result) {
+        struct perf_event_attr pe;
+        memset(&pe, 0, sizeof(pe));
+        pe.type = PERF_TYPE_HW_CACHE;
+        pe.size = sizeof(pe);
+        pe.config = cache_id | (op_id << 8) | (op_result << 16);
+        pe.disabled = 1;
+        pe.exclude_kernel = 1;
+        pe.exclude_hv = 1;
+
+        fd_ = syscall(__NR_perf_event_open, &pe, 0, -1, -1, 0);
+        return fd_ >= 0;
+    }
+
+    void enable() {
+        if (fd_ >= 0) {
+            ioctl(fd_, PERF_EVENT_IOC_RESET, 0);
+            ioctl(fd_, PERF_EVENT_IOC_ENABLE, 0);
+            enabled_ = true;
+        }
+    }
+
+    long long disable_and_read() {
+        if (fd_ < 0 || !enabled_) return -1;
+        ioctl(fd_, PERF_EVENT_IOC_DISABLE, 0);
+        enabled_ = false;
+        long long count = 0;
+        if (read(fd_, &count, sizeof(count)) != sizeof(count)) {
+            return -1;
+        }
+        return count;
+    }
+
+    bool isValid() const { return fd_ >= 0; }
+
+private:
+    int fd_;
+    bool enabled_;
+};
+#endif // __linux__
 
 // Histogram for neighbor count distribution (Phase 15)
 // Uses linear buckets for small counts, exponential for large
@@ -741,6 +912,10 @@ public:
         interval_dispatch_latency_stats_.reset();
         // Reset worker distribution tracking (Phase 17)
         interval_worker_distribution_.reset();
+        // Reset particle type stats (Phase 18)
+        interval_particle_type_stats_.reset();
+        // Reset cache stats (Phase 19)
+        interval_cache_stats_.reset();
     }
 
     // Reset all statistics
@@ -921,6 +1096,110 @@ public:
                    << " starvation events (workers waited with non-empty queue)\n";
             }
         }
+
+        // Phase 17: Worker distribution statistics
+        const auto& wd = interval_worker_distribution_;
+        if (wd.getTotalParticles() > 0) {
+            wd.computeStats();  // Compute particle count stats
+            const auto& pcs = wd.getParticleCountStats();
+
+            os << "\n--- Worker Distribution Statistics ---\n";
+            os << "Total particles: " << wd.getTotalParticles()
+               << ", Workers: " << wd.getNumWorkers() << "\n";
+            os << "Particles per worker: min=" << pcs.min_val()
+               << ", max=" << pcs.max_val()
+               << ", mean=" << std::fixed << std::setprecision(1) << pcs.mean()
+               << ", stddev=" << std::setprecision(1) << pcs.stddev() << "\n";
+            os << "Compute time per worker: min=" << std::setprecision(3)
+               << wd.getMinComputeTimeSeconds() << "s"
+               << ", max=" << wd.getMaxComputeTimeSeconds() << "s"
+               << ", mean=" << wd.getMeanComputeTimeSeconds() << "s\n";
+            os << "Load balance ratio: " << std::setprecision(2)
+               << wd.getLoadBalanceRatio();
+            if (wd.getMaxTimeWorker() > 0) {
+                os << " (max on rank " << wd.getMaxTimeWorker() << ")";
+            }
+            os << "\n";
+
+            const auto& heavy = wd.getHeavyParticles();
+            if (!heavy.empty()) {
+                os << "Heavy particles (>2σ): " << heavy.size() << "\n";
+                int display_count = std::min(static_cast<int>(heavy.size()), 5);
+                for (int i = 0; i < display_count; i++) {
+                    os << "  PID " << heavy[i].particle_id
+                       << " on rank " << heavy[i].worker_rank
+                       << ": " << std::setprecision(1)
+                       << (heavy[i].compute_time_ns / 1000.0) << "us"
+                       << " (neighbors: " << heavy[i].neighbor_count << ")\n";
+                }
+                if (heavy.size() > 5) {
+                    os << "  ... and " << (heavy.size() - 5) << " more\n";
+                }
+            }
+
+            if (wd.hasSignificantImbalance()) {
+                os << "WARNING: Load imbalance detected (ratio > 1.5)\n";
+            }
+
+            // Phase 20: Worker compute time histogram (ANLYS-02)
+            os << "Worker compute time distribution:\n";
+            wd.getWorkerTimeHistogram().print(os);
+        }
+
+        // Phase 18: Particle type breakdown
+        const auto& pt = interval_particle_type_stats_;
+        if (pt.getTotalParticles() > 0) {
+            os << "\n--- Particle Type Breakdown ---\n";
+            os << "Regular particles: " << pt.regular_particle_count
+               << " (" << std::fixed << std::setprecision(1)
+               << ((1.0 - pt.getCMRatio()) * 100) << "%)\n";
+            os << "CM particles: " << pt.cm_particle_count
+               << " (" << std::setprecision(1)
+               << (pt.getCMRatio() * 100) << "%)\n";
+            os << "Compute time: regular=" << std::setprecision(3)
+               << pt.getRegularTimeSeconds() << "s"
+               << ", CM=" << pt.getCMTimeSeconds() << "s\n";
+            os << "CM time ratio: " << std::setprecision(1)
+               << (pt.getCMTimeRatio() * 100) << "%\n";
+        }
+
+        // Phase 18: Few-body timers summary
+        const auto& fb_search = stats_[static_cast<int>(TimerID::FewBodySearch)];
+        const auto& fb_init = stats_[static_cast<int>(TimerID::FewBodyInitialization)];
+        const auto& fb_integ = stats_[static_cast<int>(TimerID::FewBodyIntegration)];
+        const auto& fb_term = stats_[static_cast<int>(TimerID::FewBodyTermination)];
+        long long fb_total = fb_search.interval_total_ns + fb_init.interval_total_ns +
+                            fb_integ.interval_total_ns + fb_term.interval_total_ns;
+        if (fb_total > 0) {
+            os << "\n--- Few-Body Timing Breakdown ---\n";
+            os << "Search: " << std::fixed << std::setprecision(3)
+               << (fb_search.interval_total_ns * 1e-9) << "s\n";
+            os << "Initialization: " << (fb_init.interval_total_ns * 1e-9) << "s\n";
+            os << "Integration: " << (fb_integ.interval_total_ns * 1e-9) << "s\n";
+            os << "Termination: " << (fb_term.interval_total_ns * 1e-9) << "s\n";
+            os << "Total few-body: " << (fb_total * 1e-9) << "s\n";
+        }
+
+        // Phase 19: Cache statistics
+        const auto& cs = interval_cache_stats_;
+        if (cs.measurement_count > 0) {
+            os << "\n--- Cache Statistics ---\n";
+            if (areCacheCountersAvailable()) {
+                os << "L1D miss rate: " << std::fixed << std::setprecision(2)
+                   << (cs.getL1DMissRate() * 100) << "%"
+                   << " (" << cs.l1d_misses << "/" << cs.l1d_accesses << ")\n";
+                os << "LL (L3) miss rate: " << std::setprecision(2)
+                   << (cs.getLLMissRate() * 100) << "%"
+                   << " (" << cs.ll_misses << "/" << cs.ll_accesses << ")\n";
+                os << "Est. memory bandwidth: " << std::setprecision(2)
+                   << cs.getEstimatedBandwidthGBs() << " GB/s\n";
+                os << "Operational intensity: " << std::setprecision(2)
+                   << cs.getOperationalIntensity() << " FLOPs/byte\n";
+                os << "Classification: " << (cs.isMemoryBound() ? "MEMORY-BOUND" : "COMPUTE-BOUND") << "\n";
+            } else {
+                os << "Cache counters not available (perf_event initialization failed)\n";
+            }
+        }
     }
 
     // Write detailed stats to CSV file for analysis
@@ -946,6 +1225,18 @@ public:
                  << ",Starvation_events,Dispatch_count"
                  << ",DispatchLatency_mean_ns,DispatchLatency_stddev_ns"
                  << ",AssignTime_ratio,WaitTime_ratio";
+            // Phase 17: Worker distribution columns
+            file << ",WorkerParticles_total,WorkerParticles_min,WorkerParticles_max"
+                 << ",WorkerParticles_mean,WorkerParticles_stddev"
+                 << ",WorkerComputeTime_min_s,WorkerComputeTime_max_s,WorkerComputeTime_mean_s"
+                 << ",LoadBalanceRatio,MaxTimeWorker,HeavyParticleCount";
+            // Phase 18: Particle type breakdown columns
+            file << ",RegularParticles,CMParticles,CMRatio"
+                 << ",RegularTime_s,CMTime_s,CMTimeRatio";
+            // Phase 19: Cache statistics columns
+            file << ",L1DMisses,L1DAccesses,L1DMissRate"
+                 << ",LLMisses,LLAccesses,LLMissRate"
+                 << ",EstBandwidth_GBs,OperationalIntensity,MemoryBound";
             file << "\n";
         }
 
@@ -976,6 +1267,40 @@ public:
              << "," << std::fixed << std::setprecision(0) << interval_dispatch_latency_stats_.stddev()
              << "," << std::fixed << std::setprecision(4) << getIntervalAssignTimeRatio()
              << "," << std::fixed << std::setprecision(4) << getIntervalWaitTimeRatio();
+        // Phase 17: Worker distribution data
+        const auto& wd = interval_worker_distribution_;
+        wd.computeStats();
+        const auto& pcs = wd.getParticleCountStats();
+        file << "," << wd.getTotalParticles()
+             << "," << pcs.min_val()
+             << "," << pcs.max_val()
+             << "," << std::fixed << std::setprecision(2) << pcs.mean()
+             << "," << std::fixed << std::setprecision(2) << pcs.stddev()
+             << "," << std::fixed << std::setprecision(4) << wd.getMinComputeTimeSeconds()
+             << "," << std::fixed << std::setprecision(4) << wd.getMaxComputeTimeSeconds()
+             << "," << std::fixed << std::setprecision(4) << wd.getMeanComputeTimeSeconds()
+             << "," << std::fixed << std::setprecision(3) << wd.getLoadBalanceRatio()
+             << "," << wd.getMaxTimeWorker()
+             << "," << wd.getHeavyParticles().size();
+        // Phase 18: Particle type breakdown data
+        const auto& pt = interval_particle_type_stats_;
+        file << "," << pt.regular_particle_count
+             << "," << pt.cm_particle_count
+             << "," << std::fixed << std::setprecision(4) << pt.getCMRatio()
+             << "," << std::fixed << std::setprecision(4) << pt.getRegularTimeSeconds()
+             << "," << std::fixed << std::setprecision(4) << pt.getCMTimeSeconds()
+             << "," << std::fixed << std::setprecision(4) << pt.getCMTimeRatio();
+        // Phase 19: Cache statistics data
+        const auto& cs = interval_cache_stats_;
+        file << "," << cs.l1d_misses
+             << "," << cs.l1d_accesses
+             << "," << std::fixed << std::setprecision(4) << cs.getL1DMissRate()
+             << "," << cs.ll_misses
+             << "," << cs.ll_accesses
+             << "," << std::fixed << std::setprecision(4) << cs.getLLMissRate()
+             << "," << std::fixed << std::setprecision(4) << cs.getEstimatedBandwidthGBs()
+             << "," << std::fixed << std::setprecision(4) << cs.getOperationalIntensity()
+             << "," << (cs.isMemoryBound() ? 1 : 0);
         file << "\n";
     }
 
@@ -1035,8 +1360,83 @@ public:
         file << "    \"assign_time_ratio\": " << std::fixed << std::setprecision(4) << getIntervalAssignTimeRatio() << ",\n";
         file << "    \"wait_time_ratio\": " << std::fixed << std::setprecision(4) << getIntervalWaitTimeRatio() << ",\n";
         file << "    \"is_dispatch_bottleneck\": " << (isDispatchBottleneck() ? "true" : "false") << "\n";
-        file << "  }\n";
-        file << "}\n";
+        file << "  },\n";  // Close queue_dispatch, add comma for worker_distribution
+
+        // Phase 17: Worker distribution
+        file << "  \"worker_distribution\": {\n";
+        const auto& wd = interval_worker_distribution_;
+        wd.computeStats();
+        const auto& pcs = wd.getParticleCountStats();
+        file << "    \"total_particles\": " << wd.getTotalParticles() << ",\n";
+        file << "    \"num_workers\": " << wd.getNumWorkers() << ",\n";
+        file << "    \"particles_per_worker\": {\n";
+        file << "      \"min\": " << pcs.min_val() << ",\n";
+        file << "      \"max\": " << pcs.max_val() << ",\n";
+        file << "      \"mean\": " << std::fixed << std::setprecision(2) << pcs.mean() << ",\n";
+        file << "      \"stddev\": " << std::fixed << std::setprecision(2) << pcs.stddev() << "\n";
+        file << "    },\n";
+        file << "    \"compute_time\": {\n";
+        file << "      \"min_s\": " << std::fixed << std::setprecision(4) << wd.getMinComputeTimeSeconds() << ",\n";
+        file << "      \"max_s\": " << std::fixed << std::setprecision(4) << wd.getMaxComputeTimeSeconds() << ",\n";
+        file << "      \"mean_s\": " << std::fixed << std::setprecision(4) << wd.getMeanComputeTimeSeconds() << "\n";
+        file << "    },\n";
+        file << "    \"load_balance_ratio\": " << std::fixed << std::setprecision(3) << wd.getLoadBalanceRatio() << ",\n";
+        file << "    \"max_time_worker\": " << wd.getMaxTimeWorker() << ",\n";
+        file << "    \"is_imbalanced\": " << (wd.hasSignificantImbalance() ? "true" : "false") << ",\n";
+        const auto& heavy = wd.getHeavyParticles();
+        file << "    \"heavy_particle_count\": " << heavy.size() << ",\n";
+        file << "    \"heavy_particles\": [\n";
+        for (size_t i = 0; i < heavy.size(); i++) {
+            file << "      {\"pid\": " << heavy[i].particle_id
+                 << ", \"worker\": " << heavy[i].worker_rank
+                 << ", \"time_ns\": " << heavy[i].compute_time_ns
+                 << ", \"neighbors\": " << heavy[i].neighbor_count << "}";
+            if (i < heavy.size() - 1) file << ",";
+            file << "\n";
+        }
+        file << "    ],\n";  // Close heavy_particles, add comma
+        // Phase 20: Worker compute time histogram (ANLYS-02)
+        file << "    \"worker_time_histogram\": " << wd.getWorkerTimeHistogram().toJSON() << "\n";
+        file << "  },\n";  // Close worker_distribution
+
+        // Phase 18: Particle type breakdown
+        file << "  \"particle_type_breakdown\": {\n";
+        const auto& pt = interval_particle_type_stats_;
+        file << "    \"regular_count\": " << pt.regular_particle_count << ",\n";
+        file << "    \"cm_count\": " << pt.cm_particle_count << ",\n";
+        file << "    \"cm_ratio\": " << std::fixed << std::setprecision(4) << pt.getCMRatio() << ",\n";
+        file << "    \"regular_time_s\": " << std::fixed << std::setprecision(4) << pt.getRegularTimeSeconds() << ",\n";
+        file << "    \"cm_time_s\": " << std::fixed << std::setprecision(4) << pt.getCMTimeSeconds() << ",\n";
+        file << "    \"cm_time_ratio\": " << std::fixed << std::setprecision(4) << pt.getCMTimeRatio() << "\n";
+        file << "  },\n";  // Close particle_type_breakdown
+
+        // Phase 18: Few-body timing breakdown
+        file << "  \"fewbody_timing\": {\n";
+        const auto& fb_search = stats_[static_cast<int>(TimerID::FewBodySearch)];
+        const auto& fb_init = stats_[static_cast<int>(TimerID::FewBodyInitialization)];
+        const auto& fb_integ = stats_[static_cast<int>(TimerID::FewBodyIntegration)];
+        const auto& fb_term = stats_[static_cast<int>(TimerID::FewBodyTermination)];
+        file << "    \"search_s\": " << std::fixed << std::setprecision(4) << (fb_search.interval_total_ns * 1e-9) << ",\n";
+        file << "    \"initialization_s\": " << (fb_init.interval_total_ns * 1e-9) << ",\n";
+        file << "    \"integration_s\": " << (fb_integ.interval_total_ns * 1e-9) << ",\n";
+        file << "    \"termination_s\": " << (fb_term.interval_total_ns * 1e-9) << "\n";
+        file << "  },\n";  // Close fewbody_timing, add comma
+
+        // Phase 19: Cache statistics
+        file << "  \"cache_statistics\": {\n";
+        const auto& cs = interval_cache_stats_;
+        file << "    \"l1d_misses\": " << cs.l1d_misses << ",\n";
+        file << "    \"l1d_accesses\": " << cs.l1d_accesses << ",\n";
+        file << "    \"l1d_miss_rate\": " << std::fixed << std::setprecision(4) << cs.getL1DMissRate() << ",\n";
+        file << "    \"ll_misses\": " << cs.ll_misses << ",\n";
+        file << "    \"ll_accesses\": " << cs.ll_accesses << ",\n";
+        file << "    \"ll_miss_rate\": " << std::fixed << std::setprecision(4) << cs.getLLMissRate() << ",\n";
+        file << "    \"estimated_bandwidth_gbs\": " << std::fixed << std::setprecision(4) << cs.getEstimatedBandwidthGBs() << ",\n";
+        file << "    \"operational_intensity\": " << std::fixed << std::setprecision(4) << cs.getOperationalIntensity() << ",\n";
+        file << "    \"memory_bound\": " << (cs.isMemoryBound() ? "true" : "false") << ",\n";
+        file << "    \"counters_available\": " << (areCacheCountersAvailable() ? "true" : "false") << "\n";
+        file << "  }\n";  // Close cache_statistics
+        file << "}\n";    // Close root object
     }
 
     // Record work units for throughput calculation (Phase 8)
@@ -1167,6 +1567,90 @@ public:
     void computeWorkerStats() {
         worker_distribution_.computeStats();
         interval_worker_distribution_.computeStats();
+    }
+
+    // Phase 19: Initialize cache counters (call once at startup)
+    void initCacheCounters() {
+#ifdef __linux__
+        if (cache_counters_initialized_) return;
+
+        bool l1d_ok = l1d_miss_counter_.init(PERF_COUNT_HW_CACHE_L1D,
+                                              PERF_COUNT_HW_CACHE_OP_READ,
+                                              PERF_COUNT_HW_CACHE_RESULT_MISS);
+        l1d_ok = l1d_ok && l1d_access_counter_.init(PERF_COUNT_HW_CACHE_L1D,
+                                                     PERF_COUNT_HW_CACHE_OP_READ,
+                                                     PERF_COUNT_HW_CACHE_RESULT_ACCESS);
+        bool ll_ok = ll_miss_counter_.init(PERF_COUNT_HW_CACHE_LL,
+                                            PERF_COUNT_HW_CACHE_OP_READ,
+                                            PERF_COUNT_HW_CACHE_RESULT_MISS);
+        ll_ok = ll_ok && ll_access_counter_.init(PERF_COUNT_HW_CACHE_LL,
+                                                  PERF_COUNT_HW_CACHE_OP_READ,
+                                                  PERF_COUNT_HW_CACHE_RESULT_ACCESS);
+
+        cache_counters_initialized_ = l1d_ok && ll_ok;
+        if (!cache_counters_initialized_) {
+            std::cerr << "Warning: Could not initialize cache counters. "
+                      << "Cache profiling will be disabled.\n";
+        }
+#endif
+    }
+
+    void startCacheCounters() {
+#ifdef __linux__
+        if (!cache_counters_initialized_) return;
+        l1d_miss_counter_.enable();
+        l1d_access_counter_.enable();
+        ll_miss_counter_.enable();
+        ll_access_counter_.enable();
+#endif
+    }
+
+    void stopCacheCounters(double elapsed_seconds) {
+#ifdef __linux__
+        if (!cache_counters_initialized_) return;
+        long long l1d_miss = l1d_miss_counter_.disable_and_read();
+        long long l1d_acc = l1d_access_counter_.disable_and_read();
+        long long ll_miss = ll_miss_counter_.disable_and_read();
+        long long ll_acc = ll_access_counter_.disable_and_read();
+
+        cache_stats_.accumulate(l1d_miss, l1d_acc, ll_miss, ll_acc, elapsed_seconds);
+        interval_cache_stats_.accumulate(l1d_miss, l1d_acc, ll_miss, ll_acc, elapsed_seconds);
+#else
+        (void)elapsed_seconds;
+#endif
+    }
+
+    bool areCacheCountersAvailable() const {
+#ifdef __linux__
+        return cache_counters_initialized_;
+#else
+        return false;
+#endif
+    }
+
+    const CacheStats& getIntervalCacheStats() const { return interval_cache_stats_; }
+
+    // Particle type tracking (Phase 18)
+    void recordParticleType(bool is_cm_particle, long long compute_time_ns) {
+        if (is_cm_particle) {
+            particle_type_stats_.cm_particle_count++;
+            particle_type_stats_.cm_compute_time_ns += compute_time_ns;
+            interval_particle_type_stats_.cm_particle_count++;
+            interval_particle_type_stats_.cm_compute_time_ns += compute_time_ns;
+        } else {
+            particle_type_stats_.regular_particle_count++;
+            particle_type_stats_.regular_compute_time_ns += compute_time_ns;
+            interval_particle_type_stats_.regular_particle_count++;
+            interval_particle_type_stats_.regular_compute_time_ns += compute_time_ns;
+        }
+    }
+
+    const ParticleTypeStats& getParticleTypeStats() const {
+        return particle_type_stats_;
+    }
+
+    const ParticleTypeStats& getIntervalParticleTypeStats() const {
+        return interval_particle_type_stats_;
     }
 
     // Enable histogram for a specific timer (Phase 8)
@@ -1355,6 +1839,59 @@ public:
                 os << "WARNING: Dispatch appears to be bottleneck\n";
             }
         }
+
+        // Phase 17: Worker distribution statistics
+        const auto& wd = interval_worker_distribution_;
+        if (wd.getTotalParticles() > 0) {
+            wd.computeStats();
+            const auto& pcs = wd.getParticleCountStats();
+
+            os << "\n--- Worker Distribution Statistics ---\n";
+            os << "Total particles: " << wd.getTotalParticles()
+               << ", Workers: " << wd.getNumWorkers() << "\n";
+            os << "Particles per worker: min=" << pcs.min_val()
+               << ", max=" << pcs.max_val()
+               << ", mean=" << std::fixed << std::setprecision(1) << pcs.mean() << "\n";
+            os << "Compute time per worker: min=" << std::setprecision(3)
+               << wd.getMinComputeTimeSeconds() << "s"
+               << ", max=" << wd.getMaxComputeTimeSeconds() << "s"
+               << ", mean=" << wd.getMeanComputeTimeSeconds() << "s\n";
+            os << "Load balance ratio: " << std::setprecision(2)
+               << wd.getLoadBalanceRatio();
+            if (wd.getMaxTimeWorker() > 0) {
+                os << " (max on rank " << wd.getMaxTimeWorker() << ")";
+            }
+            os << "\n";
+            os << "Heavy particles: " << wd.getHeavyParticles().size() << "\n";
+            if (wd.hasSignificantImbalance()) {
+                os << "WARNING: Load imbalance detected (ratio > 1.5)\n";
+            }
+        }
+
+        // Phase 18: Particle type breakdown
+        const auto& pt = interval_particle_type_stats_;
+        if (pt.getTotalParticles() > 0) {
+            os << "\n--- Particle Type Breakdown ---\n";
+            os << "Regular: " << pt.regular_particle_count
+               << ", CM: " << pt.cm_particle_count
+               << " (CM ratio: " << std::fixed << std::setprecision(1)
+               << (pt.getCMRatio() * 100) << "%)\n";
+            os << "Time ratio: CM=" << std::setprecision(1)
+               << (pt.getCMTimeRatio() * 100) << "%\n";
+        }
+
+        // Phase 19: Cache statistics
+        const auto& cs = interval_cache_stats_;
+        if (cs.measurement_count > 0 && areCacheCountersAvailable()) {
+            os << "\n--- Cache Statistics ---\n";
+            os << "L1D miss rate: " << std::fixed << std::setprecision(2)
+               << (cs.getL1DMissRate() * 100) << "%\n";
+            os << "LL miss rate: " << std::setprecision(2)
+               << (cs.getLLMissRate() * 100) << "%\n";
+            os << "Est. bandwidth: " << std::setprecision(2)
+               << cs.getEstimatedBandwidthGBs() << " GB/s\n";
+            os << "Classification: " << (cs.isMemoryBound() ? "MEMORY-BOUND" : "COMPUTE-BOUND") << "\n";
+        }
     }
 #endif
 
@@ -1451,6 +1988,21 @@ private:
     WorkerDistributionTracker worker_distribution_;
     WorkerDistributionTracker interval_worker_distribution_;
     int current_particle_worker_rank_ = 0;  // Tracks worker for current particle
+
+    // Phase 18: Particle type breakdown
+    ParticleTypeStats particle_type_stats_;
+    ParticleTypeStats interval_particle_type_stats_;
+
+    // Phase 19: Cache statistics
+    CacheStats cache_stats_;
+    CacheStats interval_cache_stats_;
+#ifdef __linux__
+    PerfEventCounter l1d_miss_counter_;
+    PerfEventCounter l1d_access_counter_;
+    PerfEventCounter ll_miss_counter_;
+    PerfEventCounter ll_access_counter_;
+    bool cache_counters_initialized_ = false;
+#endif
 };
 
 // RAII-style scoped timer for automatic start/stop
@@ -1489,6 +2041,13 @@ private:
 #define PROFILE_WORKER_ASSIGNMENT(worker_rank) Profiler::instance().recordWorkerAssignment(worker_rank)
 #define PROFILE_WORKER_COMPUTE(worker_rank, compute_ns) Profiler::instance().recordWorkerComputeTime(worker_rank, compute_ns)
 #define PROFILE_HEAVY_PARTICLE(pid, worker, time_ns, neighbors) Profiler::instance().recordHeavyParticle(pid, worker, time_ns, neighbors)
+// Phase 18: Particle type tracking
+#define PROFILE_PARTICLE_TYPE(is_cm, compute_ns) Profiler::instance().recordParticleType(is_cm, compute_ns)
+// Phase 19: Cache profiling
+#define PROFILE_CACHE_INIT() Profiler::instance().initCacheCounters()
+#define PROFILE_CACHE_START() Profiler::instance().startCacheCounters()
+#define PROFILE_CACHE_STOP(elapsed_s) Profiler::instance().stopCacheCounters(elapsed_s)
+#define PROFILE_CACHE_AVAILABLE() Profiler::instance().areCacheCountersAvailable()
 
 #else
 
@@ -1506,6 +2065,12 @@ private:
 #define PROFILE_WORKER_ASSIGNMENT(worker_rank) ((void)0)
 #define PROFILE_WORKER_COMPUTE(worker_rank, compute_ns) ((void)0)
 #define PROFILE_HEAVY_PARTICLE(pid, worker, time_ns, neighbors) ((void)0)
+#define PROFILE_PARTICLE_TYPE(is_cm, compute_ns) ((void)0)
+// Phase 19: Cache profiling (no-ops)
+#define PROFILE_CACHE_INIT() ((void)0)
+#define PROFILE_CACHE_START() ((void)0)
+#define PROFILE_CACHE_STOP(elapsed_s) ((void)0)
+#define PROFILE_CACHE_AVAILABLE() (false)
 
 #endif
 
