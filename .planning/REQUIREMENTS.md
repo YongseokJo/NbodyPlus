@@ -9,10 +9,10 @@ Requirements for McLuster IC generator integration. Each maps to roadmap phases.
 
 ### Build System
 
-- [ ] **BUILD-01**: McLuster source compiled with gfortran + gcc (SSE/BSE enabled)
-- [ ] **BUILD-02**: `mcluster_sse` binary produced alongside ABYSS binary
-- [ ] **BUILD-03**: Build system detects Fortran compiler availability
-- [ ] **BUILD-04**: Clean/rebuild targets work for mcluster
+- [x] **BUILD-01**: McLuster source compiled with gfortran + gcc (SSE/BSE enabled)
+- [x] **BUILD-02**: `mcluster_sse` binary produced alongside ABYSS binary
+- [x] **BUILD-03**: Build system detects Fortran compiler availability
+- [x] **BUILD-04**: Clean/rebuild targets work for mcluster
 
 ### Configuration
 
@@ -74,10 +74,10 @@ Deferred to future release.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| BUILD-01 | Phase 25 | Pending |
-| BUILD-02 | Phase 25 | Pending |
-| BUILD-03 | Phase 25 | Pending |
-| BUILD-04 | Phase 25 | Pending |
+| BUILD-01 | Phase 25 | Complete |
+| BUILD-02 | Phase 25 | Complete |
+| BUILD-03 | Phase 25 | Complete |
+| BUILD-04 | Phase 25 | Complete |
 | CONFIG-01 | Phase 26 | Pending |
 | CONFIG-02 | Phase 26 | Pending |
 | CONFIG-03 | Phase 26 | Pending |
@@ -110,4 +110,4 @@ Deferred to future release.
 
 ---
 *Requirements defined: 2026-01-20*
-*Last updated: 2026-01-20 after roadmap creation*
+*Last updated: 2026-01-20 - Phase 25 complete*
