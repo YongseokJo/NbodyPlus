@@ -5,18 +5,18 @@
 See: .planning/PROJECT.md (updated 2026-01-20)
 
 **Core value:** Physics correctness (energy conservation) with clean architecture for targeted optimizations
-**Current focus:** v3.0 McCluster Integration - Build System
+**Current focus:** v3.0 McCluster Integration - Config Parser Extension
 
 ## Current Position
 
 **Milestone:** v3.0 McCluster Integration
-**Phase:** 25 - Build System Integration (pending start)
-**Plan:** None active
-**Status:** Roadmap created, ready to plan Phase 25
+**Phase:** 25 - Build System Integration (complete)
+**Plan:** 01 complete
+**Status:** Phase 25 complete, ready for Phase 26
 
-Last activity: 2026-01-20 - v3.0 roadmap created
+Last activity: 2026-01-20 - Completed 25-01-PLAN.md (Build System Integration)
 
-Progress: [----------] 0% (0/5 phases complete)
+Progress: [##--------] 20% (1/5 phases complete)
 
 ## v3.0 Milestone Overview
 
@@ -25,7 +25,7 @@ Progress: [----------] 0% (0/5 phases complete)
 **Phases:**
 | Phase | Name | Requirements | Status |
 |-------|------|--------------|--------|
-| 25 | Build System Integration | 4 | Pending |
+| 25 | Build System Integration | 4 | Complete |
 | 26 | Config Parser Extension | 10 | Pending |
 | 27 | Runtime Integration | 7 | Pending |
 | 28 | Output Format Handling | 3 | Pending |
@@ -53,18 +53,24 @@ Progress: [----------] 0% (0/5 phases complete)
 | 5 phases for 28 reqs | Natural boundaries align with requirement categories |
 | Linear phase dependencies | Each phase unlocks next (BUILD->CONFIG->RUNTIME->OUTPUT->VERIFY) |
 | Start at Phase 25 | Continues numbering from v2.3 (ended at Phase 24 deferred) |
+| Symlink mcluster binary | src/mcluster -> ../mcluster/mcluster_sse (single source of truth) |
+| Warning not error for missing gfortran | ABYSS can still build without McLuster |
+| DISABLE_MCLUSTER=1 flag | Explicit skip even when gfortran available |
 
 ### Technical Notes
 
 - McLuster already downloaded in `mcluster/` directory
 - McLuster Makefile builds `mcluster_sse` with gfortran + gcc
+- Root-level Makefile orchestrates both builds (Phase 25 complete)
+- src/mcluster symlink created at build time
 - ABYSS uses TOML config (src/read_parameter_file.cpp, src/toml.hpp)
 - ABYSS expects nbody.dat format: x y z vx vy vz mass (7 columns)
 - McLuster `-C 3 -u 0` outputs compatible ASCII format
 
 ### TODOs
 
-- [ ] Start Phase 25 planning with `/gsd:plan-phase 25`
+- [x] Complete Phase 25 Build System Integration
+- [ ] Plan Phase 26 Config Parser Extension
 
 ### Blockers
 
@@ -73,17 +79,22 @@ None
 ## Session Continuity
 
 **For next session:**
-1. Phase 25 ready for planning
-2. McLuster source in `mcluster/` with existing Makefile
-3. ABYSS Makefile needs mcluster integration
-4. Key file: `src/read_parameter_file.cpp` for config parser extension
+1. Phase 25 complete - root Makefile builds ABYSS + McLuster
+2. Phase 26 ready for planning (Config Parser Extension)
+3. Key file: `src/read_parameter_file.cpp` for config parser extension
+4. McLuster binary accessible at src/mcluster after build
 
 **Key files for v3.0:**
+- `Makefile` - Root-level build orchestration (NEW - Phase 25)
 - `mcluster/Makefile` - existing McLuster build (gfortran + gcc)
-- `Makefile` - ABYSS build (needs mcluster target)
 - `src/main.cpp` - entry point (add mcluster detection)
 - `src/read_parameter_file.cpp` - TOML parser (add [mcluster] section)
 - `src/toml.hpp` - TOML library
+
+**Phase 25 outputs:**
+- Root Makefile with gfortran detection and conditional mcluster build
+- src/mcluster symlink to mcluster_sse binary
+- SUMMARY: `.planning/phases/25-build-system-integration/25-01-SUMMARY.md`
 
 ## Deferred Work (v2.4+)
 
@@ -101,4 +112,4 @@ MPI batching optimization deferred from v2.3:
 - Phase 23 analysis: `.planning/ANALYSIS.md`
 
 ---
-*Last updated: 2026-01-20 (v3.0 roadmap created)*
+*Last updated: 2026-01-20 (Phase 25-01 complete)*
