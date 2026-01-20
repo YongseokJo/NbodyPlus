@@ -8,6 +8,7 @@
 #include "performance.h"
 #include "profiler.h"
 #include "particle_data_mpi.h"
+#include "mcluster_config.h"
 #include <mpi.h>
 #include <unordered_map>
 #include <string>
@@ -81,6 +82,9 @@ extern int fixed_num_neighbors;         // Fixed neighbor count (if used)
 extern double initial_neighbor_radius;  // Initial neighbor search radius
 extern double r_search;                 // Few-body search radius (code units)
 extern double t_search;                 // Few-body search time (code units)
+
+// McLuster IC generation configuration
+extern MclusterConfig mcluster_config;
 
 // ============================================================================
 // Output settings
