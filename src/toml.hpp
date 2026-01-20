@@ -10,6 +10,7 @@
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 namespace toml {
 
@@ -114,6 +115,18 @@ public:
 			throw std::runtime_error("TOML value is not a table");
 		}
 		table_[key] = std::move(v);
+	}
+
+	std::vector<std::string> keys() const {
+		std::vector<std::string> result;
+		if (!is_table()) {
+			return result;
+		}
+		result.reserve(table_.size());
+		for (const auto& kv : table_) {
+			result.push_back(kv.first);
+		}
+		return result;
 	}
 
 	const std::string& as_string() const {
