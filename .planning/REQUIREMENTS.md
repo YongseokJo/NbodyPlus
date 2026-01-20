@@ -45,9 +45,9 @@ Requirements for McLuster IC generator integration. Each maps to roadmap phases.
 
 ### Verification
 
-- [ ] **VERIFY-01**: End-to-end test: config → McLuster → ABYSS simulation
-- [ ] **VERIFY-02**: Generate-only test: config → McLuster → IC file (no simulation)
-- [ ] **VERIFY-03**: Run-only test: existing IC → ABYSS simulation (regression)
+- [ ] **VERIFY-01**: End-to-end test: config -> McLuster -> ABYSS simulation
+- [ ] **VERIFY-02**: Generate-only test: config -> McLuster -> IC file (no simulation)
+- [ ] **VERIFY-03**: Run-only test: existing IC -> ABYSS simulation (regression)
 - [ ] **VERIFY-04**: Energy conservation check with McLuster-generated ICs
 
 ## v3.1+ Requirements
@@ -74,40 +74,40 @@ Deferred to future release.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| BUILD-01 | TBD | Pending |
-| BUILD-02 | TBD | Pending |
-| BUILD-03 | TBD | Pending |
-| BUILD-04 | TBD | Pending |
-| CONFIG-01 | TBD | Pending |
-| CONFIG-02 | TBD | Pending |
-| CONFIG-03 | TBD | Pending |
-| CONFIG-04 | TBD | Pending |
-| CONFIG-05 | TBD | Pending |
-| CONFIG-06 | TBD | Pending |
-| CONFIG-07 | TBD | Pending |
-| CONFIG-08 | TBD | Pending |
-| CONFIG-09 | TBD | Pending |
-| CONFIG-10 | TBD | Pending |
-| RUNTIME-01 | TBD | Pending |
-| RUNTIME-02 | TBD | Pending |
-| RUNTIME-03 | TBD | Pending |
-| RUNTIME-04 | TBD | Pending |
-| RUNTIME-05 | TBD | Pending |
-| RUNTIME-06 | TBD | Pending |
-| RUNTIME-07 | TBD | Pending |
-| OUTPUT-01 | TBD | Pending |
-| OUTPUT-02 | TBD | Pending |
-| OUTPUT-03 | TBD | Pending |
-| VERIFY-01 | TBD | Pending |
-| VERIFY-02 | TBD | Pending |
-| VERIFY-03 | TBD | Pending |
-| VERIFY-04 | TBD | Pending |
+| BUILD-01 | Phase 25 | Pending |
+| BUILD-02 | Phase 25 | Pending |
+| BUILD-03 | Phase 25 | Pending |
+| BUILD-04 | Phase 25 | Pending |
+| CONFIG-01 | Phase 26 | Pending |
+| CONFIG-02 | Phase 26 | Pending |
+| CONFIG-03 | Phase 26 | Pending |
+| CONFIG-04 | Phase 26 | Pending |
+| CONFIG-05 | Phase 26 | Pending |
+| CONFIG-06 | Phase 26 | Pending |
+| CONFIG-07 | Phase 26 | Pending |
+| CONFIG-08 | Phase 26 | Pending |
+| CONFIG-09 | Phase 26 | Pending |
+| CONFIG-10 | Phase 26 | Pending |
+| RUNTIME-01 | Phase 27 | Pending |
+| RUNTIME-02 | Phase 27 | Pending |
+| RUNTIME-03 | Phase 27 | Pending |
+| RUNTIME-04 | Phase 27 | Pending |
+| RUNTIME-05 | Phase 27 | Pending |
+| RUNTIME-06 | Phase 27 | Pending |
+| RUNTIME-07 | Phase 27 | Pending |
+| OUTPUT-01 | Phase 28 | Pending |
+| OUTPUT-02 | Phase 28 | Pending |
+| OUTPUT-03 | Phase 28 | Pending |
+| VERIFY-01 | Phase 29 | Pending |
+| VERIFY-02 | Phase 29 | Pending |
+| VERIFY-03 | Phase 29 | Pending |
+| VERIFY-04 | Phase 29 | Pending |
 
 **Coverage:**
 - v3.0 requirements: 28 total
-- Mapped to phases: 0 (pending roadmap creation)
-- Unmapped: 28
+- Mapped to phases: 28
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-01-20*
-*Last updated: 2026-01-20 after initial definition*
+*Last updated: 2026-01-20 after roadmap creation*
