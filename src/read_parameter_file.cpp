@@ -5,12 +5,18 @@
 #include <unordered_map>
 #include <stdexcept>
 #include <cstring>
+#include <algorithm>  // for std::min
+#include <climits>    // for INT_MAX
 #include "toml.hpp"
 #include "global.h"
+#include "mcluster_config.h"
 
 // Static storage for C-string pointers (to maintain compatibility with existing code)
 static std::string fname_storage;
 static std::string foutput_storage;
+
+// Global mcluster configuration
+MclusterConfig mcluster_config;
 
 class Config {
 public:
@@ -104,6 +110,10 @@ public:
 		}
 	}
 
+	const toml::value& getData() const {
+		return data_;
+	}
+
 private:
 	toml::value data_;
 };
@@ -119,6 +129,155 @@ void validateRange(int value, int min, int max, const std::string& name) {
 	if (value < min || value > max) {
 		throw std::runtime_error("Parameter '" + name + "' must be between " +
 			std::to_string(min) + " and " + std::to_string(max) + ", got: " + std::to_string(value));
+	}
+}
+
+// ============================================================================
+// McLuster config parsing and validation
+// ============================================================================
+
+// Levenshtein distance for typo detection in parameter names
+int levenshteinDistance(const std::string& s1, const std::string& s2) {
+	std::vector<std::vector<int>> dp(s1.size() + 1, std::vector<int>(s2.size() + 1));
+	for (size_t i = 0; i <= s1.size(); ++i) dp[i][0] = static_cast<int>(i);
+	for (size_t j = 0; j <= s2.size(); ++j) dp[0][j] = static_cast<int>(j);
+	for (size_t i = 1; i <= s1.size(); ++i) {
+		for (size_t j = 1; j <= s2.size(); ++j) {
+			int cost = (s1[i-1] == s2[j-1]) ? 0 : 1;
+			dp[i][j] = std::min({dp[i-1][j] + 1, dp[i][j-1] + 1, dp[i-1][j-1] + cost});
+		}
+	}
+	return dp[s1.size()][s2.size()];
+}
+
+// Suggest similar parameter name for typo correction
+std::string suggestSimilarParam(const std::string& unknown) {
+	int minDist = INT_MAX;
+	std::string suggestion;
+	for (const auto& valid : MCLUSTER_VALID_PARAMS) {
+		int dist = levenshteinDistance(unknown, valid);
+		if (dist < minDist && dist <= 2) {
+			minDist = dist;
+			suggestion = valid;
+		}
+	}
+	return suggestion;
+}
+
+// Range validation for mcluster double parameters
+void validateMclusterRange(double value, double min, double max, const std::string& name) {
+	if (value < min || value > max) {
+		throw std::runtime_error("[mcluster] section: Parameter '" + name + "' must be between " +
+			std::to_string(min) + " and " + std::to_string(max) + ", got: " + std::to_string(value));
+	}
+}
+
+// Parse [mcluster] section from TOML config
+void parseMclusterSection(const Config& config, MclusterConfig& mc) {
+	if (!config.hasTable("mcluster")) {
+		mc.has_mcluster_section = false;
+		return;
+	}
+	mc.has_mcluster_section = true;
+
+	// Get the mcluster table for key validation
+	const auto& data = config.getData();
+	const auto& mcluster_table = toml::find(data, "mcluster");
+	std::vector<std::string> keys = mcluster_table.keys();
+
+	// Check for unknown parameters
+	for (const auto& key : keys) {
+		bool found = false;
+		for (const auto& valid : MCLUSTER_VALID_PARAMS) {
+			if (key == valid) {
+				found = true;
+				break;
+			}
+		}
+		if (!found) {
+			std::string suggestion = suggestSimilarParam(key);
+			std::string msg = "[mcluster] section: Unknown parameter '" + key + "'";
+			if (!suggestion.empty()) {
+				msg += ", did you mean '" + suggestion + "'?";
+			}
+			throw std::runtime_error(msg);
+		}
+	}
+
+	// Parse N (number of stars)
+	mc.N = config.getNestedOr<int>("mcluster", "N", 0);
+	if (mc.N < 0) {
+		throw std::runtime_error("[mcluster] section: Parameter 'N' must be non-negative, got: " +
+			std::to_string(mc.N));
+	}
+
+	// Parse M (total mass in Msun)
+	mc.M = config.getNestedOr<double>("mcluster", "M", 0.0);
+	if (mc.M < 0) {
+		throw std::runtime_error("[mcluster] section: Parameter 'M' must be non-negative, got: " +
+			std::to_string(mc.M));
+	}
+
+	// Parse P (density profile)
+	mc.P = config.getNestedOr<int>("mcluster", "P", 0);
+	if (mc.P < -1 || mc.P > 3) {
+		throw std::runtime_error("[mcluster] section: Parameter 'P' must be -1, 0, 1, 2, or 3, got: " +
+			std::to_string(mc.P) + "\n  -1 = no density gradient\n  0 = Plummer (default)\n  " +
+			"1 = King\n  2 = Subr et al.\n  3 = EFF/Nuker");
+	}
+
+	// Parse R (half-mass radius in pc)
+	mc.R = config.getNestedOr<double>("mcluster", "R", 0.8);
+
+	// Parse f (IMF selection)
+	mc.f = config.getNestedOr<int>("mcluster", "f", 1);
+	if (mc.f < 0 || mc.f > 2) {
+		throw std::runtime_error("[mcluster] section: Parameter 'f' must be 0, 1, or 2, got: " +
+			std::to_string(mc.f) + "\n  0 = single mass\n  1 = Kroupa (default)\n  2 = user-defined");
+	}
+
+	// Parse Z (metallicity)
+	mc.Z = config.getNestedOr<double>("mcluster", "Z", 0.02);
+	validateMclusterRange(mc.Z, 0.0001, 0.03, "Z");
+
+	// Parse b (binary fraction)
+	mc.b = config.getNestedOr<double>("mcluster", "b", 0.0);
+	validateMclusterRange(mc.b, 0.0, 1.0, "b");
+
+	// Parse e (stellar evolution epoch in Myr)
+	mc.e = config.getNestedOr<double>("mcluster", "e", 0.0);
+	if (mc.e < 0) {
+		throw std::runtime_error("[mcluster] section: Parameter 'e' must be non-negative, got: " +
+			std::to_string(mc.e));
+	}
+
+	// Parse generate_only (ABYSS-specific)
+	mc.generate_only = config.getNestedOr<bool>("mcluster", "generate_only", false);
+}
+
+// Validate parsed mcluster configuration (N/M mutual exclusivity)
+void validateMclusterConfig(const MclusterConfig& mc) {
+	if (!mc.has_mcluster_section) {
+		return;  // No validation needed if section not present
+	}
+
+	// N and M mutual exclusivity check
+	if (mc.N == 0 && mc.M == 0.0) {
+		throw std::runtime_error("[mcluster] section: Must specify either 'N' (star count) or 'M' (total mass in Msun)");
+	}
+
+	if (mc.N > 0 && mc.M > 0.0) {
+		// Per CONTEXT.md: M takes precedence, warn user
+		if (my_rank == ROOT) {
+			std::cerr << "Warning: [mcluster] Both N and M specified; M takes precedence, ignoring N="
+			          << mc.N << std::endl;
+		}
+	}
+
+	// Minimum star count if using N
+	if (mc.N > 0 && mc.N < 3) {
+		throw std::runtime_error("[mcluster] section: Parameter 'N' must be at least 3 for N-body simulation, got: " +
+			std::to_string(mc.N));
 	}
 }
 
@@ -201,6 +360,10 @@ void readParameterFile() {
 			checkpoint_file = config.getNestedOr<std::string>("restart", "checkpoint_file", checkpoint_file);
 		}
 
+		// === McLuster parameters ===
+		parseMclusterSection(config, mcluster_config);
+		validateMclusterConfig(mcluster_config);
+
 		// === Compute derived quantities ===
 		enzo_time_step = end_time / 1e10;  // end_time should be yr
 		output_time_step = output_time_step / end_time;  // normalize to simulation time
@@ -231,6 +394,35 @@ void readParameterFile() {
 			std::cout << "Restart enabled:   " << (restart_enabled ? "yes" : "no") << std::endl;
 			if (restart_enabled && !checkpoint_file.empty()) {
 				std::cout << "Checkpoint file:   " << checkpoint_file << std::endl;
+			}
+			if (mcluster_config.has_mcluster_section) {
+				std::cout << "\n--- McLuster IC Generation ---\n";
+				if (mcluster_config.M > 0) {
+					std::cout << "M (total mass):    " << mcluster_config.M << " Msun\n";
+				} else {
+					std::cout << "N (star count):    " << mcluster_config.N << std::endl;
+				}
+				std::cout << "P (profile):       " << mcluster_config.P;
+				switch (mcluster_config.P) {
+					case -1: std::cout << " (none)"; break;
+					case 0: std::cout << " (Plummer)"; break;
+					case 1: std::cout << " (King)"; break;
+					case 2: std::cout << " (Subr)"; break;
+					case 3: std::cout << " (EFF/Nuker)"; break;
+				}
+				std::cout << std::endl;
+				std::cout << "R (half-mass):     " << mcluster_config.R << " pc\n";
+				std::cout << "f (IMF):           " << mcluster_config.f;
+				switch (mcluster_config.f) {
+					case 0: std::cout << " (single mass)"; break;
+					case 1: std::cout << " (Kroupa)"; break;
+					case 2: std::cout << " (user-defined)"; break;
+				}
+				std::cout << std::endl;
+				std::cout << "Z (metallicity):   " << mcluster_config.Z << std::endl;
+				std::cout << "b (binary frac):   " << mcluster_config.b << std::endl;
+				std::cout << "e (epoch):         " << mcluster_config.e << " Myr\n";
+				std::cout << "generate_only:     " << (mcluster_config.generate_only ? "yes" : "no") << std::endl;
 			}
 			std::cout << "==========================================\n\n";
 		}
