@@ -8,7 +8,7 @@ Filename = "nbody.dat"
 # Simulation end time (in years)
 # Original: 3.0e5 (3 outputs)
 # Phase 23 analysis: 1.0e7 (100 outputs)
-StopTime = 1.0e6
+StopTime = 2.0e6
 
 # Output directory for results
 OutputDirectory = "output"

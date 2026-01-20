@@ -2,103 +2,20 @@
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-01-18)
+See: .planning/PROJECT.md (updated 2026-01-20)
 
 **Core value:** Physics correctness (energy conservation) with clean architecture for targeted optimizations
-**Current focus:** Load Balance Profiling Complete — Ready for v2.3
+**Current focus:** Between milestones — ready for next milestone
 
 ## Current Position
 
-**Milestone:** v2.2 — Load Balance Profiling ✓ COMPLETE
-**Phase:** 20 (Analysis & Reporting) — Complete
-**Status:** Milestone complete, ready for archive
+**Milestone:** v2.3 Complete — Ready for next milestone
+**Phase:** None active
+**Status:** Milestone shipped, planning next
 
-Last activity: 2026-01-19 — Phase 20 complete, v2.2 milestone complete
+Last activity: 2026-01-20 — v2.3 milestone complete (rescoped)
 
-Progress: ██████████ 100% (6/6 phases)
-
-## v2.2 Overview
-
-**Load Balance Profiling** (Complete)
-
-6 phases, 24 requirements — all complete:
-- Phase 15: Neighbor Profiling (4 requirements) ✓
-- Phase 16: Queue Dispatch Profiling (4 requirements) ✓
-- Phase 17: Worker Distribution (4 requirements) ✓
-- Phase 18: Particle Type Breakdown (5 requirements) ✓
-- Phase 19: Memory Access Profiling (3 requirements) ✓
-- Phase 20: Analysis & Reporting (4 requirements) ✓
-
-**Goal achieved:** Complete profiling infrastructure to understand load imbalance sources
-
-**Measurements delivered:**
-- Neighbor count variance ✓
-- Queue dispatch overhead ✓
-- Worker distribution ✓
-- CM particle breakdown ✓
-- Few-body overhead ✓
-- Memory access patterns ✓
-- Analysis tooling ✓
-
-## Phase Status
-
-| Phase | Name | Status | Requirements |
-|-------|------|--------|--------------|
-| 15 | Neighbor Profiling | ✓ Complete | 4/4 |
-| 16 | Queue Dispatch Profiling | ✓ Complete | 4/4 |
-| 17 | Worker Distribution | ✓ Complete | 4/4 |
-| 18 | Particle Type Breakdown | ✓ Complete | 5/5 |
-| 19 | Memory Access Profiling | ✓ Complete | 3/3 |
-| 20 | Analysis & Reporting | ✓ Complete | 4/4 |
-
-## Phase 20 Summary
-
-Completed 2026-01-19 with 3 plans:
-- 20-01: Worker compute time histogram
-- 20-02: Enhanced Python analysis script
-- 20-03: Final ANALYSIS.md report
-
-Key deliverables:
-- `getWorkerTimeHistogram()` method in WorkerDistributionTracker
-- Worker time histogram in JSON and console output
-- `analyze_load_balance()` function in analyze_profiling.py
-- `print_findings()` for ranked imbalance sources
-- `generate_report()` for markdown report generation
-- `--report` CLI argument for report output
-- ANALYSIS.md with v2.3 recommendations
-
-## Phase 19 Summary
-
-Completed 2026-01-19 with 3 plans:
-- 19-01: CacheStats infrastructure (struct, PerfEventCounter wrapper, macros)
-- 19-02: Instrument force loop with cache measurement
-- 19-03: Memory statistics output (console/CSV/JSON)
-
-Key deliverables:
-- `CacheStats` struct for L1D/LL cache miss tracking
-- `PerfEventCounter` RAII wrapper for perf_event file descriptors
-- `PROFILE_CACHE_INIT/START/STOP` macros for instrumentation
-- Cache measurement around neighbor and CM force loops
-- Estimated memory bandwidth and operational intensity
-- Memory-bound vs compute-bound classification
-- Graceful fallback when counters unavailable
-
-## Phase 18 Summary
-
-Completed 2026-01-18 with 5 plans:
-- 18-01: ParticleTypeStats infrastructure (struct, member vars, macros)
-- 18-02: Instrument particle type tracking in compute_acceleration.cpp
-- 18-03: FewBodySearch migration (skipped - code in #ifdef unused)
-- 18-04: Instrument FewBodyIntegration timer in fb_integration.cpp
-- 18-05: Particle type statistics output (console/CSV/JSON)
-
-Key deliverables:
-- `ParticleTypeStats` struct for CM vs regular particle tracking
-- `PROFILE_PARTICLE_TYPE` macro for per-particle type instrumentation
-- CM/regular particle count and compute time tracking
-- CM ratio and time ratio calculations
-- FewBodyIntegration timer instrumentation (SDAR integration timing)
-- Few-body timing breakdown in output (search, init, integration, termination)
+Progress: ██████████ 100% (v2.3 shipped)
 
 ## Milestone History
 
@@ -108,27 +25,48 @@ Key deliverables:
 | v2.0 | Performance Profiling & Optimization | 8-10 (11 plans) | ✓ Shipped 2026-01-18 |
 | v2.1 | MPI Communication Optimization | 11-14 | ✗ Archived 2026-01-18 |
 | v2.2 | Load Balance Profiling | 15-20 (24 reqs) | ✓ Complete 2026-01-19 |
+| v2.3 | Performance Analysis & Instrumentation | 21-23 (11 plans) | ✓ Shipped 2026-01-20 |
+
+## v2.3 Summary (Just Shipped)
+
+**Goal:** Fix profiler instrumentation, clean output, comprehensive bottleneck analysis
+
+**Key Findings:**
+- **Compute:** 66% of time in IrregularForce
+- **MPI overhead:** 28% of time in message passing
+- **Load balance:** Excellent (ratio = 1.009)
+- **Primary bottleneck:** Dispatch starvation (2.4M events/interval)
+
+**Deferred to v2.4:**
+- Phase 24: MPI Message Batching (plans written, ready)
+- Phase 25: Dispatch Pipelining
+- Phase 26: Verification & Benchmarking
+
+**Report:** `.planning/ANALYSIS.md`
+
+## Deferred Work (Ready for v2.4)
+
+Phase 24 plans already created in `.planning/phases/24-mpi-batching/`:
+- 24-01: Batched Queue Infrastructure
+- 24-02: Root-side Batch Dispatch
+- 24-03: Worker-side Batch Processing
+- 24-04: Integration and Tuning
+
+Expected speedup: 16-27% from reducing 10.3M messages to 100K-1M.
+
+## Next Steps
+
+1. **Start next milestone:** `/gsd:new-milestone`
+   - Option A: v2.4 MPI Optimization (execute deferred phases 24-26)
+   - Option B: New feature milestone (e.g., McCluster Integration)
 
 ## Archive
 
 - v1.0 archived: `.planning/milestones/v1.0-mvp.md`
 - v2.0 archived: `.planning/milestones/v2.0-ROADMAP.md`, `.planning/milestones/v2.0-REQUIREMENTS.md`
 - v2.1 archived: `.planning/milestones/v2.1-ARCHIVE.md`
-
-## Next Action
-
-Run `/gsd:audit-milestone` to verify v2.2 completion before archiving.
-
-Or run `/gsd:complete-milestone` to archive v2.2 and prepare for v2.3.
-
-**Pending:** Git commits blocked by /tmp permission issue. Run the following to commit Phase 20 changes:
-```bash
-git add src/profiler.h tools/analyze_profiling.py
-git commit -m "feat(20): add worker histogram and enhanced analysis (ANLYS-02, ANLYS-04)"
-
-git add .planning/
-git commit -m "docs(20): complete Phase 20 Analysis & Reporting"
-```
+- v2.3 archived: `.planning/milestones/v2.3-ROADMAP.md`, `.planning/milestones/v2.3-REQUIREMENTS.md`
+- Phase 23 analysis: `.planning/ANALYSIS.md`
 
 ---
-*Last updated: 2026-01-19 (Phase 20 complete — v2.2 milestone complete)*
+*Last updated: 2026-01-20 (v2.3 milestone complete)*

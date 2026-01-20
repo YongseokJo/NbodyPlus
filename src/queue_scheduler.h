@@ -60,6 +60,7 @@ public:
                 (*worker)->addQueue(_queue);
                 WorkersToGo.insert(*worker);
                 _assigned_queues++;
+                PROFILE_WORKER_ASSIGNMENT((*worker)->MyRank);  // Phase 17
                 worker = _FreeWorkers.erase(worker);
                 //_queue.print();
             }
@@ -122,6 +123,7 @@ public:
                 (*worker)->addQueue(_queue);
                 WorkersToGo.insert(*worker);
                 _assigned_queues++;
+                PROFILE_WORKER_ASSIGNMENT((*worker)->MyRank);  // Phase 17
                 worker = _FreeWorkers.erase(worker);
                 //_queue.print();
             }
@@ -262,6 +264,7 @@ public:
             _FreeWorkers.erase(worker);
         }
         _assigned_queues++;
+        PROFILE_WORKER_ASSIGNMENT(worker->MyRank);  // Phase 17
     }
 
 #ifdef FEWBODY

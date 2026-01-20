@@ -45,7 +45,7 @@ enum class TimerID : int {
     IrregularPairsEvaluated,  // Count of neighbor pairs computed (work counter)
 
     // Regular step timers
-    RegularForce,
+    RegularCPU,      // CPU-side regular force (renamed from RegularForce)
     RegularUpdate,
     RegularTotal,
     RegularSendToGPU,
@@ -207,6 +207,14 @@ public:
 
     long long getMedian() const { return getPercentile(0.5); }
     long long getCount() const { return total_count_; }
+
+    // Phase 21: Access individual bucket counts for MPI aggregation
+    long long getBucket(int idx) const {
+        if (idx >= 0 && idx < NUM_BUCKETS) {
+            return buckets_[idx];
+        }
+        return 0;
+    }
 
 private:
     long long buckets_[NUM_BUCKETS] = {0};
@@ -603,11 +611,24 @@ struct CacheStats {
     long long measurement_count = 0;
     double total_time_seconds = 0.0;
 
+    // Phase 21: Status message for hardware counter availability
+    std::string status_message = "Not initialized";
+    bool counters_available = false;
+
+    // Phase 21: Timing-based estimates when hardware counters unavailable
+    double estimated_memory_bandwidth_gb_s = 0.0;
+    double estimated_operational_intensity = 0.0;
+    bool estimates_computed = false;
+
     void reset() {
         l1d_misses = l1d_accesses = 0;
         ll_misses = ll_accesses = 0;
         measurement_count = 0;
         total_time_seconds = 0.0;
+        // Keep status_message and counters_available - these reflect hardware state
+        estimates_computed = false;
+        estimated_memory_bandwidth_gb_s = 0.0;
+        estimated_operational_intensity = 0.0;
     }
 
     void accumulate(long long l1d_miss, long long l1d_acc,
@@ -649,6 +670,38 @@ struct CacheStats {
         // Machine balance for Skylake ~20 FLOPs/byte
         // If OI < 5, definitely memory-bound
         return getOperationalIntensity() < 5.0;
+    }
+};
+
+// Phase 21.5: Struct for transferring profiling data from workers to root
+// This avoids MPI_Reduce (collective) by using point-to-point MPI_Send/Recv
+struct ProfilerTransferData {
+    // Neighbor profiling stats (Phase 15)
+    long long neighbor_count;
+    long long neighbor_min;
+    long long neighbor_max;
+    double neighbor_sum;        // For computing mean on root
+    long long neighbor_histogram[15];
+
+    // Particle type stats (Phase 18)
+    long long regular_particle_count;
+    long long cm_particle_count;
+    long long regular_compute_time_ns;
+    long long cm_compute_time_ns;
+
+    // Worker compute time (Phase 17) - this worker's total
+    long long worker_compute_time_ns;
+    int worker_rank;
+
+    // Initialize to zeros
+    ProfilerTransferData() {
+        neighbor_count = neighbor_min = neighbor_max = 0;
+        neighbor_sum = 0.0;
+        for (int i = 0; i < 15; i++) neighbor_histogram[i] = 0;
+        regular_particle_count = cm_particle_count = 0;
+        regular_compute_time_ns = cm_compute_time_ns = 0;
+        worker_compute_time_ns = 0;
+        worker_rank = 0;
     }
 };
 
@@ -755,6 +808,14 @@ public:
     }
 
     long long getCount() const { return total_count_; }
+
+    // Phase 21: Access individual bucket counts for MPI aggregation
+    long long getBucket(int idx) const {
+        if (idx >= 0 && idx < NUM_BUCKETS) {
+            return buckets_[idx];
+        }
+        return 0;
+    }
 
     // Get bucket boundaries for analysis
     static std::pair<long long, long long> getBucketRange(int idx) {
@@ -896,6 +957,11 @@ public:
 
     // Reset interval statistics (called at each output)
     void resetIntervalStats() {
+        // Phase 21: Reset aggregation flags
+        neighbor_data_aggregated_ = false;
+        ptype_data_aggregated_ = false;
+        worker_data_aggregated_ = false;
+
         for (int i = 0; i < static_cast<int>(TimerID::NUM_TIMERS); ++i) {
             stats_[i].resetInterval();
         }
@@ -939,7 +1005,7 @@ public:
             "IrregularPredict",
             "IrregularPairsEvaluated",
             // Regular step timers
-            "RegularForce",
+            "RegularCPU",
             "RegularUpdate",
             "RegularTotal",
             "RegularSendToGPU",
@@ -1007,7 +1073,7 @@ public:
         printTimerLine(os, TimerID::IrregularUpdate, whole.interval_total_ns);
         os << "\n";
 
-        printTimerLine(os, TimerID::RegularForce, whole.interval_total_ns);
+        printTimerLine(os, TimerID::RegularCPU, whole.interval_total_ns);
         printTimerLine(os, TimerID::RegularSendToGPU, whole.interval_total_ns);
         printTimerLine(os, TimerID::RegularGPU, whole.interval_total_ns);
         printTimerLine(os, TimerID::RegularAdjust, whole.interval_total_ns);
@@ -1180,24 +1246,31 @@ public:
             os << "Total few-body: " << (fb_total * 1e-9) << "s\n";
         }
 
-        // Phase 19: Cache statistics
+        // Phase 19: Cache statistics (Phase 21: enhanced status messaging)
         const auto& cs = interval_cache_stats_;
-        if (cs.measurement_count > 0) {
-            os << "\n--- Cache Statistics ---\n";
-            if (areCacheCountersAvailable()) {
-                os << "L1D miss rate: " << std::fixed << std::setprecision(2)
-                   << (cs.getL1DMissRate() * 100) << "%"
-                   << " (" << cs.l1d_misses << "/" << cs.l1d_accesses << ")\n";
-                os << "LL (L3) miss rate: " << std::setprecision(2)
-                   << (cs.getLLMissRate() * 100) << "%"
-                   << " (" << cs.ll_misses << "/" << cs.ll_accesses << ")\n";
-                os << "Est. memory bandwidth: " << std::setprecision(2)
-                   << cs.getEstimatedBandwidthGBs() << " GB/s\n";
-                os << "Operational intensity: " << std::setprecision(2)
-                   << cs.getOperationalIntensity() << " FLOPs/byte\n";
-                os << "Classification: " << (cs.isMemoryBound() ? "MEMORY-BOUND" : "COMPUTE-BOUND") << "\n";
-            } else {
-                os << "Cache counters not available (perf_event initialization failed)\n";
+        os << "\n--- Cache Statistics ---\n";
+        os << "Status: " << cs.status_message << "\n";
+        if (cs.counters_available && cs.measurement_count > 0) {
+            os << "L1D miss rate: " << std::fixed << std::setprecision(2)
+               << (cs.getL1DMissRate() * 100) << "%"
+               << " (" << cs.l1d_misses << "/" << cs.l1d_accesses << ")\n";
+            os << "LL (L3) miss rate: " << std::setprecision(2)
+               << (cs.getLLMissRate() * 100) << "%"
+               << " (" << cs.ll_misses << "/" << cs.ll_accesses << ")\n";
+            os << "Est. memory bandwidth: " << std::setprecision(2)
+               << cs.getEstimatedBandwidthGBs() << " GB/s\n";
+            os << "Operational intensity: " << std::setprecision(2)
+               << cs.getOperationalIntensity() << " FLOPs/byte\n";
+            os << "Classification: " << (cs.isMemoryBound() ? "MEMORY-BOUND" : "COMPUTE-BOUND") << "\n";
+        } else if (!cs.counters_available) {
+            // Phase 21: Provide guidance when counters unavailable
+            os << "(To enable: run as root or set /proc/sys/kernel/perf_event_paranoid to 0)\n";
+            if (cs.estimates_computed) {
+                os << "Timing-based estimates:\n";
+                os << "  Est. memory bandwidth: " << std::fixed << std::setprecision(2)
+                   << cs.estimated_memory_bandwidth_gb_s << " GB/s\n";
+                os << "  Est. operational intensity: " << std::setprecision(2)
+                   << cs.estimated_operational_intensity << " FLOPs/byte\n";
             }
         }
     }
@@ -1310,39 +1383,81 @@ public:
         if (!file.is_open()) return;
 
         file << "{\n";
+        file << "  \"schema_version\": \"2.3\",\n";
         file << "  \"step\": " << step << ",\n";
         file << "  \"sim_time_myr\": " << sim_time << ",\n";
-        file << "  \"timers\": {\n";
 
+        // Summary section with key metrics
+        const auto& whole = stats_[static_cast<int>(TimerID::WholeRoutine)];
+        double wall_time_s = whole.interval_total_ns * 1e-9;
+        double load_balance = worker_data_aggregated_ && aggregated_num_workers_ > 0 ?
+            computeAggregatedLoadBalance() : interval_worker_distribution_.getLoadBalanceRatio();
+        long long total_particles = ptype_data_aggregated_ ?
+            (aggregated_ptype_regular_count_ + aggregated_ptype_cm_count_) :
+            interval_particle_type_stats_.getTotalParticles();
+        double throughput = wall_time_s > 0 ? total_particles / wall_time_s : 0.0;
+
+        // Identify primary bottleneck (highest non-compute timer)
+        std::string bottleneck = identifyPrimaryBottleneck();
+
+        file << "  \"summary\": {\n";
+        file << "    \"wall_time_s\": " << std::fixed << std::setprecision(2) << wall_time_s << ",\n";
+        file << "    \"throughput_particles_per_s\": " << std::fixed << std::setprecision(0) << throughput << ",\n";
+        file << "    \"load_balance_ratio\": " << std::fixed << std::setprecision(3) << load_balance << ",\n";
+        file << "    \"primary_bottleneck\": \"" << bottleneck << "\"\n";
+        file << "  },\n";
+
+        // Timers section - only output non-zero interval data
+        file << "  \"timers\": {\n";
+        bool first_timer = true;
         for (int i = 0; i < static_cast<int>(TimerID::NUM_TIMERS); ++i) {
             const auto& s = stats_[i];
+            // Skip timers with zero interval data
+            if (s.interval_total_ns == 0 && s.interval_count == 0) {
+                continue;
+            }
+            if (!first_timer) file << ",\n";
+            first_timer = false;
             file << "    \"" << getTimerName(static_cast<TimerID>(i)) << "\": {\n";
-            file << "      \"total_ns\": " << s.total_ns << ",\n";
             file << "      \"interval_ns\": " << s.interval_total_ns << ",\n";
-            file << "      \"count\": " << s.count << ",\n";
-            file << "      \"interval_count\": " << s.interval_count << ",\n";
-            file << "      \"min_ns\": " << (s.min_ns == LLONG_MAX ? 0 : s.min_ns) << ",\n";
-            file << "      \"max_ns\": " << s.max_ns << ",\n";
-            file << "      \"mean_ns\": " << s.meanNs() << "\n";
+            file << "      \"count\": " << s.interval_count << ",\n";
+            file << "      \"mean_ns\": " << std::fixed << std::setprecision(0) << s.intervalMeanNs() << "\n";
             file << "    }";
-            if (i < static_cast<int>(TimerID::NUM_TIMERS) - 1) file << ",";
-            file << "\n";
         }
+        file << "\n";
 
         file << "  },\n";  // Close timers object
 
-        // Phase 15: Neighbor profiling
+        // Phase 15: Neighbor profiling (Phase 21: use aggregated data if available)
         file << "  \"neighbor_profiling\": {\n";
-        const auto& ns = interval_neighbor_count_stats_;
-        file << "    \"count\": " << ns.count() << ",\n";
-        file << "    \"min\": " << ns.min_val() << ",\n";
-        file << "    \"max\": " << ns.max_val() << ",\n";
-        file << "    \"mean\": " << std::fixed << std::setprecision(2) << ns.mean() << ",\n";
-        file << "    \"stddev\": " << std::fixed << std::setprecision(2) << ns.stddev() << ",\n";
-        file << "    \"outlier_count\": " << interval_outlier_count_ << ",\n";
-        file << "    \"time_correlation\": " << std::fixed << std::setprecision(4)
-             << interval_neighbor_time_correlation_.correlation() << ",\n";
-        file << "    \"histogram\": " << interval_neighbor_histogram_.toJSON() << "\n";
+        if (neighbor_data_aggregated_) {
+            file << "    \"count\": " << aggregated_neighbor_count_ << ",\n";
+            file << "    \"min\": " << aggregated_neighbor_min_ << ",\n";
+            file << "    \"max\": " << aggregated_neighbor_max_ << ",\n";
+            file << "    \"mean\": " << std::fixed << std::setprecision(2) << aggregated_neighbor_mean_ << ",\n";
+            file << "    \"stddev\": 0.0,\n";  // Not easily aggregated across ranks
+            file << "    \"outlier_count\": " << interval_outlier_count_ << ",\n";
+            file << "    \"time_correlation\": " << std::fixed << std::setprecision(4)
+                 << interval_neighbor_time_correlation_.correlation() << ",\n";
+            // Use aggregated histogram buckets
+            file << "    \"histogram\": {\"buckets\": [";
+            for (int i = 0; i < Histogram::NUM_BUCKETS; i++) {
+                if (i > 0) file << ", ";
+                file << aggregated_neighbor_histogram_buckets_[i];
+            }
+            file << "]}\n";
+        } else {
+            const auto& ns = interval_neighbor_count_stats_;
+            file << "    \"count\": " << ns.count() << ",\n";
+            file << "    \"min\": " << ns.min_val() << ",\n";
+            file << "    \"max\": " << ns.max_val() << ",\n";
+            file << "    \"mean\": " << std::fixed << std::setprecision(2) << ns.mean() << ",\n";
+            file << "    \"stddev\": " << std::fixed << std::setprecision(2) << ns.stddev() << ",\n";
+            file << "    \"outlier_count\": " << interval_outlier_count_ << ",\n";
+            file << "    \"time_correlation\": " << std::fixed << std::setprecision(4)
+                 << interval_neighbor_time_correlation_.correlation() << ",\n";
+            file << "    \"histogram\": " << interval_neighbor_histogram_.toJSON() << "\n";
+        }
         file << "  },\n";  // Close neighbor_profiling
 
         // Phase 16: Queue dispatch profiling
@@ -1362,13 +1477,13 @@ public:
         file << "    \"is_dispatch_bottleneck\": " << (isDispatchBottleneck() ? "true" : "false") << "\n";
         file << "  },\n";  // Close queue_dispatch, add comma for worker_distribution
 
-        // Phase 17: Worker distribution
+        // Phase 17: Worker distribution (Phase 21.5: use aggregated data if available)
         file << "  \"worker_distribution\": {\n";
         const auto& wd = interval_worker_distribution_;
         wd.computeStats();
         const auto& pcs = wd.getParticleCountStats();
         file << "    \"total_particles\": " << wd.getTotalParticles() << ",\n";
-        file << "    \"num_workers\": " << wd.getNumWorkers() << ",\n";
+        file << "    \"num_workers\": " << (worker_data_aggregated_ ? aggregated_num_workers_ : wd.getNumWorkers()) << ",\n";
         file << "    \"particles_per_worker\": {\n";
         file << "      \"min\": " << pcs.min_val() << ",\n";
         file << "      \"max\": " << pcs.max_val() << ",\n";
@@ -1376,13 +1491,41 @@ public:
         file << "      \"stddev\": " << std::fixed << std::setprecision(2) << pcs.stddev() << "\n";
         file << "    },\n";
         file << "    \"compute_time\": {\n";
-        file << "      \"min_s\": " << std::fixed << std::setprecision(4) << wd.getMinComputeTimeSeconds() << ",\n";
-        file << "      \"max_s\": " << std::fixed << std::setprecision(4) << wd.getMaxComputeTimeSeconds() << ",\n";
-        file << "      \"mean_s\": " << std::fixed << std::setprecision(4) << wd.getMeanComputeTimeSeconds() << "\n";
-        file << "    },\n";
-        file << "    \"load_balance_ratio\": " << std::fixed << std::setprecision(3) << wd.getLoadBalanceRatio() << ",\n";
-        file << "    \"max_time_worker\": " << wd.getMaxTimeWorker() << ",\n";
-        file << "    \"is_imbalanced\": " << (wd.hasSignificantImbalance() ? "true" : "false") << ",\n";
+        if (worker_data_aggregated_ && aggregated_num_workers_ > 0) {
+            // Phase 21.5: Use aggregated worker times from MPI collection
+            long long min_time = LLONG_MAX, max_time = 0, total_time = 0;
+            int active_workers = 0, max_worker = 0;
+            for (int w = 1; w <= aggregated_num_workers_; w++) {
+                if (aggregated_worker_times_[w] > 0) {
+                    min_time = std::min(min_time, aggregated_worker_times_[w]);
+                    if (aggregated_worker_times_[w] > max_time) {
+                        max_time = aggregated_worker_times_[w];
+                        max_worker = w;
+                    }
+                    total_time += aggregated_worker_times_[w];
+                    active_workers++;
+                }
+            }
+            double min_s = (active_workers > 0 && min_time != LLONG_MAX) ? min_time * 1e-9 : 0.0;
+            double max_s = max_time * 1e-9;
+            double mean_s = (active_workers > 0) ? (total_time * 1e-9) / active_workers : 0.0;
+            double balance_ratio = (active_workers > 0 && total_time > 0) ? max_time / (static_cast<double>(total_time) / active_workers) : 1.0;
+            file << "      \"min_s\": " << std::fixed << std::setprecision(4) << min_s << ",\n";
+            file << "      \"max_s\": " << std::fixed << std::setprecision(4) << max_s << ",\n";
+            file << "      \"mean_s\": " << std::fixed << std::setprecision(4) << mean_s << "\n";
+            file << "    },\n";
+            file << "    \"load_balance_ratio\": " << std::fixed << std::setprecision(3) << balance_ratio << ",\n";
+            file << "    \"max_time_worker\": " << max_worker << ",\n";
+            file << "    \"is_imbalanced\": " << (balance_ratio > 1.2 ? "true" : "false") << ",\n";
+        } else {
+            file << "      \"min_s\": " << std::fixed << std::setprecision(4) << wd.getMinComputeTimeSeconds() << ",\n";
+            file << "      \"max_s\": " << std::fixed << std::setprecision(4) << wd.getMaxComputeTimeSeconds() << ",\n";
+            file << "      \"mean_s\": " << std::fixed << std::setprecision(4) << wd.getMeanComputeTimeSeconds() << "\n";
+            file << "    },\n";
+            file << "    \"load_balance_ratio\": " << std::fixed << std::setprecision(3) << wd.getLoadBalanceRatio() << ",\n";
+            file << "    \"max_time_worker\": " << wd.getMaxTimeWorker() << ",\n";
+            file << "    \"is_imbalanced\": " << (wd.hasSignificantImbalance() ? "true" : "false") << ",\n";
+        }
         const auto& heavy = wd.getHeavyParticles();
         file << "    \"heavy_particle_count\": " << heavy.size() << ",\n";
         file << "    \"heavy_particles\": [\n";
@@ -1399,15 +1542,30 @@ public:
         file << "    \"worker_time_histogram\": " << wd.getWorkerTimeHistogram().toJSON() << "\n";
         file << "  },\n";  // Close worker_distribution
 
-        // Phase 18: Particle type breakdown
+        // Phase 18: Particle type breakdown (Phase 21: use aggregated data if available)
         file << "  \"particle_type_breakdown\": {\n";
-        const auto& pt = interval_particle_type_stats_;
-        file << "    \"regular_count\": " << pt.regular_particle_count << ",\n";
-        file << "    \"cm_count\": " << pt.cm_particle_count << ",\n";
-        file << "    \"cm_ratio\": " << std::fixed << std::setprecision(4) << pt.getCMRatio() << ",\n";
-        file << "    \"regular_time_s\": " << std::fixed << std::setprecision(4) << pt.getRegularTimeSeconds() << ",\n";
-        file << "    \"cm_time_s\": " << std::fixed << std::setprecision(4) << pt.getCMTimeSeconds() << ",\n";
-        file << "    \"cm_time_ratio\": " << std::fixed << std::setprecision(4) << pt.getCMTimeRatio() << "\n";
+        if (ptype_data_aggregated_) {
+            long long total = aggregated_ptype_regular_count_ + aggregated_ptype_cm_count_;
+            double cm_ratio = total > 0 ? static_cast<double>(aggregated_ptype_cm_count_) / total : 0.0;
+            double regular_time_s = aggregated_ptype_regular_time_ * 1e-9;
+            double cm_time_s = aggregated_ptype_cm_time_ * 1e-9;
+            double total_time = regular_time_s + cm_time_s;
+            double cm_time_ratio = total_time > 0 ? cm_time_s / total_time : 0.0;
+            file << "    \"regular_count\": " << aggregated_ptype_regular_count_ << ",\n";
+            file << "    \"cm_count\": " << aggregated_ptype_cm_count_ << ",\n";
+            file << "    \"cm_ratio\": " << std::fixed << std::setprecision(4) << cm_ratio << ",\n";
+            file << "    \"regular_time_s\": " << std::fixed << std::setprecision(4) << regular_time_s << ",\n";
+            file << "    \"cm_time_s\": " << std::fixed << std::setprecision(4) << cm_time_s << ",\n";
+            file << "    \"cm_time_ratio\": " << std::fixed << std::setprecision(4) << cm_time_ratio << "\n";
+        } else {
+            const auto& pt = interval_particle_type_stats_;
+            file << "    \"regular_count\": " << pt.regular_particle_count << ",\n";
+            file << "    \"cm_count\": " << pt.cm_particle_count << ",\n";
+            file << "    \"cm_ratio\": " << std::fixed << std::setprecision(4) << pt.getCMRatio() << ",\n";
+            file << "    \"regular_time_s\": " << std::fixed << std::setprecision(4) << pt.getRegularTimeSeconds() << ",\n";
+            file << "    \"cm_time_s\": " << std::fixed << std::setprecision(4) << pt.getCMTimeSeconds() << ",\n";
+            file << "    \"cm_time_ratio\": " << std::fixed << std::setprecision(4) << pt.getCMTimeRatio() << "\n";
+        }
         file << "  },\n";  // Close particle_type_breakdown
 
         // Phase 18: Few-body timing breakdown
@@ -1422,9 +1580,11 @@ public:
         file << "    \"termination_s\": " << (fb_term.interval_total_ns * 1e-9) << "\n";
         file << "  },\n";  // Close fewbody_timing, add comma
 
-        // Phase 19: Cache statistics
+        // Phase 19: Cache statistics (Phase 21: enhanced status messaging)
         file << "  \"cache_statistics\": {\n";
         const auto& cs = interval_cache_stats_;
+        file << "    \"counters_available\": " << (cs.counters_available ? "true" : "false") << ",\n";
+        file << "    \"status\": \"" << cs.status_message << "\",\n";
         file << "    \"l1d_misses\": " << cs.l1d_misses << ",\n";
         file << "    \"l1d_accesses\": " << cs.l1d_accesses << ",\n";
         file << "    \"l1d_miss_rate\": " << std::fixed << std::setprecision(4) << cs.getL1DMissRate() << ",\n";
@@ -1433,8 +1593,15 @@ public:
         file << "    \"ll_miss_rate\": " << std::fixed << std::setprecision(4) << cs.getLLMissRate() << ",\n";
         file << "    \"estimated_bandwidth_gbs\": " << std::fixed << std::setprecision(4) << cs.getEstimatedBandwidthGBs() << ",\n";
         file << "    \"operational_intensity\": " << std::fixed << std::setprecision(4) << cs.getOperationalIntensity() << ",\n";
-        file << "    \"memory_bound\": " << (cs.isMemoryBound() ? "true" : "false") << ",\n";
-        file << "    \"counters_available\": " << (areCacheCountersAvailable() ? "true" : "false") << "\n";
+        file << "    \"memory_bound\": " << (cs.isMemoryBound() ? "true" : "false");
+        // Phase 21: Include timing-based estimates when hardware counters unavailable
+        if (!cs.counters_available && cs.estimates_computed) {
+            file << ",\n    \"timing_estimated_bandwidth_gb_s\": " << std::fixed << std::setprecision(2)
+                 << cs.estimated_memory_bandwidth_gb_s;
+            file << ",\n    \"timing_estimated_op_intensity\": " << std::fixed << std::setprecision(2)
+                 << cs.estimated_operational_intensity;
+        }
+        file << "\n";
         file << "  }\n";  // Close cache_statistics
         file << "}\n";    // Close root object
     }
@@ -1557,6 +1724,24 @@ public:
 
     int getCurrentParticleWorkerRank() const { return current_particle_worker_rank_; }
 
+    // Phase 21: Compute memory estimates from timing when hardware counters unavailable
+    void computeCacheEstimates(double force_loop_time_s, long long particles_processed,
+                               long long total_neighbors) {
+        if (interval_cache_stats_.counters_available) return;  // Use real data if available
+
+        // Estimate operational intensity
+        // Each particle-neighbor pair: ~30 FLOPs (distance, force, accumulation)
+        // Each particle-neighbor pair: ~48 bytes read (2 particles * 24 bytes pos/vel)
+        double flops = total_neighbors * 30.0;
+        double bytes_accessed = total_neighbors * 48.0;
+
+        if (force_loop_time_s > 0 && bytes_accessed > 0) {
+            interval_cache_stats_.estimated_memory_bandwidth_gb_s = bytes_accessed / force_loop_time_s / 1e9;
+            interval_cache_stats_.estimated_operational_intensity = flops / bytes_accessed;
+            interval_cache_stats_.estimates_computed = true;
+        }
+    }
+
     const WorkerDistributionTracker& getWorkerDistribution() const {
         return worker_distribution_;
     }
@@ -1589,9 +1774,26 @@ public:
 
         cache_counters_initialized_ = l1d_ok && ll_ok;
         if (!cache_counters_initialized_) {
+            // Phase 21: Set descriptive status message on failure
+            cache_stats_.status_message = "Hardware counters unavailable (perf_event restricted on this system)";
+            cache_stats_.counters_available = false;
+            interval_cache_stats_.status_message = cache_stats_.status_message;
+            interval_cache_stats_.counters_available = false;
             std::cerr << "Warning: Could not initialize cache counters. "
                       << "Cache profiling will be disabled.\n";
+        } else {
+            // Phase 21: Set success status message
+            cache_stats_.status_message = "Hardware counters active";
+            cache_stats_.counters_available = true;
+            interval_cache_stats_.status_message = cache_stats_.status_message;
+            interval_cache_stats_.counters_available = true;
         }
+#else
+        // Phase 21: Non-Linux systems don't support perf_event
+        cache_stats_.status_message = "Hardware counters not supported on this platform";
+        cache_stats_.counters_available = false;
+        interval_cache_stats_.status_message = cache_stats_.status_message;
+        interval_cache_stats_.counters_available = false;
 #endif
     }
 
@@ -1651,6 +1853,210 @@ public:
 
     const ParticleTypeStats& getIntervalParticleTypeStats() const {
         return interval_particle_type_stats_;
+    }
+
+    // Phase 21: Aggregate profiling data from all workers to root
+    // This must be called before any profiling output (dumpToJSON, dumpToCSV, etc.)
+    void aggregateFromWorkers() {
+#ifdef USE_MPI
+        int world_rank, world_size;
+        MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
+        MPI_Comm_size(MPI_COMM_WORLD, &world_size);
+
+        // Aggregate neighbor statistics
+        {
+            // Pack local data
+            double local_data[4] = {
+                static_cast<double>(interval_neighbor_count_stats_.count()),
+                static_cast<double>(interval_neighbor_count_stats_.min_val()),
+                static_cast<double>(interval_neighbor_count_stats_.max_val()),
+                interval_neighbor_count_stats_.mean()
+            };
+            double global_count, global_min, global_max;
+
+            // Reduce: sum counts, min of mins, max of maxes
+            MPI_Reduce(&local_data[0], &global_count, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+            MPI_Reduce(&local_data[1], &global_min, 1, MPI_DOUBLE, MPI_MIN, 0, MPI_COMM_WORLD);
+            MPI_Reduce(&local_data[2], &global_max, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+
+            // For mean, we need weighted average: sum(count_i * mean_i) / sum(count_i)
+            double weighted_sum = local_data[0] * local_data[3];  // count * mean
+            double global_weighted_sum;
+            MPI_Reduce(&weighted_sum, &global_weighted_sum, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+
+            if (world_rank == 0 && global_count > 0) {
+                // Update root's stats with aggregated data
+                aggregated_neighbor_count_ = static_cast<long long>(global_count);
+                aggregated_neighbor_min_ = static_cast<long long>(global_min);
+                aggregated_neighbor_max_ = static_cast<long long>(global_max);
+                aggregated_neighbor_mean_ = global_weighted_sum / global_count;
+                neighbor_data_aggregated_ = true;
+            }
+        }
+
+        // Aggregate neighbor histogram buckets
+        {
+            long long local_buckets[NeighborHistogram::NUM_BUCKETS];
+            for (int i = 0; i < NeighborHistogram::NUM_BUCKETS; i++) {
+                local_buckets[i] = interval_neighbor_histogram_.getBucket(i);
+            }
+            long long global_buckets[NeighborHistogram::NUM_BUCKETS];
+            MPI_Reduce(local_buckets, global_buckets, NeighborHistogram::NUM_BUCKETS,
+                       MPI_LONG_LONG, MPI_SUM, 0, MPI_COMM_WORLD);
+
+            if (world_rank == 0) {
+                for (int i = 0; i < NeighborHistogram::NUM_BUCKETS; i++) {
+                    aggregated_neighbor_histogram_buckets_[i] = global_buckets[i];
+                }
+            }
+        }
+
+        // Aggregate particle type statistics
+        {
+            long long local_ptype[4] = {
+                interval_particle_type_stats_.regular_particle_count,
+                interval_particle_type_stats_.cm_particle_count,
+                interval_particle_type_stats_.regular_compute_time_ns,
+                interval_particle_type_stats_.cm_compute_time_ns
+            };
+            long long global_ptype[4];
+            MPI_Reduce(local_ptype, global_ptype, 4, MPI_LONG_LONG, MPI_SUM, 0, MPI_COMM_WORLD);
+
+            if (world_rank == 0) {
+                aggregated_ptype_regular_count_ = global_ptype[0];
+                aggregated_ptype_cm_count_ = global_ptype[1];
+                aggregated_ptype_regular_time_ = global_ptype[2];
+                aggregated_ptype_cm_time_ = global_ptype[3];
+                ptype_data_aggregated_ = true;
+            }
+        }
+
+        // Aggregate worker distribution (per-worker stats)
+        {
+            int num_workers = interval_worker_distribution_.getNumWorkers();
+            if (num_workers > 0 && num_workers <= MAX_WORKERS) {
+                std::vector<long long> local_particles(num_workers + 1, 0);
+                std::vector<long long> local_times(num_workers + 1, 0);
+
+                for (int w = 1; w <= num_workers; w++) {
+                    local_particles[w] = interval_worker_distribution_.getParticleCount(w);
+                    local_times[w] = interval_worker_distribution_.getComputeTimeNs(w);
+                }
+
+                std::vector<long long> global_particles(num_workers + 1, 0);
+                std::vector<long long> global_times(num_workers + 1, 0);
+
+                MPI_Reduce(local_particles.data(), global_particles.data(),
+                           num_workers + 1, MPI_LONG_LONG, MPI_SUM, 0, MPI_COMM_WORLD);
+                MPI_Reduce(local_times.data(), global_times.data(),
+                           num_workers + 1, MPI_LONG_LONG, MPI_SUM, 0, MPI_COMM_WORLD);
+
+                if (world_rank == 0) {
+                    for (int w = 1; w <= num_workers; w++) {
+                        aggregated_worker_particles_[w] = global_particles[w];
+                        aggregated_worker_times_[w] = global_times[w];
+                    }
+                    worker_data_aggregated_ = true;
+                    aggregated_num_workers_ = num_workers;
+                }
+            }
+        }
+#endif
+    }
+
+    // Phase 21.5: Pack local profiling data for transfer to root
+    // Called by workers when they receive TASK_SEND_PROFILING
+    ProfilerTransferData packTransferData(int worker_rank) const {
+        ProfilerTransferData data;
+
+        // Neighbor stats from this worker
+        const auto& ns = interval_neighbor_count_stats_;
+        data.neighbor_count = ns.count();
+        data.neighbor_min = ns.count() > 0 ? ns.min_val() : 0;
+        data.neighbor_max = ns.count() > 0 ? ns.max_val() : 0;
+        data.neighbor_sum = ns.count() > 0 ? ns.mean() * ns.count() : 0.0;
+
+        // Neighbor histogram
+        for (int i = 0; i < 15; i++) {
+            data.neighbor_histogram[i] = interval_neighbor_histogram_.getBucket(i);
+        }
+
+        // Particle type stats from this worker
+        data.regular_particle_count = interval_particle_type_stats_.regular_particle_count;
+        data.cm_particle_count = interval_particle_type_stats_.cm_particle_count;
+        data.regular_compute_time_ns = interval_particle_type_stats_.regular_compute_time_ns;
+        data.cm_compute_time_ns = interval_particle_type_stats_.cm_compute_time_ns;
+
+        // This worker's compute time
+        data.worker_compute_time_ns = interval_worker_distribution_.getComputeTimeNs(worker_rank);
+        data.worker_rank = worker_rank;
+
+        return data;
+    }
+
+    // Phase 21.5: Aggregate profiling data from workers (called by root)
+    // This replaces the MPI_Reduce-based aggregateFromWorkers() for worker data
+    void aggregateFromTransferData(const std::vector<ProfilerTransferData>& worker_data, int num_workers) {
+        // Aggregate neighbor stats
+        aggregated_neighbor_count_ = 0;
+        aggregated_neighbor_min_ = LLONG_MAX;
+        aggregated_neighbor_max_ = 0;
+        double total_neighbor_sum = 0.0;
+
+        for (int i = 0; i < 15; i++) {
+            aggregated_neighbor_histogram_buckets_[i] = 0;
+        }
+
+        for (const auto& wd : worker_data) {
+            aggregated_neighbor_count_ += wd.neighbor_count;
+            if (wd.neighbor_count > 0) {
+                if (wd.neighbor_min < aggregated_neighbor_min_) {
+                    aggregated_neighbor_min_ = wd.neighbor_min;
+                }
+                if (wd.neighbor_max > aggregated_neighbor_max_) {
+                    aggregated_neighbor_max_ = wd.neighbor_max;
+                }
+            }
+            total_neighbor_sum += wd.neighbor_sum;
+
+            for (int i = 0; i < 15; i++) {
+                aggregated_neighbor_histogram_buckets_[i] += wd.neighbor_histogram[i];
+            }
+        }
+
+        if (aggregated_neighbor_count_ > 0) {
+            aggregated_neighbor_mean_ = total_neighbor_sum / aggregated_neighbor_count_;
+            neighbor_data_aggregated_ = true;
+        } else {
+            aggregated_neighbor_min_ = 0;
+            aggregated_neighbor_mean_ = 0.0;
+        }
+
+        // Aggregate particle type stats
+        aggregated_ptype_regular_count_ = 0;
+        aggregated_ptype_cm_count_ = 0;
+        aggregated_ptype_regular_time_ = 0;
+        aggregated_ptype_cm_time_ = 0;
+
+        for (const auto& wd : worker_data) {
+            aggregated_ptype_regular_count_ += wd.regular_particle_count;
+            aggregated_ptype_cm_count_ += wd.cm_particle_count;
+            aggregated_ptype_regular_time_ += wd.regular_compute_time_ns;
+            aggregated_ptype_cm_time_ += wd.cm_compute_time_ns;
+        }
+
+        if (aggregated_ptype_regular_count_ + aggregated_ptype_cm_count_ > 0) {
+            ptype_data_aggregated_ = true;
+        }
+
+        // Aggregate worker compute times (update the distribution tracker)
+        for (const auto& wd : worker_data) {
+            if (wd.worker_rank > 0 && wd.worker_rank <= num_workers) {
+                aggregated_worker_times_[wd.worker_rank] = wd.worker_compute_time_ns;
+            }
+        }
+        worker_data_aggregated_ = true;
+        aggregated_num_workers_ = num_workers;
     }
 
     // Enable histogram for a specific timer (Phase 8)
@@ -1724,6 +2130,9 @@ public:
                 agg.throughput = sum_seconds > 0 ? sum_work / sum_seconds : 0.0;
             }
         }
+
+        // Phase 21: Also aggregate neighbor, particle type, and worker distribution stats
+        aggregateFromWorkers();
     }
 
     // Get load balance ratio for a timer (Phase 8)
@@ -1772,7 +2181,7 @@ public:
         printAggregatedLine(os, TimerID::IrregularUpdate);
         os << "\n";
 
-        printAggregatedLine(os, TimerID::RegularForce);
+        printAggregatedLine(os, TimerID::RegularCPU);
         printAggregatedLine(os, TimerID::RegularGPU);
         printAggregatedLine(os, TimerID::RegularUpdate);
         os << "\n";
@@ -1902,7 +2311,7 @@ private:
 
         // Enable histograms for key timers (Phase 8)
         enableHistogramForTimer(TimerID::IrregularForce);
-        enableHistogramForTimer(TimerID::RegularForce);
+        enableHistogramForTimer(TimerID::RegularCPU);
         enableHistogramForTimer(TimerID::FewBodyIntegration);
         enableHistogramForTimer(TimerID::QueueWait);
         enableHistogramForTimer(TimerID::WorkerCompute);
@@ -1912,6 +2321,65 @@ private:
 
     void enableHistogramForTimer(TimerID id) {
         stats_[static_cast<int>(id)].enableHistogram();
+    }
+
+    // Phase 22: Compute aggregated load balance ratio from collected worker times
+    double computeAggregatedLoadBalance() const {
+        if (aggregated_num_workers_ <= 0) return 1.0;
+        long long max_time = 0, total_time = 0;
+        int active_workers = 0;
+        for (int w = 1; w <= aggregated_num_workers_; w++) {
+            if (aggregated_worker_times_[w] > 0) {
+                max_time = std::max(max_time, aggregated_worker_times_[w]);
+                total_time += aggregated_worker_times_[w];
+                active_workers++;
+            }
+        }
+        if (active_workers == 0 || total_time == 0) return 1.0;
+        double avg_time = static_cast<double>(total_time) / active_workers;
+        return max_time / avg_time;
+    }
+
+    // Phase 22: Identify the primary bottleneck (highest non-compute timer)
+    std::string identifyPrimaryBottleneck() const {
+        // Check MPI overhead vs compute
+        const auto& irreg_force = stats_[static_cast<int>(TimerID::IrregularForce)];
+        const auto& mpi_send = stats_[static_cast<int>(TimerID::MPISend)];
+        const auto& mpi_recv = stats_[static_cast<int>(TimerID::MPIRecv)];
+        const auto& queue_run = stats_[static_cast<int>(TimerID::QueueRun)];
+
+        long long mpi_total = mpi_send.interval_total_ns + mpi_recv.interval_total_ns;
+        long long compute = irreg_force.interval_total_ns;
+
+        // Check starvation events
+        if (interval_starvation_events_ > 100000) {
+            return "dispatch starvation";
+        }
+
+        // Check MPI vs compute ratio
+        if (compute > 0) {
+            double mpi_ratio = static_cast<double>(mpi_total) / compute;
+            if (mpi_ratio > 0.5) {
+                return "MPI communication";
+            }
+        }
+
+        // Check queue wait
+        if (queue_run.interval_total_ns > 0 && compute > 0) {
+            double queue_ratio = static_cast<double>(queue_run.interval_total_ns) / compute;
+            if (queue_ratio > 0.3) {
+                return "queue scheduling";
+            }
+        }
+
+        // Load balance check
+        double lb_ratio = worker_data_aggregated_ ?
+            computeAggregatedLoadBalance() : interval_worker_distribution_.getLoadBalanceRatio();
+        if (lb_ratio > 1.5) {
+            return "load imbalance";
+        }
+
+        return "compute-bound";
     }
 
     void printTimerLine(std::ostream& os, TimerID id, long long total_ns) const {
@@ -2003,6 +2471,28 @@ private:
     PerfEventCounter ll_access_counter_;
     bool cache_counters_initialized_ = false;
 #endif
+
+    // Phase 21: MPI aggregation support
+    static constexpr int MAX_WORKERS = 64;  // Maximum workers supported
+
+    // Aggregated data from MPI reduction
+    bool neighbor_data_aggregated_ = false;
+    long long aggregated_neighbor_count_ = 0;
+    long long aggregated_neighbor_min_ = 0;
+    long long aggregated_neighbor_max_ = 0;
+    double aggregated_neighbor_mean_ = 0.0;
+    long long aggregated_neighbor_histogram_buckets_[Histogram::NUM_BUCKETS] = {0};
+
+    bool ptype_data_aggregated_ = false;
+    long long aggregated_ptype_regular_count_ = 0;
+    long long aggregated_ptype_cm_count_ = 0;
+    long long aggregated_ptype_regular_time_ = 0;
+    long long aggregated_ptype_cm_time_ = 0;
+
+    bool worker_data_aggregated_ = false;
+    int aggregated_num_workers_ = 0;
+    long long aggregated_worker_particles_[MAX_WORKERS + 1] = {0};
+    long long aggregated_worker_times_[MAX_WORKERS + 1] = {0};
 };
 
 // RAII-style scoped timer for automatic start/stop
@@ -2024,55 +2514,95 @@ private:
     TimerID id_;
 };
 
-// Convenience macros for profiling
+// ============================================================================
+// PROFILE_* Macros - All require PERFORMANCETRACE to be defined
+// ============================================================================
+// Phase 22: Organized into categories for clarity
+//
+// Core timing (used everywhere):
+//   PROFILE_START(id), PROFILE_STOP(id), PROFILE_SCOPE(id)
+//
+// Work tracking (compute_acceleration.cpp):
+//   PROFILE_WORK(id, units), PROFILE_NEIGHBOR_TIME(count, time_ns)
+//
+// Queue profiling (queue_scheduler.h):
+//   PROFILE_QUEUE_DEPTH(depth), PROFILE_STARVATION_EVENT()
+//   PROFILE_WORKER_ASSIGNMENT(rank), PROFILE_DISPATCH_LATENCY(ns)
+//
+// Worker tracking (compute_acceleration.cpp, queue_scheduler.h):
+//   PROFILE_WORKER_COMPUTE(rank, ns), PROFILE_HEAVY_PARTICLE(...)
+//
+// Phase 18-19 (specialized):
+//   PROFILE_PARTICLE_TYPE(is_cm, ns), PROFILE_CACHE_*()
+// ============================================================================
+
 #ifdef PERFORMANCETRACE
 
+// Core timing macros
 #define PROFILE_SCOPE(timer_id) ScopedTimer _scoped_timer_##__LINE__(timer_id)
 #define PROFILE_START(timer_id) Profiler::instance().start(timer_id)
 #define PROFILE_STOP(timer_id) Profiler::instance().stop(timer_id)
 #define PROFILE_COUNT(timer_id) Profiler::instance().incrementCount(timer_id)
 #define PROFILE_COUNT_N(timer_id, n) Profiler::instance().incrementCount(timer_id, n)
 #define PROFILE_WORK(timer_id, units) Profiler::instance().recordWork(timer_id, units)
+
+// Phase 15: Neighbor profiling
 #define PROFILE_NEIGHBOR(count) Profiler::instance().recordNeighborCount(count)
 #define PROFILE_NEIGHBOR_TIME(count, time_ns) Profiler::instance().recordNeighborWithTime(count, time_ns)
+
+// Phase 16: Queue dispatch profiling
 #define PROFILE_QUEUE_DEPTH(depth) Profiler::instance().sampleQueueDepth(depth)
 #define PROFILE_STARVATION_EVENT() Profiler::instance().recordStarvationEvent()
 #define PROFILE_DISPATCH_LATENCY(latency_ns) Profiler::instance().recordDispatchLatency(latency_ns)
+
+// Phase 17: Worker distribution tracking
 #define PROFILE_WORKER_ASSIGNMENT(worker_rank) Profiler::instance().recordWorkerAssignment(worker_rank)
 #define PROFILE_WORKER_COMPUTE(worker_rank, compute_ns) Profiler::instance().recordWorkerComputeTime(worker_rank, compute_ns)
 #define PROFILE_HEAVY_PARTICLE(pid, worker, time_ns, neighbors) Profiler::instance().recordHeavyParticle(pid, worker, time_ns, neighbors)
+
 // Phase 18: Particle type tracking
 #define PROFILE_PARTICLE_TYPE(is_cm, compute_ns) Profiler::instance().recordParticleType(is_cm, compute_ns)
+
 // Phase 19: Cache profiling
 #define PROFILE_CACHE_INIT() Profiler::instance().initCacheCounters()
 #define PROFILE_CACHE_START() Profiler::instance().startCacheCounters()
 #define PROFILE_CACHE_STOP(elapsed_s) Profiler::instance().stopCacheCounters(elapsed_s)
 #define PROFILE_CACHE_AVAILABLE() Profiler::instance().areCacheCountersAvailable()
 
-#else
+#else // !PERFORMANCETRACE - all macros become no-ops
 
+// Core timing macros (no-ops)
 #define PROFILE_SCOPE(timer_id) ((void)0)
 #define PROFILE_START(timer_id) ((void)0)
 #define PROFILE_STOP(timer_id) ((void)0)
 #define PROFILE_COUNT(timer_id) ((void)0)
 #define PROFILE_COUNT_N(timer_id, n) ((void)0)
 #define PROFILE_WORK(timer_id, units) ((void)0)
+
+// Phase 15: Neighbor profiling (no-ops)
 #define PROFILE_NEIGHBOR(count) ((void)0)
 #define PROFILE_NEIGHBOR_TIME(count, time_ns) ((void)0)
+
+// Phase 16: Queue dispatch profiling (no-ops)
 #define PROFILE_QUEUE_DEPTH(depth) ((void)0)
 #define PROFILE_STARVATION_EVENT() ((void)0)
 #define PROFILE_DISPATCH_LATENCY(latency_ns) ((void)0)
+
+// Phase 17: Worker distribution tracking (no-ops)
 #define PROFILE_WORKER_ASSIGNMENT(worker_rank) ((void)0)
 #define PROFILE_WORKER_COMPUTE(worker_rank, compute_ns) ((void)0)
 #define PROFILE_HEAVY_PARTICLE(pid, worker, time_ns, neighbors) ((void)0)
+
+// Phase 18: Particle type tracking (no-op)
 #define PROFILE_PARTICLE_TYPE(is_cm, compute_ns) ((void)0)
+
 // Phase 19: Cache profiling (no-ops)
 #define PROFILE_CACHE_INIT() ((void)0)
 #define PROFILE_CACHE_START() ((void)0)
 #define PROFILE_CACHE_STOP(elapsed_s) ((void)0)
 #define PROFILE_CACHE_AVAILABLE() (false)
 
-#endif
+#endif // PERFORMANCETRACE
 
 // Global accessor for convenience
 inline Profiler& profiler() {

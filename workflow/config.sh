@@ -19,7 +19,7 @@ SRUN_MPI="pmix_v4"
 # Build toggles
 USE_CUDA="1"
 USE_SEVN="0"
-ENABLE_PROFILING="0"  # Set to 1 to enable PERFORMANCETRACE
+ENABLE_PROFILING="1"  # Set to 1 to enable PERFORMANCETRACE
 
 # What to run
 TEST_DIR="tests/test1"

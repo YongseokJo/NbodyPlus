@@ -91,12 +91,26 @@ void RootRoutines() {
 
 			// create output at appropriate time intervals
 			if (global_time >= output_time) {
-#if defined(PERFORMANCETRACE) && defined(USE_MPI)
-				// Aggregate profiler statistics across all MPI ranks and print summary
-				profiler().aggregateAcrossRanks(MPI_COMM_WORLD);
-				profiler().printAggregatedSummary(std::cout, global_time * enzo_time_step * 1e4);
-				profiler().printHistograms(std::cout);
-				profiler().resetIntervalStats();
+#ifdef PERFORMANCETRACE
+				// Phase 21.5: Collect profiling data from workers using point-to-point MPI
+				// This avoids MPI_Reduce which requires all ranks to call it together
+				{
+					// Send TASK_SEND_PROFILING to all workers
+					Queue profiling_request = {TASK_SEND_PROFILING, -1, 0.0};
+					for (int w = 1; w <= num_workers; w++) {
+						MPI_Send(&profiling_request, 1, queue_type_mpi, w, QUEUE_TAG, MPI_COMM_WORLD);
+					}
+
+					// Collect profiling data from all workers
+					std::vector<ProfilerTransferData> worker_data(num_workers);
+					for (int w = 1; w <= num_workers; w++) {
+						MPI_Recv(&worker_data[w-1], sizeof(ProfilerTransferData), MPI_BYTE,
+						         w, PROFILING_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+					}
+
+					// Aggregate the collected data
+					profiler().aggregateFromTransferData(worker_data, num_workers);
+				}
 #endif
 				writeParticle(global_time, output_num++);
 				output_time += output_time_step;

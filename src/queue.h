@@ -36,6 +36,9 @@ enum task_name_t : int8_t {
     TASK_GET_TOTAL_ENERGY = 30,
     TASK_PREPARE_GPU_CALC = 31,
 
+    // Profiling (Phase 21.5)
+    TASK_SEND_PROFILING   = 40,   // Request workers to send profiling data to root
+
     // Control
     TASK_SYNCHRONIZE      = 100,
     TASK_END              = -100,

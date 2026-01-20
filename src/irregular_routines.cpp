@@ -56,6 +56,15 @@ bool IrregularRoutines(QueueScheduler &queue_scheduler, Worker *workers, std::un
     std::vector<int> newCMptcls; // by EW 2025.1.6 // unordered_set? by EW 2025.1.11
 #endif
 
+#ifdef PERFORMANCETRACE
+    // Initialize worker tracking if not already done (Phase 17)
+    static bool worker_tracking_initialized = false;
+    if (!worker_tracking_initialized && num_workers > 0) {
+        Profiler::instance().initializeWorkerTracking(num_workers);
+        worker_tracking_initialized = true;
+    }
+#endif
+
 // Performance tracing variables (kept for backward compatibility)
 #ifdef PERFORMANCETRACE
 	std::chrono::high_resolution_clock::time_point start_point_routine;

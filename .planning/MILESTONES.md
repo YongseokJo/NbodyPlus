@@ -1,5 +1,69 @@
 # Project Milestones: ABYSS Performance Optimization
 
+## v2.3 Performance Analysis & Instrumentation (Shipped: 2026-01-20)
+
+**Delivered:** Fixed profiler instrumentation issues, cleaned up profiler output, and performed comprehensive bottleneck analysis identifying MPI dispatch as the primary optimization target.
+
+**Phases completed:** 21-23 (11 plans total)
+
+**Key accomplishments:**
+
+- Fixed MPI aggregation so worker profiling data correctly flows to root
+- Added descriptive cache statistics status messages for systems without hardware counters
+- Renamed RegularForce → RegularCPU timer for clarity
+- Added JSON schema versioning and summary section to profiler output
+- Identified IrregularForce as dominant cost (66% of wall time)
+- Quantified MPI overhead at 28% of wall time (10.3M messages/interval)
+- Confirmed excellent load balance (ratio = 1.009)
+- Identified dispatch starvation as primary bottleneck (2.4M events/interval)
+- Calculated Amdahl's Law estimates: 16-27% speedup from MPI batching
+
+**Stats:**
+
+- 3 phases, 11 plans, 13 requirements
+- Timeline: 2026-01-19 (single day)
+- Analysis runs: 100-step main + two 200-step variance runs
+
+**Key findings:**
+
+| Metric | Value | Interpretation |
+|--------|-------|----------------|
+| Compute (IrregularForce) | 66% | Primary work |
+| MPI overhead | 28% | Optimization target |
+| Load balance ratio | 1.009 | Excellent |
+| Starvation events | 2.4M/interval | Dispatch bottleneck |
+
+**Deferred to v2.4:**
+
+- Phase 24: MPI Message Batching (plans written, ready to execute)
+- Phase 25: Dispatch Pipelining
+- Phase 26: Verification & Benchmarking
+
+**Notes:** Originally scoped as 6 phases (21-26). Rescoped to ship analysis work (21-23) and defer optimization implementation to v2.4. Analysis confirms MPI batching as best path forward with expected 16-27% speedup.
+
+**Archive location:** `.planning/milestones/v2.3-ROADMAP.md`
+
+---
+
+## v2.2 Load Balance Profiling (Shipped: 2026-01-19)
+
+**Delivered:** Comprehensive load balance profiling infrastructure across 6 phases (15-20), measuring neighbor counts, queue dispatch, worker distribution, particle types, memory access, and generating analysis reports.
+
+**Phases completed:** 15-20 (24 requirements total)
+
+**Key accomplishments:**
+
+- Implemented per-particle neighbor count tracking and statistics
+- Added queue dispatch profiling (latency, depth, starvation detection)
+- Built worker distribution tracking (particles/worker, compute time)
+- Added CM particle vs regular particle timing breakdown
+- Integrated cache miss rate measurement via perf_event
+- Generated comprehensive analysis with optimization recommendations
+
+**Notes:** This milestone laid the groundwork for v2.3 analysis. All 24 requirements completed.
+
+---
+
 ## v2.1 MPI Communication Optimization (Archived: 2026-01-18)
 
 **Status:** Archived — async MPI at single-message granularity did not achieve performance improvement

@@ -22,6 +22,14 @@ void WorkerRoutines() {
 
 	//std::cout << "Processor " << my_rank << " is ready." << std::endl;
 
+#ifdef PERFORMANCETRACE
+	// Phase 21.5: Initialize worker tracking so compute times can be recorded
+	// num_workers is a global variable set during MPI initialization
+	if (num_workers > 0) {
+		Profiler::instance().initializeWorkerTracking(num_workers);
+	}
+#endif
+
 	task_name_t task = TASK_ERROR;
 	MPI_Status status;
 	MPI_Request request;
@@ -259,6 +267,13 @@ void WorkerRoutines() {
 				sendAllParticlesToGPU_Worker(next_time);
 				continue;
 #endif
+			case TASK_SEND_PROFILING: // Phase 21.5: Send profiling data to root
+				{
+					ProfilerTransferData pdata = profiler().packTransferData(my_rank);
+					MPI_Send(&pdata, sizeof(ProfilerTransferData), MPI_BYTE, ROOT, PROFILING_TAG, MPI_COMM_WORLD);
+				}
+				continue;  // Don't send TERMINATE_TAG, root is waiting for profiling data
+
 			case TASK_SYNCHRONIZE: // TASK_SYNCHRONIZE
 				MPI_Win_sync(win);  // TASK_SYNCHRONIZE memory
 				MPI_Barrier(shared_comm);

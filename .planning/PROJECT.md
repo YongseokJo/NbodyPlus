@@ -2,23 +2,11 @@
 
 ## What This Is
 
-ABYSS N-body simulation code with Structure of Arrays (SoA) data layout and enhanced profiling infrastructure. The v1.0 conversion replaced the original Array of Structures (AoS) with `ParticleData` SoA containers, `ParticleDataMPI` for shared memory, and `ParticleDataGPU` for device data. v2.0 added comprehensive profiler infrastructure with per-rank statistics, sub-timers, work counters, and AVX-512 vectorized irregular force calculation.
+ABYSS N-body simulation code with Structure of Arrays (SoA) data layout and comprehensive profiling infrastructure. The v1.0 conversion replaced the original Array of Structures (AoS) with `ParticleData` SoA containers, `ParticleDataMPI` for shared memory, and `ParticleDataGPU` for device data. v2.0-v2.3 added profiling infrastructure with MPI aggregation, bottleneck analysis identifying dispatch starvation as the primary optimization target.
 
 ## Core Value
 
 **Physics correctness (energy conservation) with clean architecture for targeted optimizations.**
-
-## Current Milestone: v2.2 Load Balance Profiling
-
-**Goal:** Instrument and analyze load balance across MPI workers to understand where imbalance comes from before committing to optimization approach (OpenMP, batching, work stealing, etc.).
-
-**Target measurements:**
-- Neighbor count variance (per-particle counts, distribution, correlation with compute time)
-- Queue dispatch overhead (dispatch latency, root overhead, queue depth over time)
-- Worker distribution (particles per worker, compute time per worker, heavy particle detection)
-- CM particle breakdown (time comparison: CM vs regular particles)
-- Few-body overhead (search/init/integration time breakdown)
-- Memory access patterns (cache miss rates in force loops)
 
 ## Requirements
 
@@ -50,6 +38,23 @@ ABYSS N-body simulation code with Structure of Arrays (SoA) data layout and enha
 - ✓ Performance improvement: 3.2% (69.5s → 67.3s IrregularForce) — v2.0
 - ✓ Energy conservation maintained (dE/E0 = 1.34e-6) — v2.0
 
+<!-- Shipped in v2.2 -->
+
+- ✓ Per-particle neighbor count tracking and statistics — v2.2
+- ✓ Queue dispatch profiling (latency, depth, starvation detection) — v2.2
+- ✓ Worker distribution tracking (particles/worker, compute time) — v2.2
+- ✓ CM particle vs regular particle timing breakdown — v2.2
+- ✓ Cache miss rate measurement via perf_event — v2.2
+- ✓ Comprehensive analysis report with optimization recommendations — v2.2
+
+<!-- Shipped in v2.3 -->
+
+- ✓ Fixed MPI aggregation (worker data flows to root correctly) — v2.3
+- ✓ Descriptive cache statistics status messages — v2.3
+- ✓ JSON schema versioning and summary section — v2.3
+- ✓ Bottleneck analysis: 66% compute, 28% MPI, 1.009 load balance ratio — v2.3
+- ✓ Amdahl's Law estimates: 16-27% speedup from MPI batching — v2.3
+
 <!-- Existing capabilities maintained -->
 
 - ✓ 4th-order Hermite integration with block timesteps — existing
@@ -64,49 +69,48 @@ ABYSS N-body simulation code with Structure of Arrays (SoA) data layout and enha
 
 ### Active
 
-<!-- v2.2 Load Balance Profiling -->
-
-- [ ] Neighbor count profiling (per-particle, distribution, outlier detection)
-- [ ] Queue dispatch latency measurement (time between completion and next task)
-- [ ] Queue depth tracking over time (worker starvation detection)
-- [ ] Per-worker particle distribution analysis
-- [ ] Per-worker compute time breakdown
-- [ ] CM particle timing comparison (CM vs regular particles)
-- [ ] Few-body timing breakdown (search, init, integration separately)
-- [ ] Cache miss rate measurement in force loops
-- [ ] Load balance analysis report with recommendations
+(Ready for next milestone — see `/gsd:new-milestone`)
 
 ### Out of Scope
 
 - SDAR `Group` struct conversion — kept as-is with exit-only sync
 - Algorithm changes — profiling work is measurement only
-- Optimization implementation — v2.2 is analysis; optimization deferred to v2.3+
 - Async MPI — archived in v2.1, single-message async doesn't help
+- OpenMP hybrid — load balance excellent (1.009), not needed
+- Work stealing — particle distribution already balanced
+- GPU irregular forces — compute not the bottleneck (MPI is)
 
 ## Context
 
-**Current State (v2.0 shipped, v2.1 archived):**
+**Current State (v2.3 shipped):**
 
-- `src/profiler.h` — Enhanced profiler with MPI aggregation, histograms, work counters
+- `src/profiler.h` — Enhanced profiler with MPI aggregation, histograms, JSON schema v2.3
 - `src/simd_force.h/.cpp` — AVX-512 vectorized force kernel with pre-gather pattern
 - `src/Particle/compute_acceleration.cpp` — Integrated vectorized neighbor loop
-- IrregularForce bottleneck identified (53.5% of wall time)
-- v2.1 async MPI archived — single-message async adds overhead, doesn't help
+- `.planning/ANALYSIS.md` — Comprehensive bottleneck analysis report
 
-**v2.1 Archive Learnings:**
+**v2.3 Analysis Findings:**
 
-- Async MPI at single-message granularity is slower than blocking (126.4B vs 125.0B ns)
-- ~105M MPI messages/interval creates unavoidable overhead at current granularity
-- Future optimization must reduce message count (batching) or change parallelization model
+- IrregularForce: 66% of wall time (primary compute)
+- MPI overhead: 28% of wall time (10.3M messages/interval)
+- Load balance ratio: 1.009 (excellent — no optimization needed)
+- Dispatch starvation: 2.4M events/interval (primary bottleneck)
+- Neighbor distribution: 86.5% have 103-180 neighbors (tight, low variance)
+
+**Optimization Roadmap (deferred to v2.4):**
+
+1. **MPI batching** — Reduce 10.3M messages to 100K-1M (16-27% expected speedup)
+2. **Dispatch pipelining** — Hide dispatch latency (2-5% additional)
+3. **Verification** — Baseline vs optimized benchmarking
 
 **Key Files:**
 
 - `src/particle_data.h/.cpp` — SoA container (v1.0)
 - `src/particle_data_mpi.h/.cpp` — MPI shared memory (v1.0)
 - `src/particle_data_gpu.h/.cu` — GPU container (v1.0)
-- `src/profiler.h` — Enhanced profiler (v2.0)
-- `src/queue_scheduler.h` — Worker dispatch (target for load balance profiling)
-- `src/irregular_routines.cpp` — Main irregular force loop (target for profiling)
+- `src/profiler.h` — Enhanced profiler (v2.0-v2.3)
+- `src/queue_scheduler.h` — Worker dispatch (target for v2.4 batching)
+- `src/queue.h` — Queue structures (BatchedQueue added for v2.4)
 
 **Validation Workflow:**
 
@@ -134,15 +138,9 @@ ABYSS N-body simulation code with Structure of Arrays (SoA) data layout and enha
 | Pre-gather for SIMD | Align scattered neighbor data before vectorized compute | ⚠ Revisit — gather overhead limits gains |
 | AVX-512 vectorization | Target IrregularForce bottleneck with SIMD | ⚠ Limited — 3.2% gain vs 20% target |
 | Archive async MPI (v2.1) | Single-message async adds overhead, doesn't help | ✓ Good — data-driven decision |
-| Profile before optimizing | Understand load imbalance source before committing to fix | — Pending |
-
-## Recommendations for v2.3+
-
-After v2.2 analysis, likely directions:
-1. **MPI batching** — Reduce message count if queue dispatch is bottleneck
-2. **OpenMP hybrid** — Add thread parallelism if workers are underutilized
-3. **Work stealing** — Rebalance if particle distribution is uneven
-4. **GPU irregular forces** — Port if compute is the bottleneck, not communication
+| Profile before optimizing | Understand bottleneck source before committing to fix | ✓ Good — identified MPI dispatch |
+| MPI batching over alternatives | Incremental change, handles CM particles, preserves dynamic balance | — Pending (v2.4) |
+| Rescope v2.3 | Ship analysis, defer optimization to v2.4 | ✓ Good — clean milestone boundary |
 
 ---
-*Last updated: 2026-01-18 after v2.2 milestone start*
+*Last updated: 2026-01-20 after v2.3 milestone completion*

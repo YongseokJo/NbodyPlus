@@ -77,6 +77,13 @@ void Particle::compute_acceleration_irr() {
 	int initial_neighbor_count = this->num_neighbors;
 	auto particle_start_time = std::chrono::high_resolution_clock::now();
 
+	// Phase 19: Initialize cache counters on first call
+	static bool cache_init_done = false;
+	if (!cache_init_done) {
+		PROFILE_CACHE_INIT();
+		cache_init_done = true;
+	}
+
 	double dt, mdot, epsilon=1e-6;
 	double new_time; // 0 for current and 1 for advanced times
 
@@ -107,6 +114,10 @@ void Particle::compute_acceleration_irr() {
 	PROFILE_STOP(TimerID::IrregularPredict);
 
 	int neighbor_pairs = 0;  // Track neighbor pairs for throughput
+
+	// Phase 19: Start cache counters for neighbor loop
+	auto cache_start = std::chrono::high_resolution_clock::now();
+	PROFILE_CACHE_START();
 
 	PROFILE_START(TimerID::IrregularNeighborLoop);
 
@@ -208,6 +219,10 @@ void Particle::compute_acceleration_irr() {
 	PROFILE_STOP(TimerID::IrregularCMLoop);
 	PROFILE_WORK(TimerID::IrregularPairsEvaluated, cm_pairs);
 
+	// Phase 19: Stop cache counters after neighbor and CM loops
+	auto cache_end = std::chrono::high_resolution_clock::now();
+	double cache_elapsed_s = std::chrono::duration<double>(cache_end - cache_start).count();
+	PROFILE_CACHE_STOP(cache_elapsed_s);
 
 	double a2, a3, da_dt2, adot_dt, dt2, dt3, dt4, dt5;
 	double dt_ex = (new_time - this->current_time_reg)*enzo_time_step;
@@ -280,6 +295,31 @@ void Particle::compute_acceleration_irr() {
 	// Total neighbors = original + CM particles processed
 	int total_neighbors = neighbor_pairs + cm_pairs;
 	PROFILE_NEIGHBOR_TIME(total_neighbors, particle_compute_ns);
+
+	// Phase 17: Record worker compute time and check for heavy particles
+	// Phase 18: Record particle type (CM vs regular)
+#ifdef PERFORMANCETRACE
+	{
+		auto& profiler = Profiler::instance();
+		// Phase 21: Use global MPI rank directly - workers are ranks 1-N, root is 0
+		// getCurrentParticleWorkerRank() returns 0 on workers because recordWorkerAssignment()
+		// is only called on root. Workers need to use my_rank for their own identity.
+		int worker_rank = my_rank;
+		if (worker_rank > 0) {
+			profiler.recordWorkerComputeTime(worker_rank, particle_compute_ns);
+
+			// Check if this is a heavy particle (>2σ compute time)
+			const auto& neighbor_stats = profiler.getIntervalNeighborStats();
+			if (neighbor_stats.count() > 10 &&
+			    neighbor_stats.isOutlier(particle_compute_ns, 2.0)) {
+				profiler.recordHeavyParticle(this->particle_index, worker_rank,
+				                             particle_compute_ns, total_neighbors);
+			}
+		}
+		// Phase 18: Track CM vs regular particle
+		profiler.recordParticleType(this->is_cm_particle, particle_compute_ns);
+	}
+#endif
 
 	for (int dim=0; dim<DIM; dim++) {
 		this->acc_total[dim][0] = this->acc_regular[dim][0] + this->acc_irregular[dim][0] + this->acc_regular[dim][1]*dt_ex; // affect the next

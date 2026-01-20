@@ -29,6 +29,7 @@ const int TIME_TAG      = 3;
 const int QUEUE_TAG     = 4;
 const int ANY_TAG       = 100;
 const int TERMINATE_TAG = 666;
+const int PROFILING_TAG = 667;  // Phase 21.5: Worker profiling data transfer
 
 // ============================================================================
 // MPI communicators and process info

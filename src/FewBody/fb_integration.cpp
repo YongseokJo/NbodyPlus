@@ -22,6 +22,7 @@ void recoilKick(Particle* p1, Particle* p2);
 
 // Reference: SDAR/sample/AR/ar.cxx & PeTar/src/hard.hpp
 void Group::ARIntegration(double next_time) {
+    PROFILE_START(TimerID::FewBodyIntegration);
 
     // Note: particles[] already has current data - no sync needed at entry
     // We sync TO SoA at the end after modifications
@@ -97,10 +98,11 @@ void Group::ARIntegration(double next_time) {
                                              static_cast<size_t>(members->particle_index));
         }
         isTerminate = true;
+        PROFILE_STOP(TimerID::FewBodyIntegration);
         return;
     }
-#endif    
-    
+#endif
+
     assert(next_time > CurrentTime);
     // auto bin_interrupt = sym_int.integrateToTime(next_time*enzo_time_step); // original AR integrator
 
@@ -205,7 +207,7 @@ void Group::ARIntegration(double next_time) {
             }
 
             isTerminate = true;
-
+            PROFILE_STOP(TimerID::FewBodyIntegration);
             return;
         }
         else {
@@ -229,6 +231,7 @@ void Group::ARIntegration(double next_time) {
             }
 
             // NewFBInitialization3(this);
+            PROFILE_STOP(TimerID::FewBodyIntegration);
             return;
         }
     }
@@ -251,6 +254,7 @@ void Group::ARIntegration(double next_time) {
     }
 
     CurrentTime = next_time;
+    PROFILE_STOP(TimerID::FewBodyIntegration);
     return;
 }
 

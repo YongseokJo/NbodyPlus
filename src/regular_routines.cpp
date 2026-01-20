@@ -75,7 +75,7 @@ void RegularRoutines(QueueScheduler &queue_scheduler, Worker *workers, std::unor
 
 #else // cuda regular routine ends // no cuda regular routine starts
 
-    PROFILE_START(TimerID::RegularForce);
+    PROFILE_START(TimerID::RegularCPU);
 #ifdef PERFORMANCETRACE
     start_point_routine = std::chrono::high_resolution_clock::now();
 #endif
@@ -109,7 +109,7 @@ void RegularRoutines(QueueScheduler &queue_scheduler, Worker *workers, std::unor
     performance.RegularForce +=
         std::chrono::duration_cast<std::chrono::nanoseconds>(end_point_routine - start_point_routine).count();
 #endif
-    PROFILE_STOP(TimerID::RegularForce);
+    PROFILE_STOP(TimerID::RegularCPU);
 
 #endif // no cuda regular routine ends
 

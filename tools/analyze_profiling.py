@@ -307,24 +307,46 @@ def generate_report(df, findings, output_path):
 
 
 def analyze_json(data):
-    """Analyze a single JSON profiling snapshot."""
+    """Analyze a single JSON profiling snapshot.
+
+    Supports both old format (no schema_version) and new format (schema_version 2.3+).
+    """
     print("\n" + "=" * 70)
     print(f"Profiling Snapshot - Step {data.get('step', 'N/A')}")
     print(f"Simulation time: {data.get('sim_time_myr', 'N/A')} Myr")
+
+    # Check for schema version (Phase 22)
+    schema_version = data.get('schema_version', '1.0')
+    print(f"Schema version: {schema_version}")
     print("=" * 70)
 
+    # Display summary section if available (schema 2.3+)
+    summary = data.get('summary', {})
+    if summary:
+        print("\n--- Summary ---")
+        print(f"  Wall time: {summary.get('wall_time_s', 'N/A')} s")
+        print(f"  Throughput: {summary.get('throughput_particles_per_s', 'N/A'):.0f} particles/s")
+        print(f"  Load balance ratio: {summary.get('load_balance_ratio', 'N/A')}")
+        print(f"  Primary bottleneck: {summary.get('primary_bottleneck', 'N/A')}")
+
     timers = data.get('timers', {})
+
+    # Handle both old format (interval_ns in each timer) and new format (just interval_ns)
+    # New format filters out zero timers automatically
     whole_time = timers.get('WholeRoutine', {}).get('interval_ns', 1)
 
     results = []
     for name, stats in timers.items():
-        if stats.get('interval_ns', 0) > 0 or stats.get('interval_count', 0) > 0:
+        interval_ns = stats.get('interval_ns', 0)
+        count = stats.get('count', stats.get('interval_count', 0))
+
+        if interval_ns > 0 or count > 0:
             results.append({
                 'Timer': name,
-                'Time (s)': stats['interval_ns'] * 1e-9,
-                'Percent': 100.0 * stats['interval_ns'] / whole_time if whole_time > 0 else 0,
-                'Calls': stats['interval_count'],
-                'Avg (us)': stats['interval_ns'] * 1e-3 / stats['interval_count'] if stats['interval_count'] > 0 else 0
+                'Time (s)': interval_ns * 1e-9,
+                'Percent': 100.0 * interval_ns / whole_time if whole_time > 0 else 0,
+                'Calls': count,
+                'Avg (us)': stats.get('mean_ns', interval_ns / count if count > 0 else 0) * 1e-3
             })
 
     results.sort(key=lambda x: x['Time (s)'], reverse=True)
