@@ -8,6 +8,28 @@ ABYSS N-body simulation code with Structure of Arrays (SoA) data layout and comp
 
 **Physics correctness (energy conservation) with clean architecture for targeted optimizations.**
 
+## Current Milestone: v3.0 McCluster Integration
+
+**Goal:** Integrate McLuster IC generator into ABYSS for seamless end-to-end simulation workflow.
+
+**Target features:**
+- Build McLuster (with SSE/BSE stellar evolution) as part of ABYSS build system
+- Extend TOML config with `[mcluster]` section for IC generation parameters
+- ABYSS binary detects `[mcluster]` config and spawns McLuster subprocess
+- Three operation modes:
+  1. **Generate + Run** — Generate ICs with McLuster, then run ABYSS simulation
+  2. **Generate only** — Generate ICs and exit (for IC preparation)
+  3. **Run only** — Use existing IC file (current behavior, preserved)
+
+**Key parameters to expose:**
+- N (number of stars) or M (total mass)
+- P (density profile: Plummer, King, etc.)
+- R (half-mass radius)
+- f (IMF selection)
+- Z (metallicity)
+- b (binary fraction)
+- e (stellar evolution epoch)
+
 ## Requirements
 
 ### Validated
@@ -69,7 +91,17 @@ ABYSS N-body simulation code with Structure of Arrays (SoA) data layout and comp
 
 ### Active
 
-(Ready for next milestone — see `/gsd:new-milestone`)
+<!-- v3.0 McCluster Integration -->
+
+- [ ] McLuster compiled as part of ABYSS build (mcluster_sse with SSE/BSE)
+- [ ] `[mcluster]` section added to TOML config parser
+- [ ] ABYSS main.cpp detects and parses mcluster config
+- [ ] McLuster subprocess spawning from ABYSS
+- [ ] Output format compatibility (McLuster → ABYSS nbody.dat)
+- [ ] Generate-only mode (exit after IC generation)
+- [ ] Generate+Run mode (seamless IC → simulation)
+- [ ] Run-only mode preserved (existing IC file support)
+- [ ] Documentation for new config options
 
 ### Out of Scope
 
@@ -82,22 +114,21 @@ ABYSS N-body simulation code with Structure of Arrays (SoA) data layout and comp
 
 ## Context
 
-**Current State (v2.3 shipped):**
+**Current State (v2.3 shipped, starting v3.0):**
 
 - `src/profiler.h` — Enhanced profiler with MPI aggregation, histograms, JSON schema v2.3
 - `src/simd_force.h/.cpp` — AVX-512 vectorized force kernel with pre-gather pattern
 - `src/Particle/compute_acceleration.cpp` — Integrated vectorized neighbor loop
-- `.planning/ANALYSIS.md` — Comprehensive bottleneck analysis report
+- `mcluster/` — McLuster IC generator (downloaded, needs build integration)
 
-**v2.3 Analysis Findings:**
+**McLuster Integration Context:**
 
-- IrregularForce: 66% of wall time (primary compute)
-- MPI overhead: 28% of wall time (10.3M messages/interval)
-- Load balance ratio: 1.009 (excellent — no optimization needed)
-- Dispatch starvation: 2.4M events/interval (primary bottleneck)
-- Neighbor distribution: 86.5% have 103-180 neighbors (tight, low variance)
+- McLuster is a star cluster IC generator by Kuepper et al. (2011)
+- Located in `mcluster/` directory with C main + Fortran SSE/BSE routines
+- Outputs ASCII table (`-C 3`) compatible with ABYSS nbody.dat format
+- Current ABYSS expects: `x y z vx vy vz mass` per line in N-body units
 
-**Optimization Roadmap (deferred to v2.4):**
+**Deferred Optimization Work (v2.4+):**
 
 1. **MPI batching** — Reduce 10.3M messages to 100K-1M (16-27% expected speedup)
 2. **Dispatch pipelining** — Hide dispatch latency (2-5% additional)
@@ -109,8 +140,9 @@ ABYSS N-body simulation code with Structure of Arrays (SoA) data layout and comp
 - `src/particle_data_mpi.h/.cpp` — MPI shared memory (v1.0)
 - `src/particle_data_gpu.h/.cu` — GPU container (v1.0)
 - `src/profiler.h` — Enhanced profiler (v2.0-v2.3)
-- `src/queue_scheduler.h` — Worker dispatch (target for v2.4 batching)
-- `src/queue.h` — Queue structures (BatchedQueue added for v2.4)
+- `src/main.cpp` — Entry point (target for mcluster integration)
+- `src/read_parameter_file.cpp` — TOML parser (extend for [mcluster])
+- `mcluster/main.c` — McLuster source
 
 **Validation Workflow:**
 
@@ -143,4 +175,4 @@ ABYSS N-body simulation code with Structure of Arrays (SoA) data layout and comp
 | Rescope v2.3 | Ship analysis, defer optimization to v2.4 | ✓ Good — clean milestone boundary |
 
 ---
-*Last updated: 2026-01-20 after v2.3 milestone completion*
+*Last updated: 2026-01-20 after v3.0 milestone start*
