@@ -5,18 +5,18 @@
 See: .planning/PROJECT.md (updated 2026-01-20)
 
 **Core value:** Physics correctness (energy conservation) with clean architecture for targeted optimizations
-**Current focus:** v3.0 McCluster Integration - Config Parser Extension
+**Current focus:** v3.0 McCluster Integration - Config Parser Extension Complete
 
 ## Current Position
 
 **Milestone:** v3.0 McCluster Integration
-**Phase:** 26 - Config Parser Extension (in progress)
-**Plan:** 01 complete, 02 pending
-**Status:** Phase 26 plan 01 complete
+**Phase:** 26 - Config Parser Extension (complete)
+**Plan:** 02 complete, phase complete
+**Status:** Phase 26 complete, ready for Phase 27
 
-Last activity: 2026-01-20 - Completed 26-01-PLAN.md (Config Parser Infrastructure)
+Last activity: 2026-01-20 - Completed 26-02-PLAN.md (Config Parser Function)
 
-Progress: [##--------] 24% (1.2/5 phases complete)
+Progress: [###-------] 32% (1.6/5 phases complete)
 
 ## v3.0 Milestone Overview
 
@@ -26,7 +26,7 @@ Progress: [##--------] 24% (1.2/5 phases complete)
 | Phase | Name | Requirements | Status |
 |-------|------|--------------|--------|
 | 25 | Build System Integration | 4 | Complete |
-| 26 | Config Parser Extension | 10 | Plan 01 complete |
+| 26 | Config Parser Extension | 10 | Complete |
 | 27 | Runtime Integration | 7 | Pending |
 | 28 | Output Format Handling | 3 | Pending |
 | 29 | Verification and Testing | 4 | Pending |
@@ -59,6 +59,9 @@ Progress: [##--------] 24% (1.2/5 phases complete)
 | keys() returns empty for non-tables | Defensive design - no exception thrown |
 | MclusterConfig defaults match McLuster | P=0, R=0.8, f=1, Z=0.02 verified from source |
 | MCLUSTER_VALID_PARAMS as const vector | Enables easy iteration for unknown key detection |
+| M precedence over N | When both specified, M takes precedence with warning |
+| Levenshtein threshold 2 | Typo suggestions only for edit distance <= 2 |
+| N minimum 3 | N-body simulation requires at least 3 particles |
 
 ### Technical Notes
 
@@ -71,12 +74,16 @@ Progress: [##--------] 24% (1.2/5 phases complete)
 - McLuster `-C 3 -u 0` outputs compatible ASCII format
 - toml::value now has keys() method for table key iteration (Phase 26-01)
 - MclusterConfig struct defined with all 9 parameters (Phase 26-01)
+- parseMclusterSection() parses [mcluster] TOML section (Phase 26-02)
+- validateMclusterConfig() enforces N/M mutual exclusivity (Phase 26-02)
+- mcluster_config global accessible via extern in global.h (Phase 26-02)
 
 ### TODOs
 
 - [x] Complete Phase 25 Build System Integration
 - [x] Complete Phase 26 Plan 01 (Config Infrastructure)
-- [ ] Complete Phase 26 Plan 02 (Config Parser Function)
+- [x] Complete Phase 26 Plan 02 (Config Parser Function)
+- [ ] Complete Phase 27 Runtime Integration
 
 ### Blockers
 
@@ -85,24 +92,29 @@ None
 ## Session Continuity
 
 **For next session:**
-1. Phase 26-01 complete - toml.hpp extended with keys() method
-2. Phase 26-01 complete - MclusterConfig struct defined in mcluster_config.h
-3. Phase 26-02 ready - implement parseMclusterSection() function
-4. Key files: `src/read_parameter_file.cpp`, `src/mcluster_config.h`
+1. Phase 26 complete - all mcluster config parsing in place
+2. parseMclusterSection() ready to be called
+3. mcluster_config global accessible from main.cpp
+4. Ready for Phase 27: Runtime Integration (mcluster binary invocation)
 
 **Key files for v3.0:**
 - `Makefile` - Root-level build orchestration (Phase 25)
 - `mcluster/Makefile` - existing McLuster build (gfortran + gcc)
-- `src/main.cpp` - entry point (add mcluster detection)
-- `src/read_parameter_file.cpp` - TOML parser (add [mcluster] section)
+- `src/main.cpp` - entry point (add mcluster invocation in Phase 27)
+- `src/read_parameter_file.cpp` - TOML parser with mcluster parsing (Phase 26-02)
 - `src/toml.hpp` - TOML library (extended with keys() method - Phase 26-01)
-- `src/mcluster_config.h` - MclusterConfig struct definition (NEW - Phase 26-01)
+- `src/mcluster_config.h` - MclusterConfig struct definition (Phase 26-01)
+- `src/global.h` - extern MclusterConfig declaration (Phase 26-02)
 
-**Phase 26-01 outputs:**
+**Phase 26 outputs:**
 - toml::value keys() method for table key iteration
 - MclusterConfig struct with 9 parameters and defaults
 - MCLUSTER_VALID_PARAMS array for unknown key detection
-- SUMMARY: `.planning/phases/26-config-parser-extension/26-01-SUMMARY.md`
+- parseMclusterSection() for TOML parsing
+- validateMclusterConfig() for N/M mutual exclusivity
+- levenshteinDistance() and suggestSimilarParam() for typo detection
+- mcluster_config extern declaration in global.h
+- SUMMARY: `.planning/phases/26-config-parser-extension/26-02-SUMMARY.md`
 
 ## Deferred Work (v2.4+)
 
@@ -120,4 +132,4 @@ MPI batching optimization deferred from v2.3:
 - Phase 23 analysis: `.planning/ANALYSIS.md`
 
 ---
-*Last updated: 2026-01-20 (Phase 26-01 complete)*
+*Last updated: 2026-01-20 (Phase 26 complete)*
