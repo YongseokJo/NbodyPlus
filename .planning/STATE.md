@@ -10,13 +10,13 @@ See: .planning/PROJECT.md (updated 2026-01-20)
 ## Current Position
 
 **Milestone:** v3.0 McCluster Integration
-**Phase:** 28 - Output Format Handling (complete)
+**Phase:** 29 - Verification and Testing (in progress)
 **Plan:** 01 complete
-**Status:** Phase 28 complete, ready for Phase 29
+**Status:** Plan 29-01 complete, ready for 29-02
 
-Last activity: 2026-01-21 - Completed Phase 28 Plan 01 (Output Format Handling)
+Last activity: 2026-01-21 - Completed Plan 29-01 (Test Infrastructure)
 
-Progress: [########--] 80% (4/5 phases complete)
+Progress: [########=-] 85% (4/5 phases, Plan 29-01 complete)
 
 ## v3.0 Milestone Overview
 
@@ -29,7 +29,7 @@ Progress: [########--] 80% (4/5 phases complete)
 | 26 | Config Parser Extension | 10 | Complete |
 | 27 | Runtime Integration | 7 | Complete |
 | 28 | Output Format Handling | 3 | Complete |
-| 29 | Verification and Testing | 4 | Pending |
+| 29 | Verification and Testing | 4 | In Progress (1/4) |
 
 **Total:** 28 requirements across 5 phases
 
@@ -69,6 +69,9 @@ Progress: [########--] 80% (4/5 phases complete)
 | Clean MPI cleanup on generate_only | Proper resource deallocation before early exit (Phase 27-02) |
 | In-place unit conversion | x/1000.0 in output statement cleaner than separate variables (Phase 28-01) |
 | 15-digit precision | Full double precision for small kpc position values (Phase 28-01) |
+| test_* function prefix | Namespace collision avoidance with workflow scripts (Phase 29-01) |
+| FIXTURE_MODE env var | Distinguishes quick (fixture) vs full (live McLuster) tests (Phase 29-01) |
+| Default tolerance 1e-4 | Virial ratio verification tolerance, adjustable via CLI (Phase 29-01) |
 
 ### Technical Notes
 
@@ -87,6 +90,9 @@ Progress: [########--] 80% (4/5 phases complete)
 - mcluster_runner.h/cpp provides subprocess execution (Phase 27-01)
 - main.cpp now has McLuster orchestration between readParameterFile() and readData() (Phase 27-02)
 - transformMclusterOutput() converts pc->kpc (divide by 1000) and Msun->1e-9 Msun (divide by 1e9) (Phase 28-01)
+- tests/mcluster/lib/common.sh provides test helper functions (Phase 29-01)
+- tests/mcluster/lib/verify_energy.py computes virial ratio for IC verification (Phase 29-01)
+- tests/mcluster/Makefile has test, test-quick, test-full targets (Phase 29-01)
 
 ### TODOs
 
@@ -96,7 +102,9 @@ Progress: [########--] 80% (4/5 phases complete)
 - [x] Complete Phase 27 Plan 01 (McLuster Runner Module)
 - [x] Complete Phase 27 Plan 02 (Main Integration)
 - [x] Complete Phase 28 Plan 01 (Output Format Handling)
-- [ ] Complete Phase 29 (Verification and Testing)
+- [x] Complete Phase 29 Plan 01 (Test Infrastructure)
+- [ ] Complete Phase 29 Plan 02 (Energy Verification Test)
+- [ ] Complete Phase 29 Plans 03-04 (Integration Tests)
 
 ### Blockers
 
@@ -105,11 +113,11 @@ Progress: [########--] 80% (4/5 phases complete)
 ## Session Continuity
 
 **For next session:**
-1. Phase 28 complete - transformMclusterOutput() now has unit conversion
-2. Position: pc -> kpc (divide by 1000)
-3. Mass: Msun -> 1e-9 Msun units (divide by 1e9)
-4. Output precision increased to 15 digits
-5. Ready to proceed to Phase 29 (Verification and Testing)
+1. Phase 29 Plan 01 complete - Test infrastructure created
+2. common.sh provides 8 test helper functions
+3. verify_energy.py computes virial ratio Q = 2K/|U|
+4. Makefile has test, test-quick, test-full targets
+5. Ready to proceed to Plan 29-02 (Energy Verification Test)
 
 **Key files for v3.0:**
 - `Makefile` - Root-level build orchestration (Phase 25)
@@ -121,12 +129,15 @@ Progress: [########--] 80% (4/5 phases complete)
 - `src/global.h` - extern MclusterConfig declaration (Phase 26-02)
 - `src/mcluster_runner.h` - McLuster runner declarations with unit docs (Phase 27-01, 28-01)
 - `src/mcluster_runner.cpp` - McLuster subprocess + unit conversion (Phase 27-01, 28-01)
+- `tests/mcluster/lib/common.sh` - Test helper functions (Phase 29-01)
+- `tests/mcluster/lib/verify_energy.py` - Virial ratio verification (Phase 29-01)
+- `tests/mcluster/Makefile` - Test invocation targets (Phase 29-01)
 
-**Phase 28-01 outputs:**
-- Unit conversion in transformMclusterOutput() (pc->kpc, Msun->1e-9 Msun)
-- 15-digit precision for position values
-- Documentation in both .cpp and .h files
-- SUMMARY: `.planning/phases/28-output-format-handling/28-01-SUMMARY.md`
+**Phase 29-01 outputs:**
+- Test helper library with 8 functions (repo_root, status, workdir, cleanup, etc.)
+- Energy verification script computing virial ratio
+- Makefile with test, test-quick, test-full targets
+- SUMMARY: `.planning/phases/29-verification-and-testing/29-01-SUMMARY.md`
 
 ## Deferred Work (v2.4+)
 
@@ -144,4 +155,4 @@ MPI batching optimization deferred from v2.3:
 - Phase 23 analysis: `.planning/ANALYSIS.md`
 
 ---
-*Last updated: 2026-01-21 (Plan 28-01 complete)*
+*Last updated: 2026-01-21 (Plan 29-01 complete)*
