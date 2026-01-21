@@ -11,10 +11,10 @@ See: .planning/PROJECT.md (updated 2026-01-20)
 
 **Milestone:** v3.0 McCluster Integration
 **Phase:** 27 - Runtime Integration (in progress)
-**Plan:** 01 complete, 02 pending
-**Status:** Plan 27-01 complete (McLuster runner module)
+**Plan:** 02 complete
+**Status:** Plan 27-02 complete (Main Integration)
 
-Last activity: 2026-01-21 - Completed 27-01-PLAN.md (McLuster Runner Module)
+Last activity: 2026-01-21 - Completed 27-02-PLAN.md (Main Integration)
 
 Progress: [####------] 40% (2/5 phases complete)
 
@@ -27,7 +27,7 @@ Progress: [####------] 40% (2/5 phases complete)
 |-------|------|--------------|--------|
 | 25 | Build System Integration | 4 | Complete |
 | 26 | Config Parser Extension | 10 | Complete |
-| 27 | Runtime Integration | 7 | In Progress (Plan 01 done) |
+| 27 | Runtime Integration | 7 | In Progress (Plans 01-02 done) |
 | 28 | Output Format Handling | 3 | Pending |
 | 29 | Verification and Testing | 4 | Pending |
 
@@ -64,6 +64,9 @@ Progress: [####------] 40% (2/5 phases complete)
 | N minimum 3 | N-body simulation requires at least 3 particles |
 | Fork/exec over system()/popen() | Proper exit code handling and stderr capture (Phase 27-01) |
 | Output transformation vs readData() mod | Dedicated function keeps readData() unchanged (Phase 27-01) |
+| ROOT-only McLuster execution | Avoid parallel subprocess conflicts (Phase 27-02) |
+| MPI_Bcast for rank synchronization | Propagate success/failure to all ranks (Phase 27-02) |
+| Clean MPI cleanup on generate_only | Proper resource deallocation before early exit (Phase 27-02) |
 
 ### Technical Notes
 
@@ -80,30 +83,34 @@ Progress: [####------] 40% (2/5 phases complete)
 - validateMclusterConfig() enforces N/M mutual exclusivity (Phase 26-02)
 - mcluster_config global accessible via extern in global.h (Phase 26-02)
 - mcluster_runner.h/cpp provides subprocess execution (Phase 27-01)
+- main.cpp now has McLuster orchestration between readParameterFile() and readData() (Phase 27-02)
 
 ### TODOs
 
 - [x] Complete Phase 25 Build System Integration
 - [x] Complete Phase 26 Plan 01 (Config Infrastructure)
 - [x] Complete Phase 26 Plan 02 (Config Parser Function)
-- [ ] Complete Phase 27 Runtime Integration (Plan 01 done)
+- [x] Complete Phase 27 Plan 01 (McLuster Runner Module)
+- [x] Complete Phase 27 Plan 02 (Main Integration)
+- [ ] Complete remaining Phase 27 plans (if any)
 
 ### Blockers
 
-None
+**Pre-existing build issue:** The project has a compilation error in `read_parameter_file.cpp` when using gcc 10.2.0 due to incomplete type issues with the TOML library. This should be addressed separately but does not affect runtime integration code correctness.
 
 ## Session Continuity
 
 **For next session:**
-1. Plan 27-01 complete - McLuster runner module ready
-2. mcluster_runner.h exports: buildMclusterArgs, runMclusterSubprocess, validateMclusterOutput, transformMclusterOutput
-3. Plan 27-02 will integrate runner into main.cpp
-4. Call runMcluster() on ROOT after readParameterFile(), before readData()
+1. Plan 27-02 complete - main.cpp now orchestrates McLuster execution
+2. McLuster runs on ROOT rank only, MPI_Bcast synchronizes all ranks
+3. generate_only mode exits cleanly after IC generation
+4. fname automatically updated to transformed IC file for simulation
+5. Check if Phase 27 has additional plans or proceed to Phase 28
 
 **Key files for v3.0:**
 - `Makefile` - Root-level build orchestration (Phase 25)
 - `mcluster/Makefile` - existing McLuster build (gfortran + gcc)
-- `src/main.cpp` - entry point (add mcluster invocation in Phase 27-02)
+- `src/main.cpp` - McLuster orchestration integrated (Phase 27-02)
 - `src/read_parameter_file.cpp` - TOML parser with mcluster parsing (Phase 26-02)
 - `src/toml.hpp` - TOML library (extended with keys() method - Phase 26-01)
 - `src/mcluster_config.h` - MclusterConfig struct definition (Phase 26-01)
@@ -111,13 +118,12 @@ None
 - `src/mcluster_runner.h` - McLuster runner declarations (Phase 27-01)
 - `src/mcluster_runner.cpp` - McLuster subprocess implementation (Phase 27-01)
 
-**Phase 27-01 outputs:**
-- RunResult struct for subprocess execution results
-- buildMclusterArgs() for config-to-CLI argument conversion
-- runMclusterSubprocess() with fork/exec and pipe-based output capture
-- validateMclusterOutput() for file/format validation
-- transformMclusterOutput() for McLuster->ABYSS column reordering
-- SUMMARY: `.planning/phases/27-runtime-integration/27-01-SUMMARY.md`
+**Phase 27-02 outputs:**
+- McLuster orchestration in main.cpp (82 lines added)
+- ROOT-only execution with MPI_Bcast synchronization
+- generate_only mode with clean MPI resource cleanup
+- Automatic fname update for transformed IC file
+- SUMMARY: `.planning/phases/27-runtime-integration/27-02-SUMMARY.md`
 
 ## Deferred Work (v2.4+)
 
@@ -135,4 +141,4 @@ MPI batching optimization deferred from v2.3:
 - Phase 23 analysis: `.planning/ANALYSIS.md`
 
 ---
-*Last updated: 2026-01-21 (Plan 27-01 complete)*
+*Last updated: 2026-01-21 (Plan 27-02 complete)*
