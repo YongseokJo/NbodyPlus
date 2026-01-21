@@ -31,6 +31,18 @@ cp -a "$TEST_ABS/." "$WORK_DIR/"
 # Stage executable
 cp "$REPO_ROOT/$EXECUTABLE" "$WORK_DIR/abyss.exe"
 
+# Stage McLuster if config uses [mcluster] section
+if grep -q '^\[mcluster\]' "$WORK_DIR/$RUN_CONFIG" 2>/dev/null; then
+  MCLUSTER_BIN="$REPO_ROOT/mcluster/mcluster_sse"
+  if [[ -x "$MCLUSTER_BIN" ]]; then
+    cp "$MCLUSTER_BIN" "$WORK_DIR/mcluster"
+    echo "McLuster staged for IC generation"
+  else
+    echo "Warning: Config uses [mcluster] but mcluster_sse not found at $MCLUSTER_BIN" >&2
+    echo "  Build with USE_MCLUSTER=1 or provide pre-generated IC file" >&2
+  fi
+fi
+
 {
   echo "== ABYSS run =="
   echo "date=$(date)"

@@ -22,6 +22,7 @@ LOG="$RUN_DIR/build.log"
   echo "CXX=${CXX:-}"
   echo "USE_CUDA=${USE_CUDA:-0}"
   echo "USE_SEVN=${USE_SEVN:-0}"
+  echo "USE_MCLUSTER=${USE_MCLUSTER:-0}"
   echo "ENABLE_PROFILING=${ENABLE_PROFILING:-0}"
   if [[ "${USE_CUDA:-0}" == "1" ]]; then
     echo "nvcc=$(command -v nvcc)"
@@ -29,15 +30,19 @@ LOG="$RUN_DIR/build.log"
     echo "CUDA_HOME=${CUDA_HOME:-}"
     echo "CUDAHOSTCXX=${CUDAHOSTCXX:-}"
   fi
+  if [[ "${USE_MCLUSTER:-0}" == "1" ]]; then
+    echo "gfortran=$(command -v gfortran || echo 'not found')"
+  fi
   echo "HDF5_DIR=${HDF5_DIR:-}"
   echo ""
 } > "$LOG"
 
-pushd "$REPO_ROOT/src" >/dev/null
+pushd "$REPO_ROOT" >/dev/null
 
 # Always clean to keep runs reproducible.
 make clean >>"$LOG" 2>&1
 
+# Build using root Makefile (handles ABYSS + McLuster)
 MAKE_ARGS=()
 if [[ "${USE_CUDA:-0}" == "1" ]]; then
   MAKE_ARGS+=("USE_CUDA=1")
@@ -45,6 +50,9 @@ fi
 if [[ "${USE_SEVN:-0}" == "1" ]]; then
   MAKE_ARGS+=("USE_SEVN=1")
   MAKE_ARGS+=("SEVN_DIR=$SEVN_DIR")
+fi
+if [[ "${USE_MCLUSTER:-0}" != "1" ]]; then
+  MAKE_ARGS+=("DISABLE_MCLUSTER=1")
 fi
 if [[ "${ENABLE_PROFILING:-0}" == "1" ]]; then
   MAKE_ARGS+=("CXXFLAGS=-DPERFORMANCETRACE")

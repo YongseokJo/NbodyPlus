@@ -50,6 +50,9 @@ workflow_load_config() {
   if [[ -n "${WF_ENABLE_PROFILING_OVERRIDE:-}" ]]; then
     ENABLE_PROFILING="$WF_ENABLE_PROFILING_OVERRIDE"
   fi
+  if [[ -n "${WF_USE_MCLUSTER_OVERRIDE:-}" ]]; then
+    USE_MCLUSTER="$WF_USE_MCLUSTER_OVERRIDE"
+  fi
   if [[ -n "${WF_NTASKS_OVERRIDE:-}" ]]; then
     NTASKS="$WF_NTASKS_OVERRIDE"
   fi
@@ -129,6 +132,21 @@ workflow_setup_env() {
       export LD_LIBRARY_PATH="$SEVN_DIR/lib64/sevn:${LD_LIBRARY_PATH:-}"
     fi
   fi
+
+  # Gfortran (for McLuster)
+  if [[ "${USE_MCLUSTER:-0}" == "1" ]]; then
+    if ! command -v gfortran &>/dev/null; then
+      for gfortran_path in "${GFORTRAN_CANDIDATES[@]:-}"; do
+        # Handle glob patterns in candidates
+        for expanded_path in $gfortran_path; do
+          if [[ -x "$expanded_path" ]]; then
+            export PATH="$(dirname "$expanded_path"):$PATH"
+            break 2
+          fi
+        done
+      done
+    fi
+  fi
 }
 
 workflow_sanity() {
@@ -150,6 +168,13 @@ workflow_sanity() {
 
   if [[ "${USE_SEVN:-0}" == "1" ]]; then
     [[ -n "${SEVN_DIR:-}" ]] || workflow_die "SEVN_DIR not set (set SEVN_DIR or SEVN_CANDIDATES)"
+  fi
+
+  if [[ "${USE_MCLUSTER:-0}" == "1" ]]; then
+    if ! command -v gfortran &>/dev/null; then
+      echo "Warning: gfortran not found, McLuster will not be built" >&2
+      echo "  (Set USE_MCLUSTER=0 to suppress this warning)" >&2
+    fi
   fi
 }
 

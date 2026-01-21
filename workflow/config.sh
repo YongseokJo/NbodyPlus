@@ -19,6 +19,7 @@ SRUN_MPI="pmix_v4"
 # Build toggles
 USE_CUDA="1"
 USE_SEVN="0"
+USE_MCLUSTER="1"      # Set to 1 to build McLuster IC generator (requires gfortran)
 ENABLE_PROFILING="1"  # Set to 1 to enable PERFORMANCETRACE
 
 # What to run
@@ -74,6 +75,14 @@ HDF5_CANDIDATES=(
 SEVN_DIR=""
 SEVN_CANDIDATES=(
   # Add your SEVN installation paths here
+)
+
+# Gfortran for McLuster (required when USE_MCLUSTER=1)
+# McLuster requires gfortran + gcc for SSE/BSE stellar evolution
+GFORTRAN_CANDIDATES=(
+  "/usr/bin/gfortran"
+  "/hpc/software/spack/opt/spack/linux-rhel8-x86_64/gcc-12.4.0/gcc-12.4.0-*/bin/gfortran"
+  "/usr/local/bin/gfortran"
 )
 
 # Ensure module command is available, then load git (safe for non-interactive shells)

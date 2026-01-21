@@ -51,6 +51,8 @@ Options:
   --summary-stack-file <path>
                              Stacked summary file path (default: summary_runs.tsv)
   --profile                  Enable profiling (adds -DPERFORMANCETRACE to build)
+  --mcluster                 Enable McLuster IC generator build (requires gfortran)
+  --no-mcluster              Disable McLuster build
   --skip-compile             Skip the compile step
   --skip-run                 Skip the run step
   --skip-analyze             Skip the analyze step
@@ -108,6 +110,10 @@ while [[ $# -gt 0 ]]; do
       SKIP_ANALYZE=1; shift 1 ;;
     --profile|--profiling)
       ENABLE_PROFILING=1; shift 1 ;;
+    --mcluster)
+      USE_MCLUSTER=1; shift 1 ;;
+    --no-mcluster)
+      USE_MCLUSTER=0; shift 1 ;;
     --stack-rebuild-all)
       STACK_REBUILD_ALL=1; shift 1 ;;
     -h|--help)
@@ -186,6 +192,7 @@ export WF_TEST_DIR_OVERRIDE="$TEST_DIR"
 export WF_RUN_CONFIG_OVERRIDE="$RUN_CONFIG"
 export WF_USE_CUDA_OVERRIDE="$USE_CUDA"
 export WF_USE_SEVN_OVERRIDE="$USE_SEVN"
+export WF_USE_MCLUSTER_OVERRIDE="${USE_MCLUSTER:-1}"
 export WF_ENABLE_PROFILING_OVERRIDE="${ENABLE_PROFILING:-0}"
 export WF_NTASKS_OVERRIDE="$NTASKS"
 export WF_GPUS_OVERRIDE="$GPUS"
@@ -231,6 +238,7 @@ fi
   echo "run_config=$RUN_CONFIG"
   echo "use_cuda=$USE_CUDA"
   echo "use_sevn=$USE_SEVN"
+  echo "use_mcluster=${USE_MCLUSTER:-1}"
   echo "enable_profiling=${ENABLE_PROFILING:-0}"
   echo "nodes=$NODES"
   echo "ntasks=$NTASKS"

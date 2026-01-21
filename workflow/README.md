@@ -268,6 +268,64 @@ workflow/bin/render.sh workflow/templates/slurm.sbatch.in /tmp/job.sbatch ACCOUN
 less /tmp/job.sbatch
 ```
 
+McLuster IC generation
+----------------------
+
+The workflow supports McLuster integration for automatic initial condition (IC) generation. When a config file contains a `[mcluster]` section, ABYSS will run McLuster to generate the IC before starting the simulation.
+
+**Build requirements:**
+
+- `gfortran` compiler (for McLuster's Fortran components)
+- `gcc` (for SSE/BSE stellar evolution libraries)
+
+**Enabling McLuster:**
+
+By default, `USE_MCLUSTER=1` in `workflow/config.sh`. The workflow will:
+
+1. Build McLuster alongside ABYSS using the root Makefile
+2. Stage `mcluster` binary into the work directory if the config uses `[mcluster]`
+3. ABYSS will invoke McLuster at runtime to generate ICs
+
+**Disabling McLuster:**
+
+```bash
+# Via flag
+workflow/bin/submit.sh --no-mcluster --scheduler local --tag my_run
+
+# Or in config.local.sh
+USE_MCLUSTER=0
+```
+
+**Example config with McLuster:**
+
+```toml
+# config.toml
+Filename = "nbody.dat"
+StopTime = 1e7
+OutputDirectory = "output"
+
+[mcluster]
+N = 10000          # 10,000 stars
+P = 0              # Plummer profile
+R = 0.8            # Half-mass radius in pc
+f = 1              # Kroupa IMF
+Z = 0.02           # Solar metallicity
+```
+
+**Generate IC only (no simulation):**
+
+```toml
+[mcluster]
+N = 100000
+generate_only = true   # Exit after IC generation
+```
+
+**Troubleshooting:**
+
+- If `gfortran` not found, McLuster build is skipped with a warning
+- Config using `[mcluster]` without McLuster binary will show a warning at runtime
+- Set `GFORTRAN_CANDIDATES` in `config.local.sh` if gfortran is in a non-standard location
+
 Final notes and tips
 --------------------
 
