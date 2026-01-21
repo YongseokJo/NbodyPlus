@@ -1,0 +1,18 @@
+# Test configuration: Generate IC only, no simulation
+# Used for: VERIFY-02 (generate-only mode)
+
+Filename = "nbody.dat"
+eta = 0.01
+FixNumNeighbor = 100
+InitialRadius = 0.2
+StopTime = 1.0e4
+dtOutput = 1.0e4
+OutputDirectory = "output"
+
+[mcluster]
+N = 500            # Smaller for quick test
+P = 0              # Plummer profile
+R = 0.8            # Half-mass radius in pc
+f = 1              # Kroupa IMF
+Z = 0.02           # Solar metallicity
+generate_only = true

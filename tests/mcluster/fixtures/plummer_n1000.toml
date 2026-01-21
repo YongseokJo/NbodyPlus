@@ -1,0 +1,20 @@
+# Test configuration: Plummer profile, N=1000 stars
+# Used for: VERIFY-01 (end-to-end), VERIFY-04 (energy check)
+
+Filename = "nbody.dat"
+eta = 0.01
+FixNumNeighbor = 100
+InitialRadius = 0.2
+StopTime = 1.0e4
+dtOutput = 1.0e4
+OutputDirectory = "output"
+
+[mcluster]
+N = 1000
+P = 0              # Plummer profile
+R = 0.8            # Half-mass radius in pc
+f = 1              # Kroupa IMF
+Z = 0.02           # Solar metallicity
+b = 0.0            # No binaries (simpler for testing)
+e = 0.0            # No stellar evolution epoch
+generate_only = false

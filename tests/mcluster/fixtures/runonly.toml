@@ -1,0 +1,10 @@
+# Test configuration: Run-only mode (no McLuster)
+# Used for: VERIFY-03 (regression - existing IC file mode)
+
+Filename = "nbody.dat"
+eta = 0.01
+FixNumNeighbor = 100
+InitialRadius = 0.2
+StopTime = 1.0e4
+dtOutput = 1.0e4
+OutputDirectory = "output"
