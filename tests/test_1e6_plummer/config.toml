@@ -1,0 +1,22 @@
+# ABYSS configuration with McLuster IC generation
+# 1 million particle Plummer profile
+
+[simulation]
+fname = "nbody.dat"          # Will be overwritten by McLuster output
+dt = 0.001                   # Timestep
+t_end = 10.0                 # End time (N-body units)
+eps = 0.01                   # Softening length
+
+[output]
+interval = 0.1               # Output interval
+prefix = "plummer_1M"        # Output file prefix
+
+[mcluster]
+N = 1000000                  # 10^6 particles
+P = 0                        # Plummer profile (0=Plummer, 1=King W0=3, etc.)
+R = 0.8                      # Half-mass radius in pc
+f = 1                        # IMF: 1=Kroupa (2001)
+Z = 0.02                     # Solar metallicity
+b = 0.0                      # No binaries (0.0-1.0)
+e = 0.0                      # No stellar evolution (epoch in Myr)
+generate_only = false        # Generate IC then run simulation
