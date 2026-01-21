@@ -39,9 +39,9 @@ Requirements for McLuster IC generator integration. Each maps to roadmap phases.
 
 ### Output Compatibility
 
-- [ ] **OUTPUT-01**: McLuster output format matches ABYSS nbody.dat expectations
-- [ ] **OUTPUT-02**: Units conversion if needed (N-body vs astrophysical)
-- [ ] **OUTPUT-03**: Generated IC file placed in correct location for ABYSS
+- [x] **OUTPUT-01**: McLuster output format matches ABYSS nbody.dat expectations
+- [x] **OUTPUT-02**: Units conversion if needed (N-body vs astrophysical)
+- [x] **OUTPUT-03**: Generated IC file placed in correct location for ABYSS
 
 ### Verification
 
@@ -95,9 +95,9 @@ Deferred to future release.
 | RUNTIME-05 | Phase 27 | Complete |
 | RUNTIME-06 | Phase 27 | Complete |
 | RUNTIME-07 | Phase 27 | Complete |
-| OUTPUT-01 | Phase 28 | Pending |
-| OUTPUT-02 | Phase 28 | Pending |
-| OUTPUT-03 | Phase 28 | Pending |
+| OUTPUT-01 | Phase 28 | Complete |
+| OUTPUT-02 | Phase 28 | Complete |
+| OUTPUT-03 | Phase 28 | Complete |
 | VERIFY-01 | Phase 29 | Pending |
 | VERIFY-02 | Phase 29 | Pending |
 | VERIFY-03 | Phase 29 | Pending |
@@ -110,4 +110,4 @@ Deferred to future release.
 
 ---
 *Requirements defined: 2026-01-20*
-*Last updated: 2026-01-21 - Phase 27 complete (21/28 requirements done)*
+*Last updated: 2026-01-21 - Phase 28 complete (24/28 requirements done)*

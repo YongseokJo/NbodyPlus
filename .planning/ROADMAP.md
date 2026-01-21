@@ -114,7 +114,7 @@ Plans:
 **Plans:** 1 plan
 
 Plans:
-- [ ] 28-01-PLAN.md - Fix unit conversion in transformMclusterOutput()
+- [x] 28-01-PLAN.md - Fix unit conversion in transformMclusterOutput()
 
 **Success Criteria:**
 1. User runs integrated workflow and ABYSS reads McLuster-generated IC without errors
@@ -150,7 +150,7 @@ Plans:
 | 25 | Build System Integration | BUILD-01, BUILD-02, BUILD-03, BUILD-04 | Complete |
 | 26 | Config Parser Extension | CONFIG-01 through CONFIG-10 | Complete |
 | 27 | Runtime Integration | RUNTIME-01 through RUNTIME-07 | Complete |
-| 28 | Output Format Handling | OUTPUT-01, OUTPUT-02, OUTPUT-03 | Planned |
+| 28 | Output Format Handling | OUTPUT-01, OUTPUT-02, OUTPUT-03 | Complete |
 | 29 | Verification and Testing | VERIFY-01, VERIFY-02, VERIFY-03, VERIFY-04 | Pending |
 
 **Coverage:** 28/28 requirements mapped
@@ -169,14 +169,14 @@ Phase 26 (Config)
 Phase 27 (Runtime)
     |
     v
-Phase 28 (Output)  <-- CURRENT
+Phase 28 (Output)
     |
     v
-Phase 29 (Verification)
+Phase 29 (Verification)  <-- CURRENT
 ```
 
 Linear dependency chain - each phase unlocks the next.
 
 ---
 *Roadmap created: 2026-01-20*
-*Last updated: 2026-01-21 - Phase 28 planned (1 plan in 1 wave)*
+*Last updated: 2026-01-21 - Phase 28 complete (1 plan executed)*
