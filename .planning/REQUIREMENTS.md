@@ -16,16 +16,16 @@ Requirements for McLuster IC generator integration. Each maps to roadmap phases.
 
 ### Configuration
 
-- [ ] **CONFIG-01**: `[mcluster]` section parsed from TOML config
-- [ ] **CONFIG-02**: N (number of stars) parameter supported
-- [ ] **CONFIG-03**: M (total mass) parameter supported (alternative to N)
-- [ ] **CONFIG-04**: P (density profile) parameter: Plummer, King, etc.
-- [ ] **CONFIG-05**: R (half-mass radius in pc) parameter
-- [ ] **CONFIG-06**: f (IMF selection) parameter
-- [ ] **CONFIG-07**: Z (metallicity) parameter
-- [ ] **CONFIG-08**: b (binary fraction) parameter
-- [ ] **CONFIG-09**: e (stellar evolution epoch in Myr) parameter
-- [ ] **CONFIG-10**: `generate_only` flag for IC-only mode
+- [x] **CONFIG-01**: `[mcluster]` section parsed from TOML config
+- [x] **CONFIG-02**: N (number of stars) parameter supported
+- [x] **CONFIG-03**: M (total mass) parameter supported (alternative to N)
+- [x] **CONFIG-04**: P (density profile) parameter: Plummer, King, etc.
+- [x] **CONFIG-05**: R (half-mass radius in pc) parameter
+- [x] **CONFIG-06**: f (IMF selection) parameter
+- [x] **CONFIG-07**: Z (metallicity) parameter
+- [x] **CONFIG-08**: b (binary fraction) parameter
+- [x] **CONFIG-09**: e (stellar evolution epoch in Myr) parameter
+- [x] **CONFIG-10**: `generate_only` flag for IC-only mode
 
 ### Runtime Integration
 
@@ -78,16 +78,16 @@ Deferred to future release.
 | BUILD-02 | Phase 25 | Complete |
 | BUILD-03 | Phase 25 | Complete |
 | BUILD-04 | Phase 25 | Complete |
-| CONFIG-01 | Phase 26 | Pending |
-| CONFIG-02 | Phase 26 | Pending |
-| CONFIG-03 | Phase 26 | Pending |
-| CONFIG-04 | Phase 26 | Pending |
-| CONFIG-05 | Phase 26 | Pending |
-| CONFIG-06 | Phase 26 | Pending |
-| CONFIG-07 | Phase 26 | Pending |
-| CONFIG-08 | Phase 26 | Pending |
-| CONFIG-09 | Phase 26 | Pending |
-| CONFIG-10 | Phase 26 | Pending |
+| CONFIG-01 | Phase 26 | Complete |
+| CONFIG-02 | Phase 26 | Complete |
+| CONFIG-03 | Phase 26 | Complete |
+| CONFIG-04 | Phase 26 | Complete |
+| CONFIG-05 | Phase 26 | Complete |
+| CONFIG-06 | Phase 26 | Complete |
+| CONFIG-07 | Phase 26 | Complete |
+| CONFIG-08 | Phase 26 | Complete |
+| CONFIG-09 | Phase 26 | Complete |
+| CONFIG-10 | Phase 26 | Complete |
 | RUNTIME-01 | Phase 27 | Pending |
 | RUNTIME-02 | Phase 27 | Pending |
 | RUNTIME-03 | Phase 27 | Pending |
@@ -110,4 +110,4 @@ Deferred to future release.
 
 ---
 *Requirements defined: 2026-01-20*
-*Last updated: 2026-01-20 - Phase 25 complete*
+*Last updated: 2026-01-20 - Phase 26 complete (14/28 requirements done)*
