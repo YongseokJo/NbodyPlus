@@ -37,11 +37,23 @@ RunResult runMclusterSubprocess(const std::string& binary_path,
 // Returns true on success, prints diagnostic messages
 bool validateMclusterOutput(const std::string& output_file, int expected_count);
 
-// Transform McLuster output to ABYSS format
-// McLuster format: mass x y z vx vy vz [extras...]
-// ABYSS format: x y z vx vy vz mass
-// Skips header/comment lines, writes with scientific notation (8 decimal places)
-// Returns true on success
+/**
+ * Transform McLuster output to ABYSS IC file format.
+ *
+ * McLuster format: mass x y z vx vy vz [extras]
+ * ABYSS format:    x y z vx vy vz mass
+ *
+ * Unit conversions applied:
+ *   - Position: pc -> kpc (divide by 1000)
+ *   - Mass: Msun -> 1e-9 Msun units (divide by 1e9)
+ *   - Velocity: unchanged (km/s)
+ *
+ * These units match what normalize_particle() expects as input.
+ *
+ * @param mcluster_file Path to McLuster output file (with header line)
+ * @param abyss_file    Path to ABYSS IC file to create
+ * @return true on success, false on error (with diagnostic message)
+ */
 bool transformMclusterOutput(const std::string& mcluster_file,
                               const std::string& abyss_file);
 
