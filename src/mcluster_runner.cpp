@@ -283,11 +283,17 @@ bool transformMclusterOutput(const std::string& mcluster_file,
             continue;  // Skip malformed lines
         }
 
+        // Unit conversion: McLuster (Msun, pc, km/s) -> ABYSS input (1e-9 Msun, kpc, km/s)
+        // normalize_particle() expects:
+        //   - mass in 1e-9 Msun units (multiplied by 1e9 then divided by MASS_UNIT)
+        //   - position in kpc (multiplied by 1000 then divided by POSITION_UNIT)
+        //   - velocity in km/s (converted to pc/yr then divided by VELOCITY_UNIT)
+
         // Write in ABYSS format: x y z vx vy vz mass
-        out << std::scientific << std::setprecision(8)
-            << x << " " << y << " " << z << " "
+        out << std::scientific << std::setprecision(15)
+            << (x / 1000.0) << " " << (y / 1000.0) << " " << (z / 1000.0) << " "
             << vx << " " << vy << " " << vz << " "
-            << mass << "\n";
+            << (mass / 1e9) << "\n";
 
         ++lines_written;
     }
