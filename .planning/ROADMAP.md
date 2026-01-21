@@ -88,8 +88,8 @@ Plans:
 **Plans:** 2 plans
 
 Plans:
-- [ ] 27-01-PLAN.md - Create mcluster_runner module (subprocess, validation, transform)
-- [ ] 27-02-PLAN.md - Integrate mcluster runner into main.cpp
+- [x] 27-01-PLAN.md - Create mcluster_runner module (subprocess, validation, transform)
+- [x] 27-02-PLAN.md - Integrate mcluster runner into main.cpp
 
 **Success Criteria:**
 1. User runs ABYSS with `[mcluster]` config and sees McLuster subprocess output
@@ -144,7 +144,7 @@ Plans:
 |-------|------|--------------|--------|
 | 25 | Build System Integration | BUILD-01, BUILD-02, BUILD-03, BUILD-04 | Complete |
 | 26 | Config Parser Extension | CONFIG-01 through CONFIG-10 | Complete |
-| 27 | Runtime Integration | RUNTIME-01 through RUNTIME-07 | Planned |
+| 27 | Runtime Integration | RUNTIME-01 through RUNTIME-07 | Complete |
 | 28 | Output Format Handling | OUTPUT-01, OUTPUT-02, OUTPUT-03 | Pending |
 | 29 | Verification and Testing | VERIFY-01, VERIFY-02, VERIFY-03, VERIFY-04 | Pending |
 
@@ -174,4 +174,4 @@ Linear dependency chain - each phase unlocks the next.
 
 ---
 *Roadmap created: 2026-01-20*
-*Last updated: 2026-01-20 - Phase 27 planned (2 plans in 2 waves)*
+*Last updated: 2026-01-21 - Phase 27 complete (3/5 phases done)*

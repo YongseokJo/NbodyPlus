@@ -29,13 +29,13 @@ Requirements for McLuster IC generator integration. Each maps to roadmap phases.
 
 ### Runtime Integration
 
-- [ ] **RUNTIME-01**: ABYSS main.cpp detects `[mcluster]` section presence
-- [ ] **RUNTIME-02**: McLuster subprocess spawned with correct arguments
-- [ ] **RUNTIME-03**: Wait for McLuster completion before simulation
-- [ ] **RUNTIME-04**: McLuster output captured and validated
-- [ ] **RUNTIME-05**: Exit after IC generation if `generate_only = true`
-- [ ] **RUNTIME-06**: Proceed to simulation if `generate_only = false` (default)
-- [ ] **RUNTIME-07**: Existing IC file mode preserved (no `[mcluster]` section)
+- [x] **RUNTIME-01**: ABYSS main.cpp detects `[mcluster]` section presence
+- [x] **RUNTIME-02**: McLuster subprocess spawned with correct arguments
+- [x] **RUNTIME-03**: Wait for McLuster completion before simulation
+- [x] **RUNTIME-04**: McLuster output captured and validated
+- [x] **RUNTIME-05**: Exit after IC generation if `generate_only = true`
+- [x] **RUNTIME-06**: Proceed to simulation if `generate_only = false` (default)
+- [x] **RUNTIME-07**: Existing IC file mode preserved (no `[mcluster]` section)
 
 ### Output Compatibility
 
@@ -88,13 +88,13 @@ Deferred to future release.
 | CONFIG-08 | Phase 26 | Complete |
 | CONFIG-09 | Phase 26 | Complete |
 | CONFIG-10 | Phase 26 | Complete |
-| RUNTIME-01 | Phase 27 | Pending |
-| RUNTIME-02 | Phase 27 | Pending |
-| RUNTIME-03 | Phase 27 | Pending |
-| RUNTIME-04 | Phase 27 | Pending |
-| RUNTIME-05 | Phase 27 | Pending |
-| RUNTIME-06 | Phase 27 | Pending |
-| RUNTIME-07 | Phase 27 | Pending |
+| RUNTIME-01 | Phase 27 | Complete |
+| RUNTIME-02 | Phase 27 | Complete |
+| RUNTIME-03 | Phase 27 | Complete |
+| RUNTIME-04 | Phase 27 | Complete |
+| RUNTIME-05 | Phase 27 | Complete |
+| RUNTIME-06 | Phase 27 | Complete |
+| RUNTIME-07 | Phase 27 | Complete |
 | OUTPUT-01 | Phase 28 | Pending |
 | OUTPUT-02 | Phase 28 | Pending |
 | OUTPUT-03 | Phase 28 | Pending |
@@ -110,4 +110,4 @@ Deferred to future release.
 
 ---
 *Requirements defined: 2026-01-20*
-*Last updated: 2026-01-20 - Phase 26 complete (14/28 requirements done)*
+*Last updated: 2026-01-21 - Phase 27 complete (21/28 requirements done)*
