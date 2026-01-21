@@ -111,6 +111,11 @@ Plans:
 - OUTPUT-02: Units conversion if needed (N-body vs astrophysical)
 - OUTPUT-03: Generated IC file placed in correct location for ABYSS
 
+**Plans:** 1 plan
+
+Plans:
+- [ ] 28-01-PLAN.md - Fix unit conversion in transformMclusterOutput()
+
 **Success Criteria:**
 1. User runs integrated workflow and ABYSS reads McLuster-generated IC without errors
 2. User sees IC file in expected location (configurable or standard path)
@@ -145,7 +150,7 @@ Plans:
 | 25 | Build System Integration | BUILD-01, BUILD-02, BUILD-03, BUILD-04 | Complete |
 | 26 | Config Parser Extension | CONFIG-01 through CONFIG-10 | Complete |
 | 27 | Runtime Integration | RUNTIME-01 through RUNTIME-07 | Complete |
-| 28 | Output Format Handling | OUTPUT-01, OUTPUT-02, OUTPUT-03 | Pending |
+| 28 | Output Format Handling | OUTPUT-01, OUTPUT-02, OUTPUT-03 | Planned |
 | 29 | Verification and Testing | VERIFY-01, VERIFY-02, VERIFY-03, VERIFY-04 | Pending |
 
 **Coverage:** 28/28 requirements mapped
@@ -161,10 +166,10 @@ Phase 25 (Build)
 Phase 26 (Config)
     |
     v
-Phase 27 (Runtime)  <-- CURRENT
+Phase 27 (Runtime)
     |
     v
-Phase 28 (Output)
+Phase 28 (Output)  <-- CURRENT
     |
     v
 Phase 29 (Verification)
@@ -174,4 +179,4 @@ Linear dependency chain - each phase unlocks the next.
 
 ---
 *Roadmap created: 2026-01-20*
-*Last updated: 2026-01-21 - Phase 27 complete (3/5 phases done)*
+*Last updated: 2026-01-21 - Phase 28 planned (1 plan in 1 wave)*
