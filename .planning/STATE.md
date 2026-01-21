@@ -11,12 +11,12 @@ See: .planning/PROJECT.md (updated 2026-01-20)
 
 **Milestone:** v3.0 McCluster Integration
 **Phase:** 29 - Verification and Testing (in progress)
-**Plan:** 01 complete
-**Status:** Plan 29-01 complete, ready for 29-02
+**Plan:** 02 complete
+**Status:** Plan 29-02 complete, ready for 29-03
 
-Last activity: 2026-01-21 - Completed Plan 29-01 (Test Infrastructure)
+Last activity: 2026-01-21 - Completed Plan 29-02 (Test Scripts Implementation)
 
-Progress: [########=-] 85% (4/5 phases, Plan 29-01 complete)
+Progress: [########=-] 90% (4/5 phases, Plan 29-02 complete)
 
 ## v3.0 Milestone Overview
 
@@ -29,7 +29,7 @@ Progress: [########=-] 85% (4/5 phases, Plan 29-01 complete)
 | 26 | Config Parser Extension | 10 | Complete |
 | 27 | Runtime Integration | 7 | Complete |
 | 28 | Output Format Handling | 3 | Complete |
-| 29 | Verification and Testing | 4 | In Progress (1/4) |
+| 29 | Verification and Testing | 4 | In Progress (2/4) |
 
 **Total:** 28 requirements across 5 phases
 
@@ -72,6 +72,8 @@ Progress: [########=-] 85% (4/5 phases, Plan 29-01 complete)
 | test_* function prefix | Namespace collision avoidance with workflow scripts (Phase 29-01) |
 | FIXTURE_MODE env var | Distinguishes quick (fixture) vs full (live McLuster) tests (Phase 29-01) |
 | Default tolerance 1e-4 | Virial ratio verification tolerance, adjustable via CLI (Phase 29-01) |
+| Graceful numpy degradation | test_energy.sh passes in fixture mode without numpy (Phase 29-02) |
+| $((VAR + 1)) over ((VAR++)) | Avoid set -e exit when counter starts at 0 (Phase 29-02) |
 
 ### Technical Notes
 
@@ -93,6 +95,9 @@ Progress: [########=-] 85% (4/5 phases, Plan 29-01 complete)
 - tests/mcluster/lib/common.sh provides test helper functions (Phase 29-01)
 - tests/mcluster/lib/verify_energy.py computes virial ratio for IC verification (Phase 29-01)
 - tests/mcluster/Makefile has test, test-quick, test-full targets (Phase 29-01)
+- tests/mcluster/fixtures/*.toml provides TOML test configs (Phase 29-02)
+- tests/mcluster/test_*.sh scripts implement VERIFY-01 through VERIFY-04 (Phase 29-02)
+- tests/mcluster/run_tests.sh main test runner with FIXTURE_MODE support (Phase 29-02)
 
 ### TODOs
 
@@ -103,8 +108,8 @@ Progress: [########=-] 85% (4/5 phases, Plan 29-01 complete)
 - [x] Complete Phase 27 Plan 02 (Main Integration)
 - [x] Complete Phase 28 Plan 01 (Output Format Handling)
 - [x] Complete Phase 29 Plan 01 (Test Infrastructure)
-- [ ] Complete Phase 29 Plan 02 (Energy Verification Test)
-- [ ] Complete Phase 29 Plans 03-04 (Integration Tests)
+- [x] Complete Phase 29 Plan 02 (Test Scripts Implementation)
+- [ ] Complete Phase 29 Plans 03-04 (Additional Integration Tests)
 
 ### Blockers
 
@@ -113,11 +118,11 @@ Progress: [########=-] 85% (4/5 phases, Plan 29-01 complete)
 ## Session Continuity
 
 **For next session:**
-1. Phase 29 Plan 01 complete - Test infrastructure created
-2. common.sh provides 8 test helper functions
-3. verify_energy.py computes virial ratio Q = 2K/|U|
-4. Makefile has test, test-quick, test-full targets
-5. Ready to proceed to Plan 29-02 (Energy Verification Test)
+1. Phase 29 Plan 02 complete - Test scripts implemented
+2. All four VERIFY requirements have test scripts
+3. Tests pass in FIXTURE_MODE=1 via `make test`
+4. run_tests.sh provides main test runner with status reporting
+5. Ready to proceed to Plan 29-03 (Additional Integration Tests if planned)
 
 **Key files for v3.0:**
 - `Makefile` - Root-level build orchestration (Phase 25)
@@ -139,6 +144,12 @@ Progress: [########=-] 85% (4/5 phases, Plan 29-01 complete)
 - Makefile with test, test-quick, test-full targets
 - SUMMARY: `.planning/phases/29-verification-and-testing/29-01-SUMMARY.md`
 
+**Phase 29-02 outputs:**
+- TOML fixture configs for Plummer, generate-only, and run-only scenarios
+- Four test scripts implementing VERIFY-01 through VERIFY-04
+- Main test runner with FIXTURE_MODE and FAIL_FAST support
+- SUMMARY: `.planning/phases/29-verification-and-testing/29-02-SUMMARY.md`
+
 ## Deferred Work (v2.4+)
 
 MPI batching optimization deferred from v2.3:
@@ -155,4 +166,4 @@ MPI batching optimization deferred from v2.3:
 - Phase 23 analysis: `.planning/ANALYSIS.md`
 
 ---
-*Last updated: 2026-01-21 (Plan 29-01 complete)*
+*Last updated: 2026-01-21 (Plan 29-02 complete)*
