@@ -6,6 +6,7 @@
 #include <fstream>
 #include <vector>
 #include <unistd.h>
+#include <sys/stat.h>
 #include "def.h"
 #include "particle.h"
 #include "global_state.h"
@@ -62,44 +63,59 @@ int main(int argc, char *argv[]) {
 	// Phase 27: McLuster IC generation (if configured)
 	if (mcluster_config.has_mcluster_section) {
 		bool mcluster_success = true;
+		std::string abyss_ic = "mcluster_abyss.dat";
 
 		if (my_rank == ROOT) {
 			std::cout << "\n=== McLuster IC Generation ===" << std::endl;
 
-			// Build arguments and run McLuster
-			std::vector<std::string> args = buildMclusterArgs(mcluster_config);
+			// Check if IC file was pre-generated (by separate McLuster job)
+			struct stat ic_stat;
+			bool ic_exists = (stat(abyss_ic.c_str(), &ic_stat) == 0 && ic_stat.st_size > 0);
 
-			std::cout << "Running: " << MCLUSTER_BINARY;
-			for (const auto& arg : args) {
-				std::cout << " " << arg;
-			}
-			std::cout << std::endl;
+			if (ic_exists) {
+				// Use pre-generated IC file
+				std::cout << "Found pre-generated IC file: " << abyss_ic << std::endl;
+				std::cout << "Skipping McLuster execution" << std::endl;
 
-			RunResult result = runMclusterSubprocess(MCLUSTER_BINARY, args);
-
-			if (!result.success) {
-				std::cerr << "McLuster failed with exit code: " << result.exit_code << std::endl;
-				if (!result.stderr_content.empty()) {
-					std::cerr << "Error output:\n" << result.stderr_content << std::endl;
-				}
-				mcluster_success = false;
+				// Update fname to use the pre-generated IC file
+				static std::string generated_ic_path = abyss_ic;
+				fname = const_cast<char*>(generated_ic_path.c_str());
+				std::cout << "IC file ready: " << fname << std::endl;
 			} else {
-				// Validate output
-				std::string mcluster_output = MCLUSTER_OUTPUT_BASE + ".txt";
-				if (!validateMclusterOutput(mcluster_output, 0)) {
-					std::cerr << "McLuster output validation failed" << std::endl;
+				// Run McLuster to generate IC
+				std::vector<std::string> args = buildMclusterArgs(mcluster_config);
+
+				std::cout << "Running: " << MCLUSTER_BINARY;
+				for (const auto& arg : args) {
+					std::cout << " " << arg;
+				}
+				std::cout << std::endl;
+
+				RunResult result = runMclusterSubprocess(MCLUSTER_BINARY, args);
+
+				if (!result.success) {
+					std::cerr << "McLuster failed with exit code: " << result.exit_code << std::endl;
+					if (!result.stderr_content.empty()) {
+						std::cerr << "Error output:\n" << result.stderr_content << std::endl;
+					}
 					mcluster_success = false;
 				} else {
-					// Transform to ABYSS format
-					std::string abyss_ic = "mcluster_abyss.dat";
-					if (!transformMclusterOutput(mcluster_output, abyss_ic)) {
-						std::cerr << "Failed to transform McLuster output" << std::endl;
+					// Validate output
+					std::string mcluster_output = MCLUSTER_OUTPUT_BASE + ".txt";
+					if (!validateMclusterOutput(mcluster_output, 0)) {
+						std::cerr << "McLuster output validation failed" << std::endl;
 						mcluster_success = false;
 					} else {
-						// Update fname to use generated IC file
-						static std::string generated_ic_path = abyss_ic;
-						fname = const_cast<char*>(generated_ic_path.c_str());
-						std::cout << "IC file ready: " << fname << std::endl;
+						// Transform to ABYSS format
+						if (!transformMclusterOutput(mcluster_output, abyss_ic)) {
+							std::cerr << "Failed to transform McLuster output" << std::endl;
+							mcluster_success = false;
+						} else {
+							// Update fname to use generated IC file
+							static std::string generated_ic_path = abyss_ic;
+							fname = const_cast<char*>(generated_ic_path.c_str());
+							std::cout << "IC file ready: " << fname << std::endl;
+						}
 					}
 				}
 			}

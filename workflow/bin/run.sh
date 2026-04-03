@@ -23,16 +23,33 @@ LOG="$RUN_DIR/run.log"
 WORK_DIR="$RUN_DIR/work"
 mkdir -p "$WORK_DIR"
 
+# Check if IC file was pre-generated (by separate McLuster job)
+IC_FILE="$WORK_DIR/mcluster_abyss.dat"
+HAS_PREGENERATED_IC=0
+if [[ -f "$IC_FILE" ]]; then
+  HAS_PREGENERATED_IC=1
+  echo "Found pre-generated IC file: $IC_FILE"
+fi
+
 # Stage test directory (inputs/config) into a per-run workspace.
-# Note: this copies existing output files too; if that becomes large, we can switch to a filtered copy.
-rm -rf "$WORK_DIR"/*
-cp -a "$TEST_ABS/." "$WORK_DIR/"
+# Preserve pre-generated IC file if it exists.
+if [[ "$HAS_PREGENERATED_IC" -eq 1 ]]; then
+  # Save IC file, clear work dir, restore IC file
+  IC_BACKUP=$(mktemp)
+  cp "$IC_FILE" "$IC_BACKUP"
+  rm -rf "$WORK_DIR"/*
+  cp -a "$TEST_ABS/." "$WORK_DIR/"
+  mv "$IC_BACKUP" "$IC_FILE"
+else
+  rm -rf "$WORK_DIR"/*
+  cp -a "$TEST_ABS/." "$WORK_DIR/"
+fi
 
 # Stage executable
 cp "$REPO_ROOT/$EXECUTABLE" "$WORK_DIR/abyss.exe"
 
-# Stage McLuster if config uses [mcluster] section
-if grep -q '^\[mcluster\]' "$WORK_DIR/$RUN_CONFIG" 2>/dev/null; then
+# Stage McLuster only if no pre-generated IC and config uses [mcluster] section
+if [[ "$HAS_PREGENERATED_IC" -eq 0 ]] && grep -q '^\[mcluster\]' "$WORK_DIR/$RUN_CONFIG" 2>/dev/null; then
   MCLUSTER_BIN="$REPO_ROOT/mcluster/mcluster_sse"
   if [[ -x "$MCLUSTER_BIN" ]]; then
     cp "$MCLUSTER_BIN" "$WORK_DIR/mcluster"

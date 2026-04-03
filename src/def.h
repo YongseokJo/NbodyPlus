@@ -2,8 +2,8 @@
 // ============================================================================
 // Array size limits
 // ============================================================================
-#define MAX_NUM_PARTICLE 200000
-#define MAX_NUM_NEIGHBOR 1000  // 10000 -> 2000 modified by EW 2025.1.11
+#define MAX_NUM_PARTICLE 2000000
+#define MAX_NUM_NEIGHBOR 15000  // Increased for large N simulations
 #define MAX_NEIGHBOR_RADIUS 0.2  // pc, can be set in config file later
 
 // ============================================================================

@@ -5,8 +5,8 @@
 #include <vector>
 #include "mcluster_config.h"
 
-// Default McLuster binary path (symlink created by build system)
-const std::string MCLUSTER_BINARY = "./src/mcluster";
+// Default McLuster binary path (workflow copies to work directory)
+const std::string MCLUSTER_BINARY = "./mcluster";
 
 // Base filename for McLuster output (McLuster adds .txt extension)
 const std::string MCLUSTER_OUTPUT_BASE = "mcluster_ic";

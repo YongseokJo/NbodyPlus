@@ -6,7 +6,7 @@
 # Scheduler: slurm | pbs | local
 SCHEDULER="slurm"
 
-# Slurm defaults (Ciera GPU)
+# Slurm defaults for ABYSS simulation (Ciera GPU)
 ACCOUNT="b1094"
 PARTITION="ciera-gpu"
 WALLTIME="12:00:00"
@@ -15,6 +15,13 @@ NTASKS="16"
 CPUS_PER_TASK="1"
 GPUS="1"
 SRUN_MPI="pmix_v4"
+
+# Slurm defaults for McLuster IC generation (CPU-only, OpenMP)
+# McLuster uses OpenMP parallelization, so we need multiple CPUs per task
+MCLUSTER_PARTITION="ciera-std"    # CPU partition (no GPU needed)
+MCLUSTER_WALLTIME="02:00:00"      # IC generation typically < 1 hour
+MCLUSTER_CPUS="16"                # OpenMP threads for McLuster
+MCLUSTER_MEM="32G"                # Memory for large N simulations
 
 # Build toggles
 USE_CUDA="1"

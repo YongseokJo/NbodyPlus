@@ -1,15 +1,25 @@
 # ABYSS configuration with McLuster IC generation
 # 1 million particle Plummer profile
+# === Required Parameters ===
+Filename = "nbody.dat"
+StopTime = 2.0e6
+OutputDirectory = "output"
 
-[simulation]
-fname = "nbody.dat"          # Will be overwritten by McLuster output
-dt = 0.001                   # Timestep
-t_end = 10.0                 # End time (N-body units)
-eps = 0.01                   # Softening length
+[numerics]
+eta = 0.01
+FixNumNeighbor = 10000
+InitialRadius = 0.2
+RSearch = 2.5e-4
+TSearch = 1e-6
 
 [output]
-interval = 0.1               # Output interval
-prefix = "plummer_1M"        # Output file prefix
+dtOutput = 1.0e4
+Compression = true
+CompressionLevel = 6
+
+[restart]
+Enabled = false
+
 
 [mcluster]
 N = 1000000                  # 10^6 particles

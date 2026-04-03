@@ -293,10 +293,54 @@ case "$SCHEDULER" in
     ;;
 
   slurm)
+    # Check if config has [mcluster] section - requires two-job submission
+    CONFIG_PATH="$REPO_ROOT/$TEST_DIR/$RUN_CONFIG"
+    NEEDS_MCLUSTER=0
+    if [[ -f "$CONFIG_PATH" ]] && grep -q '^\[mcluster\]' "$CONFIG_PATH" 2>/dev/null; then
+      NEEDS_MCLUSTER=1
+    fi
+
+    MCLUSTER_JOB_ID=""
+
+    if [[ "$NEEDS_MCLUSTER" -eq 1 && "$RUN_RUN" -eq 1 ]]; then
+      # Submit McLuster IC generation job first
+      MCLUSTER_TEMPLATE="$REPO_ROOT/workflow/templates/mcluster.sbatch.in"
+      MCLUSTER_JOB_NAME="mcl_${TAG}"
+      MCLUSTER_JOB_SH="$RUN_DIR/mcluster.sbatch"
+
+      "$REPO_ROOT/workflow/bin/render.sh" "$MCLUSTER_TEMPLATE" "$MCLUSTER_JOB_SH" \
+        ACCOUNT "$ACCOUNT" \
+        MCLUSTER_PARTITION "${MCLUSTER_PARTITION:-ciera-std}" \
+        MCLUSTER_WALLTIME "${MCLUSTER_WALLTIME:-02:00:00}" \
+        MCLUSTER_CPUS "${MCLUSTER_CPUS:-16}" \
+        MCLUSTER_MEM "${MCLUSTER_MEM:-32G}" \
+        RUN_COMPILE "$RUN_COMPILE" \
+        JOB_NAME "$MCLUSTER_JOB_NAME" \
+        REPO_ROOT "$REPO_ROOT" \
+        RUN_DIR "$RUN_DIR"
+
+      chmod +x "$MCLUSTER_JOB_SH"
+
+      echo "Submitting McLuster job: $MCLUSTER_JOB_SH"
+      MCLUSTER_SUBMIT_OUTPUT=$(sbatch "$MCLUSTER_JOB_SH")
+      echo "$MCLUSTER_SUBMIT_OUTPUT" | tee -a "$RUN_DIR/submit.log"
+
+      # Extract job ID from "Submitted batch job 12345"
+      MCLUSTER_JOB_ID=$(echo "$MCLUSTER_SUBMIT_OUTPUT" | grep -oP 'Submitted batch job \K\d+')
+      echo "McLuster job ID: $MCLUSTER_JOB_ID" >> "$RUN_DIR/submit.log"
+    fi
+
+    # Submit main ABYSS simulation job
     TEMPLATE="$REPO_ROOT/workflow/templates/slurm.sbatch.in"
     JOB_NAME="abyss_${TAG}"
-
     JOB_SH="$RUN_DIR/job.sbatch"
+
+    # If McLuster job was submitted, ABYSS job skips compile (already done)
+    ABYSS_RUN_COMPILE="$RUN_COMPILE"
+    if [[ -n "$MCLUSTER_JOB_ID" ]]; then
+      ABYSS_RUN_COMPILE=0
+    fi
+
     "$REPO_ROOT/workflow/bin/render.sh" "$TEMPLATE" "$JOB_SH" \
       ACCOUNT "$ACCOUNT" \
       PARTITION "$PARTITION" \
@@ -305,7 +349,7 @@ case "$SCHEDULER" in
       NTASKS "$NTASKS" \
       CPUS_PER_TASK "$CPUS_PER_TASK" \
       GPUS "$GPUS" \
-      RUN_COMPILE "$RUN_COMPILE" \
+      RUN_COMPILE "$ABYSS_RUN_COMPILE" \
       RUN_RUN "$RUN_RUN" \
       RUN_ANALYZE "$RUN_ANALYZE" \
       JOB_NAME "$JOB_NAME" \
@@ -314,8 +358,14 @@ case "$SCHEDULER" in
 
     chmod +x "$JOB_SH"
 
-    echo "Submitting: $JOB_SH"
-    sbatch "$JOB_SH" | tee "$RUN_DIR/submit.log"
+    # Submit with dependency if McLuster job was submitted
+    echo "Submitting ABYSS job: $JOB_SH"
+    if [[ -n "$MCLUSTER_JOB_ID" ]]; then
+      echo "  (depends on McLuster job $MCLUSTER_JOB_ID)"
+      sbatch --dependency=afterok:"$MCLUSTER_JOB_ID" "$JOB_SH" | tee -a "$RUN_DIR/submit.log"
+    else
+      sbatch "$JOB_SH" | tee -a "$RUN_DIR/submit.log"
+    fi
     ;;
 
   pbs)

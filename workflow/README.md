@@ -271,20 +271,49 @@ less /tmp/job.sbatch
 McLuster IC generation
 ----------------------
 
-The workflow supports McLuster integration for automatic initial condition (IC) generation. When a config file contains a `[mcluster]` section, ABYSS will run McLuster to generate the IC before starting the simulation.
+The workflow supports McLuster integration for automatic initial condition (IC) generation. When a config file contains a `[mcluster]` section, the workflow automatically handles IC generation.
 
 **Build requirements:**
 
 - `gfortran` compiler (for McLuster's Fortran components)
 - `gcc` (for SSE/BSE stellar evolution libraries)
 
+**How it works (two-job workflow for Slurm):**
+
+For Slurm submissions with `[mcluster]` configs, the workflow submits **two separate jobs**:
+
+1. **McLuster job** — runs on CPU partition with OpenMP parallelization
+2. **ABYSS job** — runs on GPU partition, depends on McLuster job completion
+
+This separation is necessary because:
+- McLuster uses OpenMP (single process, multiple threads)
+- ABYSS uses MPI (multiple processes)
+- Running them in the same job would limit McLuster to 1 CPU core
+
+The workflow automatically:
+- Submits McLuster job first (`mcl_<tag>`)
+- Submits ABYSS job with `--dependency=afterok:<mcluster_job_id>`
+- ABYSS detects pre-generated IC file and skips McLuster execution
+
+**McLuster SLURM configuration:**
+
+Configure in `workflow/config.sh` or `workflow/config.local.sh`:
+
+```bash
+# McLuster job settings (CPU-only, OpenMP)
+MCLUSTER_PARTITION="ciera-std"    # CPU partition (no GPU needed)
+MCLUSTER_WALLTIME="02:00:00"      # IC generation time limit
+MCLUSTER_CPUS="16"                # OpenMP threads
+MCLUSTER_MEM="32G"                # Memory for large N
+```
+
 **Enabling McLuster:**
 
 By default, `USE_MCLUSTER=1` in `workflow/config.sh`. The workflow will:
 
 1. Build McLuster alongside ABYSS using the root Makefile
-2. Stage `mcluster` binary into the work directory if the config uses `[mcluster]`
-3. ABYSS will invoke McLuster at runtime to generate ICs
+2. For Slurm: submit separate McLuster and ABYSS jobs with dependency
+3. For local: stage McLuster binary and let ABYSS invoke it
 
 **Disabling McLuster:**
 
@@ -312,6 +341,22 @@ f = 1              # Kroupa IMF
 Z = 0.02           # Solar metallicity
 ```
 
+**Large N simulations (1M+ particles):**
+
+For large simulations, the two-job workflow is essential:
+
+```toml
+[mcluster]
+N = 1000000        # 1 million stars
+P = 0              # Plummer profile
+R = 0.8
+f = 1
+Z = 0.02
+```
+
+With 16 OpenMP threads, generating 1M particles takes ~6-7 minutes. Without proper
+parallelization, it would take 60+ minutes.
+
 **Generate IC only (no simulation):**
 
 ```toml
@@ -320,11 +365,23 @@ N = 100000
 generate_only = true   # Exit after IC generation
 ```
 
+**Run directory with McLuster:**
+
+When using the two-job workflow, the run directory contains additional files:
+
+- `mcluster.sbatch` — McLuster job script
+- `mcluster.log` — McLuster execution log
+- `mcluster_stdout.log`, `mcluster_stderr.log` — SLURM output for McLuster job
+- `work/mcluster_ic.txt` — raw McLuster output
+- `work/mcluster_abyss.dat` — transformed IC file for ABYSS
+
 **Troubleshooting:**
 
 - If `gfortran` not found, McLuster build is skipped with a warning
 - Config using `[mcluster]` without McLuster binary will show a warning at runtime
 - Set `GFORTRAN_CANDIDATES` in `config.local.sh` if gfortran is in a non-standard location
+- Check `mcluster.log` for IC generation progress and errors
+- If ABYSS job shows `DependencyNeverSatisfied`, the McLuster job failed — check `mcluster_stderr.log`
 
 Final notes and tips
 --------------------
